@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A simple resource that wraps a string content
+ * A simple resource that wraps a HDFS path
  *
  * Created by bram on 2/7/16.
  */

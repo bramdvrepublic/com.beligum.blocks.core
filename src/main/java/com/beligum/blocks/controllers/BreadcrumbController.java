@@ -135,7 +135,7 @@ public class BreadcrumbController extends DefaultTemplateController
 
             //just add the root with a general terms as the final attempt
             if (retVal.isEmpty()) {
-                retVal.add(new DefaultMapEntry(URI.create("/"), gen.com.beligum.blocks.core.messages.blocks.core.Entries.breadcrumbHomeTitle.getI18nValue()));
+                retVal.add(new DefaultMapEntry(URI.create("/"), gen.com.beligum.blocks.core.messages.blocks.core.Entries.breadcrumbHomeTitle.getValue()));
             }
         }
 

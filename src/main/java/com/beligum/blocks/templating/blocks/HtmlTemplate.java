@@ -471,7 +471,7 @@ public abstract class HtmlTemplate
             }
             else {
                 Element parsedElement = this.renderResourceElement(element);
-                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, parsedElement, parsedElement.getAttributeValue("href")));
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, parsedElement, "href"));
                 retVal.add(parsedElement);
             }
         }
@@ -509,7 +509,7 @@ public abstract class HtmlTemplate
             }
             else {
                 Element parsedElement = this.renderResourceElement(element);
-                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, parsedElement.getAttributeValue("src")));
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, "src"));
                 retVal.add(parsedElement);
             }
         }
@@ -520,19 +520,50 @@ public abstract class HtmlTemplate
     {
         final boolean print = false;
         StringBuilder builder = new StringBuilder();
+        String attrValue = attr == null ? null : element.getAttributeValue(attr);
+        String elementStr = element.toString();
+        boolean isDynamic = false;
+
+        //this means we're dealing with an external resource that may need fingerprinting
+        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+//            if (attrValue != null) {
+//                //validate the URI
+//                String uriStr = UriBuilder.fromUri(attrValue).build().toString();
+//                ResourceResolver resourceResolver = R.resourceFactory().getResourceEndpointFor(uriStr);
+//                if (resourceResolver != null) {
+//                    //if the resource is static (won't change anymore), we might as well calculate it's fingerprint now
+//                    if (resourceResolver.isStatic()) {
+//                        //first, replace the attribute value
+//                        attrValue = R.resourceFactory().fingerprintUri(uriStr);
+//
+//                        //but also replace the attribute in the element itself
+//                        Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
+//                        OutputDocument outputDocument = new OutputDocument(element);
+//                        outputDocument.replace(attrValueSeg, attrValue);
+//                        elementStr = outputDocument.toString();
+//                    }
+//                    else {
+//                        //in case of a dynamic asset, we'll postpone the fingerprinting all the way till
+//                        //com.beligum.blocks.templating.blocks.TemplateResources.Resource.getElement() and getValue()
+//                        isDynamic = true;
+//                    }
+//                }
+//            }
+        }
 
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
         builder.append("#").append(TagTemplateResourceDirective.NAME).append("(")
 
                .append(type.ordinal()).append(",")
                .append(print).append(",'")
-               .append(attr).append("','")
+               .append(attrValue).append("',")
+               .append(isDynamic).append(",'")
                .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
 
                .append(")")
-               .append(element.toString())
+               .append(elementStr)
                .append("#end");
 
         return builder.toString();
@@ -560,7 +591,7 @@ public abstract class HtmlTemplate
 
         if (superTemplateElements != null && superTemplateElements.iterator().hasNext()) {
             for (Element element : superTemplateElements) {
-                html.append(buildResourceHtml(type, element, attribute == null ? null : element.getAttributeValue(attribute)));
+                html.append(buildResourceHtml(type, element, attribute));
             }
             retVal = Iterables.concat(superTemplateElements, templateElements);
         }

@@ -9,6 +9,7 @@ import com.beligum.base.resources.ifaces.SizedInputStream;
 import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
@@ -40,7 +41,7 @@ import java.util.regex.Pattern;
  * <p>
  * Note: the reverse of this class is com.beligum.blocks.templating.blocks.HtmlAnalyzer
  */
-public class HtmlParser implements Parser
+public class HtmlParser implements Parser, UriDetector.ReplaceCallback
 {
     //-----CONSTANTS-----
     private static final String NEWLINE = "\n";
@@ -184,28 +185,7 @@ public class HtmlParser implements Parser
             if (node instanceof StartTag) {
                 Element element = ((StartTag) node).getElement();
 
-                if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-                    Attributes attributes = element.getAttributes();
-                    if (attributes != null) {
-                        for (Attribute att : attributes) {
-                            String val = att.getValue();
-                            if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
-                                if (!StringUtils.isEmpty(val)) {
-                                    //Note: we can't just use URI.create() here because of legacy issues with saved URIs with spaces because there
-                                    // was an old bug that allowed such illegal URIs to be selected by the finder...
-                                    URI uri = UriBuilder.fromUri(val.trim()).build();
-                                    retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUri(uri) + "\"");
-                                }
-                            }
-                            else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
-                                //note that we can't check for spaces here, let's just hope for the best...
-                                if (!StringUtils.isEmpty(val)) {
-                                    retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUris(val.trim()) + "\"");
-                                }
-                            }
-                        }
-                    }
-                }
+                this.processUris(element, retVal);
 
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
                 if (template != null) {
@@ -214,6 +194,63 @@ public class HtmlParser implements Parser
                 }
             }
         }
+
+        return retVal;
+    }
+    private void processUris(Element element, OutputDocument retVal)
+    {
+        //for now, we only parse URIs for fingerprinting
+        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+            String name = element.getName().toLowerCase();
+            String relAttr = element.getAttributeValue("rel");
+
+            if (name.equals("script") || name.equals("style") || (name.equals("link") && relAttr != null && relAttr.trim().equalsIgnoreCase("stylesheet"))) {
+                //skip these, the URI will be wrapped/parsed more extensively by #btrd (see HtmlTemplate.buildResourceHtml())
+            }
+            else {
+                Attributes attributes = element.getAttributes();
+                if (attributes != null) {
+                    for (Attribute att : attributes) {
+                        String val = att.getValue();
+                        if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
+                            if (!StringUtils.isEmpty(val)) {
+                                //Note: by pulling the URI string through the UriBuilder parser, we get a chance to straighten invalid URIs
+                                // eg. replace all spaces with %20 and so on...
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().getFingerprinter().processUri(UriBuilder.fromUri(val).build().toString(), this) + "\"");
+                            }
+                        }
+                        else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
+                            //note that we can't check for spaces here, let's just hope for the best...
+                            if (!StringUtils.isEmpty(val)) {
+                                //sadly, we can't use our extra validation step here, so make sure all uris are valid ;-)
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().getFingerprinter().processUris(val, this) + "\"");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    @Override
+    public String uriDetected(URI uri)
+    {
+        String retVal = null;
+
+        String uriStr = uri.toString();
+
+//        //if the endpoint is static, we'll generate our fingerprint right now,
+//        //if not, we'll wrap the URI in a directive to re-parse it on every request.
+//        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
+//        //if that would change, we must wipe this optimization step
+//        ResourceResolver resourceResolver = R.resourceFactory().getResourceEndpointFor(uriStr);
+//        if (resourceResolver != null && resourceResolver.isStatic()) {
+//            retVal = R.resourceFactory().fingerprintUri(uriStr);
+//        }
+//
+//        //this means we'll postpone the processing of the URI to the render phase, just wrap it in our directive
+//        if (retVal == null) {
+//            retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("(\"").append(uri.toString()).append("\")").toString();
+//        }
 
         return retVal;
     }
@@ -402,18 +439,6 @@ public class HtmlParser implements Parser
         try (InputStream is = htmlTemplateResource.newInputStream()) {
             builder.append(IOUtils.toString(is));
         }
-
-        //                    // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
-        //                    if (R.configuration().getProduction()) {
-        //                        //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
-        //                        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
-        //                            builder.append(IOUtils.toString(is));
-        //                        }
-        //                    }
-        //                    else {
-        //                        //use a classic parse to parse the defines from above
-        //                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append(NEWLINE);
-        //                    }
 
         //pop the controller
         builder.append("#end").append(NEWLINE);

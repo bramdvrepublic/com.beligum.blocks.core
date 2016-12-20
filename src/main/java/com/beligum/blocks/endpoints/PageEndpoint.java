@@ -99,7 +99,7 @@ public class PageEndpoint
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl) throws URISyntaxException
     {
         if (StringUtils.isEmpty(pageUrl)) {
-            throw new InternalServerErrorException(core.Entries.newPageNoUrlError.getI18nValue());
+            throw new InternalServerErrorException(core.Entries.newPageNoUrlError.getValue());
         }
         else {
             boolean processed = false;
@@ -115,7 +115,7 @@ public class PageEndpoint
             }
 
             if (!processed) {
-                throw new InternalServerErrorException(core.Entries.newPageNoDataError.getI18nValue());
+                throw new InternalServerErrorException(core.Entries.newPageNoDataError.getValue());
             }
 
             //redirect to the requested page with the flash cache filled in
@@ -143,9 +143,9 @@ public class PageEndpoint
                 final Locale[] LANGS = { browserLang, R.configuration().getDefaultLanguage(), Locale.ROOT };
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(),
-                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
+                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getValue()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(),
-                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
+                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getValue()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }

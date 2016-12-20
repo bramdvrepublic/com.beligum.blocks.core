@@ -1,6 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
@@ -59,7 +58,6 @@ public class TemplatesEndpoint
      */
     @GET
     @Path("/{name: .*}")
-    @JavascriptPackage
     public Response getTemplate(@Context final UriInfo uriInfo,
                                 @PathParam("name") String name) throws Exception
     {

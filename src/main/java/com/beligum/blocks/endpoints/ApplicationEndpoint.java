@@ -437,10 +437,10 @@ public class ApplicationEndpoint
 
                 // No title available
                 if (StringUtils.isEmpty(title)) {
-                    title = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle.getI18nValue();
+                    title = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle.getValue();
                 }
                 if (StringUtils.isEmpty(description)) {
-                    description = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription.getI18nValue();
+                    description = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription.getValue();
                 }
 
                 pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName());

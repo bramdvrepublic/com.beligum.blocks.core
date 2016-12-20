@@ -1,9 +1,9 @@
 package com.beligum.blocks.templating.blocks.directives;
 
-import com.beligum.base.resources.resolvers.JoinResolver;
+import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
-import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateResources;
 import org.apache.commons.io.IOUtils;
@@ -22,10 +22,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import static com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective.Argument.externalScripts;
 import static com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective.Argument.externalStyles;
 
 /**
@@ -38,8 +37,6 @@ public class PageTemplateWrapperDirective extends Directive
     public static final String NAME = "ptwd";
 
     //-----VARIABLES-----
-    //ugly static cache, but should remain fairly small and is only used when inlining is enabled
-    private static Map<URI, Long> assetPackSizeCache = new HashMap<>();
 
     //-----CONSTRUCTORS-----
 
@@ -168,7 +165,7 @@ public class PageTemplateWrapperDirective extends Directive
         for (TemplateResources.Resource res : resources) {
             if (!R.configuration().getResourceConfig().getPackResources() || res.getJoinHint() == HtmlTemplate.ResourceJoinHint.skip) {
 
-                //let's see if we need and can inline this resource
+                //let's see if we need and can inline this resource even though it's not packed
                 boolean inlined = false;
                 if (R.configuration().getResourceConfig().getEnableInlineResources()) {
                     switch (res.getType()) {
@@ -181,7 +178,7 @@ public class PageTemplateWrapperDirective extends Directive
 
                 //if we didn't inline it, we just copy over the incoming html
                 if (!inlined) {
-                    sb.append(res.getValue());
+                    sb.append(res.getElement());
                     sb.append("\n");
                 }
             }
@@ -207,7 +204,7 @@ public class PageTemplateWrapperDirective extends Directive
                         lastType = res.getType();
                         currentAssetPack = new ArrayList<>();
 
-                        sb.append(res.getValue());
+                        sb.append(res.getElement());
                         sb.append("\n");
 
                         break;
@@ -224,13 +221,13 @@ public class PageTemplateWrapperDirective extends Directive
                         }
 
                         //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
-                        URI srcUri = URI.create(res.getEqualsValue());
+                        URI srcUri = URI.create(res.getValue());
                         //make the format universal so we can join local and non-local resources easily
                         if (!srcUri.isAbsolute()) {
-                            srcUri = R.configuration().getSiteDomain().resolve(res.getEqualsValue());
+                            srcUri = R.configuration().getSiteDomain().resolve(srcUri);
                         }
                         currentAssetPack.add(srcUri);
-                        hash = 31 * hash + res.getEqualsValue().hashCode();
+                        hash = 31 * hash + res.getValue().hashCode();
 
                         break;
                     default:
@@ -250,59 +247,55 @@ public class PageTemplateWrapperDirective extends Directive
     private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb,
                                    InlinedBytesAccumulator accumulator) throws IOException
     {
-        //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
-        //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
-        //      consider it for later use if we run into caching problems
-        String cacheKey = StringFunctions.intToBase64(hash, true);
-
-        URI joinUri = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
-        //don't forget to fingerprint the asset pack if it's enabled
-        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-            joinUri = URI.create(R.resourceFactory().fingerprintUri(joinUri));
-        }
-
-        String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
-        if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
-            if (!this.inlineResource(joinUri, lastType, sb, accumulator)) {
-                sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
-            }
-        }
-        else {
-            if (!this.inlineResource(joinUri, lastType, sb, accumulator)) {
-                String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
-                sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
-            }
-        }
-        sb.append("\n");
-
-        //OLD, but useful code to show how we
-        //Note that we need to use a general inputstream (instead of the ResourceManager) to make dynamic resources (like reset.css) work
-        //                InputStream is = null;
-        //                try {
-        //                    URLConnection conn = srcUri.toURL().openConnection();
-        //
-        //                    //note the ETag needs to be parsed before it can be used
-        //                    String etag = null;
-        //                    String eTagRaw = conn.getHeaderField(HttpHeaders.ETAG);
-        //                    if (!StringUtils.isEmpty(eTagRaw)) {
-        //                        etag = EntityTag.valueOf(eTagRaw).getValue();
-        //                    }
-        //
-        //                    //for now, we'll only join local assets
-        //                    if (etag != null && srcUri.getHost().equals(R.configuration().getSiteDomain().getHost())) {
-        //                        byte[] etagHash = Base64.decodeBase64(etag);
-        //                        Logger.info(etagHash.length);
-        //                        hashBuf.write(etagHash);
-        //
-        //                        hashes/*.append("|")*/.append(etag);
-        //                    }
-        //
-        //                    //note: the name doesn't really matter; mainly used for debug messages
-        //                    inputs.add(SourceFile.fromInputStream(srcUri.toString(), is = conn.getInputStream()));
-        //                }
-        //                finally {
-        //                    IOUtils.closeQuietly(is);
-        //                }
+//        //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
+//        //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
+//        //      consider it for later use if we run into caching problems
+//        String cacheKey = StringFunctions.intToBase64(hash, true);
+//
+//        Resource assetPack = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
+//
+//        String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
+//        if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
+//            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+//                sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
+//            }
+//        }
+//        else {
+//            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+//                String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
+//                sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + assetPack.getUri() + "\"></script>");
+//            }
+//        }
+//        sb.append("\n");
+//
+//        //OLD, but useful code to show how we
+//        //Note that we need to use a general inputstream (instead of the ResourceManager) to make dynamic resources (like reset.css) work
+//        //                InputStream is = null;
+//        //                try {
+//        //                    URLConnection conn = srcUri.toURL().openConnection();
+//        //
+//        //                    //note the ETag needs to be parsed before it can be used
+//        //                    String etag = null;
+//        //                    String eTagRaw = conn.getHeaderField(HttpHeaders.ETAG);
+//        //                    if (!StringUtils.isEmpty(eTagRaw)) {
+//        //                        etag = EntityTag.valueOf(eTagRaw).getValue();
+//        //                    }
+//        //
+//        //                    //for now, we'll only join local assets
+//        //                    if (etag != null && srcUri.getHost().equals(R.configuration().getSiteDomain().getHost())) {
+//        //                        byte[] etagHash = Base64.decodeBase64(etag);
+//        //                        Logger.info(etagHash.length);
+//        //                        hashBuf.write(etagHash);
+//        //
+//        //                        hashes/*.append("|")*/.append(etag);
+//        //                    }
+//        //
+//        //                    //note: the name doesn't really matter; mainly used for debug messages
+//        //                    inputs.add(SourceFile.fromInputStream(srcUri.toString(), is = conn.getInputStream()));
+//        //                }
+//        //                finally {
+//        //                    IOUtils.closeQuietly(is);
+//        //                }
     }
     /**
      * Checks and sees if we can optimize this page by inlining this resource
@@ -313,70 +306,50 @@ public class PageTemplateWrapperDirective extends Directive
      */
     private boolean inlineResource(TemplateResources.Resource res, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
     {
-        //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
-        return this.inlineResource(URI.create(res.getEqualsValue()), res.getType(), sb, accumulator);
-    }
-    private boolean inlineResource(URI uri, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
-    {
-        boolean retVal = false;
+        URI uri = URI.create(res.getValue());
 
         //make the format universal so we can join local and non-local resources easily
         if (!uri.isAbsolute()) {
             uri = R.configuration().getSiteDomain().resolve(uri);
         }
 
-        long size = this.fetchRemoteSize(uri);
+        //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
+        return this.inlineResource(R.resourceFactory().getResource(uri.toString()), res.getType(), sb, accumulator);
+    }
+    private boolean inlineResource(Resource resource, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
+    {
+        boolean retVal = false;
+
+        long size = resource.getSize();
         if (accumulator.accumulate(size, type)) {
-            String content = this.fetchRemoteContent(uri);
-            //if we're pulling in a remote style, we might as well fingerprint the remote URIs
-            //this is especiallly handy when using font-packs!
-            //Note: haven't dared to enable this for scripts because I haven't tested it yet...
-            if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-                if (type == externalStyles) {
-                    content = R.resourceFactory().fingerprintUris(content);
+            InputStream inputStream = null;
+            try {
+                inputStream = resource.newInputStream();
+                if (R.configuration().getResourceConfig().getMinifyResources()) {
+                    inputStream = new MinifiedInputStream(inputStream, resource.getUri(), resource.getMimeType());
                 }
+
+                String content = IOUtils.toString(inputStream);
+
+                //if we're pulling in a remote style, we might as well fingerprint the remote URIs
+                //this is especiallly handy when using font-packs!
+                if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+                    if (type == externalStyles || type == externalScripts) {
+                        content = R.resourceFactory().getFingerprinter().fingerprintUris(content);
+                    }
+                }
+
+                sb.append(this.getInlineStartTagFor(type));
+                sb.append(content);
+                sb.append(this.getInlineEndTagFor(type));
+                retVal = true;
             }
-
-            sb.append(this.getInlineStartTagFor(type));
-            sb.append(content);
-            sb.append(this.getInlineEndTagFor(type));
-            retVal = true;
-        }
-
-        return retVal;
-    }
-    private static final String STREAM_TAIL = "\n";
-    private static final int STREAM_TAIL_LEN = STREAM_TAIL.getBytes().length;
-    /**
-     * Note that we use caching here (because it's always checked when inlining is enabled),
-     * but stream the content from the URL when there's a match, but it should be fairly fast
-     * because it comes from this same server.
-     */
-    private long fetchRemoteSize(URI assetPack) throws IOException
-    {
-        Long retVal = null;
-
-        if (assetPackSizeCache.containsKey(assetPack)) {
-            retVal = assetPackSizeCache.get(assetPack);
-        }
-
-        if (retVal == null) {
-            //contact the remote side to fetch the value
-            retVal = Long.valueOf(assetPack.toURL().openConnection().getContentLength());
-
-            //we only cache it in production so it can reload all possible changesh in dev mode
-            if (R.configuration().getProduction()) {
-                assetPackSizeCache.put(assetPack, retVal);
+            finally {
+                IOUtils.closeQuietly(inputStream);
             }
         }
 
         return retVal;
-    }
-    private String fetchRemoteContent(URI assetPack) throws IOException
-    {
-        try (InputStream is = assetPack.toURL().openStream()) {
-            return IOUtils.toString(is) + STREAM_TAIL;
-        }
     }
     private String getInlineStartTagFor(TemplateResourcesDirective.Argument type) throws IOException
     {
