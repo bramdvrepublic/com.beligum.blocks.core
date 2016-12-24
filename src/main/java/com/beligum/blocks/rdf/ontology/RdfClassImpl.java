@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
 import com.beligum.blocks.fs.index.entries.resources.SimpleResourceIndexer;
@@ -77,12 +77,12 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         this.properties = null;
         this.resourceIndexer = resourceIndexer;
         //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
-        if (this.resourceIndexer==null) {
+        if (this.resourceIndexer == null) {
             this.resourceIndexer = new SimpleResourceIndexer();
         }
 
         //only add ourself to the selected vocabulary if we are a pure class
-        if (this.vocabulary!=null && this.getClass().equals(RdfClassImpl.class)) {
+        if (this.vocabulary != null && this.getClass().equals(RdfClassImpl.class)) {
             this.vocabulary.addClass(this);
         }
     }
@@ -101,12 +101,12 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     @Override
     public URI getFullName()
     {
-        return this.vocabulary==null ? null : vocabulary.resolve(name);
+        return this.vocabulary == null ? null : vocabulary.resolve(name);
     }
     @Override
     public URI getCurieName()
     {
-        return this.vocabulary==null ? null : URI.create(vocabulary.getPrefix() + ":" + name);
+        return this.vocabulary == null ? null : URI.create(vocabulary.getPrefix() + ":" + name);
     }
     @Override
     public String getTitleKey()
@@ -117,7 +117,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     public String getTitle()
     {
         //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
-        return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(title);
+        return this.title == null ? null : this.title.toString(R.i18n().getOptimalRefererLocale());
     }
     @Override
     public MessagesFileEntry getTitleMessage()
@@ -133,7 +133,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     public String getLabel()
     {
         //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
-        return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(label);
+        return this.label == null ? null : this.label.toString(R.i18n().getOptimalRefererLocale());
     }
     @Override
     public MessagesFileEntry getLabelMessage()
@@ -174,6 +174,6 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     @Override
     public String toString()
     {
-        return ""+this.getCurieName();
+        return "" + this.getCurieName();
     }
 }

@@ -112,7 +112,7 @@ public class RdfEndpoint
                     queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
                 }
 
-                retVal = endpoint.search(rdfClass == SEARCH_ALL ? null : rdfClass, query, queryType, R.i18nFactory().getOptimalRefererLocale(), maxResults);
+                retVal = endpoint.search(rdfClass == SEARCH_ALL ? null : rdfClass, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
             }
         }
         else {
@@ -136,7 +136,7 @@ public class RdfEndpoint
         if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
-                retVal = endpoint.getResource(rdfClass, resourceUri, R.i18nFactory().getOptimalRefererLocale());
+                retVal = endpoint.getResource(rdfClass, resourceUri, R.i18n().getOptimalRefererLocale());
             }
         }
         else {

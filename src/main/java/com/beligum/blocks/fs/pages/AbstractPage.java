@@ -67,7 +67,7 @@ public abstract class AbstractPage implements Page
         UriBuilder uriBuilder = UriBuilder.fromUri(publicUri);
 
         //note that this will be null if the uri doesn't contain any language; that's ok for now
-        this.language = R.i18nFactory().getUrlLocale(publicUri, uriBuilder, null);
+        this.language = R.i18n().getUrlLocale(publicUri, uriBuilder, null);
 
         //we strip off all extra parameters: for now we don't support query (or other) parameters, mainly because they don't map well to file/folder names
         uriBuilder = uriBuilder.replaceQuery(null);
@@ -151,7 +151,7 @@ public abstract class AbstractPage implements Page
 
             //strip off the language prefix (note that this retuns a path without a leading slash)
             UriBuilder uriBuilder = UriBuilder.fromUri(canonicalTemp);
-            this.language = R.i18nFactory().getUrlLocale(canonicalTemp, uriBuilder, null);
+            this.language = R.i18n().getUrlLocale(canonicalTemp, uriBuilder, null);
 
             //make it 'relative' by re-adding the leading slash
             this.canonicalAddress = ROOT.resolve(uriBuilder.build());
@@ -226,7 +226,7 @@ public abstract class AbstractPage implements Page
     public HtmlSource readNormalizedHtml() throws IOException
     {
         Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(this.getPublicAbsoluteAddress(), Resource.MimeType.HTML),
-                                                                        this.getResourcePath().getFileContext(), this.getNormalizedPageProxyPath()));
+                                                                        null, this.getResourcePath().getFileContext(), this.getNormalizedPageProxyPath()));
 
         //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
         Writer writer = new StringWriter();
@@ -262,7 +262,7 @@ public abstract class AbstractPage implements Page
             //we're searching for a translation, not the same language
             if (!lang.equals(thisLang)) {
                 UriBuilder translatedUri = UriBuilder.fromUri(this.getPublicAbsoluteAddress());
-                if (R.i18nFactory().getUrlLocale(this.getPublicAbsoluteAddress(), translatedUri, lang) != null) {
+                if (R.i18n().getUrlLocale(this.getPublicAbsoluteAddress(), translatedUri, lang) != null) {
                     URI transPagePublicUri = translatedUri.build();
                     Page transPage = new ReadOnlyPage(transPagePublicUri);
                     if (this.getResourcePath().getFileContext().util().exists(transPage.getResourcePath().getLocalPath())) {

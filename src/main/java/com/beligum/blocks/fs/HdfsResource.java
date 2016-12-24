@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.base.resources.ifaces.ResourceResolver;
 import com.beligum.base.resources.mappers.AbstractResource;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -22,9 +23,9 @@ public class HdfsResource extends AbstractResource
     private Path hdfsPath;
 
     //-----CONSTRUCTORS-----
-    public HdfsResource(ResourceRequest request, FileContext fileContext, Path hdfsPath) throws IOException
+    public HdfsResource(ResourceRequest request, ResourceResolver resolver, FileContext fileContext, Path hdfsPath) throws IOException
     {
-        super(request);
+        super(request, resolver);
 
         this.fileContext = fileContext;
         this.hdfsPath = hdfsPath;

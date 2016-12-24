@@ -2,7 +2,6 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.auth.repositories.PersonRepository;
-import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.ResourceFactory;
 import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
@@ -99,7 +98,7 @@ public class PageEndpoint
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl) throws URISyntaxException
     {
         if (StringUtils.isEmpty(pageUrl)) {
-            throw new InternalServerErrorException(core.Entries.newPageNoUrlError.getValue());
+            throw new InternalServerErrorException(core.Entries.newPageNoUrlError.toString());
         }
         else {
             boolean processed = false;
@@ -115,7 +114,7 @@ public class PageEndpoint
             }
 
             if (!processed) {
-                throw new InternalServerErrorException(core.Entries.newPageNoDataError.getValue());
+                throw new InternalServerErrorException(core.Entries.newPageNoDataError.toString());
             }
 
             //redirect to the requested page with the flash cache filled in
@@ -134,7 +133,7 @@ public class PageEndpoint
     {
         TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
-        Locale browserLang = I18nFactory.instance().getOptimalLocale();
+        Locale browserLang = R.i18n().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
                 HashMap<String, String> pageTemplate = new HashMap();
@@ -143,9 +142,9 @@ public class PageEndpoint
                 final Locale[] LANGS = { browserLang, R.configuration().getDefaultLanguage(), Locale.ROOT };
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(),
-                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getValue()));
+                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.toString()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(),
-                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getValue()));
+                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.toString()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }

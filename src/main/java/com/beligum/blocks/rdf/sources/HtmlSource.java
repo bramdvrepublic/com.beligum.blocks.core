@@ -87,7 +87,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         // This is also interesting: https://www.w3.org/International/questions/qa-html-language-declarations
         // --> "Use the lang attribute for pages served as HTML, and the xml:lang attribute for pages served as XML."
         //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
-        this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18nFactory().getOptimalLocale(this.sourceAddress).getLanguage());
+        this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18n().getOptimalLocale(this.sourceAddress).getLanguage());
 
         //Note: RDFa (or XML) doesn't support DTDs, so we need to replace the Entity Sets with their numeric counterparts
         // Eg. &nbsp; becomes &#160;
@@ -267,14 +267,14 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     {
         HtmlAnalyzer retVal = null;
 
-        Locale thisLang = R.i18nFactory().getUrlLocale(this.getSourceAddress());
+        Locale thisLang = R.i18n().getUrlLocale(this.getSourceAddress());
         Map<String, Locale> siteLanguages = R.configuration().getLanguages();
         for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
             Locale lang = l.getValue();
             //we're searching for a translation, not the same language
             if (!lang.equals(thisLang)) {
                 UriBuilder translatedUri = UriBuilder.fromUri(this.getSourceAddress());
-                if (R.i18nFactory().getUrlLocale(this.getSourceAddress(), translatedUri, lang) != null) {
+                if (R.i18n().getUrlLocale(this.getSourceAddress(), translatedUri, lang) != null) {
                     URI transPagePublicUri = translatedUri.build();
                     Page transPage = new ReadOnlyPage(transPagePublicUri);
                     if (fileContext.util().exists(transPage.getResourcePath().getLocalPath())) {

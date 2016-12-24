@@ -161,7 +161,7 @@ public abstract class AbstractImportEndpoint
         else {
             ficheEntryHtml.append("<blocks-fiche-entry>");
         }
-        ficheEntryHtml.append("<div data-property=\"name\"><p>").append(R.i18nFactory().getResourceBundle(language).get(property.getLabelKey())).append("</p></div>");
+        ficheEntryHtml.append("<div data-property=\"name\"><p>").append(R.i18n().get(property.getLabelKey(), language)).append("</p></div>");
         ficheEntryHtml.append("<div data-property=\"value\">");
         ficheEntryHtml.append("<div class=\"property ").append(property.getWidgetType().getConstant()).append("\"");
         ficheEntryHtml.append(" property=\"").append(property.getCurieName()).append("\"");

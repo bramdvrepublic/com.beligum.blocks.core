@@ -54,7 +54,7 @@ public class BreadcrumbController extends DefaultTemplateController
     {
         LinkedList<Map.Entry<URI, String>> retVal = new LinkedList<>();
 
-        Locale currentLocale = R.i18nFactory().getOptimalLocale();
+        Locale currentLocale = R.i18n().getOptimalLocale();
 
         PageIndexConnection conn = StorageFactory.getMainPageIndexer().connect();
         //Note: we should actually re-use the connection above but we have an interface mismatch
@@ -128,7 +128,7 @@ public class BreadcrumbController extends DefaultTemplateController
         //the breadcrumb bar isn't really designed to be empty
         if (retVal.isEmpty()) {
             //give it one more shot and try to find the home page with a simple heuristic
-            PageIndexEntry p = conn.get(URI.create("/"+R.i18nFactory().getOptimalLocale().getLanguage()+"/"));
+            PageIndexEntry p = conn.get(URI.create("/" + R.i18n().getOptimalLocale().getLanguage() + "/"));
             if (p!=null) {
                 retVal.add(new DefaultMapEntry(URI.create(p.getId()), p.getTitle()));
             }

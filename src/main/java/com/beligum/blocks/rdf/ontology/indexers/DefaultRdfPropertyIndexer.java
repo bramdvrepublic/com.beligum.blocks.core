@@ -144,7 +144,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 else {
                     //make sure we have a language or we won't be able to lookup the resource from the uri
                     URI resourceNeedingIndexation = uriValue;
-                    Locale uriValueLang = R.i18nFactory().getUrlLocale(resourceNeedingIndexation);
+                    Locale uriValueLang = R.i18n().getUrlLocale(resourceNeedingIndexation);
                     if (uriValueLang==null) {
                         //it's a resource, so add it as a query parameter
                         resourceNeedingIndexation = UriBuilder.fromUri(resourceNeedingIndexation).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();

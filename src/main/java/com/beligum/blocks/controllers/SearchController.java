@@ -151,7 +151,7 @@ public class SearchController extends DefaultTemplateController
             IndexSearchResult searchResult = new IndexSearchResult(new ArrayList<>());
             try {
                 IndexSearchRequest searchRequest = this.getSearchRequest();
-                Locale locale = R.i18nFactory().getOptimalLocale();
+                Locale locale = R.i18n().getOptimalLocale();
 
                 //set some defaults if still empty..
                 if (searchRequest.getPageIndex() == null) {
@@ -180,7 +180,7 @@ public class SearchController extends DefaultTemplateController
                     pageQuery.add(queryConnection.buildWildcardQuery(null, searchRequest.getSearchTerm(), false), BooleanClause.Occur.MUST);
                 }
 
-                //this.searchResult = StorageFactory.getTriplestoreQueryConnection().search(rdfClass, searchTerm, new HashMap<RdfProperty, String>(), sortField, false, RESOURCES_ON_PAGE, selectedPage, R.i18nFactory().getOptimalLocale());
+                //this.searchResult = StorageFactory.getTriplestoreQueryConnection().search(rdfClass, searchTerm, new HashMap<RdfProperty, String>(), sortField, false, RESOURCES_ON_PAGE, selectedPage, R.i18n().getOptimalLocale());
                 searchResult = queryConnection.search(pageQuery, searchRequest.getSortField(), false, searchRequest.getPageSize(), searchRequest.getPageIndex());
             }
             catch (Exception e) {

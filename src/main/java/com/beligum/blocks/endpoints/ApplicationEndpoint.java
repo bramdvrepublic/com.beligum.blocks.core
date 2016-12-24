@@ -93,9 +93,9 @@ public class ApplicationEndpoint
             // Since we allow the user to create pretty url's, it's mime type will not always be clear.
             // But note this endpoint only accepts HTML requests, so force the mime type
             Resource resource = R.resourceFactory()
-                                 .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fileContext, page.getNormalizedPageProxyPath()));
+                                 .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), null, fileContext, page.getNormalizedPageProxyPath()));
 
-            Locale optimalLocale = R.i18nFactory().getOptimalLocale();
+            Locale optimalLocale = R.i18n().getOptimalLocale();
             URI externalRedirectUri = null;
 
             // First, check if we're dealing with a resource.
@@ -190,7 +190,7 @@ public class ApplicationEndpoint
                             if (!locale.equals(optimalLocale)) {
                                 //replace the language of the uri by the language of the loopo
                                 UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
-                                R.i18nFactory().getUrlLocale(requestedUri, uriBuilder, locale);
+                                R.i18n().getUrlLocale(requestedUri, uriBuilder, locale);
                                 //we'll search for a page that has the translated request uri as it's address
                                 pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), StringFunctions.getRightOfDomain(uriBuilder.build()).toString())), BooleanClause.Occur.SHOULD);
                             }
@@ -222,7 +222,7 @@ public class ApplicationEndpoint
                             // Note that, as a general language-selection mechanism, we only support URI locales,
                             // but when there's no such locale found, we try to redirect to the one requested by the browser
                             // and if all fails, we redirect to the default, configured locale
-                            Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
+                            Locale requestedUriLocale = R.i18n().getUrlLocale(requestedUri);
 
                             //OPTION 4: no language in the URL, redirect to a new address with a detected language
                             if (requestedUriLocale == null) {
@@ -233,14 +233,14 @@ public class ApplicationEndpoint
                                 if (!StringUtils.isEmpty(referer)) {
                                     URI refererUri = URI.create(referer);
                                     if (referer.startsWith(R.configuration().getSiteDomain().toString())) {
-                                        redirectLocale = R.i18nFactory().getUrlLocale(refererUri);
+                                        redirectLocale = R.i18n().getUrlLocale(refererUri);
                                     }
                                 }
 
                                 // 2) detectAndReplace the language of the client's browser (keeping some settings into account)
                                 // 3) revert to default language if the requested browser's language is unsupported or if all else fails
                                 if (redirectLocale == null) {
-                                    redirectLocale = R.i18nFactory().getBrowserLocale();
+                                    redirectLocale = R.i18n().getBrowserLocale();
                                     //if the requested locale is supported by the site, use it, otherwise use the default locale
                                     //if the default is forced, use it no matter what
                                     if (redirectLocale == null || Settings.instance().getForceRedirectToDefaultLocale() ||
@@ -324,7 +324,7 @@ public class ApplicationEndpoint
                                         if (fileContext.util().exists(copyPage.getResourcePath().getLocalPath())) {
 
                                             Resource copyResource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(copyPage.getPublicAbsoluteAddress(), Resource.MimeType.HTML),
-                                                                                                                copyPage.getResourcePath().getFileContext(), copyPage.getNormalizedPageProxyPath()));
+                                                                                                                null, copyPage.getResourcePath().getFileContext(), copyPage.getNormalizedPageProxyPath()));
 
                                             //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
                                             Writer writer = new StringWriter();
@@ -406,7 +406,7 @@ public class ApplicationEndpoint
         List<Map<String, String>> retVal = new ArrayList<>();
 
         TemplateCache cache = HtmlParser.getTemplateCache();
-        Locale requestLocale = I18nFactory.instance().getOptimalLocale();
+        Locale requestLocale = R.i18n().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (template instanceof PageTemplate) {
                 HashMap<String, String> pageTemplate = new HashMap();
@@ -437,10 +437,10 @@ public class ApplicationEndpoint
 
                 // No title available
                 if (StringUtils.isEmpty(title)) {
-                    title = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle.getValue();
+                    title = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle.toString();
                 }
                 if (StringUtils.isEmpty(description)) {
-                    description = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription.getValue();
+                    description = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription.toString();
                 }
 
                 pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName());

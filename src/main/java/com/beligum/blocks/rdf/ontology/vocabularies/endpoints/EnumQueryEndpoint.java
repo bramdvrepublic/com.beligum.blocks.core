@@ -103,6 +103,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
     {
         //two extra methods to be able to handle the language dynamically
         String getTitleFor(Locale lang);
+
         String getSubTitleFor(Locale lang);
     }
 
@@ -144,7 +145,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
             //Note: this will most likely be called from a AJAX call from the admin interface;
             // meaning we want to know the values matching the current resource/url, so use the referer language to generate the title
             //(although the value will probably be used, but we still might incorporate the title in the page html somewhere too...)
-            return this.getTitleFor(R.i18nFactory().getOptimalRefererLocale());
+            return this.getTitleFor(R.i18n().getOptimalRefererLocale());
         }
         @Override
         public String getTitleFor(Locale lang)
@@ -165,28 +166,41 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
 
     public class PropertiesEnumSuggestion extends SimpleEnumSuggestion
     {
-        private MessagesFileEntry title;
+        protected MessagesFileEntry title;
+        protected ConstantsFileEntry value;
 
-        public PropertiesEnumSuggestion(MessagesFileEntry entry)
+        public PropertiesEnumSuggestion()
         {
-            this(entry, null);
+            this(null, null);
+        }
+        public PropertiesEnumSuggestion(MessagesFileEntry title)
+        {
+            this(title, null);
         }
         public PropertiesEnumSuggestion(MessagesFileEntry title, ConstantsFileEntry value)
         {
             this.title = title;
-            this.value = value == null ? null : value.getValue();
+            this.value = value;
         }
 
         //check out the constructors above: if the value is null, we're supposed to take the title instead
         @Override
         public String getValue()
         {
-            return value != null ? value : this.getTitle();
+            return this.value != null ? this.value.getValue() : this.getTitle();
+        }
+        @Override
+        public String getTitle()
+        {
+            //Note: this will most likely be called from a AJAX call from the admin interface;
+            // meaning we want to know the values matching the current resource/url, so use the referer language to generate the title
+            //(although the value will probably be used, but we still might incorporate the title in the page html somewhere too...)
+            return this.getTitleFor(R.i18n().getOptimalRefererLocale());
         }
         @Override
         public String getTitleFor(Locale lang)
         {
-            return this.title == null ? null : com.beligum.base.i18n.I18nFactory.instance().getResourceBundle(lang).get(this.title);
+            return this.title == null ? null : this.title.toString(lang);
         }
     }
 
