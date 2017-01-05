@@ -45,7 +45,7 @@ public class ResourceUriDirective extends Directive
             //Note that this directive is only activated when fingerprinting is enabled and the resource endpoint is non-static,
             //if we need to post-parse URIs for other uses, please change the code in HtmlParser
             String uriStr = (String) uriArg.value(context);
-            writer.write(R.resourceFactory().getFingerprinter().fingerprintUri(uriStr));
+            writer.write(R.resourceManager().getFingerprinter().fingerprintUri(uriStr));
         }
 
         return true;

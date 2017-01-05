@@ -4,7 +4,6 @@ import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.common.XAResourceProducer;
 import ch.qos.logback.classic.Level;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
@@ -39,8 +38,6 @@ public class ServerStartStopListener implements ServerLifecycleListener
     public void onServerStarted(Server server, Container container)
     {
         if (Settings.instance().hasBlocksCoreConfig()) {
-            //let all .html files pass through our HtmlParser
-            R.resourceFactory().registerParser(Resource.MimeType.HTML, new HtmlParser());
 
             //the Jericho logger is quite verbose with error messages when it comes to parsing our Velocity-annotated html tags,
             //so let's disable it's logger in any other level than debug mode

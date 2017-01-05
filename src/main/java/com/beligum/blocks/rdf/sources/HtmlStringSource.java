@@ -19,7 +19,7 @@ public class HtmlStringSource extends HtmlSource
     {
         super(sourceAddress);
 
-        this.document = Jsoup.parse(html, this.getSourceAddress().toString());
+        this.document = Jsoup.parse(html, this.getUri().toString());
 
         this.initDocument();
     }

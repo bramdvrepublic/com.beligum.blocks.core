@@ -39,8 +39,7 @@ public class Settings
     private static final String PAGES_DEFAULT_INDEX_FOLDER = "index";
     private static final String PAGES_DEFAULT_JOURNAL_FOLDER = "journal";
     private static final String PAGES_DEFAULT_TRIPLESTORE_FOLDER = "triplestore";
-    //currently unused because it's configured through <system-properties> in base-core
-    private static final String PAGES_DEFAULT_TRANSACTIONS_FOLDER = "tx";
+    public static final String PAGES_DEFAULT_TRANSACTIONS_FOLDER = "tx";
     private static final String PAGES_DEFAULT_DATA_FOLDER = "data";
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
@@ -49,6 +48,7 @@ public class Settings
 
     private static Settings instance;
     private URI cachedContextLocalRootDir;
+    private Boolean cachedDeleteLocksOnStartup;
     private URI cachedRdfOntologyUri;
     private boolean triedRdfOntologyUri;
     private URI cachedPagesStorePath;
@@ -185,7 +185,15 @@ public class Settings
     }
     public boolean getDeleteLocksOnStartup()
     {
-        return R.configuration().getBoolean("blocks.core.pages.delete-locks-on-startup", true);
+        if (this.cachedDeleteLocksOnStartup==null) {
+            this.cachedDeleteLocksOnStartup = R.configuration().getBoolean("blocks.core.resources.delete-locks-on-startup", true);
+        }
+
+        return this.cachedDeleteLocksOnStartup;
+    }
+    public URI getPagesRootPath()
+    {
+        return getLocalContextSubdir(CONTEXT_DEFAULT_PAGES_DIR, true);
     }
     public URI getPagesStorePath()
     {
@@ -203,7 +211,7 @@ public class Settings
                 this.cachedPagesStorePath = URI.create(dir);
             }
             else {
-                this.cachedPagesStorePath = this.getPagesRoot().resolve(PAGES_DEFAULT_DATA_FOLDER+"/");
+                this.cachedPagesStorePath = this.getPagesRootPath().resolve(PAGES_DEFAULT_DATA_FOLDER + "/");
             }
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
@@ -263,7 +271,7 @@ public class Settings
                 this.cachedPagesStoreJournalDir = URI.create(dir);
             }
             else {
-                this.cachedPagesStoreJournalDir = this.getPagesRoot().resolve(PAGES_DEFAULT_JOURNAL_FOLDER+"/");
+                this.cachedPagesStoreJournalDir = this.getPagesRootPath().resolve(PAGES_DEFAULT_JOURNAL_FOLDER + "/");
             }
         }
 
@@ -286,7 +294,7 @@ public class Settings
                 this.cachedPagesMainIndexDir = URI.create(dir);
             }
             else {
-                this.cachedPagesMainIndexDir = this.getPagesRoot().resolve(PAGES_DEFAULT_INDEX_FOLDER+"/");
+                this.cachedPagesMainIndexDir = this.getPagesRootPath().resolve(PAGES_DEFAULT_INDEX_FOLDER + "/");
             }
         }
 
@@ -308,7 +316,7 @@ public class Settings
                 this.cachedPagesTripleStoreDir = URI.create(dir);
             }
             else {
-                this.cachedPagesTripleStoreDir = this.getPagesRoot().resolve(PAGES_DEFAULT_TRIPLESTORE_FOLDER+"/");
+                this.cachedPagesTripleStoreDir = this.getPagesRootPath().resolve(PAGES_DEFAULT_TRIPLESTORE_FOLDER + "/");
             }
         }
 
@@ -393,8 +401,4 @@ public class Settings
     }
 
     //-----PRIVATE METHODS-----
-    private URI getPagesRoot()
-    {
-        return getLocalContextSubdir(CONTEXT_DEFAULT_PAGES_DIR, true);
-    }
 }

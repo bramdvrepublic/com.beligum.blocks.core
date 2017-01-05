@@ -1,7 +1,9 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.blocks.fs.HdfsResourcePath;
+import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.ResourceRepository;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.blocks.fs.logger.RdfLogWriter;
 import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
@@ -19,6 +21,7 @@ import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
 
 /**
  * This intermediate class handles all implementation-specific settings, except for the read-only/read-write details (see subclasses)
@@ -28,42 +31,48 @@ import java.net.URI;
 public abstract class DefaultPageImpl extends AbstractPage
 {
     //-----CONSTANTS-----
-    private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Resource.MimeType.HTML.getMimeType();
+    private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = RegisteredMimeType.HTML.getMimeType();
     //Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    private String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Resource.MimeType.HTML.getExtension();
+    private String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + RegisteredMimeType.HTML.getExtension();
 
     // See this for why we write in N-Triples:
     // https://jena.apache.org/documentation/io/rdf-output.html#n-triples-and-n-quads
     // "These provide the formats that are fastest to write, and data of any size can be output."
     // "They maximise the interoperability with other systems and are useful for database dumps."
     private Format PAGE_PROXY_RDF_FORMAT = Format.NTRIPLES;
-    private Resource.MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
+    private MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
     private String PAGE_PROXY_RDF_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + PAGE_PROXY_RDF_TYPE.getExtension();
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected DefaultPageImpl(URI publicUri, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPageImpl(ResourceRepository repository, ResourceRequest request, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
-        super(publicUri);
+        super(repository, request, fileContext);
 
-        this.postInit(fileSystemBaseUri, fileContext);
+        //this.init(fileSystemBaseUri, fileContext);
     }
-    protected DefaultPageImpl(Path relativeLocalFile, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPageImpl(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext, Path localStorage) throws IOException
     {
-        super(relativeLocalFile);
+        super(repository, uri, language, mimeType, allowEternalCaching, fileContext, localStorage);
 
-        this.postInit(fileSystemBaseUri, fileContext);
+        //this.init(fileSystemBaseUri, fileContext);
     }
-    protected void postInit(URI fileSystemBaseUri, FileContext fileContext) throws IOException
-    {
-        //Note: the root-relative is to remove the leading slash
-        URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.relativeStoragePath));
-
-        //here, we effectively attach a save-implementation to the disk location URI
-        this.resourcePath = new HdfsResourcePath(fileContext, resourceUri);
-    }
+//    protected DefaultPageImpl(Path relativeLocalFile, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+//    {
+//        super(relativeLocalFile);
+//
+//        this.init(fileSystemBaseUri, fileContext);
+//    }
+//    protected void init(URI fileSystemBaseUri, FileContext fileContext) throws IOException
+//    {
+//        //Note: the root-relative is to remove the leading slash
+//        URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.getLocalStoragePath()));
+//
+//        //here, we effectively attach a save-implementation to the disk location URI
+//        this.resourcePath = new HdfsResourcePath(fileContext, resourceUri);
+//    }
 
     //-----PUBLIC METHODS-----
     @Override
@@ -84,22 +93,22 @@ public abstract class DefaultPageImpl extends AbstractPage
     @Override
     public LogWriter createLogWriter() throws IOException
     {
-        return new RdfLogWriter(this.resourcePath);
+        return new RdfLogWriter(this);
     }
     @Override
     public MetadataWriter createMetadataWriter() throws IOException
     {
-        return new EBUCoreHdfsMetadataWriter(this.resourcePath.getFileContext());
+        return new EBUCoreHdfsMetadataWriter(this.getFileContext());
     }
     @Override
     public Path getNormalizedPageProxyPath()
     {
-        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+        return new Path(this.getProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
     }
     @Override
     public Path getRdfExportFile()
     {
-        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_RDF_TYPE.getMimeType()), PAGE_PROXY_RDF_FILE_NAME);
+        return new Path(this.getProxyFolder(PAGE_PROXY_RDF_TYPE.getMimeType()), PAGE_PROXY_RDF_FILE_NAME);
     }
     @Override
     public Format getRdfExportFileFormat()

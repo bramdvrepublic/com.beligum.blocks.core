@@ -22,7 +22,7 @@ import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.SimplePageStore;
-import com.beligum.blocks.fs.pages.ifaces.PageStore;
+import com.beligum.base.resources.ifaces.ResourceWriter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
@@ -70,16 +70,16 @@ public class StorageFactory
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public static PageStore getPageStore() throws IOException
+    public static ResourceWriter getPageStore() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
-            PageStore pageStore = new SimplePageStore();
-            pageStore.init();
+            ResourceWriter resourceWriter = new SimplePageStore();
+            resourceWriter.init();
 
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, pageStore);
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, resourceWriter);
         }
 
-        return (PageStore) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
+        return (ResourceWriter) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
     }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
@@ -124,9 +124,12 @@ public class StorageFactory
                 //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
 
                 //bitronix
-                //TODO this doesn't work because Hibernate picks up Bitronix during starup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
+                //This doesn't work because Hibernate picks up Bitronix during starup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
                 //workaround is to create a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
+                //or to set the JVM system properties.
+                //DONE: this is implemented now, see BlocksSystemPropertyFactory
                 //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+
                 TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
 
                 //Register our custom producer
@@ -139,8 +142,9 @@ public class StorageFactory
                 // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
                 //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
                 //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
-                //TODO fix above so we can reactivate the setting
+                //Fix above so we can reactivate the setting
                 //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
+                //DONE: this is implemented now, see BlocksSystemPropertyFactory
                 //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
 
                 //tweak the log level if we're using atomikos

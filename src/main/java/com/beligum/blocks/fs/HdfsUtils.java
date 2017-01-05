@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.blocks.fs.hdfs.HadoopBasicFileAttributes;
-import com.beligum.blocks.fs.ifaces.Constants;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -11,10 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.util.EnumSet;
 
@@ -42,36 +39,6 @@ public class HdfsUtils
         }
 
         return retVal;
-    }
-    public static void recursiveDeleteLockFiles(FileContext fs, Path path) throws IOException
-    {
-        HdfsUtils.walkFileTree(fs, path, new SimpleFileVisitor<Path>()
-        {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-            {
-                return this.process(fs, file);
-            }
-            @Override
-            public FileVisitResult preVisitDirectory(Path file, BasicFileAttributes attrs) throws IOException
-            {
-                return this.process(fs, file);
-            }
-
-            private FileVisitResult process(FileContext fileContext, Path path) throws IOException
-            {
-                FileVisitResult retVal = FileVisitResult.CONTINUE;
-
-                Path lockFile = HdfsResourcePath.createLockPath(path);
-                if (lockFile!=null) {
-                    if (fs.util().exists(lockFile)) {
-                        fs.delete(lockFile, false);
-                    }
-                }
-
-                return retVal;
-            }
-        });
     }
     /**
      * Basic implementation of a recursive, depth-first file visitor for HDFS paths,
@@ -170,7 +137,7 @@ public class HdfsUtils
 
         Path p = localPath;
         while (p != null && !retVal) {
-            if (p.getName().startsWith(Constants.META_FOLDER_PREFIX)) {
+            if (p.getName().startsWith(BlocksResource.META_FOLDER_PREFIX)) {
                 retVal = true;
             }
             p = p.getParent();

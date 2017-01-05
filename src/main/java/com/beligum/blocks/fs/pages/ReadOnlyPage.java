@@ -1,11 +1,11 @@
 package com.beligum.blocks.fs.pages;
 
+import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * Created by bram on 5/2/16.
@@ -17,14 +17,14 @@ public class ReadOnlyPage extends DefaultPageImpl
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public ReadOnlyPage(URI publicUri) throws IOException
+    public ReadOnlyPage(ResourceRequest request, ResourceRepository repository) throws IOException
     {
-        super(publicUri, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
+        super(repository, request, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
     }
-    public ReadOnlyPage(Path relativeLocalFile) throws IOException
-    {
-        super(relativeLocalFile, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
-    }
+    //    public ReadOnlyPage(Path relativeLocalFile) throws IOException
+//    {
+//        super(relativeLocalFile, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
+//    }
 
     //-----PUBLIC METHODS-----
 

@@ -55,8 +55,8 @@
 //    @Override
 //    public Model importDocument(Source source) throws IOException
 //    {
-//        try (InputStream is = source.openNewInputStream()) {
-//            return this.readToModel(is, source.getSourceAddress(), this.inputFormat);
+//        try (InputStream is = source.newInputStream()) {
+//            return this.readToModel(is, source.getUri(), this.inputFormat);
 //        }
 //    }
 //    @Override

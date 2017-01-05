@@ -2,7 +2,7 @@ package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.blocks.rdf.importers.semargl.SesameRDFaParser;
 import org.openrdf.model.Model;
 import org.openrdf.model.impl.LinkedHashModel;
@@ -36,8 +36,8 @@ public class SesameImporter extends AbstractImporter
     @Override
     public Model importDocument(Source source) throws IOException
     {
-        try (InputStream is = source.openNewInputStream()) {
-            return this.parseInputStream(is, source.getSourceAddress());
+        try (InputStream is = source.newInputStream()) {
+            return this.parseInputStream(is, source.getUri());
         }
         catch (Exception e) {
             //when an exception is thrown, it's very handy to have the html source code, so add it to the exception

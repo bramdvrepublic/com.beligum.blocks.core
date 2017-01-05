@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.logger.ifaces;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -31,7 +31,7 @@ public interface LogWriter extends AutoCloseable
     interface Entry
     {
         Instant getUTCTimestamp();
-        com.beligum.base.auth.models.Person getCreator();
+        com.beligum.base.models.Person getCreator();
     }
     abstract class AbstractEntry implements Entry
     {

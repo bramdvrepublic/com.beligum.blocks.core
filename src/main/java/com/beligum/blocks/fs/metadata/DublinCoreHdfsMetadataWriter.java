@@ -1,8 +1,8 @@
 package com.beligum.blocks.fs.metadata;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 import com.beligum.base.config.CoreConfiguration;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ElementContainer;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ObjectFactory;
 import org.apache.hadoop.fs.CreateFlag;
@@ -40,9 +40,9 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(ResourcePath resourcePath) throws IOException
+    public void open(BlocksResource blocksResource) throws IOException
     {
-        super.open(resourcePath);
+        super.open(blocksResource);
 
         //read in the existing metadata if it exists, or create a new instance if it doesn't
         if (fileSystem.util().exists(this.baseMetadataFile)) {

@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.pages.ifaces;
 
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
@@ -17,9 +17,13 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
+ * This is a wrapper for the general concept of a HTML page in the blocks system.
+ * Note that compared to the concept of a Resource (from the base system), this interface doesn't say anything
+ * about the local storage details of this page. See getResource() for those details.
+ *
  * Created by bram on 1/14/16.
  */
-public interface Page
+public interface Page extends BlocksResource
 {
     /**
      * Returns the most naked form of this page; eg. stripped from all language params, it's file storage extension (or directory dummy filename, etc).
@@ -74,8 +78,9 @@ public interface Page
 
     /**
      * Creates a new html (stream) source based on the rendered normalized html on disk.
+     * @param parse set to true if you want the normalized html be pulled through the template engine or false to read the raw normalized html
      */
-    HtmlSource readNormalizedHtml() throws IOException;
+    HtmlSource readNormalizedHtml(boolean parse) throws IOException;
 
     /**
      * Create the log writer for this page to write to the "LOG" file in the meta dot folder.
@@ -108,12 +113,6 @@ public interface Page
      * @return
      */
     Format getRdfExportFileFormat();
-
-    /**
-     * Returns the path (and all other info) to the local resource file on disk.
-     * @return
-     */
-    ResourcePath getResourcePath();
 
     /**
      * Reads the RDF model from disk to a memory graph.

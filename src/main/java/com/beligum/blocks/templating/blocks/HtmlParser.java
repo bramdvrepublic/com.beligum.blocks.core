@@ -1,11 +1,10 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
-import com.beligum.base.resources.ResourceRequestImpl;
-import com.beligum.base.resources.SizedInputStreamImpl;
-import com.beligum.base.resources.ifaces.Parser;
+import com.beligum.base.resources.SizedInputStream;
+import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.ResourceParser;
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.resources.ifaces.SizedInputStream;
 import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -31,6 +30,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static com.beligum.base.resources.RegisteredMimeType.HTML;
+
 /**
  * Created by bram on 5/16/15.
  * <p/>
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
  * <p>
  * Note: the reverse of this class is com.beligum.blocks.templating.blocks.HtmlAnalyzer
  */
-public class HtmlParser implements Parser, UriDetector.ReplaceCallback
+public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 {
     //-----CONSTANTS-----
     private static final String NEWLINE = "\n";
@@ -152,10 +153,10 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
             }
 
             if (R.configuration().getResourceConfig().getMinifyResources()) {
-                retVal = new SizedInputStreamImpl(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
+                retVal = new SizedInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
             }
             else {
-                retVal = new SizedInputStreamImpl(sb.toString());
+                retVal = new SizedInputStream(sb.toString());
             }
         }
         catch (Exception e) {
@@ -165,10 +166,17 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
         return retVal;
     }
     @Override
-    public Resource.MimeType getParsedMimeType(Resource resource)
+    public MimeType[] getSupportedMimeTypes()
+    {
+        return new MimeType[] {
+                        HTML
+        };
+    }
+    @Override
+    public MimeType getParsedMimeType(Resource resource)
     {
         //FIXME maybe this should be VELOCITY instead?
-        return Resource.MimeType.HTML;
+        return HTML;
     }
     private OutputDocument processResource(Resource resource, Source source) throws Exception
     {
@@ -216,14 +224,14 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
                             if (!StringUtils.isEmpty(val)) {
                                 //Note: by pulling the URI string through the UriBuilder parser, we get a chance to straighten invalid URIs
                                 // eg. replace all spaces with %20 and so on...
-                                retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().getFingerprinter().processUri(UriBuilder.fromUri(val).build().toString(), this) + "\"");
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().processUri(UriBuilder.fromUri(val).build().toString(), this) + "\"");
                             }
                         }
                         else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
                             //note that we can't check for spaces here, let's just hope for the best...
                             if (!StringUtils.isEmpty(val)) {
                                 //sadly, we can't use our extra validation step here, so make sure all uris are valid ;-)
-                                retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().getFingerprinter().processUris(val, this) + "\"");
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().processUris(val, this) + "\"");
                             }
                         }
                     }
@@ -242,9 +250,9 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
 //        //if not, we'll wrap the URI in a directive to re-parse it on every request.
 //        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
 //        //if that would change, we must wipe this optimization step
-//        ResourceResolver resourceResolver = R.resourceFactory().getResourceEndpointFor(uriStr);
-//        if (resourceResolver != null && resourceResolver.isStatic()) {
-//            retVal = R.resourceFactory().fingerprintUri(uriStr);
+//        ResourceResolver resourceResolver = R.resourceManager().getResourceEndpointFor(uriStr);
+//        if (resourceResolver != null && resourceResolver.isImmutable()) {
+//            retVal = R.resourceManager().fingerprintUri(uriStr);
 //        }
 //
 //        //this means we'll postpone the processing of the URI to the render phase, just wrap it in our directive
@@ -427,15 +435,17 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
             }
         }
 
-        //Note: this is the new and improved version of the code below, but it's still not optimal:
-        // we should refactor the way the HtmlTemplates are handled, especially, this is probably not the place to look up
-        // the resource here...
-        Resource htmlTemplateResource = R.resourceFactory().get(new ResourceRequestImpl(URI.create(htmlTemplate.getRelativePath().toString())));
+        //Note: this is the new and improved version of the code below
+        Resource htmlTemplateResource = R.resourceManager().get(URI.create(htmlTemplate.getRelativePath().toString()));
         if (htmlTemplateResource == null) {
             throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. " + htmlTemplate.getRelativePath());
         }
-        resource.addChild(htmlTemplateResource);
+        else {
+            //wire both resources together
+            resource.addChild(htmlTemplateResource);
+        }
 
+        //inline the resource into the builder
         try (InputStream is = htmlTemplateResource.newInputStream()) {
             builder.append(IOUtils.toString(is));
         }
@@ -597,6 +607,10 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
 
         return retVal.toString();
     }
+    public static void flushTemplateCache()
+    {
+        R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
+    }
     public static TemplateCache getTemplateCache()
     {
         TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
@@ -612,19 +626,6 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
 
         return retVal;
     }
-    //    public void resetTemplateCache() throws IOException
-    //    {
-    //        //needed for the html files, because they're not postprocessed in the ResouceManager and changes are not detected throug the hash system
-    //        Parser htmlParser = R.resourceFactory().getParserFor(Resource.MimeType.HTML);
-    //        for (HtmlTemplate htmlTemplate : HtmlParser.getTemplateCache().values()) {
-    //            Path cacheFile = this.getCacheFile(htmlTemplate.getAbsolutePath());
-    //            if (cacheFile != null) {
-    //                Files.deleteIfExists(cacheFile);
-    //            }
-    //        }
-    //
-    //        R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
-    //    }
 
     //-----PROTECTED METHODS-----
 
@@ -806,7 +807,7 @@ public class HtmlParser implements Parser, UriDetector.ReplaceCallback
         templateCache.clear();
 
         List<ClasspathSearchResult> htmlFiles = new ArrayList<>();
-        htmlFiles.addAll(R.resourceFactory().getClasspathHelper().searchResourceGlob("/imports/**.{html,htm}"));
+        htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/imports/**.{html,htm}"));
 
         // first, we'll keep a reference to all the templates with the same name in the path
         // they're returned priority-first, so the parents and grandparents will end up deepest in the list

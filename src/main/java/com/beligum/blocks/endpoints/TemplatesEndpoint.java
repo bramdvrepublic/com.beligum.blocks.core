@@ -1,7 +1,6 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.endpoints.AssetsEndpoint;
-import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.RegisteredMimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -38,7 +37,7 @@ public class TemplatesEndpoint
     @Path("/styles/imports/reset.css")
     public Response getResources()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Resource.MimeType.CSS.getMimeType().toString()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), RegisteredMimeType.CSS.getMimeType().toString()).build();
     }
 
     @GET
@@ -46,7 +45,7 @@ public class TemplatesEndpoint
     @Path("/scripts/imports/all.js")
     public Response getImportsArray()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Resource.MimeType.JAVASCRIPT.getMimeType().toString()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), RegisteredMimeType.JAVASCRIPT.getMimeType().toString()).build();
     }
 
     /**
@@ -58,13 +57,12 @@ public class TemplatesEndpoint
      */
     @GET
     @Path("/{name: .*}")
-    public Response getTemplate(@Context final UriInfo uriInfo,
-                                @PathParam("name") String name) throws Exception
+    public Resource getTemplate(@Context final UriInfo uriInfo, @PathParam("name") String name)
     {
         //SECURITY (both the prefix and the normalize)
         final String resourcePath = "/templates/" + FilenameUtils.normalize(name);
         URI requestUri = UriBuilder.fromUri(uriInfo.getRequestUri()).replacePath(resourcePath).build();
 
-        return AssetsEndpoint.streamResource(R.resourceFactory().get(new ResourceRequestImpl(requestUri)));
+        return R.resourceManager().get(requestUri);
     }
 }

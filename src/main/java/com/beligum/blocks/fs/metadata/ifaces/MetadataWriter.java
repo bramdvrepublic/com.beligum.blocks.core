@@ -1,8 +1,8 @@
 package com.beligum.blocks.fs.metadata.ifaces;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 import com.beligum.base.config.CoreConfiguration;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 
 import java.io.IOException;
 
@@ -14,10 +14,10 @@ public interface MetadataWriter<T> extends AutoCloseable
     /**
      * Read the medatadata file; create it if it doesn't exist or read in the existing metadata if it does.
      *
-     * @param resourcePath
+     * @param blocksResource
      * @throws IOException
      */
-    void open(ResourcePath resourcePath) throws IOException;
+    void open(BlocksResource blocksResource) throws IOException;
 
     void updateSchemaData() throws IOException;
 

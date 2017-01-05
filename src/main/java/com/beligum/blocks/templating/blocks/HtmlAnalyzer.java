@@ -109,7 +109,7 @@ public class HtmlAnalyzer
      */
     private void analyze(HtmlSource htmlSource) throws IOException
     {
-        try (InputStream is = htmlSource.openNewInputStream()) {
+        try (InputStream is = htmlSource.newInputStream()) {
             this.htmlDocument = new Source(is);
         }
 

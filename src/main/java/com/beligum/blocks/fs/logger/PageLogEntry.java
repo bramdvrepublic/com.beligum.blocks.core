@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.logger;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 

@@ -1,10 +1,9 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 import com.beligum.base.auth.repositories.PersonRepository;
-import com.beligum.base.resources.ResourceFactory;
-import com.beligum.base.resources.ResourceRequestImpl;
-import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
@@ -14,9 +13,8 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.FullPathGlobFilter;
 import com.beligum.blocks.fs.pages.PageIterator;
-import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.fs.pages.ifaces.PageStore;
+import com.beligum.base.resources.ifaces.ResourceWriter;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.security.Permissions;
@@ -185,7 +183,7 @@ public class PageEndpoint
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
-        Template block = R.templateEngine().getNewTemplate(new ResourceRequestImpl(URI.create(htmlTemplate.getTemplateName()), Resource.MimeType.HTML), htmlTemplate.createNewHtmlInstance());
+        Template block = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(URI.create(htmlTemplate.getTemplateName()), htmlTemplate.createNewHtmlInstance(), RegisteredMimeType.HTML)));
         block.render(blockHtml);
 
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), blockHtml.toString());
@@ -225,8 +223,8 @@ public class PageEndpoint
                 getTriplestoreIndexer().connect().update(savedPage);
 
                 //make sure we evict all possible cached values (mainly in production)
-                R.resourceFactory().wipeCacheFor(savedPage.getPublicAbsoluteAddress());
-                R.resourceFactory().wipeCacheFor(savedPage.getPublicRelativeAddress());
+                R.resourceManager().expire(savedPage.getPublicAbsoluteAddress());
+                R.resourceManager().expire(savedPage.getPublicRelativeAddress());
             }
         }
         //TODO this is just for debugging weird issues -> throw away when found
@@ -251,8 +249,7 @@ public class PageEndpoint
                           getMainPageIndexer().connect(),
                           getTriplestoreIndexer().connect(),
                           new PersonRepository().get(Authentication.getCurrentPrincipal()),
-                          R.resourceFactory(),
-                          new ReadOnlyPage(URI.create(uri)));
+                          R.resourceManager().get(URI.create(uri), Page.class));
 
         return Response.ok().build();
     }
@@ -265,19 +262,19 @@ public class PageEndpoint
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePageAndTranslations(String uri) throws Exception
     {
-        PageStore pageStore = getPageStore();
+        ResourceWriter resourceWriter = getPageStore();
         PageIndexConnection mainPageIndexer = getMainPageIndexer().connect();
         PageIndexConnection triplestoreIndexer = getTriplestoreIndexer().connect();
         Person currentPrincipal = new PersonRepository().get(Authentication.getCurrentPrincipal());
 
-        Page page = new ReadOnlyPage(URI.create(uri));
+        Page page = R.resourceManager().get(URI.create(uri), Page.class);
 
         //first, delete the translations, then delete the first one
         for (Map.Entry<Locale, Page> e : page.getTranslations().entrySet()) {
-            this.doDeletePage(pageStore, mainPageIndexer, triplestoreIndexer, currentPrincipal, R.resourceFactory(), e.getValue());
+            this.doDeletePage(resourceWriter, mainPageIndexer, triplestoreIndexer, currentPrincipal, e.getValue());
         }
 
-        this.doDeletePage(pageStore, mainPageIndexer, triplestoreIndexer, currentPrincipal, R.resourceFactory(), page);
+        this.doDeletePage(resourceWriter, mainPageIndexer, triplestoreIndexer, currentPrincipal, page);
 
         return Response.ok().build();
     }
@@ -454,10 +451,10 @@ public class PageEndpoint
 
         return retVal;
     }
-    private void doDeletePage(PageStore pageStore, PageIndexConnection mainPageIndexer, PageIndexConnection triplestoreIndexer, Person currentPrincipal, ResourceFactory resourceFactory, Page page) throws IOException
+    private void doDeletePage(ResourceWriter resourceWriter, PageIndexConnection mainPageIndexer, PageIndexConnection triplestoreIndexer, Person currentPrincipal, Page page) throws IOException
     {
         //fist delete the page on disk, then delete all indexes
-        Page deletedPage = pageStore.delete(page.getPublicAbsoluteAddress(), currentPrincipal);
+        Page deletedPage = resourceWriter.delete(page.getPublicAbsoluteAddress(), currentPrincipal);
 
         //above method returns null if nothing changed
         if (deletedPage != null) {
@@ -465,8 +462,8 @@ public class PageEndpoint
             triplestoreIndexer.delete(deletedPage);
 
             //make sure we evict all possible cached values (mainly in production)
-            resourceFactory.wipeCacheFor(deletedPage.getPublicAbsoluteAddress());
-            resourceFactory.wipeCacheFor(deletedPage.getPublicRelativeAddress());
+            R.resourceManager().expire(deletedPage.getPublicAbsoluteAddress());
+            R.resourceManager().expire(deletedPage.getPublicRelativeAddress());
         }
     }
 
@@ -490,7 +487,7 @@ public class PageEndpoint
             this.filter = filter;
             this.depth = depth;
 
-            this.startStamp = new Date().getTime();
+            this.startStamp = System.currentTimeMillis();
             //reset a possibly active global cancellation
             this.cancel = false;
         }

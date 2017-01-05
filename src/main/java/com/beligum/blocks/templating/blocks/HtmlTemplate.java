@@ -1,8 +1,8 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
-import com.beligum.base.resources.ResourceRequestImpl;
-import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
@@ -529,12 +529,12 @@ public abstract class HtmlTemplate
 //            if (attrValue != null) {
 //                //validate the URI
 //                String uriStr = UriBuilder.fromUri(attrValue).build().toString();
-//                ResourceResolver resourceResolver = R.resourceFactory().getResourceEndpointFor(uriStr);
+//                ResourceResolver resourceResolver = R.resourceManager().getResourceEndpointFor(uriStr);
 //                if (resourceResolver != null) {
 //                    //if the resource is static (won't change anymore), we might as well calculate it's fingerprint now
-//                    if (resourceResolver.isStatic()) {
+//                    if (resourceResolver.isImmutable()) {
 //                        //first, replace the attribute value
-//                        attrValue = R.resourceFactory().fingerprintUri(uriStr);
+//                        attrValue = R.resourceManager().fingerprintUri(uriStr);
 //
 //                        //but also replace the attribute in the element itself
 //                        Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
@@ -573,15 +573,16 @@ public abstract class HtmlTemplate
      */
     private Element renderResourceElement(Element element) throws IOException
     {
+        Element retVal = null;
+
         //this allows us to use velocity variables in the resource URLs
-        Element parsedElement = null;
-        Template template = R.templateEngine().getNewTemplate(new ResourceRequestImpl(URI.create(this.getTemplateName()), Resource.MimeType.HTML), element.toString());
+        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), RegisteredMimeType.HTML)));
         try (StringWriter sw = new StringWriter()) {
             template.render(sw);
-            parsedElement = new Source(sw.toString()).getFirstElement();
+            retVal = new Source(sw.toString()).getFirstElement();
         }
 
-        return parsedElement;
+        return retVal;
     }
     private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements,
                                                         String attribute)

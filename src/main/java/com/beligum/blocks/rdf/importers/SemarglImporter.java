@@ -32,7 +32,7 @@
 //    public Model importDocument(Source source) throws IOException
 //    {
 //        Model model = ModelFactory.createDefaultModel();
-//        try (InputStream is = source.openNewInputStream()) {
+//        try (InputStream is = source.newInputStream()) {
 //            model.read(is, source.getBaseUri().toString(), this.translateFormat(this.inputFormat));
 //        }
 //

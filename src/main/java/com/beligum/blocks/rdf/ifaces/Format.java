@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.ifaces.MimeType;
 
 /**
  * Created by bram on 2/20/16.
@@ -8,22 +9,22 @@ import com.beligum.base.resources.ifaces.Resource;
 public enum Format
 {
     //-----CONSTANTS-----
-    RDFA(Resource.MimeType.HTML),
-    JSONLD(Resource.MimeType.JSONLD),
-    NTRIPLES(Resource.MimeType.NTRIPLES)
+    RDFA(RegisteredMimeType.HTML),
+    JSONLD(RegisteredMimeType.JSONLD),
+    NTRIPLES(RegisteredMimeType.NTRIPLES)
     ;
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    private final Resource.MimeType mimeType;
-    Format(Resource.MimeType mimeType)
+    private final MimeType mimeType;
+    Format(MimeType mimeType)
     {
         this.mimeType = mimeType;
     }
 
     //-----PUBLIC METHODS-----
-    public Resource.MimeType getMimeType()
+    public MimeType getMimeType()
     {
         return mimeType;
     }

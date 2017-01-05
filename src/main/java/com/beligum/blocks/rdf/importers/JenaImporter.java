@@ -32,8 +32,8 @@
 //    @Override
 //    public Model importDocument(Source source) throws IOException
 //    {
-//        try (InputStream is = source.openNewInputStream()) {
-//            return this.parseInputStream(is, source.getSourceAddress());
+//        try (InputStream is = source.newInputStream()) {
+//            return this.parseInputStream(is, source.getUri());
 //        }
 //        catch (Exception e) {
 //            //when an exception is thrown, it's very handy to have the html source code, so add it to the exception

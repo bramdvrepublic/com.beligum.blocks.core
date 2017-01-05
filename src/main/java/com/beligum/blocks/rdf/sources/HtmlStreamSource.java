@@ -60,6 +60,6 @@ public class HtmlStreamSource extends HtmlSource
     //-----PRIVATE METHODS-----
     private void construct(URI sourceAddress, InputStream stream) throws IOException
     {
-        this.document = Jsoup.parse(stream, null, this.getSourceAddress().toString());
+        this.document = Jsoup.parse(stream, null, this.getUri().toString());
     }
 }

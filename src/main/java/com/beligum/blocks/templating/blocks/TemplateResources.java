@@ -228,7 +228,7 @@ public class TemplateResources
         {
             if (!this.fingerprintedElement && this.dynamic) {
                 boolean same = this.value.equals(this.element);
-                this.element = R.resourceFactory().getFingerprinter().fingerprintUris(this.element);
+                this.element = R.resourceManager().getFingerprinter().fingerprintUris(this.element);
 
                 this.fingerprintedElement = true;
                 if (same) {
@@ -241,7 +241,7 @@ public class TemplateResources
         {
             if (!this.fingerprintedValue && this.dynamic) {
                 boolean same = this.value.equals(this.element);
-                this.value = R.resourceFactory().getFingerprinter().fingerprintUris(this.value);
+                this.value = R.resourceManager().getFingerprinter().fingerprintUris(this.value);
 
                 this.fingerprintedValue = true;
                 if (same) {

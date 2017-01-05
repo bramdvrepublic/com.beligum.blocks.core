@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.endpoints.AbstractUsersEndpoint;
 import com.beligum.base.auth.models.DefaultSubject;
-import com.beligum.base.models.ifaces.Subject;
+import com.beligum.base.models.Subject;
 import com.beligum.base.routing.ifaces.ReverseRoute;
 import gen.com.beligum.blocks.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;

@@ -1,5 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.base.resources.ifaces.Source;
 import org.openrdf.model.Model;
 
 import java.io.IOException;

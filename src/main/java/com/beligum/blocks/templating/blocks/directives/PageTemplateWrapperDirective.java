@@ -314,7 +314,7 @@ public class PageTemplateWrapperDirective extends Directive
         }
 
         //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
-        return this.inlineResource(R.resourceFactory().getResource(uri.toString()), res.getType(), sb, accumulator);
+        return this.inlineResource(R.resourceManager().getResource(uri.toString()), res.getType(), sb, accumulator);
     }
     private boolean inlineResource(Resource resource, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
     {
@@ -335,7 +335,7 @@ public class PageTemplateWrapperDirective extends Directive
                 //this is especiallly handy when using font-packs!
                 if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
                     if (type == externalStyles || type == externalScripts) {
-                        content = R.resourceFactory().getFingerprinter().fingerprintUris(content);
+                        content = R.resourceManager().getFingerprinter().fingerprintUris(content);
                     }
                 }
 

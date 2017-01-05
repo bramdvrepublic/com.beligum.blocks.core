@@ -1,8 +1,7 @@
 package com.beligum.blocks.fs.logger;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
@@ -51,9 +50,9 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     private RDFWriter rdfWriter;
 
     //-----CONSTRUCTORS-----
-    public RdfLogWriter(ResourcePath resourcePath) throws IOException
+    public RdfLogWriter(BlocksResource blocksResource) throws IOException
     {
-        super(resourcePath);
+        super(blocksResource);
 
         this.rdfWriter = Rio.createWriter(RDFFormat.NTRIPLES, this.logWriter);
         this.rdfWriter.startRDF();
@@ -85,7 +84,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         }
 
         //this heading matches the filenames of the HISTORY folder entries
-        String timestampStr = Constants.FOLDER_TIMESTAMP_FORMAT.format(pageEntry.getUTCTimestamp());
+        String timestampStr = BlocksResource.FOLDER_TIMESTAMP_FORMAT.format(pageEntry.getUTCTimestamp());
         String startComment = "----- " + timestampStr + " -----";
         rdfWriter.handleComment(startComment);
 
@@ -94,7 +93,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         this.logStatement(entryId, Terms.subject, pageEntry.getPage().getPublicAbsoluteAddress());
         this.logStatement(entryId, Terms.title, "Log entry "+timestampStr+" for page "+pageEntry.getPage().getPublicAbsoluteAddress()+"", Locale.ENGLISH);
         this.logStatement(entryId, Terms.description, "Page " + pageEntry.getPage().getPublicAbsoluteAddress() + " was " + pageEntry.getAction().getVerb() + " by " + creatorName + " on " +
-                                                      ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), Constants.FOLDER_TIMESTAMP_TIMEZONE).format(DateTimeFormatter.RFC_1123_DATE_TIME), Locale.ENGLISH);
+                                                      ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), BlocksResource.FOLDER_TIMESTAMP_TIMEZONE).format(DateTimeFormatter.RFC_1123_DATE_TIME), Locale.ENGLISH);
         this.logStatement(entryId, Terms.createdAt, pageEntry.getUTCTimestamp());
         this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
 
@@ -148,7 +147,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     {
         //we need custom conversion to log everything in UTC format
         GregorianCalendar c = new GregorianCalendar();
-        c.setTimeZone(TimeZone.getTimeZone(Constants.FOLDER_TIMESTAMP_TIMEZONE));
+        c.setTimeZone(TimeZone.getTimeZone(BlocksResource.FOLDER_TIMESTAMP_TIMEZONE));
         c.setTime(Date.from(instant));
         return RDF_FACTORY.createLiteral(DATATYPE_FACTORY.newXMLGregorianCalendar(c));
     }

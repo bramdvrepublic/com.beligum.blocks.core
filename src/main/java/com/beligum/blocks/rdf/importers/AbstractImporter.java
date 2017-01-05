@@ -120,7 +120,7 @@ public abstract class AbstractImporter implements Importer
                     URI subject = URI.create(stmt.getSubject().stringValue());
                     MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(subject);
                     if (queryParams!=null && queryParams.containsKey(I18nFactory.LANG_QUERY_PARAM)) {
-                        URI noLangUri = UriBuilder.fromUri(subject).replaceQueryParam(I18nFactory.LANG_QUERY_PARAM, null).build();
+                        URI noLangUri = UriBuilder.fromUri(subject).replaceQueryParam(I18nFactory.LANG_QUERY_PARAM).build();
                         newSubject = factory.createIRI(noLangUri.toString());
                     }
                 }

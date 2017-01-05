@@ -1,7 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.resources.ifaces.Parser;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.validation.messages.DefaultFeedbackMessage;
@@ -44,17 +42,11 @@ public class AdminEndpoint
     {
         switch (type) {
             case RESET_TEMPLATES:
-                Parser htmlParser = R.resourceFactory().getParserFor(Resource.MimeType.HTML);
-                if (htmlParser instanceof HtmlParser) {
-                    //((HtmlParser) htmlParser).resetTemplateCache();
+                HtmlParser.flushTemplateCache();
+                //we might as well load it immediately; easier for debugging
+                HtmlParser.getTemplateCache();
 
-                    //we might as well load it immediately; easier for debugging (note that it's a static function)
-                    HtmlParser.getTemplateCache();
-                    R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "Template cache reset successfully"));
-                }
-                else {
-                    throw new IOException("Found a HTML parser that's not a HtmlParse; this shouldn't happen" + htmlParser);
-                }
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "Template cache reset successfully"));
 
                 break;
 

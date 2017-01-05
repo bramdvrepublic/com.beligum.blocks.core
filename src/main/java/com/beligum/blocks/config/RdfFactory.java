@@ -142,8 +142,8 @@ public class RdfFactory
     public static void assertInitialized()
     {
         if (!initialized) {
-            Set<Class<?>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class);
-            for (Class<?> c : resourceFactories) {
+            Set<Class<? extends RdfResourceFactory>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true);
+            for (Class<? extends RdfResourceFactory> c : resourceFactories) {
                 try {
                     c.newInstance();
                 }

@@ -9,7 +9,6 @@ import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
@@ -158,8 +157,8 @@ public class BreadcrumbController extends DefaultTemplateController
             }
             else {
                 //note: this is null proof
-                Page parentPage = new ReadOnlyPage(pageUri);
-                if (fc.util().exists(parentPage.getResourcePath().getLocalPath())) {
+                Page parentPage = R.resourceManager().get(pageUri, Page.class);
+                if (fc.util().exists(parentPage.getLocalStoragePath())) {
                     retVal = parentUri;
                 }
                 else {

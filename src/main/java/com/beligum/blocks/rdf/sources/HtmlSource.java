@@ -1,24 +1,24 @@
 package com.beligum.blocks.rdf.sources;
 
+import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.SizedInputStream;
+import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.FileContext;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Created by bram on 1/23/16.
  */
-public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
+public abstract class HtmlSource implements Source
 {
     //-----CONSTANTS-----
     public static final String HTML_ROOT_LANG_ATTR = "lang";
@@ -64,9 +64,36 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getSourceAddress()
+    public URI getUri()
     {
         return sourceAddress;
+    }
+    /**
+     * Note that by default this will return _X_HTML
+     */
+    @Override
+    public SizedInputStream newInputStream() throws IOException
+    {
+        return new SizedInputStream(this.toXHtmlString(), this.document.charset());
+    }
+    /**
+     * Note this always returns -1 because we only render out the HTML document lazily in newInputStream() (where it's size is correctly filled in)
+     * @return
+     */
+    @Override
+    public long getSize() throws IOException
+    {
+        return -1;
+    }
+    @Override
+    public String getMimeType()
+    {
+        return getRegisteredMimeType().toString();
+    }
+    @Override
+    public MimeType getRegisteredMimeType()
+    {
+        return RegisteredMimeType.HTML;
     }
     /**
      * This does the required (html-universal) processing before writing it to disk.
@@ -78,7 +105,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
      * - clean up the the code
      */
     @Override
-    public void prepareForSaving(FileContext fileContext) throws IOException
+    public void prepareForSaving() throws IOException
     {
         // actually, the html tag can have both the @lang and the @xml:lang attribute.
         // See https://www.w3.org/TR/html-rdfa/#specifying-the-language-for-a-literal
@@ -94,7 +121,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         this.escapeMode = Entities.EscapeMode.xhtml;
 
         //NOTE that the search for the base resource uses the language set in the previous code, so make sure this comes after it
-        this.updateBaseAttributes(fileContext, this.htmlTag);
+        this.updateBaseAttributes(this.htmlTag);
 
         //make the input html a bit more uniform
         this.document.outputSettings().prettyPrint(true);
@@ -103,7 +130,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         this.htmlAnalyzer = null;
     }
     @Override
-    public void prepareForCopying(FileContext fileContext) throws IOException
+    public void prepareForCopying() throws IOException
     {
         //We'll remove all attributes we know so the new page doesn't have
         // any backreferences to the old page we're copying from.
@@ -115,24 +142,16 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         this.htmlTag.removeAttr(HTML_ROOT_TYPEOF_ATTR);
         this.htmlTag.removeAttr(HTML_ROOT_VOCAB_ATTR);
     }
-    /**
-     * Note that by default this will return _X_HTML
-     */
-    @Override
-    public InputStream openNewInputStream() throws IOException
-    {
-        return this.openNewXHtmlInputStream();
-    }
-    public InputStream openNewHtmlInputStream() throws IOException
-    {
-        return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml().getBytes(this.document.charset()));
-    }
-    public InputStream openNewXHtmlInputStream() throws IOException
-    {
-        return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml().getBytes(this.document.charset()));
-    }
 
     //-----HTMl-ONLY PUBLIC METHODS-----
+    public String toHtmlString()
+    {
+        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml();
+    }
+    public String toXHtmlString()
+    {
+        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml();
+    }
     public String getNormalizedHtml() throws IOException
     {
         return this.getHtmlAnalyzer().getNormalizedHtml();
@@ -156,7 +175,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         // - the document must contain a <html> tag
         Elements htmlTags = this.document.getElementsByTag("html");
         if (htmlTags.isEmpty()) {
-            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getSourceAddress());
+            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getUri());
         }
         else {
             this.htmlTag = htmlTags.first();
@@ -180,7 +199,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
         return this.htmlAnalyzer;
     }
-    private void updateBaseAttributes(FileContext fileContext, Element htmlTag) throws IOException
+    private void updateBaseAttributes(Element htmlTag) throws IOException
     {
         String subjectAttr = htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
         String typeofAttr = htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
@@ -202,7 +221,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
             // If we don't have a resourceId, we check if this page is the translation of another page
             // by looking up other files by exchanging the (possible) language-part in the url.
-            HtmlAnalyzer translationAnalyzer = this.findTranslationAnalyzer(fileContext);
+            HtmlAnalyzer translationAnalyzer = this.findTranslationAnalyzer();
             if (translationAnalyzer != null) {
                 newResource = URI.create(translationAnalyzer.getHtmlAbout().value);
 
@@ -243,7 +262,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             //this happens when we create a new page (or resource) but the resource already exists (in another language)
             else {
                 //this will happen if typeofAttr is not empty (thus was supplied during first save), so the
-                if (newTypeOf==null && !typeofAttr.isEmpty()) {
+                if (newTypeOf == null && !typeofAttr.isEmpty()) {
                     newTypeOf = URI.create(typeofAttr);
                 }
             }
@@ -263,21 +282,20 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             //TODO ideally, this should set the other prefixes too..., but it's more complex...
         }
     }
-    private HtmlAnalyzer findTranslationAnalyzer(FileContext fileContext) throws IOException
+    private HtmlAnalyzer findTranslationAnalyzer() throws IOException
     {
         HtmlAnalyzer retVal = null;
 
-        Locale thisLang = R.i18n().getUrlLocale(this.getSourceAddress());
+        Locale thisLang = R.i18n().getUrlLocale(this.getUri());
         Map<String, Locale> siteLanguages = R.configuration().getLanguages();
         for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
             Locale lang = l.getValue();
             //we're searching for a translation, not the same language
             if (!lang.equals(thisLang)) {
-                UriBuilder translatedUri = UriBuilder.fromUri(this.getSourceAddress());
-                if (R.i18n().getUrlLocale(this.getSourceAddress(), translatedUri, lang) != null) {
-                    URI transPagePublicUri = translatedUri.build();
-                    Page transPage = new ReadOnlyPage(transPagePublicUri);
-                    if (fileContext.util().exists(transPage.getResourcePath().getLocalPath())) {
+                UriBuilder translatedUri = UriBuilder.fromUri(this.getUri());
+                if (R.i18n().getUrlLocale(this.getUri(), translatedUri, lang) != null) {
+                    Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
+                    if (transPage != null) {
                         HtmlAnalyzer analyzer = transPage.createAnalyzer();
                         HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlAbout();
                         if (transPageResource != null) {
@@ -298,7 +316,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     {
         Document.OutputSettings retVal = doc.outputSettings().indentAmount(0).prettyPrint(false);
 
-        if (this.escapeMode!=null) {
+        if (this.escapeMode != null) {
             retVal.escapeMode(this.escapeMode);
         }
 

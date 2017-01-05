@@ -1,8 +1,8 @@
 package com.beligum.blocks.fs.metadata;
 
-import com.beligum.base.auth.models.Person;
+import com.beligum.base.models.Person;
 import com.beligum.base.config.CoreConfiguration;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
@@ -56,9 +56,9 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(ResourcePath resourcePath) throws IOException
+    public void open(BlocksResource blocksResource) throws IOException
     {
-        super.open(resourcePath);
+        super.open(blocksResource);
 
         //read in the existing metadata if it exists, or create a new instance if it doesn't
         if (fileSystem.util().exists(this.baseMetadataFile)) {

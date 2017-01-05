@@ -53,7 +53,7 @@ public class PageIterator implements Iterator<Page>
 
         try {
             Page next = this.doNext();
-            if (next!=null) {
+            if (next != null) {
                 this.precomputedNext = next;
                 retVal = true;
             }
@@ -70,7 +70,7 @@ public class PageIterator implements Iterator<Page>
         Page retVal = null;
 
         try {
-            if (this.precomputedNext!=null) {
+            if (this.precomputedNext != null) {
                 retVal = this.precomputedNext;
                 this.precomputedNext = null;
             }
@@ -92,20 +92,20 @@ public class PageIterator implements Iterator<Page>
     {
         Page retVal = null;
 
-        while (retVal==null && this.fileIter.hasNext() && this.keepRunning) {
+        while (retVal == null && this.fileIter.hasNext() && this.keepRunning) {
             LocatedFileStatus next = this.fileIter.next();
             Path nextPath = next.getPath();
 
             //we build a relative path from the absolute path to be able to mimic a page request
             Path nextPathRelative = new Path(HdfsUtils.ROOT.resolve(this.rootFolder.toUri().relativize(nextPath.toUri())));
 
-            if (this.filter!=null && !this.filter.accept(nextPathRelative)) {
+            if (this.filter != null && !this.filter.accept(nextPathRelative)) {
                 //signal the next if to skip this cause the filter is set, but doesn't match
-                Logger.warn("Reindexing: skipping "+nextPathRelative+" because it doesn't match the filter ("+this.filter.getPattern()+")");
+                Logger.warn("Page iterator: skipping " + nextPathRelative + " because it doesn't match the filter (" + this.filter.getPattern() + ")");
                 nextPathRelative = null;
             }
 
-            if (nextPathRelative!=null) {
+            if (nextPathRelative != null) {
                 //will throw an exception otherwise..
                 if (nextPathRelative.getName().endsWith(Settings.instance().getPagesFileExtension())) {
                     retVal = this.readOnly ? new ReadOnlyPage(nextPathRelative) : new ReadWritePage(nextPathRelative);

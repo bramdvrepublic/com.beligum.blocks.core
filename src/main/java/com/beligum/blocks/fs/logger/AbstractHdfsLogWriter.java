@@ -2,7 +2,7 @@ package com.beligum.blocks.fs.logger;
 
 import com.beligum.base.config.CoreConfiguration;
 import com.beligum.base.server.R;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.ifaces.BlocksResource;
 import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
@@ -23,14 +23,14 @@ public abstract class AbstractHdfsLogWriter implements LogWriter
 
     //-----VARIABLES-----
     //valid during an entire session
-    protected ResourcePath resourcePath;
+    protected BlocksResource blocksResource;
     protected Writer logWriter;
 
     //-----CONSTRUCTORS-----
-    protected AbstractHdfsLogWriter(ResourcePath resourcePath) throws IOException
+    protected AbstractHdfsLogWriter(BlocksResource blocksResource) throws IOException
     {
-        this.resourcePath = resourcePath;
-        this.logWriter = new BufferedWriter(new OutputStreamWriter(this.resourcePath.getFileContext().create(this.resourcePath.getMetaLogFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND), Options.CreateOpts.createParent())));
+        this.blocksResource = blocksResource;
+        this.logWriter = new BufferedWriter(new OutputStreamWriter(this.blocksResource.getFileContext().create(this.blocksResource.getLogFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND), Options.CreateOpts.createParent())));
     }
 
     //-----PUBLIC METHODS-----
@@ -54,7 +54,7 @@ public abstract class AbstractHdfsLogWriter implements LogWriter
         String artifactId = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_ARTIFACT_ID_KEY);
         String version = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_VERSION_KEY);
         if (StringUtils.isEmpty(artifactId)) {
-            throw new IOException("Encountered an empty mvn artifactId; that shouldn't happen; "+this.resourcePath);
+            throw new IOException("Encountered an empty mvn artifactId; that shouldn't happen; "+this.blocksResource);
         }
         else {
             if (!StringUtils.isEmpty(version)) {
