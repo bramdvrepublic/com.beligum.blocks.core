@@ -1,23 +1,17 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.resources.RegisteredMimeType;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
-import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.AbstractBlocksResource;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.sources.HtmlSource;
-import com.beligum.blocks.rdf.sources.HtmlStreamSource;
-import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -26,8 +20,6 @@ import org.openrdf.model.Model;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -64,9 +56,19 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //After some super-preparsing, we need to do our own page-related post-parsing
         this.init(fileContext, this.getUri());
     }
-    protected AbstractPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStorage)
+    protected AbstractPage(Resource resource, FileContext fileContext) throws IOException
     {
-        super(repository, uri, language, mimeType, allowEternalCaching, fileContext, localStorage);
+        super(resource);
+
+        //After some super-preparsing, we need to do our own page-related post-parsing
+        this.init(fileContext, this.getUri());
+    }
+    protected AbstractPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext) throws IOException
+    {
+        super(repository, uri, language, mimeType, allowEternalCaching);
+
+        //After some super-preparsing, we need to do our own page-related post-parsing
+        this.init(fileContext, this.getUri());
     }
     //    protected AbstractPage(Path relativeLocalFile) throws IOException
     //    {
@@ -113,7 +115,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         return this.language;
     }
     @Override
-    public URI getPublicAbsoluteAddress() throws IOException
+    public URI getPublicAbsoluteAddress()
     {
         if (!this.checkedAbsoluteAddress) {
             //Note: the relative-root removed the leading slash, allowing us to let siteDomain have a prefix path (which is unlikely, but still)
@@ -142,7 +144,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         return this.cachedAbsoluteAddress;
     }
     @Override
-    public URI getPublicRelativeAddress() throws IOException
+    public URI getPublicRelativeAddress()
     {
         if (!this.checkedRelativeAddress) {
             //note that getPublicAbsoluteAddress() uses the siteDomain setting to generate it's absolute URL,
@@ -152,38 +154,6 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         }
 
         return this.cachedRelativeAddress;
-    }
-    @Override
-    public HtmlSource readOriginalHtml() throws IOException
-    {
-        try (InputStream is = this.getFileContext().open(this.getLocalStoragePath())) {
-            return new HtmlStreamSource(this.getPublicAbsoluteAddress(), is);
-        }
-    }
-    @Override
-    public HtmlSource readNormalizedHtml(boolean parse) throws IOException
-    {
-        HtmlSource retVal = null;
-
-        try (InputStream is = this.getFileContext().open(this.getNormalizedPageProxyPath())) {
-            if (parse) {
-                //we need to pull the normalized html through the template engine for this to work
-                Resource resource = R.resourceManager().create(new StringSource(this.getNormalizedPageProxyPath().toUri(), IOUtils.toString(is), RegisteredMimeType.HTML));
-
-                //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
-                Writer writer = new StringWriter();
-
-                //we need to pull the normalized html through the template engine for this to work
-                R.templateEngine().getNewTemplate(resource).render(writer);
-
-                retVal = new HtmlStringSource(this.getPublicAbsoluteAddress(), writer.toString());
-            }
-            else {
-                retVal = new HtmlStringSource(this.getPublicAbsoluteAddress(), IOUtils.toString(is));
-            }
-        }
-
-        return retVal;
     }
     @Override
     public Model readRdfModel() throws IOException

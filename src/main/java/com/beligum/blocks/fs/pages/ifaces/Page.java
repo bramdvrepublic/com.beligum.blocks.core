@@ -6,7 +6,6 @@ import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
 import org.openrdf.model.Model;
@@ -34,20 +33,14 @@ public interface Page extends BlocksResource
     URI getCanonicalAddress();
 
     /**
-     * Returns the language of this page, as extracted (and stripped) during creation. May be null, if no such value was present during creation (eg. /this/page)
-     * or the used language was unsupported with the current site language settings (eg. /xx/this/page)
-     */
-    Locale getLanguage();
-
-    /**
      * returns the public, full (domain-prefixed) URL of this page, based on the relative path name of this page on the server.
      */
-    URI getPublicAbsoluteAddress() throws IOException;
+    URI getPublicAbsoluteAddress();
 
     /**
      * returns the public, relative (so without domain) URL of this page, based on the relative path name of this page on the server.
      */
-    URI getPublicRelativeAddress() throws IOException;
+    URI getPublicRelativeAddress();
 
     /**
      * Creates the semantic importer for this kind of page (currently an RDFa processor)
@@ -70,17 +63,6 @@ public interface Page extends BlocksResource
      * @throws IOException
      */
     HtmlAnalyzer createAnalyzer() throws IOException;
-
-    /**
-     * Creates a new html (stream) source based on the stored original file on disk.
-     */
-    HtmlSource readOriginalHtml() throws IOException;
-
-    /**
-     * Creates a new html (stream) source based on the rendered normalized html on disk.
-     * @param parse set to true if you want the normalized html be pulled through the template engine or false to read the raw normalized html
-     */
-    HtmlSource readNormalizedHtml(boolean parse) throws IOException;
 
     /**
      * Create the log writer for this page to write to the "LOG" file in the meta dot folder.

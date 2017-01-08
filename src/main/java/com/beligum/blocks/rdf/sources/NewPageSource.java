@@ -1,8 +1,5 @@
 package com.beligum.blocks.rdf.sources;
 
-import com.beligum.base.resources.RegisteredMimeType;
-import com.beligum.base.resources.SizedInputStream;
-import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
@@ -11,90 +8,47 @@ import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
-import org.apache.commons.lang3.StringUtils;
-import org.jsoup.nodes.Document;
+import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
-import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
 
 /**
- * Created by bram on 1/23/16.
+ * Created by bram on 1/8/17.
  */
-public abstract class HtmlSource implements Source
+public class NewPageSource extends PageSource
 {
     //-----CONSTANTS-----
-    public static final String HTML_ROOT_LANG_ATTR = "lang";
-    /**
-     * Actually, it would be better to use an @about attribute here,
-     * but for our (current) uses, the effect is the same.
-     * (see remarks about @resource in https://www.w3.org/TR/rdfa-syntax/#typing-resources-with-typeof).
-     * However, I'm still not 100% convinced we should prefer @resource over @about for the
-     * main top-level subject statement. The main reason I'm going with @resource now is
-     * simplicity (eg. it's the only one of the two that's present in RDFa Lite).
-     * --> End of discussion, switched to @about because it the right thing
-     */
-    public static final String HTML_ROOT_SUBJECT_ATTR = "about";
-    public static final String HTML_ROOT_TYPEOF_ATTR = "typeof";
-    public static final String HTML_ROOT_VOCAB_ATTR = "vocab";
-    public static final String HTML_ROOT_PREFIX_ATTR = "prefix";
-    public static final String HTML_TITLE_ELEMENT = "title";
 
     //-----VARIABLES-----
-    protected URI sourceAddress;
-    protected Document.OutputSettings documentOutputSettings;
-    protected Document document;
-    protected Element htmlTag;
-    protected HtmlAnalyzer htmlAnalyzer;
-    protected Entities.EscapeMode escapeMode;
 
     //-----CONSTRUCTORS-----
-    protected HtmlSource(URI sourceAddress) throws IOException
+    public NewPageSource(URI uri, String html) throws IOException
     {
-        this.sourceAddress = sourceAddress;
-        this.document = null;
-        this.htmlAnalyzer = null;
-        this.escapeMode = null;
+        super(uri, html);
+    }
+    public NewPageSource(URI uri, URI stream) throws IOException
+    {
+        super(uri, stream);
+    }
+    public NewPageSource(URI uri, InputStream html) throws IOException
+    {
+        super(uri, html);
+    }
+    public NewPageSource(Source source) throws IOException
+    {
+       super(source);
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public URI getUri()
-    {
-        return sourceAddress;
-    }
-    /**
-     * Note that by default this will return _X_HTML
-     */
-    @Override
-    public SizedInputStream newInputStream() throws IOException
-    {
-        return new SizedInputStream(this.toXHtmlString(), this.document.charset());
-    }
-    /**
-     * Note this always returns -1 because we only render out the HTML document lazily in newInputStream() (where it's size is correctly filled in)
-     * @return
-     */
-    @Override
-    public long getSize() throws IOException
-    {
-        return -1;
-    }
-    @Override
-    public String getMimeType()
-    {
-        return getRegisteredMimeType().toString();
-    }
-    @Override
-    public MimeType getRegisteredMimeType()
-    {
-        return RegisteredMimeType.HTML;
-    }
+
+    //-----PROTECTED METHODS-----
     /**
      * This does the required (html-universal) processing before writing it to disk.
      * For performance sake, try to call this method before invoking the getters below,
@@ -105,8 +59,10 @@ public abstract class HtmlSource implements Source
      * - clean up the the code
      */
     @Override
-    public void prepareForSaving() throws IOException
+    protected void parseHtml(InputStream source) throws IOException
     {
+        super.parseHtml(source);
+
         // actually, the html tag can have both the @lang and the @xml:lang attribute.
         // See https://www.w3.org/TR/html-rdfa/#specifying-the-language-for-a-literal
         // and (good example) https://www.w3.org/TR/rdfa-syntax/#language-tags
@@ -114,7 +70,8 @@ public abstract class HtmlSource implements Source
         // This is also interesting: https://www.w3.org/International/questions/qa-html-language-declarations
         // --> "Use the lang attribute for pages served as HTML, and the xml:lang attribute for pages served as XML."
         //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
-        this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18n().getOptimalLocale(this.sourceAddress).getLanguage());
+        this.language = R.i18n().getOptimalLocale(this.getUri());
+        this.htmlTag.attr(HTML_ROOT_LANG_ATTR, this.language.getLanguage());
 
         //Note: RDFa (or XML) doesn't support DTDs, so we need to replace the Entity Sets with their numeric counterparts
         // Eg. &nbsp; becomes &#160;
@@ -129,76 +86,8 @@ public abstract class HtmlSource implements Source
         //force a re-analyze (and hope it hasn't been analyzed yet)
         this.htmlAnalyzer = null;
     }
-    @Override
-    public void prepareForCopying() throws IOException
-    {
-        //We'll remove all attributes we know so the new page doesn't have
-        // any backreferences to the old page we're copying from.
-        //Note: we can't just delete all attributes because we eg. can't touch the page template attribute
-
-        this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_PREFIX_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_TYPEOF_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_VOCAB_ATTR);
-    }
-
-    //-----HTMl-ONLY PUBLIC METHODS-----
-    public String toHtmlString()
-    {
-        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml();
-    }
-    public String toXHtmlString()
-    {
-        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml();
-    }
-    public String getNormalizedHtml() throws IOException
-    {
-        return this.getHtmlAnalyzer().getNormalizedHtml();
-    }
-
-    //-----PROTECTED METHODS-----
-    protected void initDocument() throws IOException
-    {
-        if (this.document == null) {
-            throw new IOException("Can't prepare the html for saving without a document; this shouldn't happen");
-        }
-
-        // Clean the document (doesn't work because it strips the head out)
-        //Whitelist whitelist = Whitelist.relaxed();
-        //doc = new Cleaner(whitelist).clean(doc);
-
-        // Adjust escape mode
-        //doc.outputSettings().escapeMode(Entities.EscapeMode.base);
-
-        //some basic validation and preparsing to make sure we can apply all features later on.
-        // - the document must contain a <html> tag
-        Elements htmlTags = this.document.getElementsByTag("html");
-        if (htmlTags.isEmpty()) {
-            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getUri());
-        }
-        else {
-            this.htmlTag = htmlTags.first();
-        }
-
-        //we'll normalize everything to XHTML (this means the newInputStream will also return xhtml)
-        this.document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
-    }
 
     //-----PRIVATE METHODS-----
-    /**
-     * Lazy loaded html analyzer (that analyzes on first load)
-     *
-     * @return
-     */
-    private HtmlAnalyzer getHtmlAnalyzer() throws IOException
-    {
-        if (this.htmlAnalyzer == null) {
-            this.htmlAnalyzer = new HtmlAnalyzer(this);
-        }
-
-        return this.htmlAnalyzer;
-    }
     private void updateBaseAttributes(Element htmlTag) throws IOException
     {
         String subjectAttr = htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
@@ -250,10 +139,10 @@ public abstract class HtmlSource implements Source
 
                 //if the address of this page is already a resource url, we don't have to generate a new one, but just make it relative
                 // if not, we create a new resource URL, based on the typeof attribute
-                if (RdfTools.isResourceUrl(this.sourceAddress)) {
+                if (RdfTools.isResourceUrl(this.getUri())) {
                     //Note that this will chop off any query parameters (especially the lang param) too, which is expected behavior,
                     // because the resource should be the relative 'base' URI, without any languages, otherwise we'll have double results when using the SPARQL endpoint
-                    newResource = URI.create(this.sourceAddress.getPath());
+                    newResource = URI.create(this.getUri().getPath());
                 }
                 else {
                     newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
@@ -308,28 +197,5 @@ public abstract class HtmlSource implements Source
         }
 
         return retVal;
-    }
-    /**
-     * This allows us to trim the values when parsing RDFA html
-     */
-    private Document.OutputSettings buildNewStreamOutputSettings(Document doc)
-    {
-        Document.OutputSettings retVal = doc.outputSettings().indentAmount(0).prettyPrint(false);
-
-        if (this.escapeMode != null) {
-            retVal.escapeMode(this.escapeMode);
-        }
-
-        return retVal;
-    }
-
-    //-----MANAGEMENT METHODS-----
-    @Override
-    public String toString()
-    {
-        return "HtmlSource{" +
-               "baseUri=" + sourceAddress +
-               ", document=" + document +
-               '}';
     }
 }

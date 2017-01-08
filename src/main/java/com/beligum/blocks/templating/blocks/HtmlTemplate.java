@@ -576,7 +576,7 @@ public abstract class HtmlTemplate
         Element retVal = null;
 
         //this allows us to use velocity variables in the resource URLs
-        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), RegisteredMimeType.HTML)));
+        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), RegisteredMimeType.HTML, R.i18n().getOptimalLocale())));
         try (StringWriter sw = new StringWriter()) {
             template.render(sw);
             retVal = new Source(sw.toString()).getFirstElement();

@@ -10,9 +10,7 @@ import com.beligum.base.cache.HashMapCache;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.fs.hdfs.RequestTX;
-import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
-import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
+import com.beligum.blocks.fs.hdfs.*;
 import com.beligum.blocks.fs.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.fs.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.fs.index.LucenePageIndexer;
@@ -21,15 +19,11 @@ import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
-import com.beligum.blocks.fs.pages.SimplePageStore;
-import com.beligum.base.resources.ifaces.ResourceWriter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
-import org.apache.hadoop.fs.FsConstants;
-import org.apache.hadoop.fs.local.RawLocalFs;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
@@ -60,8 +54,8 @@ public class StorageFactory
     public static final Class<? extends AbstractFileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFS.class;
     public static final String DEFAULT_TX_FILESYSTEM_SCHEME = TransactionalRawLocalFileSystem.SCHEME;
 
-    public static final Class<? extends AbstractFileSystem> DEFAULT_PAGES_VIEW_FS = RawLocalFs.class;
-    public static final String DEFAULT_PAGES_VIEW_FS_SCHEME = FsConstants.LOCAL_FS_URI.getScheme();
+    public static final Class<? extends AbstractFileSystem> DEFAULT_PAGES_VIEW_FS = ReadOnlyRawLocalFS.class;
+    public static final String DEFAULT_PAGES_VIEW_FS_SCHEME = ReadOnlyRawLocalFileSystem.SCHEME;
 
     //-----VARIABLES-----
     private static final Object txManagerLock = new Object();
@@ -70,17 +64,6 @@ public class StorageFactory
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public static ResourceWriter getPageStore() throws IOException
-    {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
-            ResourceWriter resourceWriter = new SimplePageStore();
-            resourceWriter.init();
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, resourceWriter);
-        }
-
-        return (ResourceWriter) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
-    }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {

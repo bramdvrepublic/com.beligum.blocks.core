@@ -2,7 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.rdf.sources.HtmlSource;
+import com.beligum.blocks.rdf.sources.PageSource;
 import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +48,7 @@ public class HtmlAnalyzer
     private String title;
 
     //-----CONSTRUCTORS-----
-    public HtmlAnalyzer(HtmlSource htmlSource) throws IOException
+    public HtmlAnalyzer(com.beligum.base.resources.ifaces.Source pageSource) throws IOException
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
 
@@ -56,7 +56,7 @@ public class HtmlAnalyzer
         this.externalRefs = new HashMap<>();
         this.title = null;
 
-        this.analyze(htmlSource);
+        this.analyze(pageSource);
     }
 
     //-----PUBLIC METHODS-----
@@ -104,12 +104,12 @@ public class HtmlAnalyzer
      * Parses the incoming html string and stores all relevant structures in class variables,
      * to be retrieved later on by the getters below.
      *
-     * @param htmlSource
+     * @param pageSource
      * @throws IOException
      */
-    private void analyze(HtmlSource htmlSource) throws IOException
+    private void analyze(com.beligum.base.resources.ifaces.Source pageSource) throws IOException
     {
-        try (InputStream is = htmlSource.newInputStream()) {
+        try (InputStream is = pageSource.newInputStream()) {
             this.htmlDocument = new Source(is);
         }
 
@@ -129,9 +129,9 @@ public class HtmlAnalyzer
         //extract the base resource id
         Attributes htmlAttributes = htmlElement.getAttributes();
         String tempAttrValue;
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_SUBJECT_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_SUBJECT_ATTR))) {
+        if (htmlAttributes.get(PageSource.HTML_ROOT_SUBJECT_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(PageSource.HTML_ROOT_SUBJECT_ATTR))) {
             //note that the html tag is always part of the normalized html
-            this.htmlAbout = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_SUBJECT_ATTR), true);
+            this.htmlAbout = new AttributeRef(tempAttrValue, htmlAttributes.get(PageSource.HTML_ROOT_SUBJECT_ATTR), true);
         }
         else {
             //makes sense to allow null resources; it allows to use this analyzer more generally
@@ -139,34 +139,34 @@ public class HtmlAnalyzer
         }
 
         //extract the base typeof
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_TYPEOF_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_TYPEOF_ATTR))) {
+        if (htmlAttributes.get(PageSource.HTML_ROOT_TYPEOF_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(PageSource.HTML_ROOT_TYPEOF_ATTR))) {
             //note that the html tag is always part of the normalized html
-            this.htmlTypeof = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_TYPEOF_ATTR), true);
+            this.htmlTypeof = new AttributeRef(tempAttrValue, htmlAttributes.get(PageSource.HTML_ROOT_TYPEOF_ATTR), true);
         }
         else {
             this.htmlTypeof = null;
         }
 
         //extract the base vocab
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_VOCAB_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_VOCAB_ATTR))) {
+        if (htmlAttributes.get(PageSource.HTML_ROOT_VOCAB_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(PageSource.HTML_ROOT_VOCAB_ATTR))) {
             //note that the html tag is always part of the normalized html
-            this.htmlVocab = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_VOCAB_ATTR), true);
+            this.htmlVocab = new AttributeRef(tempAttrValue, htmlAttributes.get(PageSource.HTML_ROOT_VOCAB_ATTR), true);
         }
         else {
             this.htmlVocab = null;
         }
 
         //extract the base prefix
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_PREFIX_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_PREFIX_ATTR))) {
+        if (htmlAttributes.get(PageSource.HTML_ROOT_PREFIX_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(PageSource.HTML_ROOT_PREFIX_ATTR))) {
             //note that the html tag is always part of the normalized html
-            this.htmlPrefixes = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_PREFIX_ATTR), true);
+            this.htmlPrefixes = new AttributeRef(tempAttrValue, htmlAttributes.get(PageSource.HTML_ROOT_PREFIX_ATTR), true);
         }
         else {
             this.htmlPrefixes = null;
         }
 
         //extract and store the locale
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_LANG_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_LANG_ATTR))) {
+        if (htmlAttributes.get(PageSource.HTML_ROOT_LANG_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(PageSource.HTML_ROOT_LANG_ATTR))) {
             this.htmlLocale = Locale.forLanguageTag(tempAttrValue);
         }
         else {
@@ -329,7 +329,7 @@ public class HtmlAnalyzer
      */
     private void extractTitle(StartTag startTag)
     {
-         if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_TITLE_ELEMENT)) {
+         if (startTag.getName().equalsIgnoreCase(PageSource.HTML_TITLE_ELEMENT)) {
              this.title = startTag.getElement().getContent().toString();
              if (!StringUtils.isEmpty(this.title)) {
                  this.title = this.title.trim();

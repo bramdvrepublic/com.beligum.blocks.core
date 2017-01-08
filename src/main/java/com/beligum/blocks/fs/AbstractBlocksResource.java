@@ -2,6 +2,7 @@ package com.beligum.blocks.fs;
 
 import com.beligum.base.resources.SizedInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.mappers.AbstractResource;
@@ -10,7 +11,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.BlocksResource;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
@@ -18,10 +18,7 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.Locale;
@@ -47,16 +44,14 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     protected AbstractBlocksResource(ResourceRepository repository, ResourceRequest request) throws IOException
     {
         super(repository, request);
-
-        this.fileContext = null;
-        this.localStoragePath = null;
     }
-    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStorage)
+    protected AbstractBlocksResource(Resource resource) throws IOException
+    {
+        super(resource);
+    }
+    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching)
     {
         super(repository, uri, language, mimeType, allowEternalCaching);
-
-        this.fileContext = fileContext;
-        this.localStoragePath = localStorage;
     }
 
     //-----PUBLIC METHODS-----
@@ -147,26 +142,28 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     {
         String retVal = null;
 
-        Path storedHashFile = this.getHashFile();
-
         try {
+            Path storedHashFile = this.getHashFile();
+
+            //Note: this means we're responsible to update the content of the has file every time this resource changes!
             if (this.fileContext.util().exists(storedHashFile)) {
                 retVal = HdfsUtils.readFile(this.fileContext, storedHashFile);
+            }
+            else {
+                retVal = super.getHashChecksum();
+
+                //cache the hash if we support writing
+                if (this.isReadWrite() && retVal != null) {
+                    try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.getFileContext().create(storedHashFile,
+                                                                                                                EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
+                                                                                                                Options.CreateOpts.createParent())))) {
+                        writer.write(retVal);
+                    }
+                }
             }
         }
         catch (IOException e) {
             Logger.error("Caught exception while reading the stored hash file contents of " + this.getLocalStoragePath(), e);
-        }
-
-        return retVal;
-    }
-    @Override
-    public String calcChecksumHash() throws IOException
-    {
-        String retVal = null;
-
-        try (InputStream is = fileContext.open(localStoragePath)) {
-            retVal = calcHashChecksumFor(is);
         }
 
         return retVal;
@@ -252,26 +249,14 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         }
     }
     @Override
+    public boolean isReadWrite()
+    {
+        return false;
+    }
+    @Override
     public boolean isMetaFile_WeNeedToDeleteThisOne()
     {
         return HdfsUtils.isMetaPath(this.localStoragePath);
-    }
-
-    //-----UTILITY METHODS-----
-    public static String calcHashChecksumFor(InputStream is) throws IOException
-    {
-        //we want speed, not security (think large media files!)
-        //finally settled on MD5 to be compatible with eg. (possible) bash scripts, rsync, etc
-
-        //for speed (actually fletcher is probably faster..), acceptable collisions, but not really compatible with other scripts
-        //return calcAdler32Checksum(is);
-
-        //actually for crypto but broken, but fewer collisions than adler or fletcher,
-        //best interoperability though, and we chose it for this reason
-        return DigestUtils.md5Hex(is);
-
-        //too slow, only for cryptographic purposes, not for integrity check
-        //return DigestUtils.sha1Hex(is);
     }
 
     //-----PROTECTED METHODS-----
@@ -301,7 +286,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
             if (retVal == null) {
                 String mimeType = null;
                 //Note: the buffered input stream is needed for correct Mime detection !!
-                try (InputStream is = new BufferedInputStream(this.fileContext.open(this.localStoragePath))) {
+                try (InputStream is = new BufferedInputStream(this.newInputStream())) {
                     mimeType = FileFunctions.getMimeType(is, this.localStoragePath.getName());
                     newlyDetected = true;
                 }

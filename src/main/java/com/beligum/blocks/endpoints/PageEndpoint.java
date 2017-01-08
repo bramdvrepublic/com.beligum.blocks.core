@@ -1,8 +1,8 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.models.Person;
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
@@ -13,10 +13,10 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.FullPathGlobFilter;
 import com.beligum.blocks.fs.pages.PageIterator;
+import com.beligum.blocks.fs.pages.PageRepository;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.base.resources.ifaces.ResourceWriter;
-import com.beligum.blocks.rdf.sources.HtmlSource;
-import com.beligum.blocks.rdf.sources.HtmlStringSource;
+import com.beligum.blocks.rdf.sources.NewPageSource;
+import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -45,7 +45,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.beligum.blocks.config.StorageFactory.*;
+import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
+import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
@@ -183,7 +184,12 @@ public class PageEndpoint
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
-        Template block = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(URI.create(htmlTemplate.getTemplateName()), htmlTemplate.createNewHtmlInstance(), RegisteredMimeType.HTML)));
+        Template block = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(URI.create(htmlTemplate.getTemplateName()),
+                                                                                                       htmlTemplate.createNewHtmlInstance(),
+                                                                                                       RegisteredMimeType.HTML,
+                                                                                                       //since this is the value of the template context lang,
+                                                                                                       //it makes sense to create the string in the same lang
+                                                                                                       R.i18n().getOptimalLocale())));
         block.render(blockHtml);
 
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), blockHtml.toString());
@@ -206,33 +212,11 @@ public class PageEndpoint
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
-        try {
-            //for safety and uniformity
-            url = this.preprocessUri(url);
+        //this wraps and parses the raw data coming in
+        PageSource source = new NewPageSource(url, content);
 
-            //this just wraps the raw data coming in
-            HtmlSource source = new HtmlStringSource(url, content);
-
-            //save the file to disk and pull all the proxies etc
-            Page savedPage = getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
-
-            //above method returns null if nothing changed
-            if (savedPage != null) {
-                //Note: transaction handling is done through the global XA transaction
-                getMainPageIndexer().connect().update(savedPage);
-                getTriplestoreIndexer().connect().update(savedPage);
-
-                //make sure we evict all possible cached values (mainly in production)
-                R.resourceManager().expire(savedPage.getPublicAbsoluteAddress());
-                R.resourceManager().expire(savedPage.getPublicRelativeAddress());
-            }
-        }
-        //TODO this is just for debugging weird issues -> throw away when found
-        catch (Throwable e) {
-            final String delim = "---------------------------------------------------";
-            Logger.error("Caught error (and explicitly logging it) while saving page; "+url+"\n"+delim+"\n"+content+"\n"+delim, e);
-            throw e;
-        }
+        //save the file to disk and pull all the proxies etc
+        Page savedPage = R.resourceManager().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class);
 
         return Response.ok().build();
     }
@@ -245,11 +229,12 @@ public class PageEndpoint
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePage(String uri) throws Exception
     {
-        this.doDeletePage(getPageStore(),
-                          getMainPageIndexer().connect(),
-                          getTriplestoreIndexer().connect(),
-                          new PersonRepository().get(Authentication.getCurrentPrincipal()),
-                          R.resourceManager().get(URI.create(uri), Page.class));
+        Resource page = R.resourceManager().get(URI.create(uri));
+        if (page == null) {
+            throw new NotFoundException("Resource not found; " + uri);
+        }
+
+        R.resourceManager().delete(page, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class);
 
         return Response.ok().build();
     }
@@ -262,19 +247,12 @@ public class PageEndpoint
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePageAndTranslations(String uri) throws Exception
     {
-        ResourceWriter resourceWriter = getPageStore();
-        PageIndexConnection mainPageIndexer = getMainPageIndexer().connect();
-        PageIndexConnection triplestoreIndexer = getTriplestoreIndexer().connect();
-        Person currentPrincipal = new PersonRepository().get(Authentication.getCurrentPrincipal());
-
-        Page page = R.resourceManager().get(URI.create(uri), Page.class);
-
-        //first, delete the translations, then delete the first one
-        for (Map.Entry<Locale, Page> e : page.getTranslations().entrySet()) {
-            this.doDeletePage(resourceWriter, mainPageIndexer, triplestoreIndexer, currentPrincipal, e.getValue());
+        Resource page = R.resourceManager().get(URI.create(uri));
+        if (page == null) {
+            throw new NotFoundException("Resource not found; " + uri);
         }
 
-        this.doDeletePage(resourceWriter, mainPageIndexer, triplestoreIndexer, currentPrincipal, page);
+        R.resourceManager().delete(page, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class, PageRepository.PageDeleteOption.DELETE_ALL_TRANSLATIONS);
 
         return Response.ok().build();
     }
@@ -282,25 +260,21 @@ public class PageEndpoint
     @POST
     @javax.ws.rs.Path("/index")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response reindex(@QueryParam("url") URI url) throws Exception
+    public synchronized Response reindex(@QueryParam("url") URI uri) throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
         if (currentIndexAllThread == null) {
-            //for safety and uniformity
-            url = this.preprocessUri(url);
-
-            //note: read-only because we won't be changing the page, only the index
-            Page savedPage = getPageStore().get(url, true);
-
-            //above method returns null if nothing changed (so nothing to re-index)
-            if (savedPage != null) {
-                //Note: transaction handling is done through the global XA transaction
-                getMainPageIndexer().connect().update(savedPage);
-                getTriplestoreIndexer().connect().update(savedPage);
+            Page page = R.resourceManager().get(uri, Page.class);
+            if (page == null) {
+                throw new NotFoundException("Page not found; " + uri);
             }
 
-            retVal = Response.ok("Index of item successfull; " + url);
+            //Note: transaction handling is done through the global XA transaction
+            getMainPageIndexer().connect().update(page);
+            getTriplestoreIndexer().connect().update(page);
+
+            retVal = Response.ok("Index of item successfull; " + uri);
         }
         else {
             Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
@@ -364,7 +338,9 @@ public class PageEndpoint
         if (currentIndexAllThread == null) {
             //will register itself in the static variable
             new ReindexThread(start, size, folder, filter, depth).start();
-            retVal = Response.ok("Launched new reindexation thread with start " + start + ", size " + size + ", folder " + Arrays.toString(folder.toArray()) + ", filter " + filter + ", depth " + depth);
+            retVal =
+                            Response.ok("Launched new reindexation thread with start " + start + ", size " + size + ", folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
+                                        ", depth " + depth);
         }
         else {
             retVal = Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " +
@@ -412,21 +388,6 @@ public class PageEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private URI preprocessUri(URI url)
-    {
-        //avoid directory attacks
-        url = url.normalize();
-
-        //note that we need an absolute URI (eg. to have a correct root RDF context for Sesame),
-        // but we allow for relative URIs to be imported -> just make them absolute based on the current settings
-        if (!url.isAbsolute()) {
-            url = R.configuration().getSiteDomain().resolve(url);
-        }
-
-        //Note: domain checking is done in the AbstractPage constructor later on
-
-        return url;
-    }
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {
         String retVal = null;
@@ -450,21 +411,6 @@ public class PageEndpoint
         }
 
         return retVal;
-    }
-    private void doDeletePage(ResourceWriter resourceWriter, PageIndexConnection mainPageIndexer, PageIndexConnection triplestoreIndexer, Person currentPrincipal, Page page) throws IOException
-    {
-        //fist delete the page on disk, then delete all indexes
-        Page deletedPage = resourceWriter.delete(page.getPublicAbsoluteAddress(), currentPrincipal);
-
-        //above method returns null if nothing changed
-        if (deletedPage != null) {
-            mainPageIndexer.delete(deletedPage);
-            triplestoreIndexer.delete(deletedPage);
-
-            //make sure we evict all possible cached values (mainly in production)
-            R.resourceManager().expire(deletedPage.getPublicAbsoluteAddress());
-            R.resourceManager().expire(deletedPage.getPublicRelativeAddress());
-        }
     }
 
     private static class ReindexThread extends Thread
@@ -538,13 +484,14 @@ public class PageEndpoint
             boolean keepRunning = true;
 
             for (String folder : this.folders) {
-                Logger.info("Entering next folder "+folder);
+                Logger.info("Entering next folder " + folder);
 
                 FullPathGlobFilter pathFilter = null;
                 if (!StringUtils.isEmpty(filter)) {
                     pathFilter = new FullPathGlobFilter(filter);
                 }
-                this.pageIterator = getPageStore().getAll(true, folder, pathFilter, depth);
+                if (true) throw new IOException("Commented out, please check!");
+                //this.pageIterator = getPageStore().getAll(true, folder, pathFilter, depth);
 
                 //note: read-only because we won't be changing the page, only the index
                 while (pageIterator.hasNext() && keepRunning && !cancel) {

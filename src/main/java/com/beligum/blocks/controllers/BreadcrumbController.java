@@ -19,6 +19,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -158,6 +159,10 @@ public class BreadcrumbController extends DefaultTemplateController
             else {
                 //note: this is null proof
                 Page parentPage = R.resourceManager().get(pageUri, Page.class);
+                if (parentPage == null) {
+                    throw new NotFoundException("Resource not found; " + pageUri);
+                }
+
                 if (fc.util().exists(parentPage.getLocalStoragePath())) {
                     retVal = parentUri;
                 }

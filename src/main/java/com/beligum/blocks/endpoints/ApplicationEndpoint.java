@@ -18,8 +18,8 @@ import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
-import com.beligum.blocks.rdf.sources.HtmlSource;
-import com.beligum.blocks.rdf.sources.HtmlStringSource;
+import com.beligum.blocks.rdf.sources.PageSource;
+import com.beligum.blocks.rdf.sources.PageSourceCopy;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -108,7 +108,7 @@ public class ApplicationEndpoint
             //Note: this will throw an exception if the resource wasn't found
             Page page = R.resourceManager().get(requestedUri, Page.class);
 
-            if (page.exists()) {
+            if (page != null) {
 
                 Template template = R.templateEngine().getNewTemplate(page);
 
@@ -287,7 +287,7 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template newPageInstance = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), RegisteredMimeType.HTML)));
+                                        Template newPageInstance = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), RegisteredMimeType.HTML, optimalLocale)));
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -314,17 +314,14 @@ public class ApplicationEndpoint
                                         //we need to pull the normalized html through the template engine for this to work
                                         Template copyTemplate = R.templateEngine().getNewTemplate(copyPage);
 
-                                        //this is the reason we can't just use page.readNormalizedHtml()
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
 
                                         copyTemplate.render(writer);
 
-                                        HtmlSource html = new HtmlStringSource(copyPage.getPublicAbsoluteAddress(), writer.toString());
-                                        html.prepareForCopying();
-
                                         Template template = null;
+                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), writer.toString(), copyPage.getRegisteredMimeType(), copyPage.getLanguage()));
                                         try (InputStream is = html.newInputStream()) {
-                                            template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, IOUtils.toString(is), RegisteredMimeType.HTML)));
+                                            template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, IOUtils.toString(is), RegisteredMimeType.HTML, optimalLocale)));
                                         }
 
                                         //this will allow the blocks javascript/css to be included
@@ -353,7 +350,7 @@ public class ApplicationEndpoint
                                         Template newPageTemplateList = new_page.get().getNewTemplate();
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
-                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), page.getTranslations());
+                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.searchAllPageTranslations(requestedUri));
 
                                         //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.create, newPageTemplateList);
@@ -433,6 +430,23 @@ public class ApplicationEndpoint
         }
 
         Collections.sort(retVal, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
+
+        return retVal;
+    }
+    private Map<Locale, Page> searchAllPageTranslations(URI uri)
+    {
+        Map<Locale, Page> retVal = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Locale> l : R.configuration().getLanguages().entrySet()) {
+            Locale lang = l.getValue();
+            UriBuilder translatedUri = UriBuilder.fromUri(uri);
+            if (R.i18n().getUrlLocale(uri, translatedUri, lang) != null) {
+                Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
+                if (transPage != null) {
+                    retVal.put(lang, transPage);
+                }
+            }
+        }
 
         return retVal;
     }

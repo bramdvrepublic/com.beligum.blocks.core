@@ -53,9 +53,9 @@ public abstract class DefaultPageImpl extends AbstractPage
 
         //this.init(fileSystemBaseUri, fileContext);
     }
-    protected DefaultPageImpl(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext, Path localStorage) throws IOException
+    protected DefaultPageImpl(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
-        super(repository, uri, language, mimeType, allowEternalCaching, fileContext, localStorage);
+        super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
 
         //this.init(fileSystemBaseUri, fileContext);
     }
@@ -88,7 +88,7 @@ public abstract class DefaultPageImpl extends AbstractPage
     @Override
     public HtmlAnalyzer createAnalyzer() throws IOException
     {
-        return new HtmlAnalyzer(this.readOriginalHtml());
+        return new HtmlAnalyzer(this);
     }
     @Override
     public LogWriter createLogWriter() throws IOException

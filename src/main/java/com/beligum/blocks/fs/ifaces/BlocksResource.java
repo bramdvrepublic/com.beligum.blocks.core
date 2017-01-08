@@ -114,16 +114,6 @@ public interface BlocksResource extends HdfsResource
     Path getMetadataFolder();
 
     /**
-     * Reads and returns the stored checksum from the HASH file in the meta folder for the provided path (doesn't calculate anything) or null if it doesn't exists
-     */
-    String getHashChecksum();
-
-    /**
-     * (Re)calculate and return the hash checksum for the current state of this resource
-     */
-    String calcChecksumHash() throws IOException;
-
-    /**
      * Acquire a filesystem lock on this resource or throw an exception if it didn't succeed.
      */
     LockFile acquireLock() throws IOException;
@@ -137,6 +127,11 @@ public interface BlocksResource extends HdfsResource
      * Release (delete) the lock file on this resource or throw an exception if no such lock exists or if the release was unsuccessful
      */
     void releaseLockFile(LockFile lock) throws IOException;
+
+    /**
+     * @return true if this resource supports writing to it or false (default) if not
+     */
+    boolean isReadWrite();
 
     /**
      * Returns if this file is a metadata file or folder (somewhere in/down the metafolder tree of a media file)

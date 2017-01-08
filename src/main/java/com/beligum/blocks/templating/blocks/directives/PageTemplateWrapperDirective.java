@@ -314,7 +314,7 @@ public class PageTemplateWrapperDirective extends Directive
         }
 
         //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
-        return this.inlineResource(R.resourceManager().getResource(uri.toString()), res.getType(), sb, accumulator);
+        return this.inlineResource(R.resourceManager().get(uri), res.getType(), sb, accumulator);
     }
     private boolean inlineResource(Resource resource, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
     {

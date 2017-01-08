@@ -8,6 +8,7 @@ import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -63,6 +64,12 @@ public class TemplatesEndpoint
         final String resourcePath = "/templates/" + FilenameUtils.normalize(name);
         URI requestUri = UriBuilder.fromUri(uriInfo.getRequestUri()).replacePath(resourcePath).build();
 
-        return R.resourceManager().get(requestUri);
+        Resource resource = R.resourceManager().get(requestUri);
+        if (resource == null) {
+            throw new NotFoundException("Resource not found; " + requestUri);
+        }
+        else {
+            return resource;
+        }
     }
 }

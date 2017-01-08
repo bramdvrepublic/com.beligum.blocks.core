@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.ifaces.ResourceRepository;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 
@@ -17,7 +17,7 @@ public class ReadOnlyPage extends DefaultPageImpl
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public ReadOnlyPage(ResourceRequest request, ResourceRepository repository) throws IOException
+    public ReadOnlyPage(ResourceRepository repository, ResourceRequest request) throws IOException
     {
         super(repository, request, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
     }

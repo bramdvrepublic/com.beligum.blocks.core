@@ -17,8 +17,6 @@ public enum CacheKeys implements CacheKey
     HDFS_PAGESTORE_FS_CONFIG,
     //application cache key to store the configuration of the HDFS page read filesystem
     HDFS_PAGEVIEW_FS_CONFIG,
-    //application cache key to store the HDFS page store
-    HDFS_PAGE_STORE,
     //application cache key to store the main page indexer
     MAIN_PAGE_INDEX,
     //application cache key to store the triplestore page indexer

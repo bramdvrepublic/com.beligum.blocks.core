@@ -31,8 +31,8 @@ import java.util.Arrays;
 public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSystem /*RawLocalFileSystem*/
 {
     //-----CONSTANTS-----
-    public static final String SCHEME = "fileXA";
-    public static final URI NAME = URI.create(SCHEME + ":///");
+    public static final URI NAME = URI.create("fileXA:///");
+    public static final String SCHEME = NAME.getScheme();
 
     // Temporary workaround for HADOOP-9652.
     // Note: changed to false because it pulled in too much clutter dependencies and the consequences are acceptable to us;
