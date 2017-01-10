@@ -2,7 +2,6 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.ifaces.MimeType;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.server.R;
@@ -49,26 +48,19 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
      * Constructor that builds a page instance from a public request-URI,
      * handling all internal path specific translations
      */
-    protected AbstractPage(ResourceRepository repository, ResourceRequest request, FileContext fileContext) throws IOException
+    protected AbstractPage(ResourceRequest request, FileContext fileContext) throws IOException
     {
-        super(repository, request);
+        super(request, fileContext);
 
         //After some super-preparsing, we need to do our own page-related post-parsing
-        this.init(fileContext, this.getUri());
-    }
-    protected AbstractPage(Resource resource, FileContext fileContext) throws IOException
-    {
-        super(resource);
-
-        //After some super-preparsing, we need to do our own page-related post-parsing
-        this.init(fileContext, this.getUri());
+        this.init(this.getUri());
     }
     protected AbstractPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext) throws IOException
     {
-        super(repository, uri, language, mimeType, allowEternalCaching);
+        super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
 
         //After some super-preparsing, we need to do our own page-related post-parsing
-        this.init(fileContext, this.getUri());
+        this.init(this.getUri());
     }
     //    protected AbstractPage(Path relativeLocalFile) throws IOException
     //    {
@@ -199,10 +191,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     /**
      * Note: this will both set super.fileContext and super.localStoragePath
      */
-    private void init(FileContext fileContext, URI uri) throws IOException
+    private void init(URI uri) throws IOException
     {
-        this.fileContext = fileContext;
-
         //Note: the code below is meant to be used with an absolute public uri, so make sure it's uniform
         if (!uri.isAbsolute()) {
             uri = R.configuration().getSiteDomain().resolve(uri);

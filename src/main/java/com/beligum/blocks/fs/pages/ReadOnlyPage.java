@@ -1,6 +1,5 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
@@ -10,16 +9,16 @@ import java.io.IOException;
 /**
  * Created by bram on 5/2/16.
  */
-public class ReadOnlyPage extends DefaultPageImpl
+public class ReadOnlyPage extends DefaultPage
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public ReadOnlyPage(ResourceRepository repository, ResourceRequest request) throws IOException
+    public ReadOnlyPage(ResourceRequest request) throws IOException
     {
-        super(repository, request, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
+        super(request, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
     }
     //    public ReadOnlyPage(Path relativeLocalFile) throws IOException
 //    {

@@ -216,8 +216,8 @@ public class Settings
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
                 //make sure we have a schema
-                this.cachedPagesStorePath = URI.create(StorageFactory.DEFAULT_TX_FILESYSTEM_SCHEME + "://" + this.cachedPagesStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_TX_FILESYSTEM_SCHEME + "://' prefix to use the local transactional file system; " +
+                this.cachedPagesStorePath = URI.create(StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://" + this.cachedPagesStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://' prefix to use the local transactional file system; " +
                             this.cachedPagesStorePath.toString());
             }
         }
@@ -240,14 +240,14 @@ public class Settings
                 this.cachedPagesViewPath = URI.create(dir);
             }
             else {
-                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + ":" + this.getPagesStorePath().getSchemeSpecificPart());
+                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + ":" + this.getPagesStorePath().getSchemeSpecificPart());
                 Logger.warn("No pages view store path configured, trying to build a local view path based on the pages store path; " + this.cachedPagesViewPath);
             }
 
             //make sure we have a schema
             if (StringUtils.isEmpty(this.cachedPagesViewPath.getScheme())) {
-                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + "://" + this.cachedPagesViewPath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + "://' prefix to use the local file system; " +
+                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "://" + this.cachedPagesViewPath.toString());
+                Logger.warn("The view store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "://' prefix to use the local file system; " +
                             this.cachedPagesViewPath.toString());
             }
         }

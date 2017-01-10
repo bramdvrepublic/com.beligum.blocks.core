@@ -320,6 +320,9 @@
             <version>${semargl.version}</version>
         </dependency>
 
+        <!--
+            Note that this is a piece out of the pom.xml of the hadoop-hdfs-httpfs project
+        -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>

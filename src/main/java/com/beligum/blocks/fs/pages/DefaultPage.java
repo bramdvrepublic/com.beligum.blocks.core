@@ -24,11 +24,12 @@ import java.net.URI;
 import java.util.Locale;
 
 /**
- * This intermediate class handles all implementation-specific settings, except for the read-only/read-write details (see subclasses)
+ * This intermediate class handles all implementation-specific settings (mainly the serialization standard settings),
+ * except for the read-only/read-write details (see subclasses)
  *
  * Created by bram on 1/14/16.
  */
-public abstract class DefaultPageImpl extends AbstractPage
+public abstract class DefaultPage extends AbstractPage
 {
     //-----CONSTANTS-----
     private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = RegisteredMimeType.HTML.getMimeType();
@@ -47,13 +48,13 @@ public abstract class DefaultPageImpl extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected DefaultPageImpl(ResourceRepository repository, ResourceRequest request, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPage(ResourceRequest request, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
-        super(repository, request, fileContext);
+        super(request, fileContext);
 
         //this.init(fileSystemBaseUri, fileContext);
     }
-    protected DefaultPageImpl(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
         super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
 

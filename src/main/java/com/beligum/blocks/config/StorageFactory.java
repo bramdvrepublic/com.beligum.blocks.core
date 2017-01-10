@@ -21,8 +21,6 @@ import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.AbstractFileSystem;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
@@ -51,11 +49,8 @@ import static com.beligum.blocks.caching.CacheKeys.TX_FAKE_REQUEST_CACHE;
 public class StorageFactory
 {
     //-----CONSTANTS-----
-    public static final Class<? extends AbstractFileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFS.class;
-    public static final String DEFAULT_TX_FILESYSTEM_SCHEME = TransactionalRawLocalFileSystem.SCHEME;
-
-    public static final Class<? extends AbstractFileSystem> DEFAULT_PAGES_VIEW_FS = ReadOnlyRawLocalFS.class;
-    public static final String DEFAULT_PAGES_VIEW_FS_SCHEME = ReadOnlyRawLocalFileSystem.SCHEME;
+    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = new HdfsImplDef(TransactionalRawLocalFileSystem.SCHEME, TransactionalRawLocalFileSystem.class, TransactionalRawLocalFS.class);
+    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = new HdfsImplDef(ReadOnlyRawLocalFileSystem.SCHEME, ReadOnlyRawLocalFileSystem.class, ReadOnlyRawLocalFS.class);
 
     //-----VARIABLES-----
     private static final Object txManagerLock = new Object();
@@ -327,85 +322,60 @@ public class StorageFactory
             return retVal;
         }
     }
-    /**
-     * @return this returns a NEW filesystem, that needs to be (auto) closed
-     */
-    public static FileContext getPageStoreFileSystem() throws IOException
+    public static Configuration getPageStoreFileSystemConfig() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS_CONFIG)) {
-            Configuration conf = new Configuration();
+
             URI pageStorePath = Settings.instance().getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
-                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEME + "://" + pageStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_TX_FILESYSTEM_SCHEME + "'://' prefix to use the local transactional file system; " +
+                pageStorePath = URI.create(DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://" + pageStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "'://' prefix to use the local transactional file system; " +
                             pageStorePath.toString());
             }
-            conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
 
-            if (pageStorePath.getScheme().equals(DEFAULT_TX_FILESYSTEM_SCHEME)) {
-                // don't forget to register our custom FS so it can be found by HDFS
-                // Note: below we have a chance to override this again with the conf
-                conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEME + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
-            }
+            Configuration hadoopConfig = HdfsUtils.createHdfsConfig(pageStorePath, DEFAULT_PAGES_TX_FILESYSTEM, null, Settings.instance().getPagesHdfsProperties());
 
-            //note: if fs.defaultFS is set here, this might overwrite the path above
-            Map<String, String> extraProperties = Settings.instance().getPagesHdfsProperties();
-            if (extraProperties != null) {
-                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
-                    if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
-                        Logger.warn("Watch out, your HDFS settings overwrite the pages store path; " + entry.getValue());
-                    }
-                    conf.set(entry.getKey(), entry.getValue());
-                }
-            }
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG, conf);
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG, hadoopConfig);
 
             //boot the XADisk instance too (probably still null here, good place to test them together)
             getPageStoreTransactionManager();
         }
 
-        return FileContext.getFileContext((Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG));
+        return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG);
+    }
+    /**
+     * @return this returns a NEW filesystem, that needs to be (auto) closed
+     */
+    public static FileContext getPageStoreFileSystem() throws IOException
+    {
+        return FileContext.getFileContext(getPageStoreFileSystemConfig());
+    }
+    public static Configuration getPageViewFileSystemConfig() throws IOException
+    {
+        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG)) {
+
+            URI pageViewPath = Settings.instance().getPagesViewPath();
+            if (StringUtils.isEmpty(pageViewPath.getScheme())) {
+                //make sure we have a schema
+                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "://" + pageViewPath.toString());
+                Logger.warn("The page view path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "'://' prefix to use the local file system; " +
+                            pageViewPath.toString());
+            }
+
+            Configuration hadoopConfig = HdfsUtils.createHdfsConfig(pageViewPath, DEFAULT_PAGES_VIEW_FILESYSTEM, null, Settings.instance().getPagesHdfsProperties());
+
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, hadoopConfig);
+        }
+
+        return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG);
     }
     /**
      * @return this returns a NEW filesystem, that needs to be (auto) closed
      */
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG)) {
-            Configuration conf = new Configuration();
-            URI pageViewPath = Settings.instance().getPagesViewPath();
-            if (StringUtils.isEmpty(pageViewPath.getScheme())) {
-                //make sure we have a schema
-                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FS_SCHEME + "://" + pageViewPath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_VIEW_FS_SCHEME + "'://' prefix to use the local file system; " +
-                            pageViewPath.toString());
-            }
-            conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageViewPath.toString());
-
-            if (pageViewPath.getScheme().equals(DEFAULT_PAGES_VIEW_FS_SCHEME)) {
-                // don't forget to register our custom FS so it can be found by HDFS
-                // Note: below we have a chance to override this again with the conf
-                conf.set("fs.AbstractFileSystem." + DEFAULT_PAGES_VIEW_FS_SCHEME + ".impl", DEFAULT_PAGES_VIEW_FS.getCanonicalName());
-            }
-
-            //note: if fs.defaultFS is set here, this might overwrite the path above
-            //Hmm, maybe this should be splitted in store/view properties, but let's keep it like this, for now
-            Map<String, String> extraProperties = Settings.instance().getPagesHdfsProperties();
-            if (extraProperties != null) {
-                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
-                    if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
-                        Logger.warn("Watch out, your HDFS settings overwrite the pages view path; " + entry.getValue());
-                    }
-                    conf.set(entry.getKey(), entry.getValue());
-                }
-            }
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, conf);
-        }
-
-        return FileContext.getFileContext((Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG));
+        return FileContext.getFileContext(getPageViewFileSystemConfig());
     }
     public static Set<Indexer> getIndexerRegistry()
     {

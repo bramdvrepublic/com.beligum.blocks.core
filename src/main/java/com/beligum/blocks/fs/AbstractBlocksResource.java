@@ -2,7 +2,6 @@ package com.beligum.blocks.fs;
 
 import com.beligum.base.resources.SizedInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.mappers.AbstractResource;
@@ -10,6 +9,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.hdfs.HdfsUtils;
 import com.beligum.blocks.fs.ifaces.BlocksResource;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
@@ -34,24 +34,32 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     //-----VARIABLES-----
     protected FileContext fileContext;
     protected Path localStoragePath;
+
     protected Path cachedDotFolder;
     protected Path cachedLockFile;
 
     //-----CONSTRUCTORS-----
+    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext, Path localStoragePath) throws IOException
+    {
+        super(request);
+
+        this.fileContext = fileContext;
+        this.localStoragePath = localStoragePath;
+    }
     /**
-     * Constructor without the fileContext and localStorage (that need to be set manually)
+     * Constructor without the localStorage (that need to be set manually)
      */
-    protected AbstractBlocksResource(ResourceRepository repository, ResourceRequest request) throws IOException
+    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext) throws IOException
     {
-        super(repository, request);
+        //Note: don't forget to set the local path in the subclass!
+        this(request, fileContext, null);
     }
-    protected AbstractBlocksResource(Resource resource) throws IOException
-    {
-        super(resource);
-    }
-    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching)
+    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext)
     {
         super(repository, uri, language, mimeType, allowEternalCaching);
+
+        this.fileContext = fileContext;
+        //Note: don't forget to set the local path in the subclass!
     }
 
     //-----PUBLIC METHODS-----

@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.blocks.fs.HdfsUtils;
+import com.beligum.blocks.fs.hdfs.HdfsUtils;
 import org.apache.hadoop.fs.*;
 
 import java.io.IOException;

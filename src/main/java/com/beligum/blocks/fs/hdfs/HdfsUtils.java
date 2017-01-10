@@ -1,9 +1,10 @@
-package com.beligum.blocks.fs;
+package com.beligum.blocks.fs.hdfs;
 
-import com.beligum.blocks.fs.hdfs.HadoopBasicFileAttributes;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.fs.ifaces.BlocksResource;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.nio.file.FileVisitor;
 import java.security.SecureRandom;
 import java.util.EnumSet;
+import java.util.Map;
 
 /**
  * Created by bram on 1/19/16.
@@ -45,8 +47,8 @@ public class HdfsUtils
      * mimicing the Files.walkFileTree() of Java NIO.
      * Note: if using a chrooted fileSystem, callback files will be absolute (not relative to the fileSystem chroot)
      *
-     * @param fs the filesystem
-     * @param folder the folder where to start
+     * @param fs      the filesystem
+     * @param folder  the folder where to start
      * @param visitor the visitor implementation
      * @throws IOException
      */
@@ -80,13 +82,15 @@ public class HdfsUtils
     }
     /**
      * Copy/pasted from
+     *
      * @see org.apache.hadoop.fs.FileSystem#createNewFile(Path)
      */
     public static boolean createNewFile(FileContext context, Path f, boolean createParents) throws IOException
     {
         if (context.util().exists(f)) {
             return false;
-        } else {
+        }
+        else {
             if (createParents) {
                 context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096)), Options.CreateOpts.createParent()).close();
             }
@@ -98,6 +102,7 @@ public class HdfsUtils
     }
     /**
      * Mainly copied from java.io.File to mimic the creation of temp files on HDFS
+     *
      * @see java.io.File#createTempFile(String, String, File)
      */
     public static Path createTempFile(FileContext context, String prefix, String suffix, Path directory) throws IOException
@@ -145,6 +150,49 @@ public class HdfsUtils
 
         return retVal;
     }
+    /**
+     * Create a new HDFS configuration for the supplied arguments.
+     *
+     * @param uri the URI of the file system
+     * @param impl the implementation of the file system (or null if no specific extra implementation is needed by the URI)
+     * @param runtimeUser the hadoop proxy user or null to skip proxyuser configuration
+     * @param extraProperties a map of all extra properties that will be loaded in (can be null too)
+     * @return
+     */
+    public static Configuration createHdfsConfig(URI uri, HdfsImplDef impl, String runtimeUser, Map<String, String> extraProperties)
+    {
+        Configuration retVal = new Configuration(true);
+
+        if (!StringUtils.isEmpty(runtimeUser)) {
+            retVal.set("hadoop.proxyuser." + runtimeUser + ".hosts", "*");
+            retVal.set("hadoop.proxyuser." + runtimeUser + ".groups", "*");
+        }
+
+        retVal.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, uri.toString());
+
+        // Register our custom FS (if we use it) so it can be found by HDFS
+        // Note: below we have a chance to override this again with the conf
+        if (impl != null && impl.getScheme().equals(uri.getScheme())) {
+            if (impl.getOldImpl() != null) {
+                retVal.set("fs." + impl.getScheme() + ".impl", impl.getOldImpl().getCanonicalName());
+            }
+            if (impl.getNewImpl() != null) {
+                retVal.set("fs.AbstractFileSystem." + impl.getScheme() + ".impl", impl.getNewImpl().getCanonicalName());
+            }
+        }
+
+        //note: if fs.defaultFS is set here, this might overwrite the path above
+        if (extraProperties != null) {
+            for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
+                    Logger.warn("Watch out, your HDFS properties overwrite the supplied URI (" + uri + ") with " + entry.getValue() + "; this is probably not what you want!");
+                }
+                retVal.set(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return retVal;
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -154,7 +202,8 @@ public class HdfsUtils
         long n = random.nextLong();
         if (n == Long.MIN_VALUE) {
             n = 0;      // corner case
-        } else {
+        }
+        else {
             n = Math.abs(n);
         }
 
@@ -172,6 +221,7 @@ public class HdfsUtils
     /**
      * Returns the current config.
      * TODO: hope this is ok!
+     *
      * @return
      */
     private static Configuration getConf()

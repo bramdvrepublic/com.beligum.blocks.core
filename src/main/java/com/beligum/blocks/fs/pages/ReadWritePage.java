@@ -26,7 +26,7 @@ import java.util.EnumSet;
 /**
  * Created by bram on 5/2/16.
  */
-public class ReadWritePage extends DefaultPageImpl
+public class ReadWritePage extends DefaultPage
 {
     //-----CONSTANTS-----
 
