@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.hdfs;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.ReleaseFilter;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.fs.index.ifaces.IndexConnection;
@@ -102,7 +103,7 @@ public class RequestTX
     /**
      * Atomically commit all sub-transactions registered in this request TX
      *
-     * @see com.beligum.blocks.fs.hdfs.RequestTransactionFilter
+     * @see ReleaseFilter
      */
     public synchronized void commit() throws Exception
     {
@@ -120,7 +121,7 @@ public class RequestTX
     /**
      * Atomically rollback all sub-transactions registered in this request TX
      *
-     * @see com.beligum.blocks.fs.hdfs.RequestTransactionFilter
+     * @see ReleaseFilter
      */
     public synchronized void rollback() throws Exception
     {
@@ -139,7 +140,7 @@ public class RequestTX
      * This is called at the very end of each request,
      * after commit/rollback has been performed.
      *
-     * @see com.beligum.blocks.fs.hdfs.RequestTransactionFilter
+     * @see ReleaseFilter
      */
     public synchronized void close() throws Exception
     {

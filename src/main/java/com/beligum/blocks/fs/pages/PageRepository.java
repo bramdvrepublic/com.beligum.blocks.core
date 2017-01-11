@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.models.Person;
+import com.beligum.base.resources.DefaultResourceRequest;
 import com.beligum.base.resources.RegisteredMimeType;
 import com.beligum.base.resources.ResourceRepositoryPrefix;
 import com.beligum.base.resources.ifaces.Resource;
@@ -73,12 +74,17 @@ public class PageRepository implements ResourceRepository
         return false;
     }
     @Override
+    public ResourceRequest request(URI uri, String forcedMimeType)
+    {
+        return new DefaultResourceRequest(this, uri, forcedMimeType);
+    }
+    @Override
     public Resource get(ResourceRequest resourceRequest)
     {
         Resource retVal = null;
 
         try {
-            Page page = new ReadOnlyPage(this, resourceRequest);
+            Page page = new ReadOnlyPage(resourceRequest);
 
             //Here, we decide on the normalized html path to see if the page exists or not
             // (note that we actually could check on the original and re-generate the normalized if necessary, but we decided to take the safe road)

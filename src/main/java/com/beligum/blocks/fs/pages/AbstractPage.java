@@ -57,7 +57,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     }
     protected AbstractPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext) throws IOException
     {
-        super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
+        super(repository, uri, language, mimeType, allowEternalCaching, fileContext, null);
 
         //After some super-preparsing, we need to do our own page-related post-parsing
         this.init(this.getUri());

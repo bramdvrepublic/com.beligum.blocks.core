@@ -131,6 +131,9 @@ public class HdfsUtils
     {
         return createTempFile(context, prefix, suffix, null);
     }
+    /**
+     * Returns if this file is a metadata file or folder (somewhere in/down the metafolder tree of a media file)
+     */
     public static boolean isMetaPath(Path localPath)
     {
         boolean retVal = false;
@@ -155,17 +158,17 @@ public class HdfsUtils
      *
      * @param uri the URI of the file system
      * @param impl the implementation of the file system (or null if no specific extra implementation is needed by the URI)
-     * @param runtimeUser the hadoop proxy user or null to skip proxyuser configuration
+     * @param proxyUser the hadoop proxy user or null to skip proxyuser configuration
      * @param extraProperties a map of all extra properties that will be loaded in (can be null too)
      * @return
      */
-    public static Configuration createHdfsConfig(URI uri, HdfsImplDef impl, String runtimeUser, Map<String, String> extraProperties)
+    public static Configuration createHdfsConfig(URI uri, HdfsImplDef impl, String proxyUser, Map<String, String> extraProperties)
     {
         Configuration retVal = new Configuration(true);
 
-        if (!StringUtils.isEmpty(runtimeUser)) {
-            retVal.set("hadoop.proxyuser." + runtimeUser + ".hosts", "*");
-            retVal.set("hadoop.proxyuser." + runtimeUser + ".groups", "*");
+        if (!StringUtils.isEmpty(proxyUser)) {
+            retVal.set("hadoop.proxyuser." + proxyUser + ".hosts", "*");
+            retVal.set("hadoop.proxyuser." + proxyUser + ".groups", "*");
         }
 
         retVal.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, uri.toString());

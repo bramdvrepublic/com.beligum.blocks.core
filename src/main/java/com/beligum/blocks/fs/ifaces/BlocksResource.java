@@ -114,6 +114,11 @@ public interface BlocksResource extends HdfsResource
     Path getMetadataFolder();
 
     /**
+     * Explicitly re-calculate the hash checksum (instead of using the cached version if it's present)
+     */
+    String calcHashChecksum() throws IOException;
+
+    /**
      * Acquire a filesystem lock on this resource or throw an exception if it didn't succeed.
      */
     LockFile acquireLock() throws IOException;
@@ -132,10 +137,5 @@ public interface BlocksResource extends HdfsResource
      * @return true if this resource supports writing to it or false (default) if not
      */
     boolean isReadWrite();
-
-    /**
-     * Returns if this file is a metadata file or folder (somewhere in/down the metafolder tree of a media file)
-     */
-    boolean isMetaFile_WeNeedToDeleteThisOne();
 
 }

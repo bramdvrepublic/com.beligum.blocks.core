@@ -1,6 +1,4 @@
-package com.beligum.blocks.fs.hdfs;
-
-import com.beligum.blocks.config.StorageFactory;
+package com.beligum.blocks.config;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -16,7 +14,7 @@ import java.io.IOException;
  */
 @Provider
 @Priority(Priorities.USER)
-public class RequestTransactionFilter implements ContainerResponseFilter
+public class ReleaseFilter implements ContainerResponseFilter
 {
     //-----CONSTANTS-----
 

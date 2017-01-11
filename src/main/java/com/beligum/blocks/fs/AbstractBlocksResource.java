@@ -39,7 +39,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     protected Path cachedLockFile;
 
     //-----CONSTRUCTORS-----
-    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext, Path localStoragePath) throws IOException
+    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext, Path localStoragePath)
     {
         super(request);
 
@@ -49,17 +49,24 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     /**
      * Constructor without the localStorage (that need to be set manually)
      */
-    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext) throws IOException
+    protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext)
     {
         //Note: don't forget to set the local path in the subclass!
         this(request, fileContext, null);
     }
-    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext)
+    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, String mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStoragePath)
     {
         super(repository, uri, language, mimeType, allowEternalCaching);
 
         this.fileContext = fileContext;
-        //Note: don't forget to set the local path in the subclass!
+        this.localStoragePath = localStoragePath;
+    }
+    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStoragePath)
+    {
+        super(repository, uri, language, mimeType, allowEternalCaching);
+
+        this.fileContext = fileContext;
+        this.localStoragePath = localStoragePath;
     }
 
     //-----PUBLIC METHODS-----
@@ -146,6 +153,11 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         return new Path(this.getDotFolder(), META_SUBFOLDER_METADATA);
     }
     @Override
+    public String calcHashChecksum() throws IOException
+    {
+        return super.getHashChecksum();
+    }
+    @Override
     public String getHashChecksum()
     {
         String retVal = null;
@@ -158,7 +170,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
                 retVal = HdfsUtils.readFile(this.fileContext, storedHashFile);
             }
             else {
-                retVal = super.getHashChecksum();
+                retVal = this.calcHashChecksum();
 
                 //cache the hash if we support writing
                 if (this.isReadWrite() && retVal != null) {
@@ -260,11 +272,6 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     public boolean isReadWrite()
     {
         return false;
-    }
-    @Override
-    public boolean isMetaFile_WeNeedToDeleteThisOne()
-    {
-        return HdfsUtils.isMetaPath(this.localStoragePath);
     }
 
     //-----PROTECTED METHODS-----
