@@ -1,5 +1,8 @@
 package com.beligum.blocks.fs.hdfs;
 
+import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.TikaMimeType;
+import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.fs.ifaces.BlocksResource;
 import org.apache.commons.io.Charsets;
@@ -8,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -192,6 +196,32 @@ public class HdfsUtils
                 }
                 retVal.set(entry.getKey(), entry.getValue());
             }
+        }
+
+        return retVal;
+    }
+    /**
+     * Tries to open and read the file to detect it's mime type. If the file doesn't exist, revert to a filename detection strategy.
+     * Never returns null, octet stream in the worst case.
+     */
+    public static MimeType detectMimeType(FileContext fileContext, Path path) throws IOException
+    {
+        MimeType retVal = null;
+
+        if (fileContext.util().exists(path)) {
+            //Note: the buffered input stream is needed for correct Mime detection !!
+            try (InputStream is = new BufferedInputStream(fileContext.open(path))) {
+                retVal = TikaMimeType.detect(is, path.toUri().getPath());
+            }
+        }
+        //if the file doesn't exist, try once more with the file name
+        else {
+            retVal = TikaMimeType.detect(path.toUri().getPath());
+        }
+
+        //we choose to never return null
+        if (retVal == null) {
+            retVal = MimeTypes.OCTET_STREAM;
         }
 
         return retVal;

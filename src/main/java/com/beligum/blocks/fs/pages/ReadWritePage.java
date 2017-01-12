@@ -35,7 +35,7 @@ public class ReadWritePage extends DefaultPage
     //-----CONSTRUCTORS-----
     protected ReadWritePage(ResourceRepository repository, Source source) throws IOException
     {
-        super(repository, source.getUri(), source.getLanguage(), source.getRegisteredMimeType(), false, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
+        super(repository, source.getUri(), source.getLanguage(), source.getMimeType(), false, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
     }
 
     //-----PUBLIC METHODS-----

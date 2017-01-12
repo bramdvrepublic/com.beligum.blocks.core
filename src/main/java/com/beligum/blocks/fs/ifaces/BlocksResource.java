@@ -1,8 +1,8 @@
 package com.beligum.blocks.fs.ifaces;
 
+import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.blocks.fs.LockFile;
 import org.apache.hadoop.fs.Path;
-import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.time.ZoneId;
@@ -106,7 +106,7 @@ public interface BlocksResource extends HdfsResource
     /**
      * The path to the proxy folder of this resource for the specified mime type
      */
-    Path getProxyFolder(MediaType mimeType);
+    Path getProxyFolder(MimeType mimeType);
 
     /**
      * The path to the base metadata folder of this resource

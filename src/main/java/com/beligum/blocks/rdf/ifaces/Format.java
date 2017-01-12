@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 
 /**
@@ -9,9 +9,9 @@ import com.beligum.base.resources.ifaces.MimeType;
 public enum Format
 {
     //-----CONSTANTS-----
-    RDFA(RegisteredMimeType.HTML),
-    JSONLD(RegisteredMimeType.JSONLD),
-    NTRIPLES(RegisteredMimeType.NTRIPLES)
+    RDFA(MimeTypes.HTML),
+    JSONLD(MimeTypes.JSONLD),
+    NTRIPLES(MimeTypes.NTRIPLES)
     ;
 
     //-----VARIABLES-----

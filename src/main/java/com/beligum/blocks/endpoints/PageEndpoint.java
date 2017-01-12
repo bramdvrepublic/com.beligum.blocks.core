@@ -1,7 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.repositories.PersonRepository;
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
@@ -186,7 +186,7 @@ public class PageEndpoint
         // To avoid any clashes, we'll use the name of the instance as resource URI
         Template block = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(URI.create(htmlTemplate.getTemplateName()),
                                                                                                        htmlTemplate.createNewHtmlInstance(),
-                                                                                                       RegisteredMimeType.HTML,
+                                                                                                       MimeTypes.HTML,
                                                                                                        //since this is the value of the template context lang,
                                                                                                        //it makes sense to create the string in the same lang
                                                                                                        R.i18n().getOptimalLocale())));

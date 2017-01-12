@@ -2,12 +2,9 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.models.Person;
 import com.beligum.base.resources.DefaultResourceRequest;
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceRepositoryPrefix;
-import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.resources.ifaces.ResourceRepository;
-import com.beligum.base.resources.ifaces.ResourceRequest;
-import com.beligum.base.resources.ifaces.Source;
+import com.beligum.base.resources.ifaces.*;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
@@ -59,7 +56,7 @@ public class PageRepository implements ResourceRepository
     @Override
     public ResourceRepositoryPrefix[] getPrefixes()
     {
-        return new ResourceRepositoryPrefix[] { new ResourceRepositoryPrefix(this, URI.create(PUBLIC_PATH_PREFIX), RegisteredMimeType.HTML) };
+        return new ResourceRepositoryPrefix[] { new ResourceRepositoryPrefix(this, URI.create(PUBLIC_PATH_PREFIX), MimeTypes.HTML) };
     }
     @Override
     public boolean isImmutable()
@@ -74,7 +71,7 @@ public class PageRepository implements ResourceRepository
         return false;
     }
     @Override
-    public ResourceRequest request(URI uri, String forcedMimeType)
+    public ResourceRequest request(URI uri, MimeType forcedMimeType)
     {
         return new DefaultResourceRequest(this, uri, forcedMimeType);
     }

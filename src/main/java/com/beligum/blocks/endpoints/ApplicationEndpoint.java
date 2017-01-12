@@ -1,7 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
@@ -287,7 +287,7 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template newPageInstance = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), RegisteredMimeType.HTML, optimalLocale)));
+                                        Template newPageInstance = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), MimeTypes.HTML, optimalLocale)));
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -319,9 +319,9 @@ public class ApplicationEndpoint
                                         copyTemplate.render(writer);
 
                                         Template template = null;
-                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), writer.toString(), copyPage.getRegisteredMimeType(), copyPage.getLanguage()));
+                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), writer.toString(), copyPage.getMimeType(), copyPage.getLanguage()));
                                         try (InputStream is = html.newInputStream()) {
-                                            template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, IOUtils.toString(is), RegisteredMimeType.HTML, optimalLocale)));
+                                            template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, IOUtils.toString(is), MimeTypes.HTML, optimalLocale)));
                                         }
 
                                         //this will allow the blocks javascript/css to be included

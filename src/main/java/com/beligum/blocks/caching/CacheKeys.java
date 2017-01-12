@@ -15,8 +15,12 @@ public enum CacheKeys implements CacheKey
     BLOCKS_MODE,
     //application cache key to store the configuration of the HDFS page store
     HDFS_PAGESTORE_FS_CONFIG,
+    //application cache key to store the HDFS page store instance
+    HDFS_PAGESTORE_FS,
     //application cache key to store the configuration of the HDFS page read filesystem
     HDFS_PAGEVIEW_FS_CONFIG,
+    //application cache key to store the HDFS page read instance
+    HDFS_PAGEVIEW_FS,
     //application cache key to store the main page indexer
     MAIN_PAGE_INDEX,
     //application cache key to store the triplestore page indexer

@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
@@ -17,7 +17,6 @@ import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import gen.com.beligum.blocks.core.maven;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
-import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.net.URI;
@@ -32,18 +31,18 @@ import java.util.Locale;
 public abstract class DefaultPage extends AbstractPage
 {
     //-----CONSTANTS-----
-    private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = RegisteredMimeType.HTML.getMimeType();
+    private static final MimeType PAGE_PROXY_NORMALIZED_MIME_TYPE = MimeTypes.HTML;
     //Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    private String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + RegisteredMimeType.HTML.getExtension();
+    private static final String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized.html";
 
     // See this for why we write in N-Triples:
     // https://jena.apache.org/documentation/io/rdf-output.html#n-triples-and-n-quads
     // "These provide the formats that are fastest to write, and data of any size can be output."
     // "They maximise the interoperability with other systems and are useful for database dumps."
-    private Format PAGE_PROXY_RDF_FORMAT = Format.NTRIPLES;
-    private MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
+    private static final Format PAGE_PROXY_RDF_FORMAT = Format.NTRIPLES;
+    private static final MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    private String PAGE_PROXY_RDF_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + PAGE_PROXY_RDF_TYPE.getExtension();
+    private static final String PAGE_PROXY_RDF_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf.nt";
 
     //-----VARIABLES-----
 
@@ -109,7 +108,7 @@ public abstract class DefaultPage extends AbstractPage
     @Override
     public Path getRdfExportFile()
     {
-        return new Path(this.getProxyFolder(PAGE_PROXY_RDF_TYPE.getMimeType()), PAGE_PROXY_RDF_FILE_NAME);
+        return new Path(this.getProxyFolder(PAGE_PROXY_RDF_TYPE), PAGE_PROXY_RDF_FILE_NAME);
     }
     @Override
     public Format getRdfExportFileFormat()

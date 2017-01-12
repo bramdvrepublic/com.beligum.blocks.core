@@ -1,7 +1,7 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
@@ -576,7 +576,7 @@ public abstract class HtmlTemplate
         Element retVal = null;
 
         //this allows us to use velocity variables in the resource URLs
-        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), RegisteredMimeType.HTML, R.i18n().getOptimalLocale())));
+        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale())));
         try (StringWriter sw = new StringWriter()) {
             template.render(sw);
             retVal = new Source(sw.toString()).getFirstElement();

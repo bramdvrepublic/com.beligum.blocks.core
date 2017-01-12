@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.sources;
 
-import com.beligum.base.resources.RegisteredMimeType;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.SizedInputStream;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
@@ -56,7 +56,7 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(URI uri, URI stream) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), RegisteredMimeType.HTML, null);
+        super.init(preparseUri(uri), MimeTypes.HTML, null);
 
         InputStream is = null;
         try {
@@ -76,7 +76,7 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(Source source) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(source.getUri()), RegisteredMimeType.HTML, null);
+        super.init(preparseUri(source.getUri()), MimeTypes.HTML, null);
 
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
@@ -85,14 +85,14 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(URI uri, InputStream html) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), RegisteredMimeType.HTML, null);
+        super.init(preparseUri(uri), MimeTypes.HTML, null);
 
         this.parseHtml(html);
     }
     protected PageSource(URI uri)
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), RegisteredMimeType.HTML, null);
+        super.init(preparseUri(uri), MimeTypes.HTML, null);
 
         //Note: subclass must call parseHtml() manually
     }

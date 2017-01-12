@@ -22,6 +22,7 @@ import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
@@ -337,19 +338,28 @@ public class StorageFactory
             Configuration hadoopConfig = HdfsUtils.createHdfsConfig(pageStorePath, DEFAULT_PAGES_TX_FILESYSTEM, null, Settings.instance().getPagesHdfsProperties());
 
             cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG, hadoopConfig);
-
-            //boot the XADisk instance too (probably still null here, good place to test them together)
-            getPageStoreTransactionManager();
         }
 
         return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG);
     }
-    /**
-     * @return this returns a NEW filesystem, that needs to be (auto) closed
-     */
     public static FileContext getPageStoreFileSystem() throws IOException
     {
-        return FileContext.getFileContext(getPageStoreFileSystemConfig());
+        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
+            FileContext fileContext = FileContext.getFileContext(getPageStoreFileSystemConfig());
+
+            //create the root folder if needed
+            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
+            if (!fileContext.util().exists(root)) {
+                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
+            }
+
+            //boot the XADisk instance too (probably still null here, good place to test them together)
+            getPageStoreTransactionManager();
+
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
+        }
+
+        return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS);
     }
     public static Configuration getPageViewFileSystemConfig() throws IOException
     {
@@ -370,12 +380,15 @@ public class StorageFactory
 
         return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG);
     }
-    /**
-     * @return this returns a NEW filesystem, that needs to be (auto) closed
-     */
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        return FileContext.getFileContext(getPageViewFileSystemConfig());
+        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
+            FileContext fileContext = FileContext.getFileContext(getPageViewFileSystemConfig());
+
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, fileContext);
+        }
+
+        return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS);
     }
     public static Set<Indexer> getIndexerRegistry()
     {

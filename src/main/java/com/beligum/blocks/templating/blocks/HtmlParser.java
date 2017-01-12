@@ -1,10 +1,11 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.SizedInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
-import com.beligum.base.resources.ifaces.ResourceParser;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.ResourceParser;
 import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -29,8 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
-
-import static com.beligum.base.resources.RegisteredMimeType.HTML;
 
 /**
  * Created by bram on 5/16/15.
@@ -169,14 +168,14 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     public MimeType[] getSupportedMimeTypes()
     {
         return new MimeType[] {
-                        HTML
+                        MimeTypes.HTML
         };
     }
     @Override
     public MimeType getParsedMimeType(Resource resource)
     {
         //FIXME maybe this should be VELOCITY instead?
-        return HTML;
+        return MimeTypes.HTML;
     }
     private OutputDocument processResource(Resource resource, Source source) throws Exception
     {

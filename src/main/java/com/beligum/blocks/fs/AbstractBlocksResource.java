@@ -1,5 +1,6 @@
 package com.beligum.blocks.fs;
 
+import com.beligum.base.resources.GuavaMimeType;
 import com.beligum.base.resources.SizedInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
@@ -7,7 +8,6 @@ import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.mappers.AbstractResource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.hdfs.HdfsUtils;
 import com.beligum.blocks.fs.ifaces.BlocksResource;
@@ -16,7 +16,6 @@ import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
-import org.apache.tika.mime.MediaType;
 
 import java.io.*;
 import java.net.URI;
@@ -53,13 +52,6 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     {
         //Note: don't forget to set the local path in the subclass!
         this(request, fileContext, null);
-    }
-    protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, String mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStoragePath)
-    {
-        super(repository, uri, language, mimeType, allowEternalCaching);
-
-        this.fileContext = fileContext;
-        this.localStoragePath = localStoragePath;
     }
     protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStoragePath)
     {
@@ -143,9 +135,9 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         return new Path(this.getDotFolder(), META_SUBFOLDER_PROXY);
     }
     @Override
-    public Path getProxyFolder(MediaType mimeType)
+    public Path getProxyFolder(MimeType mimeType)
     {
-        return new Path(new Path(this.getProxyFolder(), mimeType.getType()), mimeType.getSubtype());
+        return new Path(new Path(this.getProxyFolder(), mimeType.type()), mimeType.subtype());
     }
     @Override
     public Path getMetadataFolder()
@@ -284,36 +276,25 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
 
         return this.cachedLockFile;
     }
-    protected MediaType readMimeType()
+    protected MimeType readMimeType()
     {
-        MediaType retVal = null;
+        MimeType retVal = null;
 
         Path storedMimeFile = this.getMimeFile();
-        boolean newlyDetected = false;
+        boolean newlyDetected = true;
         try {
             if (this.fileContext.util().exists(storedMimeFile)) {
                 String content = HdfsUtils.readFile(this.fileContext, storedMimeFile);
                 if (!StringUtils.isEmpty(content)) {
-                    retVal = MediaType.parse(content);
+                    retVal = GuavaMimeType.parse(content);
                 }
             }
 
             if (retVal == null) {
-                String mimeType = null;
-                //Note: the buffered input stream is needed for correct Mime detection !!
-                try (InputStream is = new BufferedInputStream(this.newInputStream())) {
-                    mimeType = FileFunctions.getMimeType(is, this.localStoragePath.getName());
-                    newlyDetected = true;
-                }
-
-                if (!StringUtils.isEmpty(mimeType)) {
-                    retVal = MediaType.parse(mimeType);
-                }
-
-                //we choose to never return null
-                if (retVal == null) {
-                    retVal = MediaType.OCTET_STREAM;
-                }
+                retVal = HdfsUtils.detectMimeType(this.fileContext, this.getLocalStoragePath());
+            }
+            else {
+                newlyDetected = false;
             }
         }
         catch (IOException e) {
