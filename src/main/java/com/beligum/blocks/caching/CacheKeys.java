@@ -13,6 +13,8 @@ public enum CacheKeys implements CacheKey
     TAG_TEMPLATE_CONTROLLERS,
     //the key that maps to the mode in which we are now (set in HtmlRouter)
     BLOCKS_MODE,
+    //application cache key that stores the single XAttr resolver factory
+    BLOCKS_XATTR_RESOLVER_FACTORY,
     //application cache key to store the configuration of the HDFS page store
     HDFS_PAGESTORE_FS_CONFIG,
     //application cache key to store the HDFS page store instance

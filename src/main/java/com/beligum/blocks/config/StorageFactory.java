@@ -10,18 +10,23 @@ import com.beligum.base.cache.HashMapCache;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.fs.hdfs.*;
-import com.beligum.blocks.fs.hdfs.bitronix.CustomBitronixResourceProducer;
-import com.beligum.blocks.fs.hdfs.bitronix.SimpleXAResourceProducer;
-import com.beligum.blocks.fs.index.LucenePageIndexer;
-import com.beligum.blocks.fs.index.SesamePageIndexer;
-import com.beligum.blocks.fs.index.ifaces.Indexer;
-import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
-import com.beligum.blocks.fs.index.ifaces.PageIndexer;
-import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
+import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
+import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
+import com.beligum.blocks.filesystem.hdfs.RequestTX;
+import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
+import com.beligum.blocks.filesystem.hdfs.bitronix.SimpleXAResourceProducer;
+import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
+import com.beligum.blocks.filesystem.ifaces.XAttrFS;
+import com.beligum.blocks.filesystem.index.LucenePageIndexer;
+import com.beligum.blocks.filesystem.index.SesamePageIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.Indexer;
+import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.UnsupportedFileSystemException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
@@ -50,8 +55,8 @@ import static com.beligum.blocks.caching.CacheKeys.TX_FAKE_REQUEST_CACHE;
 public class StorageFactory
 {
     //-----CONSTANTS-----
-    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = new HdfsImplDef(TransactionalRawLocalFileSystem.SCHEME, TransactionalRawLocalFileSystem.class, TransactionalRawLocalFS.class);
-    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = new HdfsImplDef(ReadOnlyRawLocalFileSystem.SCHEME, ReadOnlyRawLocalFileSystem.class, ReadOnlyRawLocalFS.class);
+    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
+    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
 
     //-----VARIABLES-----
     private static final Object txManagerLock = new Object();
@@ -60,6 +65,16 @@ public class StorageFactory
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    public static FileContext createFileContext(Configuration configuration) throws UnsupportedFileSystemException
+    {
+        FileContext fileContext = FileContext.getFileContext(configuration);
+
+        if (fileContext.getDefaultFileSystem() instanceof XAttrFS) {
+            ((XAttrFS)fileContext.getDefaultFileSystem()).register(Settings.instance().getXAttrResolverFactory().create(fileContext));
+        }
+
+        return fileContext;
+    }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
@@ -345,7 +360,7 @@ public class StorageFactory
     public static FileContext getPageStoreFileSystem() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
-            FileContext fileContext = FileContext.getFileContext(getPageStoreFileSystemConfig());
+            FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
             //create the root folder if needed
             org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
@@ -383,9 +398,7 @@ public class StorageFactory
     public static FileContext getPageViewFileSystem() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
-            FileContext fileContext = FileContext.getFileContext(getPageViewFileSystemConfig());
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, fileContext);
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, StorageFactory.createFileContext(getPageViewFileSystemConfig()));
         }
 
         return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS);

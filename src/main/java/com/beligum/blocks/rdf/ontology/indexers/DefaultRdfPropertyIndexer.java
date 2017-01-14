@@ -6,7 +6,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.exceptions.NotIndexedException;
-import com.beligum.blocks.fs.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;

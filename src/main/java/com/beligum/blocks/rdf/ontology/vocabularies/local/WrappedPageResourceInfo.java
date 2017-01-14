@@ -2,7 +2,7 @@ package com.beligum.blocks.rdf.ontology.vocabularies.local;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
-import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 
 import java.net.URI;
 import java.util.Locale;

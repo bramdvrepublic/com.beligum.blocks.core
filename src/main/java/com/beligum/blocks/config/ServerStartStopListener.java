@@ -8,8 +8,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.endpoints.PageEndpoint;
-import com.beligum.blocks.fs.index.ifaces.Indexer;
+import com.beligum.blocks.endpoints.PageAdminEndpoint;
+import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
@@ -66,7 +66,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
         if (Settings.instance().hasBlocksCoreConfig()) {
 
             //start all possible running async tasks
-            PageEndpoint.endAllAsyncTasksNow();
+            PageAdminEndpoint.endAllAsyncTasksNow();
 
             //don't boot it up if it's not there
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {

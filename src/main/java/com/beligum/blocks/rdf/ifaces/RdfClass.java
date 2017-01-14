@@ -3,7 +3,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
+import com.beligum.blocks.filesystem.index.entries.resources.ResourceIndexer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;

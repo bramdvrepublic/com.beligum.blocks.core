@@ -4,7 +4,7 @@ import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.fs.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;

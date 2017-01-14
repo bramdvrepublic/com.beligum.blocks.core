@@ -2,6 +2,10 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.toolkit.ReflectionFunctions;
+import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.filesystem.hdfs.xattr.XAttrMapper;
+import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bas on 08.10.14.
@@ -190,6 +195,25 @@ public class Settings
         }
 
         return this.cachedDeleteLocksOnStartup;
+    }
+    public XAttrResolverFactory getXAttrResolverFactory()
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY)) {
+            XAttrResolverFactory xAttrResolverFactory = new XAttrResolverFactory();
+            Set<Class<? extends XAttrMapper>> allMappers = ReflectionFunctions.searchAllClassesImplementing(XAttrMapper.class, true);
+            for (Class<? extends XAttrMapper> m : allMappers) {
+                try {
+                    xAttrResolverFactory.register(m.newInstance());
+                }
+                catch (Exception e) {
+                    Logger.error("Error while instantiating XAttrMapper class, ignoring this mapper; this shouldn't happen; " + m, e);
+                }
+            }
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY, xAttrResolverFactory);
+        }
+
+        return (XAttrResolverFactory) R.cacheManager().getApplicationCache().get(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY);
     }
     public URI getPagesRootPath()
     {

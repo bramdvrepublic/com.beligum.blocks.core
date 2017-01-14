@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology.indexers;
 
-import com.beligum.blocks.fs.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.openrdf.model.Value;
 

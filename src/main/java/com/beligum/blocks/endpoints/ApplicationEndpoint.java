@@ -11,11 +11,11 @@ import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.fs.index.entries.IndexEntry;
-import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
-import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
+import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
@@ -106,7 +106,7 @@ public class ApplicationEndpoint
         else {
             // Since we allow the user to create pretty url's, it's mime type will not always be clear, so pass it on explicitly
             //Note: this will throw an exception if the resource wasn't found
-            Page page = R.resourceManager().get(requestedUri, Page.class);
+            Page page = R.resourceManager().get(requestedUri, MimeTypes.HTML, Page.class);
 
             if (page != null) {
 
