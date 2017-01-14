@@ -2,7 +2,7 @@ package com.beligum.blocks.filesystem;
 
 import com.beligum.base.resources.GuavaMimeType;
 import com.beligum.base.resources.HashImpl;
-import com.beligum.base.resources.SizedInputStream;
+import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Hash;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
@@ -66,9 +66,9 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
 
     //-----PUBLIC METHODS-----
     @Override
-    public SizedInputStream newInputStream() throws IOException
+    public ResourceInputStream newInputStream() throws IOException
     {
-        return new SizedInputStream(this.fileContext.open(this.localStoragePath), this.getSize());
+        return new ResourceInputStream(this.fileContext.open(this.localStoragePath), this.getSize());
     }
     @Override
     public boolean exists() throws IOException

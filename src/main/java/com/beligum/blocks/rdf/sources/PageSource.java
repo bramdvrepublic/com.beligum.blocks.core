@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.sources;
 
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.SizedInputStream;
+import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
@@ -102,9 +102,9 @@ public abstract class PageSource extends AbstractSource implements Source
      * Note that by default this will return _X_HTML
      */
     @Override
-    public SizedInputStream newInputStream() throws IOException
+    public ResourceInputStream newInputStream() throws IOException
     {
-        return new SizedInputStream(this.toXHtmlString(), this.document.charset());
+        return new ResourceInputStream(this.toXHtmlString(), this.document.charset());
     }
     /**
      * Note this always returns -1 because we only render out the HTML document lazily in newInputStream() (where it's size is correctly filled in)

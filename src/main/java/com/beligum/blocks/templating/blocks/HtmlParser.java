@@ -2,7 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.SizedInputStream;
+import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceParser;
@@ -104,9 +104,9 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * @throws IOException
      */
     @Override
-    public SizedInputStream parse(Resource resource) throws IOException
+    public ResourceInputStream parse(Resource resource) throws IOException
     {
-        SizedInputStream retVal = null;
+        ResourceInputStream retVal = null;
 
         try {
             TemplateCache templateCache = this.getTemplateCache();
@@ -152,10 +152,10 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
 
             if (R.configuration().getResourceConfig().getMinifyResources()) {
-                retVal = new SizedInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
+                retVal = new ResourceInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
             }
             else {
-                retVal = new SizedInputStream(sb.toString());
+                retVal = new ResourceInputStream(sb.toString());
             }
         }
         catch (Exception e) {
