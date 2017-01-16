@@ -59,18 +59,6 @@ public class PageRepository extends AbstractResourceRepository
         return new ResourceRepositoryPrefix[] { new ResourceRepositoryPrefix(this, URI.create(PUBLIC_PATH_PREFIX), MimeTypes.HTML) };
     }
     @Override
-    public boolean isImmutable()
-    {
-        //Our HTML files are never static, it's the whole point of the blocks system
-        return false;
-    }
-    @Override
-    public boolean isReadOnly()
-    {
-        //both save() and delete() are implemented, so we fully support writing away HTML files
-        return false;
-    }
-    @Override
     public Resource get(ResourceRequest resourceRequest)
     {
         Resource retVal = null;

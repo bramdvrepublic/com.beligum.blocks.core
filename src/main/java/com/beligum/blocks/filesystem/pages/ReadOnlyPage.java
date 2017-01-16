@@ -26,6 +26,11 @@ public class ReadOnlyPage extends DefaultPage
 //    }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean isReadOnly()
+    {
+        return true;
+    }
 
     //-----PROTECTED METHODS-----
 

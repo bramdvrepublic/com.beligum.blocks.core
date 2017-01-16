@@ -287,11 +287,6 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
             }
         }
     }
-    @Override
-    public boolean isReadOnly()
-    {
-        return true;
-    }
 
     //-----PROTECTED METHODS-----
     protected Path getLockFile()

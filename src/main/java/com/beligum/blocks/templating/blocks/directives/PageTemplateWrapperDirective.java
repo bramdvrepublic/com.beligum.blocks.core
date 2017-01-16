@@ -2,8 +2,10 @@ package com.beligum.blocks.templating.blocks.directives;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.parsers.MinifiedInputStream;
+import com.beligum.base.resources.repositories.JoinRepository;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateResources;
 import org.apache.commons.io.IOUtils;
@@ -247,55 +249,55 @@ public class PageTemplateWrapperDirective extends Directive
     private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb,
                                    InlinedBytesAccumulator accumulator) throws IOException
     {
-//        //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
-//        //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
-//        //      consider it for later use if we run into caching problems
-//        String cacheKey = StringFunctions.intToBase64(hash, true);
-//
-//        Resource assetPack = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
-//
-//        String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
-//        if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
-//            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
-//                sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
-//            }
-//        }
-//        else {
-//            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
-//                String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
-//                sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + assetPack.getUri() + "\"></script>");
-//            }
-//        }
-//        sb.append("\n");
-//
-//        //OLD, but useful code to show how we
-//        //Note that we need to use a general inputstream (instead of the ResourceManager) to make dynamic resources (like reset.css) work
-//        //                InputStream is = null;
-//        //                try {
-//        //                    URLConnection conn = srcUri.toURL().openConnection();
-//        //
-//        //                    //note the ETag needs to be parsed before it can be used
-//        //                    String etag = null;
-//        //                    String eTagRaw = conn.getHeaderField(HttpHeaders.ETAG);
-//        //                    if (!StringUtils.isEmpty(eTagRaw)) {
-//        //                        etag = EntityTag.valueOf(eTagRaw).getValue();
-//        //                    }
-//        //
-//        //                    //for now, we'll only join local assets
-//        //                    if (etag != null && srcUri.getHost().equals(R.configuration().getSiteDomain().getHost())) {
-//        //                        byte[] etagHash = Base64.decodeBase64(etag);
-//        //                        Logger.info(etagHash.length);
-//        //                        hashBuf.write(etagHash);
-//        //
-//        //                        hashes/*.append("|")*/.append(etag);
-//        //                    }
-//        //
-//        //                    //note: the name doesn't really matter; mainly used for debug messages
-//        //                    inputs.add(SourceFile.fromInputStream(srcUri.toString(), is = conn.getInputStream()));
-//        //                }
-//        //                finally {
-//        //                    IOUtils.closeQuietly(is);
-//        //                }
+        //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
+        //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
+        //      consider it for later use if we run into caching problems
+        String cacheKey = StringFunctions.intToBase64(hash, true);
+
+        Resource assetPack = JoinRepository.registerAssetPack(cacheKey, currentAssetPack);
+
+        String mimeType = lastType.getMatchingMimeType().toString();
+        if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
+            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+                sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
+            }
+        }
+        else {
+            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+                String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
+                sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + assetPack.getUri() + "\"></script>");
+            }
+        }
+        sb.append("\n");
+
+        //OLD, but useful code to show how we
+        //Note that we need to use a general inputstream (instead of the ResourceManager) to make dynamic resources (like reset.css) work
+        //                InputStream is = null;
+        //                try {
+        //                    URLConnection conn = srcUri.toURL().openConnection();
+        //
+        //                    //note the ETag needs to be parsed before it can be used
+        //                    String etag = null;
+        //                    String eTagRaw = conn.getHeaderField(HttpHeaders.ETAG);
+        //                    if (!StringUtils.isEmpty(eTagRaw)) {
+        //                        etag = EntityTag.valueOf(eTagRaw).getValue();
+        //                    }
+        //
+        //                    //for now, we'll only join local assets
+        //                    if (etag != null && srcUri.getHost().equals(R.configuration().getSiteDomain().getHost())) {
+        //                        byte[] etagHash = Base64.decodeBase64(etag);
+        //                        Logger.info(etagHash.length);
+        //                        hashBuf.write(etagHash);
+        //
+        //                        hashes/*.append("|")*/.append(etag);
+        //                    }
+        //
+        //                    //note: the name doesn't really matter; mainly used for debug messages
+        //                    inputs.add(SourceFile.fromInputStream(srcUri.toString(), is = conn.getInputStream()));
+        //                }
+        //                finally {
+        //                    IOUtils.closeQuietly(is);
+        //                }
     }
     /**
      * Checks and sees if we can optimize this page by inlining this resource

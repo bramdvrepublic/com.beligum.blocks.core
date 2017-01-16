@@ -134,9 +134,4 @@ public interface BlocksResource extends HdfsResource
      */
     void releaseLockFile(LockFile lock) throws IOException;
 
-    /**
-     * @return true if this resource supports writing to it or false (default) if not
-     */
-    boolean isReadOnly();
-
 }

@@ -12,6 +12,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
+import com.beligum.blocks.templating.blocks.directives.ResourceUriDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
@@ -243,21 +244,19 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     {
         String retVal = null;
 
-        String uriStr = uri.toString();
+        //if the endpoint is static, we'll generate our fingerprint right now,
+        //if not, we'll wrap the URI in a directive to re-parse it on every request.
+        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
+        //if that would change, we must wipe this optimization step
+        Resource resource = R.resourceManager().get(uri);
+        if (resource != null && resource.isImmutable()) {
+            retVal = R.resourceManager().getFingerprinter().fingerprintUri(uri.toString());
+        }
 
-//        //if the endpoint is static, we'll generate our fingerprint right now,
-//        //if not, we'll wrap the URI in a directive to re-parse it on every request.
-//        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
-//        //if that would change, we must wipe this optimization step
-//        ResourceResolver resourceResolver = R.resourceManager().getResourceEndpointFor(uriStr);
-//        if (resourceResolver != null && resourceResolver.isImmutable()) {
-//            retVal = R.resourceManager().fingerprintUri(uriStr);
-//        }
-//
-//        //this means we'll postpone the processing of the URI to the render phase, just wrap it in our directive
-//        if (retVal == null) {
-//            retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("(\"").append(uri.toString()).append("\")").toString();
-//        }
+        //this means we'll postpone the processing of the URI to the render phase, just wrap it in our directive
+        if (retVal == null) {
+            retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("(\"").append(uri.toString()).append("\")").toString();
+        }
 
         return retVal;
     }

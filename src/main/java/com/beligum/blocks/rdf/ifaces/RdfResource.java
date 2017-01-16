@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.models.ifaces.JsonObject;
+import com.beligum.base.database.models.ifaces.JsonObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**

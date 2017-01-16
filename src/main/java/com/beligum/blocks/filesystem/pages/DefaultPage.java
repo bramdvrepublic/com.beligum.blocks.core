@@ -76,6 +76,12 @@ public abstract class DefaultPage extends AbstractPage
 
     //-----PUBLIC METHODS-----
     @Override
+    public boolean isImmutable()
+    {
+        //pages are not immutable, it's the whole point of our blocks system
+        return false;
+    }
+    @Override
     public Importer createImporter(Format importFormat) throws IOException
     {
         return new SesameImporter(importFormat);

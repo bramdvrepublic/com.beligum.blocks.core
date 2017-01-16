@@ -2,6 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
 import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
@@ -18,6 +19,7 @@ import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
@@ -522,33 +524,34 @@ public abstract class HtmlTemplate
         StringBuilder builder = new StringBuilder();
         String attrValue = attr == null ? null : element.getAttributeValue(attr);
         String elementStr = element.toString();
-        boolean isDynamic = false;
+        //Note: in case of a dynamic (=non-immutable) asset, we'll postpone the fingerprinting all the way till
+        //com.beligum.blocks.templating.blocks.TemplateResources.Resource.getElement() and getValue()
+        boolean isImmutable = false;
 
         //this means we're dealing with an external resource that may need fingerprinting
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-//            if (attrValue != null) {
-//                //validate the URI
-//                String uriStr = UriBuilder.fromUri(attrValue).build().toString();
-//                ResourceResolver resourceResolver = R.resourceManager().getResourceEndpointFor(uriStr);
-//                if (resourceResolver != null) {
-//                    //if the resource is static (won't change anymore), we might as well calculate it's fingerprint now
-//                    if (resourceResolver.isImmutable()) {
-//                        //first, replace the attribute value
-//                        attrValue = R.resourceManager().fingerprintUri(uriStr);
-//
-//                        //but also replace the attribute in the element itself
-//                        Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
-//                        OutputDocument outputDocument = new OutputDocument(element);
-//                        outputDocument.replace(attrValueSeg, attrValue);
-//                        elementStr = outputDocument.toString();
-//                    }
-//                    else {
-//                        //in case of a dynamic asset, we'll postpone the fingerprinting all the way till
-//                        //com.beligum.blocks.templating.blocks.TemplateResources.Resource.getElement() and getValue()
-//                        isDynamic = true;
-//                    }
-//                }
-//            }
+            if (attrValue != null) {
+                //validate the URI
+                URI uri = UriBuilder.fromUri(attrValue).build();
+                Resource resource = R.resourceManager().get(uri);
+                //this means the resource exists in our local system
+                if (resource != null) {
+                    //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now
+                    if (resource.isImmutable()) {
+                        //first, replace the attribute value
+                        attrValue = R.resourceManager().getFingerprinter().fingerprintUri(uri.toString());
+
+                        //but also replace the attribute in the element itself
+                        Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
+                        OutputDocument outputDocument = new OutputDocument(element);
+                        outputDocument.replace(attrValueSeg, attrValue);
+                        elementStr = outputDocument.toString();
+
+                        //signal our directive the fingerprinting is already performed
+                        isImmutable = false;
+                    }
+                }
+            }
         }
 
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
@@ -557,7 +560,7 @@ public abstract class HtmlTemplate
                .append(type.ordinal()).append(",")
                .append(print).append(",'")
                .append(attrValue).append("',")
-               .append(isDynamic).append(",'")
+               .append(isImmutable).append(",'")
                .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                .append(HtmlTemplate.getResourceJoinHint(element).ordinal())

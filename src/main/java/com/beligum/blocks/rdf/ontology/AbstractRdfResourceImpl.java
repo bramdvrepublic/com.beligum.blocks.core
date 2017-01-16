@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology;
 
-import com.beligum.base.models.AbstractJsonObject;
+import com.beligum.base.database.models.AbstractJsonObject;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
 
 /**

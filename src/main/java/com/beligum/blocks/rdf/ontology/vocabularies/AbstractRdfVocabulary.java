@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
-import com.beligum.base.models.AbstractJsonObject;
+import com.beligum.base.database.models.AbstractJsonObject;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.*;
 
