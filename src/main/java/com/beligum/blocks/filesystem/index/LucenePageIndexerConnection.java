@@ -26,10 +26,12 @@ import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FSLockFactory;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,12 +51,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private LucenePageIndexer pageIndexer;
+    private FSLockFactory luceneLockFactory;
     private boolean createdWriter;
 
     //-----CONSTRUCTORS-----
     public LucenePageIndexerConnection(LucenePageIndexer pageIndexer) throws IOException
     {
         this.pageIndexer = pageIndexer;
+        this.luceneLockFactory = FSLockFactory.getDefault();
         this.createdWriter = false;
     }
 
@@ -263,7 +267,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private void printLuceneIndex() throws IOException
     {
-        Directory dir = FSDirectory.open(Paths.get(Settings.instance().getPageMainIndexFolder()));
+        Directory dir = FSDirectory.open(this.getDocDir());
 
         try (IndexReader reader = DirectoryReader.open(dir)) {
             int numDocs = reader.numDocs();
@@ -277,9 +281,9 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
             //make sure the basic structure to read stuff exists
-            this.assertBasicStructure();
+            this.getDocDir();
 
-            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get(Settings.instance().getPageMainIndexFolder())));
+            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(this.getDocDir()));
             IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
@@ -300,7 +304,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
         IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
-        if (retVal==null || !retVal.isOpen()) {
+        if (retVal == null || !retVal.isOpen()) {
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = this.buildNewLuceneIndexWriter());
         }
 
@@ -328,36 +332,29 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
      */
     private IndexWriter buildNewLuceneIndexWriter() throws IOException
     {
-        final java.nio.file.Path docDir = Paths.get(Settings.instance().getPageMainIndexFolder());
-
-        if (!Files.exists(docDir)) {
-            Files.createDirectories(docDir);
-        }
-        if (!Files.isWritable(docDir)) {
-            throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
-        }
-
         IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.DEFAULT_ANALYZER);
 
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-        //we built it at least once, save that for later checking
-        R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
-
-        return new IndexWriter(FSDirectory.open(docDir), iwc);
+        return new IndexWriter(FSDirectory.open(this.getDocDir(), this.luceneLockFactory), iwc);
     }
-    private void assertBasicStructure() throws IOException
+    private Path getDocDir() throws IOException
     {
+        final java.nio.file.Path retVal = Paths.get(Settings.instance().getPageMainIndexFolder());
+
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
-            //Watch out: don't call this method often, it's hideously slow!
-            try (IndexWriter indexWriter = this.buildNewLuceneIndexWriter()) {
-                //just open and close the writer once, else we'll get a "no segments* file found" exception
+            if (!Files.exists(retVal)) {
+                Files.createDirectories(retVal);
+            }
+            if (!Files.isWritable(retVal)) {
+                throw new IOException("Lucene index directory is not writable, please check the path; " + retVal);
             }
 
-            //Note: don't save the BOOTED flag here, because it's currently used to test the _reader_
-            // so we might end up with a lock-race condition if we've written before, but not read yet.
-            //Therefore, put it at the end of the buildNewLuceneIndexWriter() call above
+            //we built it at least once, save that for later checking
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
         }
+
+        return retVal;
     }
 }

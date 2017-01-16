@@ -60,19 +60,19 @@ public class ApplicationEndpoint
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    @Path("/{randomPage:.*}")
+    @Path("/{path:.*}")
     @GET
-    public Response getPage(@PathParam("randomPage") String randomPage, @HeaderParam("Referer") String referer) throws Exception
+    public Response getPage(@PathParam("path") String path, @HeaderParam("Referer") String referer) throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
         //make sure the path always starts with a slash (eg. not the case when this endpoint matched the root ("") path)
-        if (!randomPage.startsWith("/")) {
-            randomPage = "/" + randomPage;
+        if (!path.startsWith("/")) {
+            path = "/" + path;
         }
 
         //security; rebuild the url instead of blindly accepting what comes in
-        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(randomPage)
+        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(path)
                                      //note: the randomURL doesn't include the query params; get them from the requestContext
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery())
                                      .build();
@@ -85,10 +85,10 @@ public class ApplicationEndpoint
         URI externalRedirectUri = null;
         if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
             //check if it's a full resource path
-            java.nio.file.Path path = Paths.get(requestedUri.getPath());
-            if (path.getNameCount() == 3) {
+            java.nio.file.Path requestedPath = Paths.get(requestedUri.getPath());
+            if (requestedPath.getNameCount() == 3) {
                 //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type (and 2 to be the ID)
-                URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
+                URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + requestedPath.getName(1).toString());
                 RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
                 if (rdfClass != null) {
                     RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
@@ -253,19 +253,19 @@ public class ApplicationEndpoint
                         //this means we haven't redirected away to an address with a language
                         if (retVal == null) {
                             if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                                throw new NotFoundException("Can't find this page and you have no rights to create it; " + randomPage);
+                                throw new NotFoundException("Can't find this page and you have no rights to create it; " + path);
                             }
                             else {
                                 //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
                                 // to make sure it can be mapped in our ontology (during page creation)
                                 if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
-                                    java.nio.file.Path path = Paths.get(requestedUri.getPath());
-                                    if (path.getNameCount() != 3) {
+                                    java.nio.file.Path requestedPath = Paths.get(requestedUri.getPath());
+                                    if (requestedPath.getNameCount() != 3) {
                                         throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
                                     }
                                     else {
                                         //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
-                                        URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
+                                        URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + requestedPath.getName(1).toString());
                                         RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
                                         if (resourcedType == null) {
                                             throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type (" + resourceTypeCurie + ");" + requestedUri);
@@ -339,10 +339,10 @@ public class ApplicationEndpoint
                                     //We allow the user to create any kind of URL since it can be typed in the browser
                                     //However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
                                     //address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
-                                    String safePage = this.safePagePath(randomPage);
+                                    String safePage = this.safePagePath(path);
 
                                     //OPTION 6: URL is not safe: fix it and redirect
-                                    if (!randomPage.equals(safePage)) {
+                                    if (!path.equals(safePage)) {
                                         retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath(safePage).build());
                                     }
                                     //OPTION 7: show the create-new page list

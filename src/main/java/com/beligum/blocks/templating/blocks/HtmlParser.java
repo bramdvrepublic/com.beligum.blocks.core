@@ -104,7 +104,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * @throws IOException
      */
     @Override
-    public ResourceInputStream parse(Resource resource) throws IOException
+    public ResourceInputStream parse(Resource resource, MimeType requestedMimeType) throws IOException
     {
         ResourceInputStream retVal = null;
 
