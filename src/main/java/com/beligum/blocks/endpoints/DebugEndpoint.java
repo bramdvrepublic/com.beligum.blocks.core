@@ -223,7 +223,7 @@ public class DebugEndpoint
     //            getLanguage = Settings.instance().getDefaultLanguage();
     //        }
     //        PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(pageTemplateName);
-    //        Template template = pagetemplate.get().getNewTemplate();
+    //        Template template = pagetemplate.get().createNewTemplate();
     //        template.set("DateTool", new DateTool());
     //        template.set("EscapeTool", new EscapeTool());
     //        template.set("pageTemplate", pageTemplate);
@@ -238,7 +238,7 @@ public class DebugEndpoint
     //    @Path("/blueprints")
     //    public Response getBlueprintsPage() throws Exception
     //    {
-    //        Template template = blueprints.get().getNewTemplate();
+    //        Template template = blueprints.get().createNewTemplate();
     //        template.set("blueprints", Blocks.templateCache().getBlueprints());
     //        return Response.ok(template).build();
     //    }
@@ -251,7 +251,7 @@ public class DebugEndpoint
     //            getLanguage = Settings.instance().getDefaultLanguage();
     //        }
     //        Blueprint blueprintObj = Blocks.templateCache().getBlueprint(blueprintName);
-    //        Template template = blueprint.get().getNewTemplate();
+    //        Template template = blueprint.get().createNewTemplate();
     //        template.set("DateTool", new DateTool());
     //        template.set("EscapeTool", new EscapeTool());
     //        template.set("blueprint", blueprintObj);
@@ -268,7 +268,7 @@ public class DebugEndpoint
     //    {
     //        ArrayList<String> languages = Settings.instance().getLanguages();
     //
-    //        Template template = sitemap.get().getNewTemplate();
+    //        Template template = sitemap.get().createNewTemplate();
     //        BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
     //        template.set("urlmap", sitemap);
     //        template.set("languages", languages);

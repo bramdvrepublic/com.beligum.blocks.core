@@ -585,7 +585,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * @return
      * @throws IOException
      */
-    public static String eatVelocityComments(Resource resource) throws IOException
+    private String eatVelocityComments(Resource resource) throws IOException
     {
         StringBuilder retVal = new StringBuilder();
 

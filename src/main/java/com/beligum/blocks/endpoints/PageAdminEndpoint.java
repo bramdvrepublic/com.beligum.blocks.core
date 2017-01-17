@@ -36,7 +36,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.Format;
@@ -179,20 +178,17 @@ public class PageAdminEndpoint
             }
         }
 
-        //we'll render out a block template to a temp buffer (note: you never have to close a stringwriter)
-        StringWriter blockHtml = new StringWriter();
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
-        Template block = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(URI.create(htmlTemplate.getTemplateName()),
-                                                                                                       htmlTemplate.createNewHtmlInstance(),
-                                                                                                       MimeTypes.HTML,
-                                                                                                       //since this is the value of the template context lang,
-                                                                                                       //it makes sense to create the string in the same lang
-                                                                                                       R.i18n().getOptimalLocale())));
-        block.render(blockHtml);
+        Template block = R.resourceManager().newTemplate(new StringSource(URI.create(htmlTemplate.getTemplateName()),
+                                                                          htmlTemplate.createNewHtmlInstance(),
+                                                                          MimeTypes.HTML,
+                                                                          //since this is the value of the template context lang,
+                                                                          //it makes sense to create the string in the same lang
+                                                                          R.i18n().getOptimalLocale()));
 
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), blockHtml.toString());
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
                    Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),

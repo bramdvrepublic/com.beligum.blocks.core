@@ -56,7 +56,7 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(URI uri, URI stream) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), MimeTypes.HTML, null);
+        super(preparseUri(uri), MimeTypes.HTML, null);
 
         InputStream is = null;
         try {
@@ -76,7 +76,7 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(Source source) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(source.getUri()), MimeTypes.HTML, null);
+        super(preparseUri(source.getUri()), MimeTypes.HTML, null);
 
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
@@ -85,14 +85,14 @@ public abstract class PageSource extends AbstractSource implements Source
     protected PageSource(URI uri, InputStream html) throws IOException
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), MimeTypes.HTML, null);
+        super(preparseUri(uri), MimeTypes.HTML, null);
 
         this.parseHtml(html);
     }
     protected PageSource(URI uri)
     {
         //note: the language will be set in parseHtml()
-        super.init(preparseUri(uri), MimeTypes.HTML, null);
+        super(preparseUri(uri), MimeTypes.HTML, null);
 
         //Note: subclass must call parseHtml() manually
     }
@@ -157,7 +157,10 @@ public abstract class PageSource extends AbstractSource implements Source
     }
 
     //-----PRIVATE METHODS-----
-    private URI preparseUri(URI unsafeUri)
+    /**
+     * Reason this is static is because it's called from the super() call in our constructor
+     */
+    private static URI preparseUri(URI unsafeUri)
     {
         //avoid directory attacks
         unsafeUri = unsafeUri.normalize();

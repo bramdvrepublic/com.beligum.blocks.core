@@ -39,6 +39,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
     {
         if (Settings.instance().hasBlocksCoreConfig()) {
 
+            //let all .html files pass through our HtmlParser
+            R.resourceManager().register(new HtmlParser());
+
             //the Jericho logger is quite verbose with error messages when it comes to parsing our Velocity-annotated html tags,
             //so let's disable it's logger in any other level than debug mode
             if (R.configuration().getLogConfig().getLogLevel().isGreaterOrEqual(Level.INFO)) {

@@ -21,7 +21,6 @@ import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -579,11 +578,8 @@ public abstract class HtmlTemplate
         Element retVal = null;
 
         //this allows us to use velocity variables in the resource URLs
-        Template template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(this.getRelativePath().toUri(), element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale())));
-        try (StringWriter sw = new StringWriter()) {
-            template.render(sw);
-            retVal = new Source(sw.toString()).getFirstElement();
-        }
+        Template template = R.resourceManager().newTemplate(new StringSource(this.getRelativePath().toUri(), element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
+        retVal = new Source(template.render()).getFirstElement();
 
         return retVal;
     }

@@ -41,8 +41,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -110,7 +108,7 @@ public class ApplicationEndpoint
 
             if (page != null) {
 
-                Template template = R.templateEngine().getNewTemplate(page);
+                Template template = R.resourceManager().newTemplate(page);
 
                 //this will allow the blocks javascript/css to be included if we're logged in and have permission
                 if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
@@ -287,7 +285,7 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template newPageInstance = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), MimeTypes.HTML, optimalLocale)));
+                                        Template newPageInstance = R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), MimeTypes.HTML, optimalLocale));
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -308,20 +306,15 @@ public class ApplicationEndpoint
                                     //Finally, we'll render it out in a new template, again in edit mode.
                                     if (copyPage != null) {
 
-                                        //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
-                                        Writer writer = new StringWriter();
-
                                         //we need to pull the normalized html through the template engine for this to work
-                                        Template copyTemplate = R.templateEngine().getNewTemplate(copyPage);
+                                        Template copyTemplate = R.resourceManager().newTemplate(copyPage);
 
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
 
-                                        copyTemplate.render(writer);
-
                                         Template template = null;
-                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), writer.toString(), copyPage.getMimeType(), copyPage.getLanguage()));
+                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), copyTemplate.render(), copyPage.getMimeType(), copyPage.getLanguage()));
                                         try (InputStream is = html.newInputStream()) {
-                                            template = R.templateEngine().getNewTemplate(R.resourceManager().create(new StringSource(requestedUri, IOUtils.toString(is), MimeTypes.HTML, optimalLocale)));
+                                            template = R.resourceManager().newTemplate(new StringSource(requestedUri, IOUtils.toString(is), MimeTypes.HTML, optimalLocale));
                                         }
 
                                         //this will allow the blocks javascript/css to be included
@@ -377,7 +370,7 @@ public class ApplicationEndpoint
         R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
 
         //for velocity templates
-        template.getContext().set(CacheKeys.BLOCKS_MODE.name(), mode.name());
+        template.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
     }
     private List<Map<String, String>> buildLocalizedPageTemplateMap()
     {
