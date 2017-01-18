@@ -226,7 +226,8 @@ public class TemplateResources
         //-----PRIVATE METHODS-----
         private void checkElementFingerprint()
         {
-            if (!this.fingerprintedElement && !this.immutable) {
+            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement && !this.immutable) {
+                //optimization: if the value==the element, we'll do both at once
                 boolean same = this.value.equals(this.element);
                 this.element = R.resourceManager().getFingerprinter().fingerprintUris(this.element);
 
@@ -239,7 +240,8 @@ public class TemplateResources
         }
         private void checkValueFingerprint()
         {
-            if (!this.fingerprintedValue && !this.immutable) {
+            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue && !this.immutable) {
+                //optimization: if the value==the element, we'll do both at once
                 boolean same = this.value.equals(this.element);
                 this.value = R.resourceManager().getFingerprinter().fingerprintUris(this.value);
 

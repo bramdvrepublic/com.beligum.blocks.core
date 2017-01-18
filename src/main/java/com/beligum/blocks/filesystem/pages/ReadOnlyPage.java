@@ -1,5 +1,6 @@
 package com.beligum.blocks.filesystem.pages;
 
+import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
@@ -26,6 +27,11 @@ public class ReadOnlyPage extends DefaultPage
 //    }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public ResourceInputStream newInputStream() throws IOException
+    {
+        return new ResourceInputStream(this.fileContext.open(this.getNormalizedPageProxyPath()), this.fileContext.getFileStatus(this.getNormalizedPageProxyPath()).getLen());
+    }
     @Override
     public boolean isReadOnly()
     {

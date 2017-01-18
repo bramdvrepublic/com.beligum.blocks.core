@@ -99,13 +99,9 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * This method is executed for all *.html files requested by the client (during postprocess phase of the ResourceLoader).
      * It should be optimized for speed but the result is cached by the ResourceManager, so in production mode,
      * the speed-importance of this method is relative.
-     *
-     * @param resource the resource to be parsed
-     * @return
-     * @throws IOException
      */
     @Override
-    public ResourceInputStream parse(Resource resource, MimeType requestedMimeType) throws IOException
+    public ResourceInputStream parse(com.beligum.base.resources.ifaces.Source source, MimeType requestedMimeType) throws IOException
     {
         ResourceInputStream retVal = null;
 
@@ -120,7 +116,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             //Attributes.setDefaultMaxErrorCount(10);
 
             //the solves a lot of issues with inactive lines
-            Source source = new Source(this.eatVelocityComments(resource));
+            Source htmlSource = new Source(this.eatVelocityComments(source));
 
             // this one was a bit problematic: we would like to surround all returning html with a #ptwd directive,
             // but we can't have it twice, so it's kind of hard to detectAndReplace the outer resource where we should add it.
@@ -128,19 +124,19 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             // regular Velocity templates to be wrapped too (eg. #parse("/templates/main.html"))
             // So we switched to detecting all _source_ (not the output or we'll wrap page templates as well and end up with doubles)
             // resources that contain a <html> tag and hope for the best...
-            boolean htmlPage = source.getFirstElement(HTML_ROOT_ELEM) != null;
+            boolean htmlPage = htmlSource.getFirstElement(HTML_ROOT_ELEM) != null;
 
             // if we're dealing with a template (eg. the file is a template, not an instance of a template),
             // store the external references and replace the source with the html in the <template> tag
 
-            HtmlTemplate template = templateCache.getByRelativePath(resource.getUri().getPath());
+            HtmlTemplate template = templateCache.getByRelativePath(source.getUri().getPath());
             if (template != null) {
-                OutputDocument output = this.processHtmlTemplate(resource, source, template);
+                OutputDocument output = this.processHtmlTemplate(source, htmlSource, template);
                 //replace the source with the (parsed) <template> content
-                source = new Source(output.toString());
+                htmlSource = new Source(output.toString());
             }
 
-            OutputDocument output = this.processResource(resource, source);
+            OutputDocument output = this.processSource(source, htmlSource);
 
             StringBuilder sb = new StringBuilder();
             if (htmlPage) {
@@ -153,7 +149,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
 
             if (R.configuration().getResourceConfig().getMinifyResources()) {
-                retVal = new ResourceInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
+                retVal = new ResourceInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), source.getUri(), source.getMimeType()));
             }
             else {
                 retVal = new ResourceInputStream(sb.toString());
@@ -178,14 +174,14 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //FIXME maybe this should be VELOCITY instead?
         return MimeTypes.HTML;
     }
-    private OutputDocument processResource(Resource resource, Source source) throws Exception
+    private OutputDocument processSource(com.beligum.base.resources.ifaces.Source source, Source htmlSource) throws Exception
     {
         TemplateCache templateCache = this.getTemplateCache();
 
-        OutputDocument retVal = new OutputDocument(source);
+        OutputDocument retVal = new OutputDocument(htmlSource);
 
-        //The idea is to traverse the entire html tree and parse all (start tags of) template-instances, both page and tag
-        Iterator<Segment> nodes = source.getNodeIterator();
+        //The idea is to traverse the entire html tree and parse/replace all (start tags of) template-instances, both page and tag
+        Iterator<Segment> nodes = htmlSource.getNodeIterator();
         while (nodes.hasNext()) {
             Segment node = nodes.next();
 
@@ -197,7 +193,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
                 if (template != null) {
-                    StringBuilder parsedInstance = this.processTemplateInstance(resource, element, template);
+                    StringBuilder parsedInstance = this.processTemplateInstance(source, element, template);
                     retVal.replace(element, parsedInstance);
                 }
             }
@@ -260,7 +256,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
         return retVal;
     }
-    private StringBuilder processTemplateInstance(Resource resource, Element templateInstance, HtmlTemplate htmlTemplate) throws Exception
+    private StringBuilder processTemplateInstance(com.beligum.base.resources.ifaces.Source source, Element templateInstance, HtmlTemplate htmlTemplate) throws Exception
     {
         //build the attributes map
         Map<String, String> attributes = new LinkedHashMap<>();
@@ -320,7 +316,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 if (name != null) {
                     String value = immediateChild.toString();
 
-                    OutputDocument parsedValue = this.processResource(resource, new Source(value));
+                    OutputDocument parsedValue = this.processSource(source, new Source(value));
                     value = parsedValue.toString();
 
                     // this list allows us to specify multiple properties with the same name in the instance
@@ -433,14 +429,17 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
 
-        //Note: this is the new and improved version of the code below
-        Resource htmlTemplateResource = R.resourceManager().get(URI.create(htmlTemplate.getRelativePath().toString()));
+        //lookup the external resource
+        Resource htmlTemplateResource = R.resourceManager().get(htmlTemplate.getRelativePath().toUri());
         if (htmlTemplateResource == null) {
             throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. " + htmlTemplate.getRelativePath());
         }
         else {
-            //wire both resources together
-            resource.addChild(htmlTemplateResource);
+            //wire both resources together so the update mechanism works
+            //TODO we should factor away the casting...
+            if (source instanceof Resource) {
+                ((Resource) source).addChild(htmlTemplateResource);
+            }
         }
 
         //inline the resource into the builder
@@ -471,12 +470,12 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         return builder;
     }
 
-    private OutputDocument processHtmlTemplate(Resource resource, Source source, HtmlTemplate template) throws Exception
+    private OutputDocument processHtmlTemplate(com.beligum.base.resources.ifaces.Source source, Source htmlSource, HtmlTemplate template) throws Exception
     {
         //first of all, since this method is only called when something changed, update the cache value
         //use the old template value for the paths
-        HtmlTemplate sourceTemplate = HtmlTemplate.create(template.getTemplateName(), source, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
-        getTemplateCache().putByRelativePath(resource.getUri().getPath(), sourceTemplate);
+        HtmlTemplate sourceTemplate = HtmlTemplate.create(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
+        getTemplateCache().putByRelativePath(source.getUri().getPath(), sourceTemplate);
 
         //this is the base for all coming preprocessing
         //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)
@@ -519,7 +518,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                             //since it's not an empty element tag, it should have an end tag
                             EndTag endTag = tag.getElement().getEndTag();
                             if (endTag == null) {
-                                throw new Exception("Encountered non-empty element '" + tag.toString() + "' (at line " + getAbsoluteTemplateTagLineNumber(source, tag.getBegin()) +
+                                throw new Exception("Encountered non-empty element '" + tag.toString() + "' (at line " + getAbsoluteTemplateTagLineNumber(htmlSource, tag.getBegin()) +
                                                     ")  without a matching end tag; " + sourceTemplate.getAbsolutePath());
                             }
                             else {
@@ -547,13 +546,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
                     Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
                     if (propertyAttr != null) {
-                        this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), propertyAttr, output, currentVocab, currentPrefixes);
+                        this.replaceTemplateProperty(htmlSource, sourceTemplate, tag.getElement(), propertyAttr, output, currentVocab, currentPrefixes);
                     }
 
                     Attribute dataPropertyAttr = attributes.get(NON_RDF_PROPERTY_ATTR);
                     if (dataPropertyAttr != null) {
                         if (propertyAttr == null) {
-                            this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), dataPropertyAttr, output, currentVocab, currentPrefixes);
+                            this.replaceTemplateProperty(htmlSource, sourceTemplate, tag.getElement(), dataPropertyAttr, output, currentVocab, currentPrefixes);
                         }
                         else {
                             Logger.warn("Not using attribute '" + NON_RDF_PROPERTY_ATTR + "' of tag " + tag.toString() + " because there's also a '" + RDF_PROPERTY_ATTR +
@@ -581,15 +580,15 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     /**
      * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
      *
-     * @param resource the resource to be parsed
+     * @param source the resource to be parsed
      * @return
      * @throws IOException
      */
-    private String eatVelocityComments(Resource resource) throws IOException
+    private String eatVelocityComments(com.beligum.base.resources.ifaces.Source source) throws IOException
     {
         StringBuilder retVal = new StringBuilder();
 
-        try (BufferedReader stringReader = new BufferedReader(new InputStreamReader(resource.newInputStream()))) {
+        try (BufferedReader stringReader = new BufferedReader(new InputStreamReader(source.newInputStream()))) {
             String line;
             while ((line = stringReader.readLine()) != null) {
                 int commentIdx = line.indexOf("##");

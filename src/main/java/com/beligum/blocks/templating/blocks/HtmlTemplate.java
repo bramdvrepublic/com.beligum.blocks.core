@@ -572,13 +572,17 @@ public abstract class HtmlTemplate
     }
     /**
      * Puts the element's html through the template engine to render out all needed context variables (constants/messages)
+     * This allows us to use velocity variables in the resource URLs
      */
     private Element renderResourceElement(Element element) throws IOException
     {
         Element retVal = null;
 
-        //this allows us to use velocity variables in the resource URLs
-        Template template = R.resourceManager().newTemplate(new StringSource(this.getRelativePath().toUri(), element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
+        // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
+        // so make sure you don't use this URI to create template or you'll end up overwriting the cache with this temporary StringSource
+        Template template = R.resourceManager().newTemplate(new StringSource(element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
+
+        //there should always be a first element since we started out with an element, right?
         retVal = new Source(template.render()).getFirstElement();
 
         return retVal;
