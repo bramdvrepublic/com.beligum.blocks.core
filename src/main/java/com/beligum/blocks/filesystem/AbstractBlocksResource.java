@@ -79,7 +79,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
     public long getLastModifiedTime() throws IOException
     {
         return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.localStoragePath).getModificationTime()),
-                        this.calcChildrenLastModificationTime(this.children));
+                        this.calcChildrenLastModificationTime());
     }
     @Override
     public long getSize() throws IOException

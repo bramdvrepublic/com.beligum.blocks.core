@@ -50,7 +50,7 @@ public class HtmlAnalyzer
     //-----CONSTRUCTORS-----
     public HtmlAnalyzer(com.beligum.base.resources.ifaces.Source pageSource) throws IOException
     {
-        this.allTagTemplates = HtmlParser.getTemplateCache();
+        this.allTagTemplates = TemplateCache.instance();
 
         this.internalRefs = new HashMap<>();
         this.externalRefs = new HashMap<>();

@@ -283,7 +283,7 @@ public class ApplicationEndpoint
                                 // Note that we use the flash cache as a template-selection mechanism to keep the final URL clean
                                 if (!StringUtils.isEmpty(newPageTemplateName)) {
                                     //check if the name exists and is all right
-                                    HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
+                                    HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
                                         Template newPageInstance = R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), MimeTypes.HTML, optimalLocale));
 
@@ -376,7 +376,7 @@ public class ApplicationEndpoint
     {
         List<Map<String, String>> retVal = new ArrayList<>();
 
-        TemplateCache cache = HtmlParser.getTemplateCache();
+        TemplateCache cache = TemplateCache.instance();
         Locale requestLocale = R.i18n().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (template instanceof PageTemplate) {

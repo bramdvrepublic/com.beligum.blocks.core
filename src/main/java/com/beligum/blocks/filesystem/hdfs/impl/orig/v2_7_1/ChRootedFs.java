@@ -19,6 +19,7 @@ package com.beligum.blocks.filesystem.hdfs.impl.orig.v2_7_1;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.Options.ChecksumOpt;
 import org.apache.hadoop.fs.permission.AclEntry;
@@ -26,7 +27,6 @@ import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.AccessControlException;
-import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.Progressable;
 
 import java.io.FileNotFoundException;
@@ -38,8 +38,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is the original ChRootedFs with some mods:
+ * This is the original view.ChRootedFs with mods:
  * - made the class public
+ * - made it inherit from FilterFs
+ * - used the constructor() and fullPath() method from the (old, original) ChRootedFileSystem implementation
+ * - removed all overridden methods that don't involve paths (now bubbling up to FilterFs)
+ * - checked all methods in FilterFS with a Path as argument that they're overloaded here
+ * - used ViewFs as inspiration (search for 'stripOutRoot' in ViewFs) to make changes to strip out the chroot again everywhere a Path is returned
  * ------------------------------------------------------------------------------
  * <code>ChrootedFs</code> is a file system with its root some path
  * below the root of its base file system.
@@ -51,78 +56,52 @@ import java.util.Map;
  * <li>chRootPathPart is /user/foo</li>
  * <li>workingDir is a directory related to chRoot</li>
  * </ul>
- *
+ * <p>
  * The paths are resolved as follows by ChRootedFileSystem:
  * <ul>
  * <li> Absolute path /a/b/c is resolved to /user/foo/a/b/c at myFs</li>
  * <li> Relative path x/y is resolved to /user/foo/<workingDir>/x/y</li>
  * </ul>
- *
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving /*Evolving for a release,to be changed to Stable */
-public class ChRootedFs extends AbstractFileSystem
+public class ChRootedFs extends FilterFs
 {
-    private final AbstractFileSystem myFs;  // the base file system whose root is changed
     private final URI myUri; // the base URI + the chroot
     private final Path chRootPathPart; // the root below the root of the base
     private final String chRootPathPartString;
+    private final URI chRootPathPartUri;
+    protected Path workingDir;
 
-    protected AbstractFileSystem getMyFs()
+    public ChRootedFs(final URI uri, Configuration conf, final AbstractFileSystem fs) throws URISyntaxException
     {
-        return myFs;
+        //note that the super constructors eat up the URI path, so make sure you don't rely on fs.getUri() to get the path
+        super(fs);
+
+        String pathString = uri.getPath();
+        if (pathString.isEmpty()) {
+            pathString = "/";
+        }
+        chRootPathPart = new Path(pathString);
+        chRootPathPartString = chRootPathPart.toUri().getPath();
+        chRootPathPartUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), pathString, uri.getQuery(), uri.getFragment());
+        myUri = uri;
+        workingDir = getHomeDirectory();
     }
 
-    /**
-     *
-     * @param path
-     * @return return full path including the chroot
-     */
     protected Path fullPath(final Path path)
     {
         super.checkPath(path);
-        return new Path((chRootPathPart.isRoot() ? "" : chRootPathPartString)
-                        + path.toUri().getPath());
-    }
 
-    @Override
-    public boolean isValidName(String src)
-    {
-        return myFs.isValidName(fullPath(new Path(src)).toUri().toString());
-    }
-
-    public ChRootedFs(final AbstractFileSystem fs, final Path theRoot)
-                    throws URISyntaxException
-    {
-        super(fs.getUri(), fs.getUri().getScheme(),
-              fs.getUri().getAuthority() != null, fs.getUriDefaultPort());
-        myFs = fs;
-        myFs.checkPath(theRoot);
-        chRootPathPart = new Path(myFs.getUriPath(theRoot));
-        chRootPathPartString = chRootPathPart.toUri().getPath();
-    /*
-     * We are making URI include the chrootedPath: e.g. file:///chrootedPath.
-     * This is questionable since Path#makeQualified(uri, path) ignores
-     * the pathPart of a uri. Since this class is internal we can ignore
-     * this issue but if we were to make it external then this needs
-     * to be resolved.
-     */
-        // Handle the two cases:
-        //              scheme:/// and scheme://authority/
-        myUri = new URI(myFs.getUri().toString() +
-                        (myFs.getUri().getAuthority() == null ? "" : Path.SEPARATOR) +
-                        chRootPathPart.toUri().getPath().substring(1));
-        super.checkPath(theRoot);
-    }
-
-    @Override
-    public URI getUri()
-    {
-        return myUri;
+        if (path.isAbsolute()) {
+            return new Path((chRootPathPart.isRoot() ? "" : chRootPathPartString) + path.toUri().getPath());
+        }
+        else {
+            return new Path(chRootPathPartString + workingDir.toUri().getPath(), path);
+        }
     }
 
     /**
-     *
      * Strip out the root from the path.
      *
      * @param p - fully qualified path p
@@ -134,20 +113,24 @@ public class ChRootedFs extends AbstractFileSystem
             checkPath(p);
         }
         catch (IllegalArgumentException e) {
-            throw new RuntimeException("Internal Error - path " + p +
-                                       " should have been with URI" + myUri);
+            throw new RuntimeException("Internal Error - path " + p + " should have been with URI " + myUri);
         }
         String pathPart = p.toUri().getPath();
-        return (pathPart.length() == chRootPathPartString.length()) ?
-               "" : pathPart.substring(chRootPathPartString.length() +
-                                       (chRootPathPart.isRoot() ? 0 : 1));
+        return (pathPart.length() == chRootPathPartString.length()) ? "" : pathPart.substring(chRootPathPartString.length() + (chRootPathPart.isRoot() ? 0 : 1));
     }
 
     @Override
-    public Path getHomeDirectory()
+    public URI getUri()
     {
-        return myFs.getHomeDirectory();
+        return myUri;
     }
+
+    //Not implemented in ChrootedFileSystem neither...
+    //    @Override
+    //    public Path makeQualified(Path path)
+    //    {
+    //        return super.makeQualified(fullPath(path));
+    //    }
 
     @Override
     public Path getInitialWorkingDirectory()
@@ -163,8 +146,13 @@ public class ChRootedFs extends AbstractFileSystem
     public Path getResolvedQualifiedPath(final Path f)
                     throws FileNotFoundException
     {
-        return myFs.makeQualified(
-                        new Path(chRootPathPartString + f.toUri().toString()));
+        return makeQualified(new Path(chRootPathPartString + f.toUri().toString()));
+    }
+
+    @Override
+    public boolean isValidName(String src)
+    {
+        return super.isValidName(fullPath(new Path(src)).toUri().toString());
     }
 
     @Override
@@ -174,240 +162,247 @@ public class ChRootedFs extends AbstractFileSystem
                                              final Progressable progress, final ChecksumOpt checksumOpt,
                                              final boolean createParent) throws IOException, UnresolvedLinkException
     {
-        return myFs.createInternal(fullPath(f), flag,
-                                   absolutePermission, bufferSize,
-                                   replication, blockSize, progress, checksumOpt, createParent);
+        return super.createInternal(fullPath(f), flag,
+                                    absolutePermission, bufferSize,
+                                    replication, blockSize, progress, checksumOpt, createParent);
     }
 
     @Override
     public boolean delete(final Path f, final boolean recursive)
                     throws IOException, UnresolvedLinkException
     {
-        return myFs.delete(fullPath(f), recursive);
+        return super.delete(fullPath(f), recursive);
     }
 
     @Override
     public BlockLocation[] getFileBlockLocations(final Path f, final long start,
                                                  final long len) throws IOException, UnresolvedLinkException
     {
-        return myFs.getFileBlockLocations(fullPath(f), start, len);
+        return super.getFileBlockLocations(fullPath(f), start, len);
     }
 
     @Override
-    public FileChecksum getFileChecksum(final Path f)
-                    throws IOException, UnresolvedLinkException
+    public FileChecksum getFileChecksum(final Path f) throws IOException, UnresolvedLinkException
     {
-        return myFs.getFileChecksum(fullPath(f));
+        return super.getFileChecksum(fullPath(f));
     }
 
     @Override
-    public FileStatus getFileStatus(final Path f)
-                    throws IOException, UnresolvedLinkException
+    public FileStatus getFileStatus(final Path f) throws IOException, UnresolvedLinkException
     {
-        return myFs.getFileStatus(fullPath(f));
-    }
-
-    public void access(Path path, FsAction mode) throws AccessControlException,
-                                                        FileNotFoundException, UnresolvedLinkException, IOException
-    {
-        myFs.access(fullPath(path), mode);
+        return new ChRootedFileStatus(super.getFileStatus(fullPath(f)), this.chRootPathPartUri);
     }
 
     @Override
-    public FileStatus getFileLinkStatus(final Path f)
-                    throws IOException, UnresolvedLinkException
+    public void access(Path path, FsAction mode) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
-        return myFs.getFileLinkStatus(fullPath(f));
+        super.access(fullPath(path), mode);
     }
 
     @Override
-    public FsStatus getFsStatus() throws IOException
+    public FileStatus getFileLinkStatus(final Path f) throws IOException, UnresolvedLinkException
     {
-        return myFs.getFsStatus();
+        return new ChRootedFileStatus(super.getFileLinkStatus(fullPath(f)), this.chRootPathPartUri);
     }
 
     @Override
-    public FsServerDefaults getServerDefaults() throws IOException
+    public FsStatus getFsStatus(final Path f) throws AccessControlException,
+                                                     FileNotFoundException, UnresolvedLinkException, IOException
     {
-        return myFs.getServerDefaults();
+        return super.getFsStatus(fullPath(f));
     }
 
     @Override
-    public int getUriDefaultPort()
+    public Path resolvePath(final Path p) throws FileNotFoundException, UnresolvedLinkException, AccessControlException, IOException
     {
-        return myFs.getUriDefaultPort();
+        return super.resolvePath(fullPath(p));
+    }
+
+    //Not implemented in ChrootedFileSystem neither...
+    //    @Override
+    //    public void checkPath(Path path)
+    //    {
+    //        myFs.checkPath(path);
+    //    }
+
+    //Don't really know what to do with this one
+    //    @Override
+    //    public String getUriPath(final Path p)
+    //    {
+    //        return myFs.getUriPath(p);
+    //    }
+
+    //Don't really know what to do with this one (it's overloaded in ViewFs)
+    //    @Override
+    //    public RemoteIterator<FileStatus> listStatusIterator(final Path f)
+    //                    throws AccessControlException, FileNotFoundException,
+    //                           UnresolvedLinkException, IOException
+    //    {
+    //        return super.listStatusIterator(f);
+    //    }
+
+    @Override
+    public FileStatus[] listStatus(final Path f) throws IOException, UnresolvedLinkException
+    {
+        return ChRootedFileStatus.wrap(super.listStatus(fullPath(f)), this.chRootPathPartUri);
     }
 
     @Override
-    public FileStatus[] listStatus(final Path f)
-                    throws IOException, UnresolvedLinkException
+    public RemoteIterator<Path> listCorruptFileBlocks(Path path) throws IOException
     {
-        return myFs.listStatus(fullPath(f));
+        return super.listCorruptFileBlocks(fullPath(path));
     }
 
     @Override
-    public void mkdir(final Path dir, final FsPermission permission,
-                      final boolean createParent) throws IOException, UnresolvedLinkException
+    public void mkdir(final Path dir, final FsPermission permission, final boolean createParent) throws IOException, UnresolvedLinkException
     {
-        myFs.mkdir(fullPath(dir), permission, createParent);
+        super.mkdir(fullPath(dir), permission, createParent);
 
     }
 
     @Override
-    public FSDataInputStream open(final Path f, final int bufferSize)
-                    throws IOException, UnresolvedLinkException
+    public FSDataInputStream open(final Path f) throws AccessControlException,
+                                                       FileNotFoundException, UnresolvedLinkException, IOException
     {
-        return myFs.open(fullPath(f), bufferSize);
+        return super.open(fullPath(f));
+    }
+
+    @Override
+    public FSDataInputStream open(final Path f, final int bufferSize) throws IOException, UnresolvedLinkException
+    {
+        return super.open(fullPath(f), bufferSize);
     }
 
     @Override
     public boolean truncate(final Path f, final long newLength)
                     throws IOException, UnresolvedLinkException
     {
-        return myFs.truncate(fullPath(f), newLength);
+        return super.truncate(fullPath(f), newLength);
     }
 
     @Override
-    public void renameInternal(final Path src, final Path dst)
-                    throws IOException, UnresolvedLinkException
+    public void renameInternal(final Path src, final Path dst) throws IOException, UnresolvedLinkException
     {
         // note fullPath will check that paths are relative to this FileSystem.
         // Hence both are in same file system and a rename is valid
-        myFs.renameInternal(fullPath(src), fullPath(dst));
+        super.renameInternal(fullPath(src), fullPath(dst));
     }
 
     @Override
-    public void renameInternal(final Path src, final Path dst,
-                               final boolean overwrite)
-                    throws IOException, UnresolvedLinkException
+    public void renameInternal(final Path src, final Path dst, final boolean overwrite) throws IOException, UnresolvedLinkException
     {
         // note fullPath will check that paths are relative to this FileSystem.
         // Hence both are in same file system and a rename is valid
-        myFs.renameInternal(fullPath(src), fullPath(dst), overwrite);
+        super.renameInternal(fullPath(src), fullPath(dst), overwrite);
     }
 
     @Override
-    public void setOwner(final Path f, final String username,
-                         final String groupname)
-                    throws IOException, UnresolvedLinkException
+    public void setOwner(final Path f, final String username, final String groupname) throws IOException, UnresolvedLinkException
     {
-        myFs.setOwner(fullPath(f), username, groupname);
+        super.setOwner(fullPath(f), username, groupname);
 
     }
 
     @Override
-    public void setPermission(final Path f, final FsPermission permission)
-                    throws IOException, UnresolvedLinkException
+    public void setPermission(final Path f, final FsPermission permission) throws IOException, UnresolvedLinkException
     {
-        myFs.setPermission(fullPath(f), permission);
+        super.setPermission(fullPath(f), permission);
     }
 
     @Override
-    public boolean setReplication(final Path f, final short replication)
-                    throws IOException, UnresolvedLinkException
+    public boolean setReplication(final Path f, final short replication) throws IOException, UnresolvedLinkException
     {
-        return myFs.setReplication(fullPath(f), replication);
+        return super.setReplication(fullPath(f), replication);
     }
 
     @Override
-    public void setTimes(final Path f, final long mtime, final long atime)
-                    throws IOException, UnresolvedLinkException
+    public void setTimes(final Path f, final long mtime, final long atime) throws IOException, UnresolvedLinkException
     {
-        myFs.setTimes(fullPath(f), mtime, atime);
+        super.setTimes(fullPath(f), mtime, atime);
     }
 
     @Override
-    public void modifyAclEntries(Path path, List<AclEntry> aclSpec)
-                    throws IOException
+    public void modifyAclEntries(Path path, List<AclEntry> aclSpec) throws IOException
     {
-        myFs.modifyAclEntries(fullPath(path), aclSpec);
+        super.modifyAclEntries(fullPath(path), aclSpec);
     }
 
     @Override
-    public void removeAclEntries(Path path, List<AclEntry> aclSpec)
-                    throws IOException
+    public void removeAclEntries(Path path, List<AclEntry> aclSpec) throws IOException
     {
-        myFs.removeAclEntries(fullPath(path), aclSpec);
+        super.removeAclEntries(fullPath(path), aclSpec);
     }
 
     @Override
     public void removeDefaultAcl(Path path) throws IOException
     {
-        myFs.removeDefaultAcl(fullPath(path));
+        super.removeDefaultAcl(fullPath(path));
     }
 
     @Override
     public void removeAcl(Path path) throws IOException
     {
-        myFs.removeAcl(fullPath(path));
+        super.removeAcl(fullPath(path));
     }
 
     @Override
     public void setAcl(Path path, List<AclEntry> aclSpec) throws IOException
     {
-        myFs.setAcl(fullPath(path), aclSpec);
+        super.setAcl(fullPath(path), aclSpec);
     }
 
     @Override
     public AclStatus getAclStatus(Path path) throws IOException
     {
-        return myFs.getAclStatus(fullPath(path));
+        return super.getAclStatus(fullPath(path));
     }
 
     @Override
-    public void setXAttr(Path path, String name, byte[] value,
-                         EnumSet<XAttrSetFlag> flag) throws IOException
+    public void setXAttr(Path path, String name, byte[] value)
+                    throws IOException
     {
-        myFs.setXAttr(fullPath(path), name, value, flag);
+        super.setXAttr(fullPath(path), name, value);
+    }
+
+    @Override
+    public void setXAttr(Path path, String name, byte[] value, EnumSet<XAttrSetFlag> flag) throws IOException
+    {
+        super.setXAttr(fullPath(path), name, value, flag);
     }
 
     @Override
     public byte[] getXAttr(Path path, String name) throws IOException
     {
-        return myFs.getXAttr(fullPath(path), name);
+        return super.getXAttr(fullPath(path), name);
     }
 
     @Override
     public Map<String, byte[]> getXAttrs(Path path) throws IOException
     {
-        return myFs.getXAttrs(fullPath(path));
+        return super.getXAttrs(fullPath(path));
     }
 
     @Override
     public Map<String, byte[]> getXAttrs(Path path, List<String> names)
                     throws IOException
     {
-        return myFs.getXAttrs(fullPath(path), names);
+        return super.getXAttrs(fullPath(path), names);
     }
 
     @Override
     public List<String> listXAttrs(Path path) throws IOException
     {
-        return myFs.listXAttrs(fullPath(path));
+        return super.listXAttrs(fullPath(path));
     }
 
     @Override
     public void removeXAttr(Path path, String name) throws IOException
     {
-        myFs.removeXAttr(fullPath(path), name);
+        super.removeXAttr(fullPath(path), name);
     }
 
     @Override
-    public void setVerifyChecksum(final boolean verifyChecksum)
-                    throws IOException, UnresolvedLinkException
-    {
-        myFs.setVerifyChecksum(verifyChecksum);
-    }
-
-    @Override
-    public boolean supportsSymlinks()
-    {
-        return myFs.supportsSymlinks();
-    }
-
-    @Override
-    public void createSymlink(final Path target, final Path link,
-                              final boolean createParent) throws IOException, UnresolvedLinkException
+    public void createSymlink(final Path target, final Path link, final boolean createParent) throws IOException, UnresolvedLinkException
     {
     /*
      * We leave the link alone:
@@ -415,18 +410,12 @@ public class ChRootedFs extends AbstractFileSystem
      * If absolute (ie / relative) then the link has to be resolved
      * relative to the changed root.
      */
-        myFs.createSymlink(fullPath(target), link, createParent);
+        super.createSymlink(fullPath(target), link, createParent);
     }
 
     @Override
     public Path getLinkTarget(final Path f) throws IOException
     {
-        return myFs.getLinkTarget(fullPath(f));
-    }
-
-    @Override
-    public List<Token<?>> getDelegationTokens(String renewer) throws IOException
-    {
-        return myFs.getDelegationTokens(renewer);
+        return super.getLinkTarget(fullPath(f));
     }
 }

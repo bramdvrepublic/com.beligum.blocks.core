@@ -11,6 +11,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.TransactionManager;
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -235,7 +236,8 @@ public class Settings
                 this.cachedPagesStorePath = URI.create(dir);
             }
             else {
-                this.cachedPagesStorePath = this.getPagesRootPath().resolve(PAGES_DEFAULT_DATA_FOLDER + "/");
+                //note that in this case we strip off the scheme because we'll probably want to trigger the condition below (to fill it will the default store scheme)
+                this.cachedPagesStorePath = UriBuilder.fromUri(this.getPagesRootPath().resolve(PAGES_DEFAULT_DATA_FOLDER + "/")).scheme(null).build();
             }
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {

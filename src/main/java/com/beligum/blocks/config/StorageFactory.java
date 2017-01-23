@@ -27,7 +27,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
@@ -362,14 +361,15 @@ public class StorageFactory
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
             FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
-            //create the root folder if needed
-            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
-            if (!fileContext.util().exists(root)) {
-                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
-            }
-
             //boot the XADisk instance too (probably still null here, good place to test them together)
             getPageStoreTransactionManager();
+
+            //create the root folder if needed
+            //TODO: commented out because we're not in a transaction here
+//            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
+//            if (!fileContext.util().exists(root)) {
+//                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
+//            }
 
             cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
         }

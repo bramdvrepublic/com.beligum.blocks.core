@@ -3,7 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
-import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
 
@@ -38,7 +38,7 @@ public class TemplatesEndpoint
     @Path("/styles/imports/reset.css")
     public Response getResources()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), MimeTypes.CSS.toString()).build();
+        return Response.ok(TemplateCache.instance().getCssReset(), MimeTypes.CSS.toString()).build();
     }
 
     @GET
@@ -46,7 +46,7 @@ public class TemplatesEndpoint
     @Path("/scripts/imports/all.js")
     public Response getImportsArray()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), MimeTypes.JAVASCRIPT.toString()).build();
+        return Response.ok(TemplateCache.instance().getJsArray(), MimeTypes.JAVASCRIPT.toString()).build();
     }
 
     /**

@@ -80,7 +80,7 @@ public class TemplateInstanceStackDirective extends Block
                     controller.created();
                 }
 
-                TemplateStackFrame frame = new TemplateStackFrame(HtmlParser.getTemplateCache().getByTagName(templateName), controller, stack.size());
+                TemplateStackFrame frame = new TemplateStackFrame(TemplateCache.instance().getByTagName(templateName), controller, stack.size());
 
                 stack.push(frame);
 

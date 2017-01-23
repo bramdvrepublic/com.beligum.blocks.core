@@ -4,7 +4,7 @@ import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.validation.messages.DefaultFeedbackMessage;
 import com.beligum.base.validation.messages.FeedbackMessage;
-import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.TemplateCache;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,9 +42,9 @@ public class AdminEndpoint
     {
         switch (type) {
             case RESET_TEMPLATES:
-                HtmlParser.flushTemplateCache();
+                TemplateCache.instance().flush();
                 //we might as well load it immediately; easier for debugging
-                HtmlParser.getTemplateCache();
+                TemplateCache.instance();
 
                 R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "Template cache reset successfully"));
 

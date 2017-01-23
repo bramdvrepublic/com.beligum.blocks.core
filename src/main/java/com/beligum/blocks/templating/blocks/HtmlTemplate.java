@@ -127,20 +127,23 @@ public abstract class HtmlTemplate
     {
         HtmlTemplate retVal = null;
 
-        if (representsTagTemplate(source)) {
+        if (isTagTemplate(source)) {
             retVal = new TagTemplate(templateName, source, absolutePath, relativePath, superTemplate);
         }
-        else if (representsPageTemplate(source)) {
+        else if (iPageTemplate(source)) {
             retVal = new PageTemplate(templateName, source, absolutePath, relativePath, superTemplate);
+        }
+        else {
+            com.beligum.base.utils.Logger.warn("Encountered a html template that not a page and not a tag, returning null; "+relativePath);
         }
 
         return retVal;
     }
-    private static boolean representsTagTemplate(Source source)
+    private static boolean isTagTemplate(Source source)
     {
         return !source.getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM).isEmpty();
     }
-    private static boolean representsPageTemplate(Source source)
+    private static boolean iPageTemplate(Source source)
     {
         boolean retVal = false;
 

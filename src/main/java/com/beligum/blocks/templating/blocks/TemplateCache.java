@@ -1,7 +1,18 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.resources.ClasspathSearchResult;
+import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.caching.CacheKeys;
 import com.google.common.base.Joiner;
+import net.htmlparser.jericho.Source;
+import org.apache.commons.io.Charsets;
 
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -23,7 +34,7 @@ public class TemplateCache
     private String cachedJsArray;
 
     //-----CONSTRUCTORS-----
-    public TemplateCache()
+    private TemplateCache()
     {
         this.nameMapping = new HashMap<>();
         this.relativePathMapping = new HashMap<>();
@@ -31,8 +42,27 @@ public class TemplateCache
 
         this.resetCache();
     }
+    public static TemplateCache instance()
+    {
+        TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
+        if (retVal == null) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
+            try {
+                searchAllTemplates(retVal);
+            }
+            catch (Exception e) {
+                Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+            }
+        }
+
+        return retVal;
+    }
 
     //-----PUBLIC METHODS-----
+    public void flush()
+    {
+        R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
+    }
     public HtmlTemplate getByTagName(String templateTagName)
     {
         return this.nameMapping.get(templateTagName);
@@ -160,6 +190,69 @@ public class TemplateCache
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private static void searchAllTemplates(TemplateCache templateCache) throws Exception
+    {
+        //start with a clean slate
+        templateCache.clear();
+
+        List<ClasspathSearchResult> htmlFiles = new ArrayList<>();
+        htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/imports/**.{html,htm}"));
+
+        // first, we'll keep a reference to all the templates with the same name in the path
+        // they're returned priority-first, so the parents and grandparents will end up deepest in the list
+        Map<String, List<Path[]>> inheritanceTree = new HashMap<>();
+        for (ClasspathSearchResult htmlFile : htmlFiles) {
+            Path absolutePath = htmlFile.getResource();
+            //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
+            Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
+            String templateName = HtmlTemplate.parseTemplateName(relativePath);
+
+            List<Path[]> entries = inheritanceTree.get(templateName);
+            if (entries == null) {
+                inheritanceTree.put(templateName, entries = new ArrayList<>());
+            }
+
+            //let's keep both so we don't have to recalculate
+            entries.add(new Path[] { absolutePath, relativePath });
+        }
+
+        // now iterate the list in reverse order to parse the grandparents first
+        // and be able to pass them to the overloading children
+        for (Map.Entry<String, List<Path[]>> entry : inheritanceTree.entrySet()) {
+            String templateName = entry.getKey();
+            List<Path[]> inheritList = entry.getValue();
+            HtmlTemplate parent = null;
+            for (int i = inheritList.size() - 1; i >= 0; i--) {
+                Path[] absRelArr = inheritList.get(i);
+
+                Path absolutePath = absRelArr[0];
+                Path relativePath = absRelArr[1];
+
+                try (Reader reader = Files.newBufferedReader(absolutePath, Charset.forName(Charsets.UTF_8.name()))) {
+                    HtmlTemplate template = HtmlTemplate.create(templateName, new Source(reader), absolutePath, relativePath, parent);
+                    if (template != null) {
+                        // Note: because this will return the files in priority order, don't overwrite an already parsed template,
+                        // because we want to be able to 'overload' the files with our priority system.
+                        // we're iterating in reverse order for the parent system, so keep the 'last' = last (grand)child
+                        if (i == 0) {
+                            // Note: it's important this string is just that: the relative path, but make sure it starts with a slash (it's relative to the classpath),
+                            // but more importantly; no schema (because the lookup above in parse() expects that)
+                            templateCache.putByRelativePath(relativePath.toString(), template);
+                        }
+
+                        //this can be used by the next loop
+                        parent = template;
+                    }
+                    else {
+                        Logger.warn("Encountered null-valued html template after parsing it; " + absolutePath.toString());
+                    }
+                }
+                catch (Exception e) {
+                    Logger.error("Exception caught while parsing a possible tag template file; " + absolutePath, e);
+                }
+            }
+        }
+    }
     private void resetCache()
     {
         this.cachedSpacedTagNames = null;

@@ -179,13 +179,18 @@ public class HdfsUtils
 
         // Register our custom FS (if we use it) so it can be found by HDFS
         // Note: below we have a chance to override this again with the conf
-        if (impl != null && impl.getScheme().equals(uri.getScheme())) {
-            // Old code, for backward reference
-            //            if (impl.getOldImpl() != null) {
-            //                retVal.set("fs." + impl.getScheme() + ".impl", impl.getOldImpl().getCanonicalName());
-            //            }
-            if (impl.getImpl() != null) {
-                retVal.set("fs.AbstractFileSystem." + impl.getScheme() + ".impl", impl.getImpl().getCanonicalName());
+        if (impl != null) {
+            if (impl.getScheme().equals(uri.getScheme())) {
+                // Old code, for backward reference
+                //            if (impl.getOldImpl() != null) {
+                //                retVal.set("fs." + impl.getScheme() + ".impl", impl.getOldImpl().getCanonicalName());
+                //            }
+                if (impl.getImpl() != null) {
+                    retVal.set("fs.AbstractFileSystem." + impl.getScheme() + ".impl", impl.getImpl().getCanonicalName());
+                }
+            }
+            else {
+                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an error; "+uri);
             }
         }
 

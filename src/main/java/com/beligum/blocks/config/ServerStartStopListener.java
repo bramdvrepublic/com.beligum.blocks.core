@@ -11,6 +11,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -49,7 +50,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
             }
 
             //we might as well pre-load the templates here
-            HtmlParser.getTemplateCache();
+            TemplateCache.instance();
 
             //this will boot the xadisk transaction manager (and possibly do a restore)
             try {

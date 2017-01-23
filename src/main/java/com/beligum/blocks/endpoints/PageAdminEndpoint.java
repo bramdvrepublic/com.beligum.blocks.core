@@ -129,7 +129,7 @@ public class PageAdminEndpoint
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response getBlocks()
     {
-        TemplateCache cache = HtmlParser.getTemplateCache();
+        TemplateCache cache = TemplateCache.instance();
         List<Map<String, String>> templates = new ArrayList<>();
         Locale browserLang = R.i18n().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
@@ -171,7 +171,7 @@ public class PageAdminEndpoint
         HashMap<String, Object> retVal = new HashMap<>();
 
         HtmlTemplate htmlTemplate = null;
-        for (HtmlTemplate t : HtmlParser.getTemplateCache().values()) {
+        for (HtmlTemplate t : TemplateCache.instance().values()) {
             if (t.getTemplateName().equals(name)) {
                 htmlTemplate = t;
                 break;

@@ -1,6 +1,5 @@
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.resources.ClasspathSearchResult;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
@@ -10,25 +9,19 @@ import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
-import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
 import com.beligum.blocks.templating.blocks.directives.ResourceUriDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
 import net.htmlparser.jericho.*;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -99,6 +92,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * This method is executed for all *.html files requested by the client (during postprocess phase of the ResourceLoader).
      * It should be optimized for speed but the result is cached by the ResourceManager, so in production mode,
      * the speed-importance of this method is relative.
+     *
+     * Note that it's both used to parse the html templates (eg. files under /imports/...) as regular html with template instances.
      */
     @Override
     public ResourceInputStream parse(com.beligum.base.resources.ifaces.Source source, MimeType requestedMimeType) throws IOException
@@ -106,7 +101,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         ResourceInputStream retVal = null;
 
         try {
-            TemplateCache templateCache = this.getTemplateCache();
+            TemplateCache templateCache = TemplateCache.instance();
 
             //the default error count is set to 2, meaning if an attribute throws two errors,
             // it's ignored, which is problematic with all the Velocity tags
@@ -128,14 +123,14 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
             // if we're dealing with a template (eg. the file is a template, not an instance of a template),
             // store the external references and replace the source with the html in the <template> tag
-
+            //Note that, at the moment, the only way we get here, is through the ResourceManager.get() call below
             HtmlTemplate template = templateCache.getByRelativePath(source.getUri().getPath());
             if (template != null) {
-                OutputDocument output = this.processHtmlTemplate(source, htmlSource, template);
                 //replace the source with the (parsed) <template> content
-                htmlSource = new Source(output.toString());
+                htmlSource = new Source(this.processHtmlTemplate(htmlSource, template).toString());
             }
 
+            //call the main processor (for both templates and template-instances)
             OutputDocument output = this.processSource(source, htmlSource);
 
             StringBuilder sb = new StringBuilder();
@@ -148,6 +143,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 sb.append(output.toString());
             }
 
+            //TODO should we still decorate here?
             if (R.configuration().getResourceConfig().getMinifyResources()) {
                 retVal = new ResourceInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), source.getUri(), source.getMimeType()));
             }
@@ -174,9 +170,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //FIXME maybe this should be VELOCITY instead?
         return MimeTypes.HTML;
     }
+    /**
+     * This is the main processor of html content and is called (recursively) from a lot of places.
+     * It iterates all elements of the html source and replaces all template-instances with their parsed version.
+     */
     private OutputDocument processSource(com.beligum.base.resources.ifaces.Source source, Source htmlSource) throws Exception
     {
-        TemplateCache templateCache = this.getTemplateCache();
+        TemplateCache templateCache = TemplateCache.instance();
 
         OutputDocument retVal = new OutputDocument(htmlSource);
 
@@ -189,18 +189,22 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             if (node instanceof StartTag) {
                 Element element = ((StartTag) node).getElement();
 
+                //fingerprint URIs in attributes
                 this.processUris(element, retVal);
 
+                //check if the element is an instance of a template and replace it with it's parsed version if it's the case
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
                 if (template != null) {
-                    StringBuilder parsedInstance = this.processTemplateInstance(source, element, template);
-                    retVal.replace(element, parsedInstance);
+                    retVal.replace(element, this.processTemplateInstance(source, element, template));
                 }
             }
         }
 
         return retVal;
     }
+    /**
+     * Do a find/replace on all detected URIs in the element's attributes if fingerprinting is enabled
+     */
     private void processUris(Element element, OutputDocument retVal)
     {
         //for now, we only parse URIs for fingerprinting
@@ -208,6 +212,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             String name = element.getName().toLowerCase();
             String relAttr = element.getAttributeValue("rel");
 
+            //skip the resource URIs
             if (name.equals("script") || name.equals("style") || (name.equals("link") && relAttr != null && relAttr.trim().equalsIgnoreCase("stylesheet"))) {
                 //skip these, the URI will be wrapped/parsed more extensively by #btrd (see HtmlTemplate.buildResourceHtml())
             }
@@ -235,12 +240,15 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
     }
+    /**
+     * Implemented interface callback for the fingerprinter call above
+     */
     @Override
     public String uriDetected(URI uri)
     {
         String retVal = null;
 
-        //if the endpoint is static, we'll generate our fingerprint right now,
+        //if the endpoint is immutable, we'll generate our fingerprint right now,
         //if not, we'll wrap the URI in a directive to re-parse it on every request.
         //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
         //if that would change, we must wipe this optimization step
@@ -256,6 +264,9 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
         return retVal;
     }
+    /**
+     * Process an instance of a (page or tag) template to a HTML string
+     */
     private StringBuilder processTemplateInstance(com.beligum.base.resources.ifaces.Source source, Element templateInstance, HtmlTemplate htmlTemplate) throws Exception
     {
         //build the attributes map
@@ -272,7 +283,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
 
-        //build the properties map
+        //After parsing the attributes, we iterate the body of the element to build the properties map
         //note: we want to save the Velocity codes, used inside a template instance, eg:
         //     <tag-template-name>
         // -->     #foreach ($val in $values)
@@ -298,7 +309,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
                 boolean isVoidTag = startTag.equals(immediateChild);
 
-                //skip the entire tree of the element, we'll handle it now
+                //skip the entire tree of the element, we'll handle it right here
                 // but watch out: an <img> element doens't have and end tag, so check for null
                 if (!isVoidTag) {
                     if (immediateChild.getEndTag() != null) {
@@ -329,7 +340,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                     values.add(value);
                 }
             }
-            //if the segment is something else, save it in the right order for later use
+            //if the segment is something else (than a start tag), save it in the right order for later use
             else {
                 // if we encounter a resource wrapper directive, the tag inside will be a html tag,
                 // so we need to make sure it doesn't get eaten because there's no property attribute set
@@ -429,13 +440,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
 
-        //lookup the external resource
+        //fetch the template html through our resource system (which will end up here recursively if it needs to be parsed first)
         Resource htmlTemplateResource = R.resourceManager().get(htmlTemplate.getRelativePath().toUri());
         if (htmlTemplateResource == null) {
             throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. " + htmlTemplate.getRelativePath());
         }
         else {
-            //wire both resources together so the update mechanism works
+            //wire both resources together so the update mechanism works in dev mode
             //TODO we should factor away the casting...
             if (source instanceof Resource) {
                 ((Resource) source).addChild(htmlTemplateResource);
@@ -458,31 +469,25 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //the suffix html (mostly empty)
         builder.append(htmlTemplate.getSuffixHtml());
 
-        //replace the tag in the output with it's instance
-        //output.replace(templateInstance, builder);
-
-        //        if (replaced) {
-        //            //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
-        //            source = new Source(output.toString());
-        //            output = new OutputDocument(source);
-        //        }
-
         return builder;
     }
 
-    private OutputDocument processHtmlTemplate(com.beligum.base.resources.ifaces.Source source, Source htmlSource, HtmlTemplate template) throws Exception
+    /**
+     * Process the html tag/page template (not an instance, the real source template) and generate it's html
+     */
+    private OutputDocument processHtmlTemplate(Source htmlSource, HtmlTemplate template) throws Exception
     {
         //first of all, since this method is only called when something changed, update the cache value
         //use the old template value for the paths
         HtmlTemplate sourceTemplate = HtmlTemplate.create(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
-        getTemplateCache().putByRelativePath(source.getUri().getPath(), sourceTemplate);
+        TemplateCache.instance().putByRelativePath(template.getRelativePath().toString(), sourceTemplate);
 
         //this is the base for all coming preprocessing
         //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)
         Segment templateHtml = sourceTemplate.getInnerHtml();
         OutputDocument output = new OutputDocument(templateHtml);
 
-        //from here, it's the same for a Tag or PageImpl template; preprocess the replaceable properties
+        //the same for a Tag or Page template; preprocess the replaceable properties
 
         Stack<URI> currentVocabStack = new Stack<>();
         if (sourceTemplate.getVocab() != null) {
@@ -508,6 +513,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 Attributes attributes = tag.getAttributes();
                 if (attributes != null) {
 
+                    //if we encounter a vocab attribute, we push a new vocab value on the stack
                     Attribute vocabAttr = attributes.get(RDF_VOCAB_ATTR);
                     if (vocabAttr != null) {
                         currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
@@ -527,6 +533,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                         }
                     }
 
+                    //if we encounter a prefix attribute, we push a (list of) new prefixes on the stack
                     Attribute prefixAttr = attributes.get(RDF_PREFIX_ATTR);
                     if (prefixAttr != null) {
                         if (currentPrefixes == null) {
@@ -564,10 +571,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             else if (nodeSegment instanceof EndTag) {
                 EndTag tag = (EndTag) nodeSegment;
 
+                //pop the vocab stack
                 if (vocabPopTags.contains(tag)) {
                     currentVocabStack.pop();
                     vocabPopTags.remove(tag);
                 }
+
+                //pop the prefix stack
                 if (prefixPopTags.contains(tag)) {
                     currentPrefixesStack.pop();
                     prefixPopTags.remove(tag);
@@ -603,25 +613,6 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         }
 
         return retVal.toString();
-    }
-    public static void flushTemplateCache()
-    {
-        R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
-    }
-    public static TemplateCache getTemplateCache()
-    {
-        TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
-        if (retVal == null) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
-            try {
-                searchAllTemplates(retVal);
-            }
-            catch (Exception e) {
-                Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
-            }
-        }
-
-        return retVal;
     }
 
     //-----PROTECTED METHODS-----
@@ -794,71 +785,6 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                     }
 
                     retVal.put(p, uri);
-                }
-            }
-        }
-    }
-    private static void searchAllTemplates(TemplateCache templateCache) throws Exception
-    {
-        //start with a clean slate
-        templateCache.clear();
-
-        List<ClasspathSearchResult> htmlFiles = new ArrayList<>();
-        htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/imports/**.{html,htm}"));
-
-        // first, we'll keep a reference to all the templates with the same name in the path
-        // they're returned priority-first, so the parents and grandparents will end up deepest in the list
-        Map<String, List<Path[]>> inheritanceTree = new HashMap<>();
-        for (ClasspathSearchResult htmlFile : htmlFiles) {
-            Path absolutePath = htmlFile.getResource();
-            //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
-            Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
-            String templateName = HtmlTemplate.parseTemplateName(relativePath);
-
-            List<Path[]> entries = inheritanceTree.get(templateName);
-            if (entries == null) {
-                inheritanceTree.put(templateName, entries = new ArrayList<>());
-            }
-
-            //let's keep both so we don't have to recalculate
-            entries.add(new Path[] { absolutePath, relativePath });
-        }
-
-        // now iterate the list in reverse order to parse the grandparents first
-        // and be able to pass them to the overloading children
-        for (Map.Entry<String, List<Path[]>> entry : inheritanceTree.entrySet()) {
-            String templateName = entry.getKey();
-            List<Path[]> inheritList = entry.getValue();
-            HtmlTemplate parent = null;
-            for (int i = inheritList.size() - 1; i >= 0; i--) {
-                Path[] absRelArr = inheritList.get(i);
-
-                Path absolutePath = absRelArr[0];
-                Path relativePath = absRelArr[1];
-
-                try (Reader reader = Files.newBufferedReader(absolutePath, Charset.forName(Charsets.UTF_8.name()))) {
-                    Source source = new Source(reader);
-                    HtmlTemplate template = HtmlTemplate.create(templateName, source, absolutePath, relativePath, parent);
-
-                    if (template != null) {
-                        // Note: because this will return the files in priority order, don't overwrite an already parsed template,
-                        // because we want to be able to 'overload' the files with our priority system.
-                        // we're iterating in reverse order for the parent system, so keep the 'last' = last (grand)child
-                        if (i == 0) {
-                            // Note: it's important this string is just that: the relative path, but make sure it starts with a slash (it's relative to the classpath),
-                            // but more importantly; no schema (because the lookup above in parse() expects that)
-                            templateCache.putByRelativePath(relativePath.toString(), template);
-                        }
-
-                        //this can be used by the next loop
-                        parent = template;
-                    }
-                    else {
-                        Logger.warn("Encountered null-valued html template after parsing it; " + absolutePath.toString());
-                    }
-                }
-                catch (Exception e) {
-                    Logger.error("Exception caught while parsing a possible tag template file; " + absolutePath, e);
                 }
             }
         }
