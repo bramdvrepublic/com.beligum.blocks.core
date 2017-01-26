@@ -26,7 +26,7 @@ public class ReleaseFilter implements ContainerResponseFilter
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
-        StorageFactory.releaseCurrentRequestTx(responseContext != null && responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode());
+        StorageFactory.releaseCurrentRequestTx(responseContext == null || responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     //-----PROTECTED METHODS-----

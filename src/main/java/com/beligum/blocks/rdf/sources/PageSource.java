@@ -5,7 +5,7 @@ import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;

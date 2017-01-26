@@ -1,6 +1,7 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
@@ -96,6 +97,23 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     //    }
 
     //-----PUBLIC METHODS-----
+    /**
+     * We overload the exists() because a page only exists if it's normalized file exists (see PageRepository.get())
+     */
+    @Override
+    public boolean exists() throws IOException
+    {
+        return this.fileContext.util().exists(this.getNormalizedPageProxyPath());
+    }
+    /**
+     * This is mainly for debugging, but is probably what we want
+     */
+    @Override
+    public long getLastModifiedTime() throws IOException
+    {
+        return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.getNormalizedPageProxyPath()).getModificationTime()),
+                        this.calcChildrenLastModificationTime());
+    }
     @Override
     public URI getCanonicalAddress()
     {
@@ -174,7 +192,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
             if (!lang.equals(thisLang)) {
                 UriBuilder translatedUri = UriBuilder.fromUri(this.getPublicAbsoluteAddress());
                 if (R.i18n().getUrlLocale(this.getPublicAbsoluteAddress(), translatedUri, lang) != null) {
-                    Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
+                    Page transPage = R.resourceManager().get(translatedUri.build(), MimeTypes.HTML, Page.class);
                     if (transPage != null) {
                         retVal.put(lang, transPage);
                     }

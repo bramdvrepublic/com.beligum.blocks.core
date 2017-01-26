@@ -1,12 +1,13 @@
 package com.beligum.blocks.rdf.sources;
 
+import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Element;
@@ -183,7 +184,7 @@ public class NewPageSource extends PageSource
             if (!lang.equals(thisLang)) {
                 UriBuilder translatedUri = UriBuilder.fromUri(this.getUri());
                 if (R.i18n().getUrlLocale(this.getUri(), translatedUri, lang) != null) {
-                    Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
+                    Page transPage = R.resourceManager().get(translatedUri.build(), MimeTypes.HTML, Page.class);
                     if (transPage != null) {
                         HtmlAnalyzer analyzer = transPage.createAnalyzer();
                         HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlAbout();

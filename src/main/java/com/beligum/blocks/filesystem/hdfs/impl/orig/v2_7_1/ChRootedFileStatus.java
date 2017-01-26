@@ -52,22 +52,18 @@ public class ChRootedFileStatus extends FileStatus
     //-----PUBLIC METHODS-----
     public static FileStatus[] wrap(FileStatus[] fileStatuses, URI chRootPathPartUri) throws IOException
     {
-        FileStatus[] retVal = null;
-
         if (fileStatuses != null) {
-            retVal = new FileStatus[fileStatuses.length];
             for (int i = 0; i < fileStatuses.length; i++) {
-                //don't wrap twice
-                if (fileStatuses[i] instanceof ChRootedFileStatus) {
-                    retVal[i] = fileStatuses[i];
-                }
-                else {
-                    retVal[i] = new ChRootedFileStatus(fileStatuses[i], chRootPathPartUri);
-                }
+                fileStatuses[i] = wrap(fileStatuses[i], chRootPathPartUri);
             }
         }
 
-        return retVal;
+        return fileStatuses;
+    }
+    public static FileStatus wrap(FileStatus fileStatus, URI chRootPathPartUri) throws IOException
+    {
+        //don't wrap twice
+        return fileStatus instanceof ChRootedFileStatus ? fileStatus : new ChRootedFileStatus(fileStatus, chRootPathPartUri);
     }
 
     //-----PROTECTED METHODS-----

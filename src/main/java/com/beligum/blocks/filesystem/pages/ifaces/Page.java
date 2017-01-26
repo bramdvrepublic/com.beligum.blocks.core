@@ -6,7 +6,7 @@ import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
 import org.openrdf.model.Model;
 

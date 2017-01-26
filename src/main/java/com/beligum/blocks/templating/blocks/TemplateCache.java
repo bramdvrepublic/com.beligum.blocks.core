@@ -7,6 +7,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.google.common.base.Joiner;
 import net.htmlparser.jericho.Source;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -65,11 +66,11 @@ public class TemplateCache
     }
     public HtmlTemplate getByTagName(String templateTagName)
     {
-        return this.nameMapping.get(templateTagName);
+        return StringUtils.isEmpty(templateTagName) ? null : this.nameMapping.get(templateTagName);
     }
     public HtmlTemplate getByRelativePath(String templateRelativePath)
     {
-        return this.relativePathMapping.get(templateRelativePath);
+        return StringUtils.isEmpty(templateRelativePath) ? null : this.relativePathMapping.get(templateRelativePath);
     }
     public List<HtmlTemplate> getPageTemplates()
     {

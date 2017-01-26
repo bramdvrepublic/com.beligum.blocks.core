@@ -21,7 +21,6 @@ import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.rdf.sources.PageSourceCopy;
 import com.beligum.blocks.security.Permissions;
-import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
@@ -298,7 +297,7 @@ public class ApplicationEndpoint
                                 }
                                 else if (!StringUtils.isEmpty(newPageCopyUrl)) {
 
-                                    Page copyPage = R.resourceManager().get(URI.create(newPageCopyUrl), Page.class);
+                                    Page copyPage = R.resourceManager().get(URI.create(newPageCopyUrl), MimeTypes.HTML, Page.class);
 
                                     //First, we'll read in the normalized code of the copy page (important: in edit mode because we need the edit imports).
                                     //Note that we need to read the normalized version because the templates might have changed in the mean time (between store and copy)
@@ -434,7 +433,7 @@ public class ApplicationEndpoint
             Locale lang = l.getValue();
             UriBuilder translatedUri = UriBuilder.fromUri(uri);
             if (R.i18n().getUrlLocale(uri, translatedUri, lang) != null) {
-                Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
+                Page transPage = R.resourceManager().get(translatedUri.build(), MimeTypes.HTML, Page.class);
                 if (transPage != null) {
                     retVal.put(lang, transPage);
                 }

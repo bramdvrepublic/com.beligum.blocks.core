@@ -5,7 +5,7 @@ import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceIndexer;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema;
 import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchemaLoader;

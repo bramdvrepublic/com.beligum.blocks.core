@@ -119,7 +119,7 @@ public class PageRepository extends AbstractResourceRepository
 
         //this will look up the old page in read-only mode to compare with the new data
         //Note: when saving a new page, this will be null
-        Page oldPage = R.resourceManager().get(pageSource.getUri(), Page.class);
+        Page oldPage = R.resourceManager().get(pageSource.getUri(), MimeTypes.HTML, Page.class);
 
         if (options.length > 0) {
             throw new IllegalArgumentException("Unsupported option passed; " + ArrayUtils.toString(options));
@@ -129,17 +129,16 @@ public class PageRepository extends AbstractResourceRepository
         ReadWritePage newPage = new ReadWritePage(this, pageSource);
 
         //will synchronize the metadata directory by creating/releasing a lock file
+        //Note that we need to do this before the hash, because a newly calculated hash will write to the dotfolder
         try (LockFile lock = newPage.acquireLock()) {
 
             //pre-calculate the hash based on the incoming stream and compare it with the stored version to abort early if nothing changed
-            Hash newHash = newPage.getHash();
-            boolean nothingChanged = oldPage != null && newHash.equals(oldPage.getHash());
+            boolean nothingChanged = oldPage != null && pageSource.getHash().equals(oldPage.getHash());
 
             if (nothingChanged) {
                 retVal = newPage;
             }
             else {
-
                 newPage.createParent();
 
                 //we're overwriting; make an entry in the history folder

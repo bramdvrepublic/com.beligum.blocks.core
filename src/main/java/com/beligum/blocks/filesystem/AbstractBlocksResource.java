@@ -31,7 +31,7 @@ import java.util.zip.Adler32;
 public abstract class AbstractBlocksResource extends AbstractResource implements BlocksResource
 {
     //-----CONSTANTS-----
-    protected static final String CACHED_HASH_FIELD_SEP = "\t";
+    protected static final String HASH_FIELD_SEP = "\t";
 
     //-----VARIABLES-----
     protected FileContext fileContext;
@@ -148,61 +148,43 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         return new Path(this.getDotFolder(), META_SUBFOLDER_METADATA);
     }
     @Override
-    public Hash calcHash() throws IOException
-    {
-        //the super implementation doesn't use caching
-        return super.getHash();
-    }
-    @Override
-    public Hash getHash()
+    public Hash getHash(boolean forceRecalculation)
     {
         Hash retVal = null;
 
         try {
-            Path storedHashFile = this.getHashFile();
+            if (forceRecalculation) {
+                retVal = super.getHash(true);
+            }
+            else {
+                Path storedHashFile = this.getHashFile();
 
-            //Note: this means we're responsible to update the content of the has file every time this resource changes!
-            if (this.fileContext.util().exists(storedHashFile)) {
-                try {
-                    String hashStr = HdfsUtils.readFile(this.fileContext, storedHashFile);
-                    if (!StringUtils.isEmpty(hashStr)) {
-                        String[] fields = hashStr.split(CACHED_HASH_FIELD_SEP);
-                        if (fields.length == 2) {
-                            Hash.Method method = Hash.Method.valueOf(fields[1]);
-                            if (method.equals(HASH_METHOD)) {
-                                retVal = new HashImpl(fields[0], true, method);
+                //Note: this means we're responsible to update the content of the hash file every time this resource changes!
+                if (this.fileContext.util().exists(storedHashFile)) {
+                    try {
+                        String hashStr = HdfsUtils.readFile(this.fileContext, storedHashFile);
+                        if (!StringUtils.isEmpty(hashStr)) {
+                            String[] fields = hashStr.split(HASH_FIELD_SEP);
+                            if (fields.length == 2) {
+                                Hash.Method method = Hash.Method.valueOf(fields[1]);
+                                if (method.equals(HASH_METHOD)) {
+                                    retVal = new HashImpl(fields[0], true, method);
+                                }
                             }
                         }
                     }
-
-                    //we might as well delete it if it's not valid
-                    if (retVal == null && !this.isReadOnly()) {
-                        this.fileContext.delete(storedHashFile, false);
+                    catch (Exception e) {
+                        Logger.error("Caught exception while parsing cached hash file of " + this.getUri(), e);
                     }
                 }
-                catch (Exception e) {
-                    Logger.error("Caught exception while parsing cached hash file of " + this.getUri(), e);
-                }
-            }
 
-            if (retVal == null) {
-                retVal = this.calcHash();
-
-                //cache the hash if we support writing
-                if (!this.isReadOnly() && retVal != null) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(retVal.getChecksum()).append(CACHED_HASH_FIELD_SEP).append(retVal.getMethod().name());
-
-                    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(this.getFileContext().create(storedHashFile,
-                                                                                                                        EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
-                                                                                                                        Options.CreateOpts.createParent())))) {
-                        writer.write(sb.toString());
-                    }
+                if (retVal == null) {
+                    retVal = super.getHash(true);
                 }
             }
         }
         catch (IOException e) {
-            Logger.error("Caught exception while reading the stored hash file contents of " + this.getLocalStoragePath(), e);
+            Logger.error("Caught exception while calculating/reading the stored hash file contents of " + this.getLocalStoragePath(), e);
         }
 
         return retVal;

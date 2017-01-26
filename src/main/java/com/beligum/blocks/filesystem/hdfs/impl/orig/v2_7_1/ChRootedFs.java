@@ -36,6 +36,7 @@ import java.net.URISyntaxException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * This is the original view.ChRootedFs with mods:
@@ -45,6 +46,7 @@ import java.util.Map;
  * - removed all overridden methods that don't involve paths (now bubbling up to FilterFs)
  * - checked all methods in FilterFS with a Path as argument that they're overloaded here
  * - used ViewFs as inspiration (search for 'stripOutRoot' in ViewFs) to make changes to strip out the chroot again everywhere a Path is returned
+ * See https://github.com/apache/hadoop/blob/trunk/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/viewfs/ViewFs.java
  * ------------------------------------------------------------------------------
  * <code>ChrootedFs</code> is a file system with its root some path
  * below the root of its base file system.
@@ -232,19 +234,33 @@ public class ChRootedFs extends FilterFs
     //        return myFs.getUriPath(p);
     //    }
 
-    //Don't really know what to do with this one (it's overloaded in ViewFs)
-    //    @Override
-    //    public RemoteIterator<FileStatus> listStatusIterator(final Path f)
-    //                    throws AccessControlException, FileNotFoundException,
-    //                           UnresolvedLinkException, IOException
-    //    {
-    //        return super.listStatusIterator(f);
-    //    }
-
     @Override
     public FileStatus[] listStatus(final Path f) throws IOException, UnresolvedLinkException
     {
         return ChRootedFileStatus.wrap(super.listStatus(fullPath(f)), this.chRootPathPartUri);
+    }
+
+    @Override
+    public RemoteIterator<FileStatus> listStatusIterator(final Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    {
+        RemoteIterator<FileStatus> superIter = super.listStatusIterator(f);
+        return new RemoteIterator<FileStatus>()
+        {
+            @Override
+            public boolean hasNext() throws IOException
+            {
+                return superIter.hasNext();
+            }
+
+            @Override
+            public FileStatus next() throws IOException
+            {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return ChRootedFileStatus.wrap(superIter.next(), chRootPathPartUri);
+            }
+        };
     }
 
     @Override

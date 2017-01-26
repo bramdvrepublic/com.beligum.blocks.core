@@ -18,7 +18,6 @@ import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.security.Permissions;
-import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
@@ -225,7 +224,7 @@ public class PageAdminEndpoint
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePage(String uri) throws Exception
     {
-        Resource page = R.resourceManager().get(URI.create(uri));
+        Resource page = R.resourceManager().get(URI.create(uri), MimeTypes.HTML);
         if (page == null) {
             throw new NotFoundException("Resource not found; " + uri);
         }
@@ -261,7 +260,7 @@ public class PageAdminEndpoint
         Response.ResponseBuilder retVal = null;
 
         if (currentIndexAllThread == null) {
-            Page page = R.resourceManager().get(uri, Page.class);
+            Page page = R.resourceManager().get(uri, MimeTypes.HTML, Page.class);
             if (page == null) {
                 throw new NotFoundException("Page not found; " + uri);
             }

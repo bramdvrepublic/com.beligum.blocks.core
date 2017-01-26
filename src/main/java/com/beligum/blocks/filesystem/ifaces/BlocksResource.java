@@ -1,6 +1,5 @@
 package com.beligum.blocks.filesystem.ifaces;
 
-import com.beligum.base.resources.ifaces.Hash;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.blocks.filesystem.LockFile;
 import org.apache.hadoop.fs.Path;
@@ -113,11 +112,6 @@ public interface BlocksResource extends HdfsResource
      * The path to the base metadata folder of this resource
      */
     Path getMetadataFolder();
-
-    /**
-     * Explicitly re-calculate the hash checksum (instead of using the cached version if it's present)
-     */
-    Hash calcHash() throws IOException;
 
     /**
      * Acquire a filesystem lock on this resource or throw an exception if it didn't succeed.

@@ -13,6 +13,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -50,7 +51,7 @@ public class TemplateInstanceStackDirective extends Block
     public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException
     {
         //init the stack if it's not there yet
-        Deque<TemplateStackFrame> stack = (Deque<TemplateStackFrame>) context.get(TemplateContextMap.TEMPLATE_STACK_VARIABLE);
+        Deque<StackFrame> stack = (Deque<StackFrame>) context.get(TemplateContextMap.TEMPLATE_STACK_VARIABLE);
         if (stack == null) {
             context.put(TemplateContextMap.TEMPLATE_STACK_VARIABLE, stack = new ArrayDeque<>());
         }
@@ -80,7 +81,7 @@ public class TemplateInstanceStackDirective extends Block
                     controller.created();
                 }
 
-                TemplateStackFrame frame = new TemplateStackFrame(TemplateCache.instance().getByTagName(templateName), controller, stack.size());
+                StackFrame frame = new StackFrame(TemplateCache.instance().getByTagName(templateName), controller, stack.size());
 
                 stack.push(frame);
 
@@ -139,8 +140,7 @@ public class TemplateInstanceStackDirective extends Block
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-
-    public static class PropertyReference
+    private class PropertyReference
     {
         private InternalContextAdapter context;
         private Block parent;
@@ -164,5 +164,47 @@ public class TemplateInstanceStackDirective extends Block
 
             return null;
         }
+    }
+    private class StackFrame
+    {
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+        private HtmlTemplate template;
+        private TemplateController controller;
+        private Map<String, Object> properties;
+        private int frameDepth;
+
+        //-----CONSTRUCTORS-----
+        public StackFrame(HtmlTemplate template, TemplateController controller, int frameDepth)
+        {
+            this.template = template;
+            this.controller = controller;
+            this.frameDepth = frameDepth;
+            this.properties = new HashMap<>();
+        }
+
+        //-----PUBLIC METHODS-----
+        public HtmlTemplate getTemplate()
+        {
+            return template;
+        }
+        public TemplateController getController()
+        {
+            return controller;
+        }
+        public Map<String, Object> getProperties()
+        {
+            return properties;
+        }
+        public void setProperties(Map<String, Object> properties)
+        {
+            this.properties = properties;
+        }
+
+        //-----PROTECTED METHODS-----
+
+        //-----PRIVATE METHODS-----
+
     }
 }
