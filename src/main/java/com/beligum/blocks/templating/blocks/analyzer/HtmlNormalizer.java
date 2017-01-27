@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks.analyzer;
 
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.Element;
@@ -21,11 +22,13 @@ public class HtmlNormalizer
     private static final Set<String> REFERENCE_ATTRS = ImmutableSet.of("src", "href", "content");
 
     //-----VARIABLES-----
+    private Source source;
     private String title;
 
     //-----CONSTRUCTORS-----
-    public HtmlNormalizer()
+    public HtmlNormalizer(Source source)
     {
+        this.source = source;
     }
 
     //-----PUBLIC METHODS-----
@@ -42,7 +45,7 @@ public class HtmlNormalizer
         }
 
         //we start out with no context at all, so all false
-        HtmlTag root = new HtmlTag(startTag);
+        HtmlTag root = new HtmlTag(this.source, startTag);
         this.parse(root, nodeIter, false);
 
         return root.toNormalizedString();
@@ -69,26 +72,21 @@ public class HtmlNormalizer
      * - (and a combination of both; property-annotated template tags)
      * <p>
      * Page template tags are special cases because we want to save their start and end tags if they're in a property context or not.
-     *
+     * <p>
      * All normalized data is stored inside the HtmlTags and the tag is responsible to add new data or not,
      * see eg. setNormalizedStartTag() and toNormalizedString()
      */
-    private void parse(HtmlTag htmlTag, Iterator<Segment> pastStartIterator, boolean insidePropertyContext) throws IOException
+    private void parse(HtmlTag htmlTag, Iterator<Segment> pastStartIterator, boolean propertyContext) throws IOException
     {
         //1) process the start tag
 
-        //if we have crossed template context, we need to reset the property context
-        // (except if we're immediately starting a new one, so don't use 'else if')
-        if (htmlTag.isTemplate()) {
-            insidePropertyContext = false;
-        }
         if (htmlTag.isProperty()) {
-            insidePropertyContext = true;
+            propertyContext = true;
         }
 
         //because a start tag can be either stand-alone or not and we can't skip the very first tag,
         // we need to handle all start tags here (and not in the iterator below)
-        htmlTag.setNormalizedStartTag(htmlTag.getStartTag(), insidePropertyContext);
+        htmlTag.setNormalizedStartTag(htmlTag.getStartTag(), propertyContext);
 
         //extract some properties to save them along the way
         this.extractMetaData(htmlTag);
@@ -96,29 +94,46 @@ public class HtmlNormalizer
         //no need to process the content or end of the tag if we don't have any (start tag will be rendered out differently too)
         if (!htmlTag.isStandAlone()) {
 
+            //if we have crossed template context, we need to reset the property context for it's content,
+            //except if we're immediately starting a new one because the template-tag has a property attribute
+            //Note that we're defining a new flag here, because it's only the _content_ that needs a reset,
+            //the start and end follow the parent content flags.
+            boolean contentPropertyContext = propertyContext;
+            if (htmlTag.isTemplate()) {
+                contentPropertyContext = htmlTag.isProperty();
+            }
+
             //2) process the content
             boolean encounteredEndTag = false;
             while (pastStartIterator.hasNext() && !encounteredEndTag) {
                 Segment node = pastStartIterator.next();
 
                 if (node instanceof StartTag) {
-                    HtmlTag startTag = new HtmlTag((StartTag) node);
+                    HtmlTag startTag = new HtmlTag(this.source, (StartTag) node);
                     //start a new tag; add a frame to the (java) stack by calling this function recursively
-                    this.parse(startTag, pastStartIterator, insidePropertyContext);
+                    this.parse(startTag, pastStartIterator, contentPropertyContext);
                     //note that we force the normalized content to be appended, property context or not
                     // because what comes out of parse() is already normalized (and will yield "" if unused)
                     htmlTag.appendNormalizedSubtag(startTag);
                 }
                 else if (node instanceof EndTag) {
-                    //3) process the end tag
-                    htmlTag.setNormalizedEndTag(htmlTag.getEndTag(), insidePropertyContext);
-                    //stop processing if we reached the end
-                    encounteredEndTag = htmlTag.equalsEndTag(node);
+                    //stop processing the content if we reached the end
+                    if (htmlTag.equalsEndTag(node)) {
+                        encounteredEndTag = htmlTag.equalsEndTag(node);
+                    }
+                    else {
+                        htmlTag.setNormalizedEndTag(htmlTag.getEndTag(), contentPropertyContext);
+                    }
                 }
                 //not a start tag and not an end tag; all other in-between texts, templates, scripts, styles, comments, etc.
                 else {
-                    htmlTag.appendNormalizedContent(node, insidePropertyContext);
+                    htmlTag.appendNormalizedContent(node, contentPropertyContext);
                 }
+            }
+
+            //3) process the end tag
+            if (encounteredEndTag) {
+                htmlTag.setNormalizedEndTag(htmlTag.getEndTag(), propertyContext);
             }
         }
     }
@@ -143,6 +158,7 @@ public class HtmlNormalizer
             }
         }
     }
+
     //    /**
     //     * Extract and save the internal (internal pages to this site) and external (http/https/ftp/...) references
     //     * in this tag.

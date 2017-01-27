@@ -147,7 +147,7 @@ public class HtmlAnalyzer
             this.htmlLocale = Locale.ROOT;
         }
 
-        HtmlNormalizer normalizer = new HtmlNormalizer();
+        HtmlNormalizer normalizer = new HtmlNormalizer(pageSource);
         CharSequence unformattedNormalizedHtml = normalizer.process(rootElement);
 
         //we store the normalized html pretty printed

@@ -262,17 +262,7 @@ public abstract class HtmlTemplate
      */
     public String createNewHtmlInstance()
     {
-        StringBuilder retVal = new StringBuilder();
-
-        retVal.append("<").append(this.getTemplateName());
-        if (this.getAttributes() != null) {
-            for (Map.Entry<String, String> a : this.getAttributes().entrySet()) {
-                retVal.append(" ").append(a.getKey()).append("=\"").append(a.getValue()).append("\"");
-            }
-        }
-        retVal.append("></").append(this.getTemplateName()).append(">");
-
-        return retVal.toString();
+        return new StringBuilder().append(this.buildStartTag()).append(this.buildEndTag()).toString();
     }
     public URI getVocab()
     {
@@ -281,6 +271,22 @@ public abstract class HtmlTemplate
     public Map<String, URI> getPrefixes()
     {
         return prefixes;
+    }
+    public CharSequence buildStartTag()
+    {
+        StringBuilder retVal = new StringBuilder();
+
+        retVal.append("<" + this.getTemplateName());
+        if (!this.attributes.isEmpty()) {
+            retVal.append(Attributes.generateHTML(this.attributes));
+        }
+        retVal.append(">");
+
+        return retVal;
+    }
+    public CharSequence buildEndTag()
+    {
+        return new StringBuilder().append("</").append(this.getTemplateName()).append(">").toString();
     }
 
     //-----PROTECTED METHODS-----

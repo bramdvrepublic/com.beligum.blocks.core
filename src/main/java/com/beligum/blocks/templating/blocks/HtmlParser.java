@@ -92,7 +92,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * This method is executed for all *.html files requested by the client (during postprocess phase of the ResourceLoader).
      * It should be optimized for speed but the result is cached by the ResourceManager, so in production mode,
      * the speed-importance of this method is relative.
-     *
+     * <p>
      * Note that it's both used to parse the html templates (eg. files under /imports/...) as regular html with template instances.
      */
     @Override
@@ -111,7 +111,10 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             //Attributes.setDefaultMaxErrorCount(10);
 
             //the solves a lot of issues with inactive lines
-            Source htmlSource = new Source(this.eatVelocityComments(source));
+            Source htmlSource;
+            try (InputStream is = source.newInputStream()) {
+                htmlSource = new Source(this.eatVelocityComments(is));
+            }
 
             // this one was a bit problematic: we would like to surround all returning html with a #ptwd directive,
             // but we can't have it twice, so it's kind of hard to detectAndReplace the outer resource where we should add it.
@@ -313,8 +316,9 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 // but watch out: an <img> element doens't have and end tag, so check for null
                 if (!isVoidTag) {
                     if (immediateChild.getEndTag() != null) {
-                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag())) {
                             ;
+                        }
                     }
                 }
 
@@ -587,33 +591,6 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
         return output;
     }
-    /**
-     * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
-     *
-     * @param source the resource to be parsed
-     * @return
-     * @throws IOException
-     */
-    private String eatVelocityComments(com.beligum.base.resources.ifaces.Source source) throws IOException
-    {
-        StringBuilder retVal = new StringBuilder();
-
-        try (BufferedReader stringReader = new BufferedReader(new InputStreamReader(source.newInputStream()))) {
-            String line;
-            while ((line = stringReader.readLine()) != null) {
-                int commentIdx = line.indexOf("##");
-                if (commentIdx != -1) {
-                    line = line.substring(0, commentIdx);
-                }
-                //if the entire line got eaten, I assume we can discard it
-                if (!StringUtils.isEmpty(line.trim())) {
-                    retVal.append(line).append(NEWLINE);
-                }
-            }
-        }
-
-        return retVal.toString();
-    }
 
     //-----PROTECTED METHODS-----
 
@@ -788,6 +765,34 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 }
             }
         }
+    }
+    /**
+     * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
+     */
+    public static String eatVelocityComments(InputStream inputStream) throws IOException
+    {
+        StringBuilder retVal = new StringBuilder();
+
+        try (BufferedReader stringReader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = stringReader.readLine()) != null) {
+                int commentIdx = line.indexOf("##");
+                if (commentIdx != -1) {
+                    line = line.substring(0, commentIdx);
+                }
+
+                //if the entire line got eaten, I assume we can discard it
+                if (!StringUtils.isEmpty(line.trim())) {
+                    //this will make sure a single line doesn't get a newline appended
+                    if (retVal.length() > 0) {
+                        retVal.append(NEWLINE);
+                    }
+                    retVal.append(line);
+                }
+            }
+        }
+
+        return retVal.toString();
     }
 
     //-----PRIVATE CLASSES-----

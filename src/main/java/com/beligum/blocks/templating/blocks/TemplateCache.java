@@ -6,11 +6,9 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.google.common.base.Joiner;
 import net.htmlparser.jericho.Source;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.Reader;
-import java.nio.charset.Charset;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -229,8 +227,11 @@ public class TemplateCache
                 Path absolutePath = absRelArr[0];
                 Path relativePath = absRelArr[1];
 
-                try (Reader reader = Files.newBufferedReader(absolutePath, Charset.forName(Charsets.UTF_8.name()))) {
-                    HtmlTemplate template = HtmlTemplate.create(templateName, new Source(reader), absolutePath, relativePath, parent);
+                try (InputStream inputStream = Files.newInputStream(absolutePath)) {
+
+                    String source = HtmlParser.eatVelocityComments(inputStream);
+
+                    HtmlTemplate template = HtmlTemplate.create(templateName, new Source(source), absolutePath, relativePath, parent);
                     if (template != null) {
                         // Note: because this will return the files in priority order, don't overwrite an already parsed template,
                         // because we want to be able to 'overload' the files with our priority system.
