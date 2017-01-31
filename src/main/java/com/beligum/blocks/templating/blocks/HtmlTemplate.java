@@ -874,8 +874,10 @@ public abstract class HtmlTemplate
             }
 
             //(4) check if the element is a template
-            if (isTemplateInstanceTag(e)) {
-                not all tempaltes are known here...
+            //Note that we can't use isTemplateInstanceTag() here because this is called
+            //*during* template caching building, so we'll add a semi-check and postpone
+            //to the parsing in the substitution
+            if (e.tagName().contains("-")) {
                 phase2.add(new CollapseTemplateInstance(this.cssSelector(e), e));
             }
         }
@@ -1110,7 +1112,8 @@ public abstract class HtmlTemplate
             //little optimization
             if (!this.attributes.isEmpty()) {
                 Elements selectedEls = document.select(this.cssSelector);
-                if (!selectedEls.isEmpty()) {
+                //note that we need the extra isTemplateInstanceTag() (see instance creation of this class for why)
+                if (!selectedEls.isEmpty() && HtmlTemplate.isTemplateInstanceTag(selectedEls.first())) {
                     //remove all attributes that are the same as the source tag
                     for (Map.Entry<String, String> a : this.attributes.entrySet()) {
                         if (selectedEls.attr(a.getKey()).equals(a.getValue())) {
