@@ -284,7 +284,7 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template newPageInstance = R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(), MimeTypes.HTML, optimalLocale));
+                                        Template newPageInstance = R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, optimalLocale));
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);

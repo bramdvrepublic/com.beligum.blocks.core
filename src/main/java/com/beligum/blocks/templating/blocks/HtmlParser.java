@@ -494,13 +494,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //the same for a Tag or Page template; preprocess the replaceable properties
 
         Stack<URI> currentVocabStack = new Stack<>();
-        if (sourceTemplate.getVocab() != null) {
-            currentVocabStack.push(sourceTemplate.getVocab());
+        if (sourceTemplate.getRdfVocab() != null) {
+            currentVocabStack.push(sourceTemplate.getRdfVocab());
         }
 
         Stack<Map<String, URI>> currentPrefixesStack = new Stack<>();
-        if (sourceTemplate.getPrefixes() != null && !sourceTemplate.getPrefixes().isEmpty()) {
-            currentPrefixesStack.push(sourceTemplate.getPrefixes());
+        if (sourceTemplate.getRdfPrefixes() != null && !sourceTemplate.getRdfPrefixes().isEmpty()) {
+            currentPrefixesStack.push(sourceTemplate.getRdfPrefixes());
         }
 
         Set<EndTag> vocabPopTags = new HashSet<>();

@@ -11,13 +11,18 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import net.htmlparser.jericho.*;
+import net.htmlparser.jericho.Attribute;
+import net.htmlparser.jericho.Attributes;
+import net.htmlparser.jericho.Element;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.*;
+import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -95,7 +100,6 @@ public abstract class HtmlTemplate
     protected Path absolutePath;
     protected Path relativePath;
     protected String templateName;
-    protected String velocityName;
     protected Map<Locale, String> titles;
     protected Map<Locale, String> descriptions;
     protected Map<Locale, String> icons;
@@ -105,8 +109,9 @@ public abstract class HtmlTemplate
     protected Iterable<Element> inlineStyleElements;
     protected Iterable<Element> externalStyleElements;
     protected MetaDisplayType displayType;
-    protected URI vocab;
-    protected Map<String, URI> prefixes;
+    protected URI rdfVocab;
+    protected Map<String, URI> rdfPrefixes;
+    protected List<SubstitionReference> normalizationSubstitutions;
 
     //this will enable us to save the 'inheritance tree'
     protected HtmlTemplate superTemplate;
@@ -121,8 +126,6 @@ public abstract class HtmlTemplate
     protected Segment suffixHtml;
 
     //-----CONSTRUCTORS-----
-
-    //-----PUBLIC METHODS-----
     public static HtmlTemplate create(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
     {
         HtmlTemplate retVal = null;
@@ -130,34 +133,278 @@ public abstract class HtmlTemplate
         if (isTagTemplate(source)) {
             retVal = new TagTemplate(templateName, source, absolutePath, relativePath, superTemplate);
         }
-        else if (iPageTemplate(source)) {
+        else if (isPageTemplate(source)) {
             retVal = new PageTemplate(templateName, source, absolutePath, relativePath, superTemplate);
         }
         else {
-            com.beligum.base.utils.Logger.warn("Encountered a html template that not a page and not a tag, returning null; "+relativePath);
+            com.beligum.base.utils.Logger.warn("Encountered a html template that not a page and not a tag, returning null; " + relativePath);
         }
 
         return retVal;
     }
-    private static boolean isTagTemplate(Source source)
+    protected HtmlTemplate(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
     {
-        return !source.getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM).isEmpty();
-    }
-    private static boolean iPageTemplate(Source source)
-    {
-        boolean retVal = false;
+        //INIT THE PATHS
+        this.absolutePath = absolutePath;
+        this.relativePath = relativePath;
 
-        List<Element> html = source.getAllElements(HtmlParser.HTML_ROOT_ELEM);
-        if (html != null && html.size() == 1) {
-            Attributes htmlAttr = html.get(0).getAttributes();
-            if (htmlAttr.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null) {
-                retVal = true;
+        //INIT THE NAMES
+        this.templateName = templateName;
+        this.superTemplate = superTemplate;
+
+        //INIT THE HTML
+        //note: this should take the parent into account
+        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), superTemplate);
+
+        this.rdfVocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get(HtmlParser.RDF_VOCAB_ATTR));
+
+        this.rdfPrefixes = new LinkedHashMap<>();
+        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.rdfPrefixes);
+
+        //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
+        this.titles = superTemplate != null ? superTemplate.getTitles() : new HashMap<Locale, String>();
+        this.fillMetaValues(tempHtml, this.titles, MetaProperty.title, true);
+
+        this.descriptions = superTemplate != null ? superTemplate.getDescriptions() : new HashMap<Locale, String>();
+        this.fillMetaValues(tempHtml, this.descriptions, MetaProperty.description, true);
+
+        this.icons = superTemplate != null ? superTemplate.getIcons() : new HashMap<Locale, String>();
+        this.fillMetaValues(tempHtml, this.icons, MetaProperty.icon, true);
+
+        String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
+        if (!StringUtils.isEmpty(controllerClassStr)) {
+            Class<?> clazz = Class.forName(controllerClassStr);
+            if (TemplateController.class.isAssignableFrom(clazz)) {
+                this.controllerClass = (Class<TemplateController>) clazz;
+            }
+            else {
+                throw new ParseException("Encountered template with a controller that doesn't implement " + TemplateController.class.getSimpleName() + "; " + relativePath, 0);
+            }
+        }
+        //parent controller is the backup if this child doesn't have one
+        if (this.controllerClass == null && superTemplate != null) {
+            this.controllerClass = superTemplate.getControllerClass();
+        }
+
+        this.displayType = superTemplate != null ? superTemplate.getDisplayType() : MetaDisplayType.DEFAULT;
+        String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
+        if (!StringUtils.isEmpty(displayType)) {
+            this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
+        }
+
+        this.inlineStyleElements = getInlineStyles(tempHtml);
+        this.externalStyleElements = getExternalStyles(tempHtml);
+        this.inlineScriptElements = getInlineScripts(tempHtml);
+        this.externalScriptElements = getExternalScripts(tempHtml);
+
+        //prepend the html with the parent resources if it's there
+        if (superTemplate != null) {
+            StringBuilder superTemplateResourceHtml = new StringBuilder();
+            this.inlineStyleElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(),
+                                                      null);
+            this.externalStyleElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements,
+                                                      superTemplate.getAllExternalStyleElements(), "href");
+            this.inlineScriptElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements,
+                                                      superTemplate.getAllInlineScriptElements(), null);
+            this.externalScriptElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
+                                                      superTemplate.getAllExternalScriptElements(), "src");
+            tempHtml.insert(0, superTemplateResourceHtml);
+        }
+
+        //now save the (possibly altered) html source (and unwrap it in case of a tag template)
+        this.saveHtml(tempHtml, superTemplate);
+
+        //once we have the final html saved, we'll parse it again to mark the template variables for normalization,
+        // calculate a standardized version for comparison, etc.
+        this.parseHtml();
+    }
+
+    //-----PUBLIC STATIC METHODS-----
+    /**
+     * Returns the permission role of the supplied element (guaranteed not-null)
+     */
+    public static PermissionRole getResourceRoleScope(Element resource)
+    {
+        PermissionRole retVal = null;
+
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
+        if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
+            SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
+            if (securityConfig != null) {
+                retVal = securityConfig.lookupPermissionRole(scope.getValue());
+            }
+        }
+
+        //we guarantee non-null
+        if (retVal == null) {
+            retVal = PermissionsConfigurator.ROLE_GUEST;
+        }
+
+        return retVal;
+    }
+    /**
+     * Returns the scope mode of the supplied element (guaranteed non-null)
+     */
+    public static ResourceScopeMode getResourceModeScope(Element resource) throws IllegalArgumentException
+    {
+        ResourceScopeMode retVal = null;
+
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_MODE_SCOPE);
+        if (scope == null) {
+            retVal = ResourceScopeMode.UNDEFINED;
+        }
+        else if (StringUtils.isEmpty(scope.getValue())) {
+            retVal = ResourceScopeMode.EMPTY;
+        }
+        else {
+            //this will throw an exception if nothing was found
+            retVal = ResourceScopeMode.valueOf(scope.getValue());
+        }
+
+        return retVal;
+    }
+    /**
+     * Returns the join hint of the supplied element (guaranteed non-null)
+     */
+    public static ResourceJoinHint getResourceJoinHint(Element resource)
+    {
+        ResourceJoinHint retVal = null;
+
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_JOIN_HINT);
+        if (scope == null) {
+            retVal = ResourceJoinHint.UNDEFINED;
+        }
+        else if (StringUtils.isEmpty(scope.getValue())) {
+            retVal = ResourceJoinHint.EMPTY;
+        }
+        else {
+            //this will throw an exception if nothing was found
+            retVal = ResourceJoinHint.valueOf(scope.getValue());
+        }
+
+        return retVal;
+    }
+    /**
+     * Supply a scope attached to a html resource (with data-scope-role attribute)
+     * and return if that resource should be included or not.
+     */
+    public static boolean testResourceRoleScope(PermissionRole role)
+    {
+        // guest role is not always added by default to the current principal by the security system,
+        // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
+        // so the check below would fail, while it's actually ok
+        if (role == null || role == PermissionsConfigurator.ROLE_GUEST) {
+            return true;
+        }
+        else {
+            return SecurityUtils.getSubject().hasRole(role.getRoleName());
+        }
+    }
+    /**
+     * Return if we should currently (in this request context) render out for the specified mode.
+     */
+    public static boolean testResourceModeScope(ResourceScopeMode mode)
+    {
+        switch (mode) {
+            // if you specifically set the mode flag, test it
+            case edit:
+                return mode.equals(R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE));
+
+            //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
+            case EMPTY:
+            case UNDEFINED:
+            default:
+                return true;
+        }
+    }
+    /**
+     * Returns true if the supplied tag is a property tag
+     */
+    public static boolean isPropertyTag(StartTag startTag)
+    {
+        return startTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null || startTag.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
+    }
+    /**
+     * Same test as the method above, but with a JSoup element
+     */
+    public static boolean isPropertyTag(org.jsoup.nodes.Element element)
+    {
+        return element.hasAttr(HtmlParser.RDF_PROPERTY_ATTR) || element.hasAttr(HtmlParser.NON_RDF_PROPERTY_ATTR);
+    }
+    /**
+     * Returns true if the supplied name is "property" or "data-property"
+     */
+    public static boolean isPropertyAttribute(String attributeName)
+    {
+        return attributeName.equals(HtmlParser.RDF_PROPERTY_ATTR) || attributeName.equals(HtmlParser.NON_RDF_PROPERTY_ATTR);
+    }
+    /**
+     * Returns the value of the property attribute of the supplied tag, in predefined order
+     */
+    public static Attribute getPropertyAttribute(StartTag startTag)
+    {
+        Attribute retVal = null;
+
+        Attributes attributes = startTag.getAttributes();
+
+        //regular property has precedence over data-property
+        retVal = attributes.get(HtmlParser.RDF_PROPERTY_ATTR);
+
+        //now try the data-property
+        if (retVal == null) {
+            retVal = attributes.get(HtmlParser.NON_RDF_PROPERTY_ATTR);
+        }
+
+        return retVal;
+    }
+    /**
+     * Same test as the method above, but with a JSoup element
+     */
+    public static String getPropertyAttribute(org.jsoup.nodes.Element element)
+    {
+        String retVal = null;
+
+        org.jsoup.nodes.Attributes attributes = element.attributes();
+
+        //regular property has precedence over data-property
+        //note that we'll return null (compared to what JSoup prescribes) to be compatible with the Jericho method
+        if (attributes.hasKey(HtmlParser.RDF_PROPERTY_ATTR)) {
+            retVal = attributes.get(HtmlParser.RDF_PROPERTY_ATTR);
+        }
+
+        //now try the data-property
+        if (retVal == null) {
+            if (attributes.hasKey(HtmlParser.NON_RDF_PROPERTY_ATTR)) {
+                retVal = attributes.get(HtmlParser.NON_RDF_PROPERTY_ATTR);
             }
         }
 
         return retVal;
     }
+    public static boolean isTemplateInstanceTag(StartTag startTag)
+    {
+        return getTemplateInstance(startTag) != null;
+    }
+    public static HtmlTemplate getTemplateInstance(StartTag startTag)
+    {
+        //note: getByTagName() can handle null values
+        return TemplateCache.instance().getByTagName(startTag.getName().equals("html") ? startTag.getAttributeValue(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) : startTag.getName());
+    }
+    public static boolean isTemplateInstanceTag(org.jsoup.nodes.Element element)
+    {
+        return getTemplateInstance(element) != null;
+    }
+    public static HtmlTemplate getTemplateInstance(org.jsoup.nodes.Element element)
+    {
+        //note: getByTagName() can handle null values
+        return TemplateCache.instance().getByTagName(element.tagName().equals("html") ? element.attr(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) : element.tagName());
+    }
 
+    //-----PUBLIC METHODS-----
     /**
      * Controls if we need to wrap the instance with the <template-name></template-name> tag or not (eg. for page templates, we don't want tturn
      */
@@ -172,26 +419,27 @@ public abstract class HtmlTemplate
     {
         return templateName;
     }
-    public String getVelocityTemplateName()
-    {
-        return velocityName;
-    }
+    /**
+     * @return the html before the <template> tags
+     */
     public Segment getPrefixHtml()
     {
         return prefixHtml;
     }
+    /**
+     * @return the html inside the <template> tags
+     */
     public Segment getInnerHtml()
     {
         return innerHtml;
     }
+    /**
+     * @return the html after the <template> tags
+     */
     public Segment getSuffixHtml()
     {
         return suffixHtml;
     }
-    //    public Segment buildFullHtml()
-    //    {
-    //        return new Source(Joiner.on("").join(this.getPrefixHtml(), this.getInnerHtml(), this.getSuffixHtml()));
-    //    }
     public Map<String, String> getAttributes()
     {
         return attributes;
@@ -258,123 +506,47 @@ public abstract class HtmlTemplate
         return this.buildScopeResourceIterator(this.getAllExternalStyleElements());
     }
     /**
-     * Will create a new html tag; eg for <template class="classname"></template>, this will return <tag-name class="classname"></tag-name>
+     * Will create a new html tag; eg for <template class="classname"></template>,
+     * this will return <tag-name class="classname"></tag-name>
+     * Depending on the flag, it will include all inner (default) html or not
      */
-    public String createNewHtmlInstance()
-    {
-        return new StringBuilder().append(this.buildStartTag()).append(this.buildEndTag()).toString();
-    }
-    public URI getVocab()
-    {
-        return vocab;
-    }
-    public Map<String, URI> getPrefixes()
-    {
-        return prefixes;
-    }
-    public CharSequence buildStartTag()
+    public CharSequence createNewHtmlInstance(boolean includeInnerHtml)
     {
         StringBuilder retVal = new StringBuilder();
 
-        retVal.append("<" + this.getTemplateName());
-        if (!this.attributes.isEmpty()) {
-            retVal.append(Attributes.generateHTML(this.attributes));
+        retVal.append(this.buildStartTag());
+
+        if (includeInnerHtml) {
+            retVal.append(this.getInnerHtml());
         }
-        retVal.append(">");
+
+        retVal.append(this.buildEndTag());
 
         return retVal;
     }
-    public CharSequence buildEndTag()
+    public URI getRdfVocab()
     {
-        return new StringBuilder().append("</").append(this.getTemplateName()).append(">").toString();
+        return rdfVocab;
+    }
+    public Map<String, URI> getRdfPrefixes()
+    {
+        return rdfPrefixes;
+    }
+    public MetaDisplayType getDisplayType()
+    {
+        return displayType;
+    }
+    /**
+     * Returns a mapping between JSoup cssSelector strings and places that can be folded/substituted in this template
+     */
+    public List<SubstitionReference> getNormalizationSubstitutions() throws IOException
+    {
+        return this.normalizationSubstitutions;
     }
 
     //-----PROTECTED METHODS-----
-    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
-    {
-        //INIT THE PATHS
-        this.absolutePath = absolutePath;
-        this.relativePath = relativePath;
-
-        //INIT THE NAMES
-        this.templateName = templateName;
-        this.velocityName = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, this.templateName);
-        this.superTemplate = superTemplate;
-
-        //INIT THE HTML
-        //note: this should take the parent into account
-        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), superTemplate);
-
-        this.vocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get(HtmlParser.RDF_VOCAB_ATTR));
-
-        this.prefixes = new LinkedHashMap<>();
-        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.prefixes);
-
-        //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
-        this.titles = superTemplate != null ? superTemplate.getTitles() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.titles, MetaProperty.title, true);
-
-        this.descriptions = superTemplate != null ? superTemplate.getDescriptions() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.descriptions, MetaProperty.description, true);
-
-        this.icons = superTemplate != null ? superTemplate.getIcons() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.icons, MetaProperty.icon, true);
-
-        String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
-        if (!StringUtils.isEmpty(controllerClassStr)) {
-            Class<?> clazz = Class.forName(controllerClassStr);
-            if (TemplateController.class.isAssignableFrom(clazz)) {
-                this.controllerClass = (Class<TemplateController>) clazz;
-            }
-            else {
-                throw new ParseException("Encountered template with a controller that doesn't implement " + TemplateController.class.getSimpleName() + "; " + relativePath, 0);
-            }
-        }
-        //parent controller is the backup if this child doesn't have one
-        if (this.controllerClass == null && superTemplate != null) {
-            this.controllerClass = superTemplate.getControllerClass();
-        }
-
-        this.displayType = superTemplate != null ? superTemplate.getDisplayType() : MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
-        if (!StringUtils.isEmpty(displayType)) {
-            this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
-        }
-
-        this.inlineStyleElements = getInlineStyles(tempHtml);
-        this.externalStyleElements = getExternalStyles(tempHtml);
-        this.inlineScriptElements = getInlineScripts(tempHtml);
-        this.externalScriptElements = getExternalScripts(tempHtml);
-
-        //prepend the html with the parent resources if it's there
-        if (superTemplate != null) {
-            StringBuilder superTemplateResourceHtml = new StringBuilder();
-            this.inlineStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(),
-                                                      null);
-            this.externalStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements,
-                                                      superTemplate.getAllExternalStyleElements(), "href");
-            this.inlineScriptElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements,
-                                                      superTemplate.getAllInlineScriptElements(), null);
-            this.externalScriptElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
-                                                      superTemplate.getAllExternalScriptElements(), "src");
-            tempHtml.insert(0, superTemplateResourceHtml);
-        }
-
-        //now save the (possibly altered) html source (and unwrap it in case of a tag template)
-        this.saveHtml(tempHtml, superTemplate);
-    }
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
-
-    //-----PROTECTED METHODS-----
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException;
-    protected void setAttributes(Map<String, String> attributes)
-    {
-        this.attributes = attributes;
-    }
     protected static String parseTemplateName(Path relativePath) throws ParseException
     {
         String retVal = null;
@@ -408,6 +580,24 @@ public abstract class HtmlTemplate
     }
 
     //-----PRIVATE METHODS-----
+    private static boolean isTagTemplate(Source source)
+    {
+        return !source.getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM).isEmpty();
+    }
+    private static boolean isPageTemplate(Source source)
+    {
+        boolean retVal = false;
+
+        List<Element> html = source.getAllElements(HtmlParser.HTML_ROOT_ELEM);
+        if (html != null && html.size() == 1) {
+            Attributes htmlAttr = html.get(0).getAttributes();
+            if (htmlAttr.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null) {
+                retVal = true;
+            }
+        }
+
+        return retVal;
+    }
     private void fillMetaValues(OutputDocument html, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
     {
         List<Element> metas = html.getSegment().getAllElements("meta");
@@ -449,10 +639,6 @@ public abstract class HtmlTemplate
         }
 
         return retVal;
-    }
-    public MetaDisplayType getDisplayType()
-    {
-        return displayType;
     }
     private Iterable<Element> getInlineStyles(OutputDocument html) throws IOException
     {
@@ -525,6 +711,22 @@ public abstract class HtmlTemplate
         }
 
         return retVal;
+    }
+    private CharSequence buildStartTag()
+    {
+        StringBuilder retVal = new StringBuilder();
+
+        retVal.append("<" + this.getTemplateName());
+        if (!this.attributes.isEmpty()) {
+            retVal.append(Attributes.generateHTML(this.attributes));
+        }
+        retVal.append(">");
+
+        return retVal;
+    }
+    private CharSequence buildEndTag()
+    {
+        return new StringBuilder().append("</").append(this.getTemplateName()).append(">").toString();
     }
     private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr) throws IOException
     {
@@ -611,91 +813,6 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    public static PermissionRole getResourceRoleScope(Element resource)
-    {
-        PermissionRole retVal = PermissionsConfigurator.ROLE_GUEST;
-
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
-        if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
-            SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
-            if (securityConfig != null) {
-                retVal = securityConfig.lookupPermissionRole(scope.getValue());
-            }
-        }
-
-        //possible that the above function re-fills it with null
-        if (retVal == null) {
-            retVal = PermissionsConfigurator.ROLE_GUEST;
-        }
-
-        return retVal;
-    }
-    public static ResourceScopeMode getResourceModeScope(Element resource)
-    {
-        ResourceScopeMode retVal = null;
-
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_MODE_SCOPE);
-        if (scope == null) {
-            retVal = ResourceScopeMode.UNDEFINED;
-        }
-        else if (StringUtils.isEmpty(scope.getValue())) {
-            retVal = ResourceScopeMode.EMPTY;
-        }
-        else {
-            //this will throw an exception if nothing was found
-            retVal = ResourceScopeMode.valueOf(scope.getValue());
-        }
-
-        return retVal;
-    }
-    public static ResourceJoinHint getResourceJoinHint(Element resource)
-    {
-        ResourceJoinHint retVal = null;
-
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_JOIN_HINT);
-        if (scope == null) {
-            retVal = ResourceJoinHint.UNDEFINED;
-        }
-        else if (StringUtils.isEmpty(scope.getValue())) {
-            retVal = ResourceJoinHint.EMPTY;
-        }
-        else {
-            //this will throw an exception if nothing was found
-            retVal = ResourceJoinHint.valueOf(scope.getValue());
-        }
-
-        return retVal;
-    }
-    /**
-     * Supply a scope attached to a html resource (with data-scope-role attribute)
-     * and return if that resource should be included or not.
-     */
-    public static boolean testResourceRoleScope(PermissionRole role)
-    {
-        // guest role is not always added by default to the current principal by the security system,
-        // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
-        // so the check below would fail, while it's actually ok
-        if (role == null || role == PermissionsConfigurator.ROLE_GUEST) {
-            return true;
-        }
-        else {
-            return SecurityUtils.getSubject().hasRole(role.getRoleName());
-        }
-    }
-    public static boolean testResourceModeScope(ResourceScopeMode mode)
-    {
-        switch (mode) {
-            // if you specifically set the mode flag, test it
-            case edit:
-                return mode.equals(R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE));
-
-            //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
-            case EMPTY:
-            case UNDEFINED:
-            default:
-                return true;
-        }
-    }
     private Iterable<Element> buildScopeResourceIterator(Iterable<Element> elements)
     {
         final Iterator iter = Iterators.filter(elements.iterator(), new Predicate<Element>()
@@ -716,6 +833,91 @@ public abstract class HtmlTemplate
             }
         };
     }
+    /**
+     * Post-parse the html of this template to save variable selectors, standardize html, etc.
+     */
+    private void parseHtml()
+    {
+        //Note that JSoup wraps all html in a <html><head></head><body></body>[inserted]</html> container...
+        Document templateHtml = Jsoup.parseBodyFragment(this.createNewHtmlInstance(true).toString());
+
+        //BIG NOTE: since these substitutions will be executed in the same order we enter them,
+        //          the variable substitutions must be executed before the equality substitutions
+        //          or we'll compare rendered html with unrendered html and nothing will match!
+        //          ---> That's why we need multiple phases.
+
+        //We currently support two places where we'll normalize the variables back into the html:
+        //- as the value of an attribute, eg. <blah class="$CONSTANTS.blocks.core.CLASS_NAME">
+        //- as the full value of an element, eg. <blah>$CONSTANTS.blocks.core.CONTENT</blah>
+        //On top of that, we support the normalization of unchanged property elements
+        this.normalizationSubstitutions = new ArrayList<>();
+        List<SubstitionReference> phase2 = new ArrayList<>();
+        Elements templateIter = templateHtml.body().children().select("*");
+        for (org.jsoup.nodes.Element e : templateIter) {
+
+            //(1) check if the attribute value is a variable
+            org.jsoup.nodes.Attributes attributes = e.attributes();
+            for (org.jsoup.nodes.Attribute a : attributes) {
+                if (this.isTemplateVariable(a.getValue().trim())) {
+                    this.normalizationSubstitutions.add(new ReplaceVariableAttributeValue(this.cssSelector(e), a));
+                }
+            }
+
+            //(2) check if the content is a single variable
+            if (this.isTemplateVariable(e.html().trim())) {
+                this.normalizationSubstitutions.add(new ReplaceVariableContent(this.cssSelector(e), e));
+            }
+
+            //(3) check if the element is a property
+            if (this.isPropertyTag(e)) {
+                phase2.add(new CollapseTemplateProperty(this.cssSelector(e), e));
+            }
+
+            //(4) check if the element is a template
+            if (isTemplateInstanceTag(e)) {
+                not all tempaltes are known here...
+                phase2.add(new CollapseTemplateInstance(this.cssSelector(e), e));
+            }
+        }
+        //now add all phase 2 substitutions at the end of the existing list so we're sure they're executed after phase 1
+        this.normalizationSubstitutions.addAll(phase2);
+    }
+    /**
+     * This is the exact same code as org.jsoup.nodes.Element.cssSelector() but with the classes commented out
+     * because in our case, the classes are often constants and cause troubles. From what I tested, and because
+     * of the way we double check by testing the rendered out values during comparison, I don't think this will
+     * cause problems.
+     * Note that we're still backwards compatible with the Element.select() code though...
+     */
+    private String cssSelector(org.jsoup.nodes.Element element)
+    {
+        if (element.id().length() > 0)
+            return "#" + element.id();
+
+        StringBuilder selector = new StringBuilder(element.tagName());
+//        String classes = StringUtil.join(element.classNames(), ".");
+//        if (classes.length() > 0)
+//            selector.append('.').append(classes);
+
+        if (element.parent() == null || element.parent() instanceof Document) // don't add Document to selector, as will always have a html node
+            return selector.toString();
+
+        selector.insert(0, " > ");
+        if (element.parent().select(selector.toString()).size() > 1)
+            selector.append(String.format(":nth-child(%d)", element.elementSiblingIndex() + 1));
+
+        return this.cssSelector(element.parent()) + selector.toString();
+    }
+    /**
+     * Check if the supplied string is a template variable
+     */
+    private boolean isTemplateVariable(String html)
+    {
+        //note that we chose to not search for specific variables (eg; MESSAGES or CONSTANTS) because
+        // of the possibility of different prefix syntaxes (eg. for Velocity ${MESSAGES} and $MESSAGES)
+        // and because we'll have a safeguard check (comparing the rendered variable)
+        return html.startsWith(R.resourceManager().getTemplateEngine().getVariablePrefix());
+    }
 
     //-----MANAGEMENT METHODS-----
     @Override
@@ -726,10 +928,12 @@ public abstract class HtmlTemplate
     @Override
     public boolean equals(Object o)
     {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (!(o instanceof HtmlTemplate))
+        }
+        if (!(o instanceof HtmlTemplate)) {
             return false;
+        }
 
         HtmlTemplate that = (HtmlTemplate) o;
 
@@ -740,5 +944,184 @@ public abstract class HtmlTemplate
     public int hashCode()
     {
         return templateName != null ? templateName.hashCode() : 0;
+    }
+
+    //-----INNER CLASSES-----
+    public interface SubstitionReferenceRenderer
+    {
+        String renderTemplateString(String value) throws IOException;
+    }
+    public abstract static class SubstitionReference
+    {
+        protected String cssSelector;
+        protected SubstitionReference(String cssSelector)
+        {
+            this.cssSelector = cssSelector;
+        }
+
+        public abstract boolean replaceIn(Document document, SubstitionReferenceRenderer renderer) throws IOException;
+
+        //bring the supplied argument in a state where it's can be compared for equality regardless of white space, formatting, etc...
+        protected String standardize(String html)
+        {
+            final boolean USE_JERICHO = false;
+
+            String retVal;
+            if (USE_JERICHO) {
+                retVal = new SourceFormatter(new Source(html)).setCollapseWhiteSpace(true).setIndentString("").setNewLine("").toString();
+            }
+            else {
+                Document doc = Jsoup.parseBodyFragment(html);
+                //we'll standardize everything to a compact xhtml document
+                doc = doc.outputSettings(doc.outputSettings().indentAmount(0).prettyPrint(false).syntax(Document.OutputSettings.Syntax.xml));
+                retVal = doc.body().html();
+            }
+
+            return retVal;
+        }
+    }
+    public static class ReplaceVariableAttributeValue extends SubstitionReference
+    {
+        protected String attributeName;
+        protected String variableAttributeValue;
+        protected ReplaceVariableAttributeValue(String cssSelector, org.jsoup.nodes.Attribute attribute)
+        {
+            super(cssSelector);
+
+            this.attributeName = attribute.getKey();
+            this.variableAttributeValue = this.standardize(attribute);
+        }
+
+        @Override
+        public boolean replaceIn(Document document, SubstitionReferenceRenderer renderer) throws IOException
+        {
+            boolean retVal = false;
+
+            Elements selectedEls = document.select(this.cssSelector);
+            if (!selectedEls.isEmpty()) {
+                //since we're checking if we need to normalize to a variable again, we need to render out or own (variable) value first
+                String thisValue = this.standardize(renderer.renderTemplateString(this.variableAttributeValue));
+                for (org.jsoup.nodes.Element e : selectedEls) {
+                    String thatValue = this.standardize(e.attr(this.attributeName));
+                    if (thisValue.equals(thatValue)) {
+                        e.attr(this.attributeName, this.variableAttributeValue);
+                        retVal = true;
+                    }
+                }
+            }
+
+            return retVal;
+        }
+        protected String standardize(org.jsoup.nodes.Attribute attribute)
+        {
+            return super.standardize(attribute.getValue().trim());
+        }
+    }
+    public static class ReplaceVariableContent extends SubstitionReference
+    {
+        protected String variableElementContent;
+        protected ReplaceVariableContent(String cssSelector, org.jsoup.nodes.Element element)
+        {
+            super(cssSelector);
+
+            this.variableElementContent = this.standardize(element);
+        }
+        @Override
+        public boolean replaceIn(Document document, SubstitionReferenceRenderer renderer) throws IOException
+        {
+            boolean retVal = false;
+
+            Elements selectedEls = document.select(this.cssSelector);
+            if (!selectedEls.isEmpty()) {
+                //since we're checking if we need to normalize to a variable again, we need to render out or own (variable) value first
+                String thisValue = this.standardize(renderer.renderTemplateString(this.variableElementContent));
+                for (org.jsoup.nodes.Element e : selectedEls) {
+                    String thatValue = this.standardize(e);
+                    if (thisValue.equals(thatValue)) {
+                        e.html(this.variableElementContent);
+                        retVal = true;
+                    }
+                }
+            }
+
+            return retVal;
+        }
+        protected String standardize(org.jsoup.nodes.Element element)
+        {
+            return super.standardize(element.html().trim());
+        }
+    }
+    public static class CollapseTemplateProperty extends SubstitionReference
+    {
+        protected String element;
+        protected CollapseTemplateProperty(String cssSelector, org.jsoup.nodes.Element propertyElement)
+        {
+            super(cssSelector);
+
+            //we can optimize a bit and standardize here because we're not supposed to have variables
+            this.element = this.standardize(propertyElement);
+        }
+        @Override
+        public boolean replaceIn(Document document, SubstitionReferenceRenderer renderer) throws IOException
+        {
+            boolean retVal = false;
+
+            Elements selectedEls = document.select(this.cssSelector);
+            if (!selectedEls.isEmpty()) {
+                String thisValue = this.element;
+                for (org.jsoup.nodes.Element e : selectedEls) {
+                    String thatValue = this.standardize(e);
+                    if (thisValue.equals(thatValue)) {
+                        //we can just remove the property element because the default behavior of the HtmlParser is to render out it's default value
+                        e.remove();
+                        retVal = true;
+                    }
+                }
+            }
+
+            return retVal;
+        }
+        protected String standardize(org.jsoup.nodes.Element element)
+        {
+            return super.standardize(element.outerHtml().trim());
+        }
+    }
+    public static class CollapseTemplateInstance extends SubstitionReference
+    {
+        protected Map<String, String> attributes;
+        protected CollapseTemplateInstance(String cssSelector, org.jsoup.nodes.Element element)
+        {
+            super(cssSelector);
+
+            this.attributes = new HashMap<>();
+            org.jsoup.nodes.Attributes attrs = element.attributes();
+            for (org.jsoup.nodes.Attribute a : attrs) {
+                //note: we shouldn't wipe properties, right?
+                if (!HtmlTemplate.isPropertyAttribute(a.getKey())) {
+                    this.attributes.put(a.getKey(), a.getValue());
+                }
+            }
+        }
+        @Override
+        public boolean replaceIn(Document document, SubstitionReferenceRenderer renderer) throws IOException
+        {
+            boolean retVal = false;
+
+            //little optimization
+            if (!this.attributes.isEmpty()) {
+                Elements selectedEls = document.select(this.cssSelector);
+                if (!selectedEls.isEmpty()) {
+                    //remove all attributes that are the same as the source tag
+                    for (Map.Entry<String, String> a : this.attributes.entrySet()) {
+                        if (selectedEls.attr(a.getKey()).equals(a.getValue())) {
+                            selectedEls.removeAttr(a.getKey());
+                            retVal = true;
+                        }
+                    }
+                }
+            }
+
+            return retVal;
+        }
     }
 }

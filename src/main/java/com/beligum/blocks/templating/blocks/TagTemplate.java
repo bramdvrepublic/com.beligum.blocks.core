@@ -23,7 +23,7 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
-        this.init(templateName, document, absolutePath, relativePath, parent);
+        super(templateName, document, absolutePath, relativePath, parent);
     }
 
     //-----PUBLIC METHODS-----
@@ -57,7 +57,7 @@ public class TagTemplate extends HtmlTemplate
                 //note that populate just does a put() so this works well to override the parent properties
                 templateTag.getAttributes().populateMap(attrs, true);
             }
-            this.setAttributes(attrs);
+            this.attributes = attrs;
         }
         else {
             throw new IOException("Encountered tag template with an invalid <" + HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM + "> tag config (found " +

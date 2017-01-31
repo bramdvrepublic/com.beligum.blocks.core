@@ -181,7 +181,7 @@ public class PageAdminEndpoint
         // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
         Template block = R.resourceManager().newTemplate(new StringSource(URI.create(htmlTemplate.getTemplateName()),
-                                                                          htmlTemplate.createNewHtmlInstance(),
+                                                                          htmlTemplate.createNewHtmlInstance(false),
                                                                           MimeTypes.HTML,
                                                                           //since this is the value of the template context lang,
                                                                           //it makes sense to create the string in the same lang
