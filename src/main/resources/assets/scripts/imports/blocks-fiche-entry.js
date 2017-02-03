@@ -81,6 +81,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
          */
         _createCombobox: function (block, element)
         {
+            //!!!NOTE!!! that these two elements are referenced from the controller as well,
+            //so it something would ever change, make sure you change them there as well!
             //this is the label that belongs to the value
             var labelElement = element.find("[data-property='" + BlocksConstants.FICHE_ENTRY_NAME_PROPERTY + "']");
             //this is the element that holds the true value of the entry

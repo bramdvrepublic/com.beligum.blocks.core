@@ -249,7 +249,7 @@ public class HtmlTag implements HtmlTemplate.SubstitionReferenceRenderer
     {
         CharSequence retVal = normalizedHtml;
 
-        if (/*this.isTagTemplate() && */normalizedHtml.length() > 0) {
+        if (normalizedHtml.length() > 0) {
 
             Document document = Jsoup.parseBodyFragment(normalizedHtml.toString());
 

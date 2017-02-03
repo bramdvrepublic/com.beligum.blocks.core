@@ -3,6 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
@@ -16,7 +17,6 @@ import com.beligum.blocks.filesystem.pages.PageIterator;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.NewPageSource;
-import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
@@ -208,7 +208,10 @@ public class PageAdminEndpoint
     public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
         //this wraps and parses the raw data coming in
-        PageSource source = new NewPageSource(url, content);
+        Source source = new NewPageSource(url, content);
+
+        //pull the source through our template controllers for some last-minute adaptations to the html source
+        source = HtmlTemplate.prepareForSave(source);
 
         //save the file to disk and pull all the proxies etc
         Page savedPage = R.resourceManager().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class);

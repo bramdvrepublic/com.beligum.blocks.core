@@ -2,7 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.*;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
@@ -18,6 +18,7 @@ import net.htmlparser.jericho.*;
 import net.htmlparser.jericho.Attribute;
 import net.htmlparser.jericho.Attributes;
 import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.Source;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
@@ -26,6 +27,7 @@ import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -212,6 +214,8 @@ public abstract class HtmlTemplate
             this.externalScriptElements =
                             addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
                                                       superTemplate.getAllExternalScriptElements(), "src");
+
+            //insert all (processed) super resources at the beginning of the html
             tempHtml.insert(0, superTemplateResourceHtml);
         }
 
@@ -345,18 +349,21 @@ public abstract class HtmlTemplate
     /**
      * Returns the value of the property attribute of the supplied tag, in predefined order
      */
-    public static Attribute getPropertyAttribute(StartTag startTag)
+    public static String getPropertyAttribute(StartTag startTag)
     {
-        Attribute retVal = null;
+        String retVal = null;
 
         Attributes attributes = startTag.getAttributes();
 
         //regular property has precedence over data-property
-        retVal = attributes.get(HtmlParser.RDF_PROPERTY_ATTR);
-
+        Attribute attribute = attributes.get(HtmlParser.RDF_PROPERTY_ATTR);
         //now try the data-property
-        if (retVal == null) {
-            retVal = attributes.get(HtmlParser.NON_RDF_PROPERTY_ATTR);
+        if (attribute == null) {
+            attribute = attributes.get(HtmlParser.NON_RDF_PROPERTY_ATTR);
+        }
+
+        if (attribute != null) {
+            retVal = attribute.getValue();
         }
 
         return retVal;
@@ -385,6 +392,40 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
+    /**
+     * Finds the first tag with a property attribute inside the element and returns it's value
+     */
+    public static String getFirstPropertyInside(Element element)
+    {
+        String retVal = null;
+
+        Iterator<Segment> nodes = element.getNodeIterator();
+        while (nodes.hasNext() && StringUtils.isEmpty(retVal)) {
+            Segment node = nodes.next();
+            if (node instanceof StartTag) {
+                retVal = HtmlTemplate.getPropertyAttribute((StartTag) node);
+            }
+        }
+
+        return retVal;
+    }
+    /**
+     * Same test as the method above, but with a JSoup element
+     */
+    public static String getFirstPropertyInside(org.jsoup.nodes.Element element)
+    {
+        String retVal = null;
+
+        Elements propertyElements = element.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "], [" + HtmlParser.NON_RDF_PROPERTY_ATTR + "]");
+        if (!propertyElements.isEmpty()) {
+            retVal = propertyElements.first().attr(HtmlParser.RDF_PROPERTY_ATTR);
+            if (StringUtils.isEmpty(retVal)) {
+                retVal = propertyElements.first().attr(HtmlParser.NON_RDF_PROPERTY_ATTR);
+            }
+        }
+
+        return retVal;
+    }
     public static boolean isTemplateInstanceTag(StartTag startTag)
     {
         return getTemplateInstance(startTag) != null;
@@ -402,6 +443,32 @@ public abstract class HtmlTemplate
     {
         //note: getByTagName() can handle null values
         return TemplateCache.instance().getByTagName(element.tagName().equals("html") ? element.attr(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) : element.tagName());
+    }
+    public static com.beligum.base.resources.ifaces.Source prepareForSave(com.beligum.base.resources.ifaces.Source source) throws IOException
+    {
+        String result = HtmlTemplate.callTemplateControllerMethods(source, new ControllerCallback()
+        {
+            @Override
+            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller)
+            {
+                controller.prepareForSave(source, element, htmlOutput);
+            }
+        });
+
+        return new StringSource(source.getUri(), result, source.getMimeType(), source.getLanguage());
+    }
+    public static com.beligum.base.resources.ifaces.Source prepareForCopy(com.beligum.base.resources.ifaces.Source source) throws IOException
+    {
+        String result = HtmlTemplate.callTemplateControllerMethods(source, new ControllerCallback()
+        {
+            @Override
+            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller)
+            {
+                controller.prepareForCopy(source, element, htmlOutput);
+            }
+        });
+
+        return new StringSource(source.getUri(), result, source.getMimeType(), source.getLanguage());
     }
 
     //-----PUBLIC METHODS-----
@@ -546,6 +613,7 @@ public abstract class HtmlTemplate
 
     //-----PROTECTED METHODS-----
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
+
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException;
     protected static String parseTemplateName(Path relativePath) throws ParseException
     {
@@ -594,6 +662,41 @@ public abstract class HtmlTemplate
             if (htmlAttr.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null) {
                 retVal = true;
             }
+        }
+
+        return retVal;
+    }
+    private static String callTemplateControllerMethods(com.beligum.base.resources.ifaces.Source source, ControllerCallback callback) throws IOException
+    {
+        String retVal;
+
+        try (InputStream is = source.newInputStream()) {
+            Source htmlSource = new Source(is);
+            OutputDocument htmlOutput = new OutputDocument(htmlSource);
+
+            Iterator<Segment> nodes = htmlSource.getNodeIterator();
+            while (nodes.hasNext()) {
+                Segment node = nodes.next();
+
+                //if the segment is a tag, parse the element
+                if (node instanceof StartTag) {
+                    Element element = ((StartTag) node).getElement();
+                    HtmlTemplate templateInstance = TemplateCache.instance().getByTagName(element.getName());
+                    if (templateInstance != null) {
+                        Class<TemplateController> controllerClass = templateInstance.getControllerClass();
+                        if (controllerClass != null) {
+                            try {
+                                callback.encounteredTemplateTagController(htmlSource, htmlOutput, element, controllerClass.newInstance());
+                            }
+                            catch (Exception e) {
+                                throw new IOException("Error while creating new template controller instance; this shouldn't happen; " + controllerClass);
+                            }
+                        }
+                    }
+                }
+            }
+
+            retVal = htmlOutput.toString();
         }
 
         return retVal;
@@ -728,18 +831,19 @@ public abstract class HtmlTemplate
     {
         return new StringBuilder().append("</").append(this.getTemplateName()).append(">").toString();
     }
+    /**
+     * Build a #btrd() directive for the supplied element's attribute
+     */
     private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr) throws IOException
     {
         final boolean print = false;
-        StringBuilder builder = new StringBuilder();
         String attrValue = attr == null ? null : element.getAttributeValue(attr);
         String elementStr = element.toString();
         //Note: in case of a dynamic (=non-immutable) asset, we'll postpone the fingerprinting all the way till
         //com.beligum.blocks.templating.blocks.TemplateResources.Resource.getElement() and getValue()
-        boolean isImmutable = false;
 
-        //this means we're dealing with an external resource that may need fingerprinting
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+            //this means we're dealing with an external resource that may need fingerprinting
             if (attrValue != null) {
                 //validate the URI
                 URI uri = UriBuilder.fromUri(attrValue).build();
@@ -756,47 +860,38 @@ public abstract class HtmlTemplate
                         OutputDocument outputDocument = new OutputDocument(element);
                         outputDocument.replace(attrValueSeg, attrValue);
                         elementStr = outputDocument.toString();
-
-                        //signal our directive the fingerprinting is already performed
-                        isImmutable = false;
                     }
                 }
             }
         }
 
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
-        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(")
+        return new StringBuilder().append("#").append(TagTemplateResourceDirective.NAME).append("(")
 
-               .append(type.ordinal()).append(",")
-               .append(print).append(",'")
-               .append(attrValue).append("',")
-               .append(isImmutable).append(",'")
-               .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
-               .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
-               .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
+                                  .append(type.ordinal()).append(",")
+                                  .append(print).append(",'")
+                                  .append(attrValue).append("','")
+                                  .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
+                                  .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
+                                  .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
 
-               .append(")")
-               .append(elementStr)
-               .append("#end");
-
-        return builder.toString();
+                                  .append(")")
+                                  .append(elementStr)
+                                  .append("#end").toString();
     }
     /**
      * Puts the element's html through the template engine to render out all needed context variables (constants/messages)
-     * This allows us to use velocity variables in the resource URLs
+     * Note that this is executed during boot, so eg. the language for the messages will probably not be initialized correctly,
+     * so avoid using $MESSAGES in resource element names. This is mainly made for using $CONSTANTS in the resource URLs.
      */
     private Element renderResourceElement(Element element) throws IOException
     {
-        Element retVal = null;
-
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use this URI to create template or you'll end up overwriting the cache with this temporary StringSource
         Template template = R.resourceManager().newTemplate(new StringSource(element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
 
         //there should always be a first element since we started out with an element, right?
-        retVal = new Source(template.render()).getFirstElement();
-
-        return retVal;
+        return new Source(template.render()).getFirstElement();
     }
     private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements,
                                                         String attribute)
@@ -859,7 +954,7 @@ public abstract class HtmlTemplate
             org.jsoup.nodes.Attributes attributes = e.attributes();
             for (org.jsoup.nodes.Attribute a : attributes) {
                 if (this.isTemplateVariable(a.getValue().trim())) {
-                    this.normalizationSubstitutions.add(new ReplaceVariableAttributeValue(this.cssSelector(e), a));
+                    this.normalizationSubstitutions.add(new ReplaceVariableAttributeValue(this.cssSelector(e), attributes, a));
                 }
             }
 
@@ -893,20 +988,24 @@ public abstract class HtmlTemplate
      */
     private String cssSelector(org.jsoup.nodes.Element element)
     {
-        if (element.id().length() > 0)
+        if (element.id().length() > 0) {
             return "#" + element.id();
+        }
 
         StringBuilder selector = new StringBuilder(element.tagName());
-//        String classes = StringUtil.join(element.classNames(), ".");
-//        if (classes.length() > 0)
-//            selector.append('.').append(classes);
+        //        String classes = StringUtil.join(element.classNames(), ".");
+        //        if (classes.length() > 0)
+        //            selector.append('.').append(classes);
 
         if (element.parent() == null || element.parent() instanceof Document) // don't add Document to selector, as will always have a html node
+        {
             return selector.toString();
+        }
 
         selector.insert(0, " > ");
-        if (element.parent().select(selector.toString()).size() > 1)
+        if (element.parent().select(selector.toString()).size() > 1) {
             selector.append(String.format(":nth-child(%d)", element.elementSiblingIndex() + 1));
+        }
 
         return this.cssSelector(element.parent()) + selector.toString();
     }
@@ -949,10 +1048,16 @@ public abstract class HtmlTemplate
     }
 
     //-----INNER CLASSES-----
+    private interface ControllerCallback
+    {
+        void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller);
+    }
+
     public interface SubstitionReferenceRenderer
     {
         String renderTemplateString(String value) throws IOException;
     }
+
     public abstract static class SubstitionReference
     {
         protected String cssSelector;
@@ -982,11 +1087,12 @@ public abstract class HtmlTemplate
             return retVal;
         }
     }
+
     public static class ReplaceVariableAttributeValue extends SubstitionReference
     {
         protected String attributeName;
         protected String variableAttributeValue;
-        protected ReplaceVariableAttributeValue(String cssSelector, org.jsoup.nodes.Attribute attribute)
+        protected ReplaceVariableAttributeValue(String cssSelector, org.jsoup.nodes.Attributes attributes, org.jsoup.nodes.Attribute attribute)
         {
             super(cssSelector);
 
@@ -1019,6 +1125,7 @@ public abstract class HtmlTemplate
             return super.standardize(attribute.getValue().trim());
         }
     }
+
     public static class ReplaceVariableContent extends SubstitionReference
     {
         protected String variableElementContent;
@@ -1053,6 +1160,7 @@ public abstract class HtmlTemplate
             return super.standardize(element.html().trim());
         }
     }
+
     public static class CollapseTemplateProperty extends SubstitionReference
     {
         protected String element;
@@ -1088,6 +1196,7 @@ public abstract class HtmlTemplate
             return super.standardize(element.outerHtml().trim());
         }
     }
+
     public static class CollapseTemplateInstance extends SubstitionReference
     {
         protected Map<String, String> attributes;

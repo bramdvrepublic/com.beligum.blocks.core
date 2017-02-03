@@ -6,6 +6,7 @@ import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceParser;
 import com.beligum.base.resources.parsers.MinifiedInputStream;
+import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
@@ -316,9 +317,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 // but watch out: an <img> element doens't have and end tag, so check for null
                 if (!isVoidTag) {
                     if (immediateChild.getEndTag() != null) {
-                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag())) {
-                            ;
-                        }
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()));
                     }
                 }
 
@@ -329,6 +328,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                     name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
                 }
                 if (name != null) {
+                    name = this.preprocessPropertyName(name);
+
                     String value = immediateChild.toString();
 
                     OutputDocument parsedValue = this.processSource(source, new Source(value));
@@ -475,7 +476,21 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
         return builder;
     }
+    /**
+     * this will allow us to use template variables (eg. $CONSTANTS) in property attributes
+     */
+    private String preprocessPropertyName(String name) throws IOException
+    {
+        if (name.startsWith(R.resourceManager().getTemplateEngine().getVariablePrefix())) {
+            name = this.renderTemplateValue(name);
+        }
 
+        return name;
+    }
+    private String renderTemplateValue(String value) throws IOException
+    {
+        return R.resourceManager().newTemplate(new StringSource(value, MimeTypes.HTML, R.i18n().getOptimalLocale())).render();
+    }
     /**
      * Process the html tag/page template (not an instance, the real source template) and generate it's html
      */
@@ -718,6 +733,9 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 //throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+source.getRow(tag.getStartTag().getBegin())+" that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " + template.getAbsolutePath());
             }
         }
+
+        //this will allow us to use template variables as property attribute values and goes hand in hand with
+        retVal = this.preprocessPropertyName(retVal);
 
         return retVal;
     }

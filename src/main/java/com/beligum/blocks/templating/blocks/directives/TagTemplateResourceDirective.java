@@ -46,10 +46,9 @@ public class TagTemplateResourceDirective extends Directive
         TemplateResourcesDirective.Argument type = TemplateResourcesDirective.Argument.values()[((int) TagTemplateDirectiveUtils.readArg(context, node, 0))];
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 1);
         String urlArgument = (String) TagTemplateDirectiveUtils.readArg(context, node, 2);
-        boolean isImmutable = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 3);
-        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 4));
-        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 5)];
-        HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 6)];
+        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 3));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 4)];
+        HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 5)];
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
             if (writer instanceof StringWriter) {
@@ -58,16 +57,16 @@ public class TagTemplateResourceDirective extends Directive
 
                 switch (type) {
                     case inlineStyles:
-                        added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(element, (StringWriter) writer, print, isImmutable, joinHint);
+                        added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(element, (StringWriter) writer, print, joinHint);
                         break;
                     case externalStyles:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(element, (StringWriter) writer, urlArgument, print, isImmutable, joinHint);
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(element, (StringWriter) writer, urlArgument, print, joinHint);
                         break;
                     case inlineScripts:
-                        added = TemplateResourcesDirective.getContextResources(context).addInlineScript(element, (StringWriter) writer, print, isImmutable, joinHint);
+                        added = TemplateResourcesDirective.getContextResources(context).addInlineScript(element, (StringWriter) writer, print, joinHint);
                         break;
                     case externalScripts:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(element, (StringWriter) writer, urlArgument, print, isImmutable, joinHint);
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(element, (StringWriter) writer, urlArgument, print, joinHint);
                         break;
                     default:
                         throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");

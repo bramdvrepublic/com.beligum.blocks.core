@@ -2,6 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
@@ -102,7 +103,7 @@ public class ApplicationEndpoint
         }
         else {
             // Since we allow the user to create pretty url's, it's mime type will not always be clear, so pass it on explicitly
-            //Note: this will throw an exception if the resource wasn't found
+            //Note: this will return null if the resource wasn't found
             Page page = R.resourceManager().get(requestedUri, MimeTypes.HTML, Page.class);
 
             if (page != null) {
@@ -284,7 +285,9 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template newPageInstance = R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, optimalLocale));
+                                        Template
+                                                        newPageInstance =
+                                                        R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, optimalLocale));
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -308,10 +311,21 @@ public class ApplicationEndpoint
                                         //we need to pull the normalized html through the template engine for this to work
                                         Template copyTemplate = R.resourceManager().newTemplate(copyPage);
 
+                                        //activate blocks mode for the old template so we copy everything, not just the public html
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
 
-                                        Template template = null;
-                                        PageSource html = new PageSourceCopy(new StringSource(copyPage.getPublicAbsoluteAddress(), copyTemplate.render(), copyPage.getMimeType(), copyPage.getLanguage()));
+                                        Source source = new StringSource(copyPage.getPublicAbsoluteAddress(),
+                                                                         copyTemplate.render(),
+                                                                         copyPage.getMimeType(),
+                                                                         copyPage.getLanguage());
+
+                                        //pull the source through our template controllers for some last-minute adaptations to the html source
+                                        source = HtmlTemplate.prepareForCopy(source);
+
+                                        //effectively make a copy
+                                        PageSource html = new PageSourceCopy(source);
+
+                                        Template template;
                                         try (InputStream is = html.newInputStream()) {
                                             template = R.resourceManager().newTemplate(new StringSource(requestedUri, IOUtils.toString(is), MimeTypes.HTML, optimalLocale));
                                         }

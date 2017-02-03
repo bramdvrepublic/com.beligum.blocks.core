@@ -129,6 +129,7 @@ public class TemplateResourcesDirective extends Directive
             if (inserts == null) {
                 context.put(RESOURCES_INSERTS, inserts = new ArrayList<>());
             }
+
             if (writer instanceof StringWriter) {
                 inserts.add(new WriterBufferReference(arg, (StringWriter) writer));
             }

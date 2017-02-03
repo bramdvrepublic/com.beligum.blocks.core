@@ -20,6 +20,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
 
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -37,7 +38,6 @@ public class BreadcrumbController extends DefaultTemplateController
     @Override
     public void created()
     {
-
     }
 
     //-----PUBLIC METHODS-----
@@ -112,7 +112,7 @@ public class BreadcrumbController extends DefaultTemplateController
 
             //just chop off the last slash
             if (uri.getPath().endsWith("/")) {
-                uri = URI.create(uri.getPath().substring(0, uri.getPath().length()-1));
+                uri = UriBuilder.fromUri(uri).replacePath(uri.getPath().substring(0, uri.getPath().length()-1)).build();
             }
             //removes the name part
             else {
@@ -135,7 +135,7 @@ public class BreadcrumbController extends DefaultTemplateController
 
             //just add the root with a general terms as the final attempt
             if (retVal.isEmpty()) {
-                retVal.add(new DefaultMapEntry(URI.create("/"), gen.com.beligum.blocks.core.messages.blocks.core.Entries.breadcrumbHomeTitle.getValue()));
+                retVal.add(new DefaultMapEntry(URI.create("/"), gen.com.beligum.blocks.core.messages.blocks.core.Entries.breadcrumbHomeTitle));
             }
         }
 

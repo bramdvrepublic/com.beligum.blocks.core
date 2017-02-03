@@ -105,21 +105,21 @@ public class TemplateResources
             }
         };
     }
-    public boolean addInlineStyle(String element, StringWriter writer, boolean print, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+    public boolean addInlineStyle(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(writer, print, new InlineStyle(element, writer.getBuffer().length(), immutable, joinHint), this.styles);
+        return this.addResource(writer, print, new InlineStyle(element, writer.getBuffer().length(), joinHint), this.styles);
     }
-    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(writer, print, new ExternalStyle(element, href, writer.getBuffer().length(), immutable, joinHint), this.styles);
+        return this.addResource(writer, print, new ExternalStyle(element, href, writer.getBuffer().length(), joinHint), this.styles);
     }
-    public boolean addInlineScript(String element, StringWriter writer, boolean print, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+    public boolean addInlineScript(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(writer, print, new InlineScript(element, writer.getBuffer().length(), immutable, joinHint), this.scripts);
+        return this.addResource(writer, print, new InlineScript(element, writer.getBuffer().length(), joinHint), this.scripts);
     }
-    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(writer, print, new ExternalScript(element, src, writer.getBuffer().length(), immutable, joinHint), this.scripts);
+        return this.addResource(writer, print, new ExternalScript(element, src, writer.getBuffer().length(), joinHint), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -174,9 +174,6 @@ public class TemplateResources
         //this is the position in the output writer the resource should be written (if not handled otherwise)
         private int bufferPosition;
 
-        //indication to the parsing system this resource can change at any time or is immutable
-        private boolean immutable;
-
         //hints to the joiner system as to decide what to do (like 'don't join')
         private HtmlTemplate.ResourceJoinHint joinHint;
 
@@ -184,17 +181,16 @@ public class TemplateResources
         private boolean fingerprintedValue;
         private boolean fingerprintedElement;
 
-        protected Resource(TemplateResourcesDirective.Argument type, String element, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        protected Resource(TemplateResourcesDirective.Argument type, String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            this(type, element, element, bufferPosition, immutable, joinHint);
+            this(type, element, element, bufferPosition, joinHint);
         }
-        protected Resource(TemplateResourcesDirective.Argument type, String element, String value, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        protected Resource(TemplateResourcesDirective.Argument type, String element, String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
             this.type = type;
             this.value = value;
             this.element = element;
             this.bufferPosition = bufferPosition;
-            this.immutable = immutable;
             this.joinHint = joinHint;
 
             this.fingerprintedValue = false;
@@ -226,7 +222,7 @@ public class TemplateResources
         //-----PRIVATE METHODS-----
         private void checkElementFingerprint()
         {
-            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement && !this.immutable) {
+            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
                 //optimization: if the value==the element, we'll do both at once
                 boolean same = this.value.equals(this.element);
                 this.element = R.resourceManager().getFingerprinter().fingerprintUris(this.element);
@@ -240,9 +236,10 @@ public class TemplateResources
         }
         private void checkValueFingerprint()
         {
-            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue && !this.immutable) {
+            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue) {
                 //optimization: if the value==the element, we'll do both at once
                 boolean same = this.value.equals(this.element);
+                //Note: if the uri is already fingerprinted, this will do nothing
                 this.value = R.resourceManager().getFingerprinter().fingerprintUris(this.value);
 
                 this.fingerprintedValue = true;
@@ -281,33 +278,33 @@ public class TemplateResources
 
     public class InlineStyle extends Resource
     {
-        public InlineStyle(String element, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        public InlineStyle(String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.inlineStyles, element, bufferPosition, immutable, joinHint);
+            super(TemplateResourcesDirective.Argument.inlineStyles, element, bufferPosition, joinHint);
         }
     }
 
     public class ExternalStyle extends Resource
     {
-        public ExternalStyle(String element, String href, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        public ExternalStyle(String element, String href, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.externalStyles, element, href, bufferPosition, immutable, joinHint);
+            super(TemplateResourcesDirective.Argument.externalStyles, element, href, bufferPosition, joinHint);
         }
     }
 
     public class InlineScript extends Resource
     {
-        public InlineScript(String element, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        public InlineScript(String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.inlineScripts, element, bufferPosition, immutable, joinHint);
+            super(TemplateResourcesDirective.Argument.inlineScripts, element, bufferPosition, joinHint);
         }
     }
 
     public class ExternalScript extends Resource
     {
-        public ExternalScript(String element, String src, int bufferPosition, boolean immutable, HtmlTemplate.ResourceJoinHint joinHint)
+        public ExternalScript(String element, String src, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.externalScripts, element, src, bufferPosition, immutable, joinHint);
+            super(TemplateResourcesDirective.Argument.externalScripts, element, src, bufferPosition, joinHint);
         }
     }
 }
