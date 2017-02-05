@@ -10,7 +10,7 @@ import java.net.URISyntaxException;
 /**
  * Created by bram on 1/14/17.
  */
-public class ChRootedLocalFS extends ChRootedFs
+public class ChRootedLocalFS extends AbstractChRootedFS
 {
     //-----CONSTANTS-----
     public static final String SCHEME = LocalFS.SCHEME;

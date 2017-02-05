@@ -1,14 +1,15 @@
 package com.beligum.blocks.filesystem.hdfs.impl;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.filesystem.hdfs.impl.orig.v2_7_1.ChRootedFs;
 import com.beligum.blocks.filesystem.hdfs.monitor.LocalFSMonitor;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
 import com.beligum.blocks.filesystem.ifaces.FsMonitor;
 import com.beligum.blocks.filesystem.ifaces.MonitoredFS;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.local.LocalConfigKeys;
+import org.apache.hadoop.fs.AbstractFileSystem;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,11 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is an extension of DelegateToFileSystem and adds default monitoring and xattr support
- * <p>
- * Created by bram on 2/2/16.
+ * Created by bram on 2/5/17.
  */
-public abstract class AbstractLocalFS extends DelegateToFileSystem implements MonitoredFS, XAttrFS
+public abstract class AbstractChRootedFS extends ChRootedFs implements MonitoredFS, XAttrFS
 {
     //-----CONSTANTS-----
 
@@ -30,39 +29,12 @@ public abstract class AbstractLocalFS extends DelegateToFileSystem implements Mo
     protected XAttrResolver xAttrResolver;
 
     //-----CONSTRUCTORS-----
-    /**
-     * This constructor has the signature needed by
-     * {@link AbstractFileSystem#createFileSystem(URI, Configuration)}.
-     *
-     * @param uri  URI of the file system
-     * @param conf Configuration for the file system
-     */
-    protected AbstractLocalFS(final URI uri, final Configuration conf, FileSystem fileSystem) throws IOException, URISyntaxException
+    protected AbstractChRootedFS(URI uri, Configuration conf, AbstractFileSystem fs) throws URISyntaxException
     {
-        super(uri, fileSystem, conf, fileSystem.getScheme(), false);
+        super(uri, conf, fs);
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public int getUriDefaultPort()
-    {
-        return -1; // No default port for file:///
-    }
-
-    @Override
-    public FsServerDefaults getServerDefaults() throws IOException
-    {
-        return LocalConfigKeys.getServerDefaults();
-    }
-
-    @Override
-    public boolean isValidName(String src)
-    {
-        // Different local file systems have different validation rules. Skip
-        // validation here and just let the OS handle it. This is consistent with
-        // RawLocalFileSystem.
-        return true;
-    }
     @Override
     public byte[] getXAttr(Path path, String name) throws IOException
     {
