@@ -189,6 +189,20 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
 
         return retVal;
     }
+    @Override
+    public void writeHash(Hash newHash) throws IOException
+    {
+        if (!this.isReadOnly()) {
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.getFileContext().create(this.getHashFile(),
+                                                                                                        EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
+                                                                                                        Options.CreateOpts.createParent())))) {
+                writer.write(new StringBuilder().append(newHash.getChecksum()).append(HASH_FIELD_SEP).append(newHash.getMethod().name()).toString());
+            }
+        }
+        else {
+            throw new IOException("Trying to update the hash value on a read-only blocks resource; "+this);
+        }
+    }
     /**
      * Pretty simple locking mechanism, probably full of holes, but a first try to create something simple to set up (eg. no Zookeeper)
      * Note: this should work pretty ok, because creation/deletion of files MUST be atomic in HDFS;
@@ -242,9 +256,6 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         if (!HdfsUtils.createNewFile(this.fileContext, lock, true)) {
             throw new IOException("Unable to create lock file because of an error or because (in the mean time) it already existed; " + lock);
         }
-
-        //Since we're the one creating it, it makes sense (if anything goes wrong while releasing the lock) to remove it on JVM shutdown.
-        this.fileContext.deleteOnExit(lock);
 
         return new LockFile(this, lock);
     }

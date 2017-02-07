@@ -1,7 +1,6 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.models.Person;
-import com.beligum.base.resources.ifaces.Hash;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
@@ -75,12 +74,7 @@ public class ReadWritePage extends DefaultPage
         }
 
         //if all went well, we can update the hash file
-        Hash hash = source.getHash();
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileContext.create(this.getHashFile(),
-                                                                                               EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
-                                                                                               Options.CreateOpts.createParent())))) {
-            writer.write(new StringBuilder().append(hash.getChecksum()).append(HASH_FIELD_SEP).append(hash.getMethod().name()).toString());
-        }
+        this.writeHash(source.getHash());
     }
     public void delete() throws IOException
     {

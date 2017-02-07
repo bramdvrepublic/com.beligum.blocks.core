@@ -10,7 +10,7 @@ import java.net.URISyntaxException;
 /**
  * Created by bram on 1/14/17.
  */
-public class LocalFS extends AbstractLocalFS
+public class LocalReadWriteFS extends AbstractLocalFS
 {
     //-----CONSTANTS-----
     public static final String SCHEME = ReadWriteRawLocalFileSystem.SCHEME;
@@ -18,7 +18,7 @@ public class LocalFS extends AbstractLocalFS
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected LocalFS(URI uri, Configuration conf) throws IOException, URISyntaxException
+    protected LocalReadWriteFS(URI uri, Configuration conf) throws IOException, URISyntaxException
     {
         super(uri, conf, new ReadWriteRawLocalFileSystem());
     }

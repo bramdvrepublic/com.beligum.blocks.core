@@ -7,8 +7,8 @@ import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
  */
 public class FileSystems
 {
-    public static final HdfsImplDef LOCAL = new HdfsImplDef(LocalFS.SCHEME, LocalFS.class);
-    public static final HdfsImplDef LOCAL_CHROOT = new HdfsImplDef(ChRootedLocalFS.SCHEME, ChRootedLocalFS.class);
+    public static final HdfsImplDef LOCAL = new HdfsImplDef(LocalReadWriteFS.SCHEME, LocalReadWriteFS.class);
+    public static final HdfsImplDef LOCAL_CHROOT = new HdfsImplDef(ChRootedLocalReadWriteFS.SCHEME, ChRootedLocalReadWriteFS.class);
     public static final HdfsImplDef LOCAL_RO = new HdfsImplDef(LocalReadOnlyFS.SCHEME, LocalReadOnlyFS.class);
     public static final HdfsImplDef LOCAL_RO_CHROOT = new HdfsImplDef(ChRootedLocalReadOnlyFS.SCHEME, ChRootedLocalReadOnlyFS.class);
     public static final HdfsImplDef LOCAL_TX = new HdfsImplDef(LocalTransactionalFS.SCHEME, LocalTransactionalFS.class);

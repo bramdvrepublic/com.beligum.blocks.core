@@ -229,6 +229,7 @@ public class PageTemplateWrapperDirective extends Directive
                             srcUri = R.configuration().getSiteDomain().resolve(srcUri);
                         }
                         currentAssetPack.add(srcUri);
+                        //TODO: what about message files with auto languages?
                         hash = 31 * hash + res.getValue().hashCode();
 
                         break;
@@ -270,7 +271,7 @@ public class PageTemplateWrapperDirective extends Directive
         }
         sb.append("\n");
 
-        //OLD, but useful code to show how we
+        //OLD, but useful code to show how we can possibly generate a join URL that can be un-joined
         //Note that we need to use a general inputstream (instead of the ResourceManager) to make dynamic resources (like reset.css) work
         //                InputStream is = null;
         //                try {

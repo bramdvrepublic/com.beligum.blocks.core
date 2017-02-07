@@ -5,6 +5,7 @@ import com.beligum.blocks.filesystem.hdfs.impl.orig.v2_7_1.ChRootedFs;
 import com.beligum.blocks.filesystem.hdfs.monitor.LocalFSMonitor;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
 import com.beligum.blocks.filesystem.ifaces.FsMonitor;
+import com.beligum.blocks.filesystem.ifaces.LocalFS;
 import com.beligum.blocks.filesystem.ifaces.MonitoredFS;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
 import org.apache.hadoop.conf.Configuration;
@@ -21,7 +22,7 @@ import java.util.Map;
 /**
  * Created by bram on 2/5/17.
  */
-public abstract class AbstractChRootedFS extends ChRootedFs implements MonitoredFS, XAttrFS
+public abstract class AbstractChRootedFS extends ChRootedFs implements LocalFS, MonitoredFS, XAttrFS
 {
     //-----CONSTANTS-----
 
