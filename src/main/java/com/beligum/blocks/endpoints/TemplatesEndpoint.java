@@ -1,7 +1,9 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.filesystem.HtmlFile;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
@@ -12,7 +14,6 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
@@ -28,25 +29,27 @@ public class TemplatesEndpoint
 
     @GET
     @Path("/sidebar")
-    public Response getSidebar()
+    public HtmlFile getSidebar()
     {
-        return Response.ok(side.get()).build();
+        return side.get();
     }
 
     @GET
     //note: the .less is needed to use @include in other less files
     @Path("/styles/imports/reset.css")
-    public Response getResources()
+    public Resource getResources()
     {
-        return Response.ok(TemplateCache.instance().getCssReset(), MimeTypes.CSS.toString()).build();
+        //note: by returning a resource instead of a response, we pass through the caching mechanisms
+        return R.resourceManager().create(new StringSource(TemplateCache.instance().getCssReset(), MimeTypes.CSS, null));
     }
 
     @GET
     //note: the .less is needed to use @include in other less files
     @Path("/scripts/imports/all.js")
-    public Response getImportsArray()
+    public Resource getImportsArray()
     {
-        return Response.ok(TemplateCache.instance().getJsArray(), MimeTypes.JAVASCRIPT.toString()).build();
+        //note: by returning a resource instead of a response, we pass through the caching mechanisms
+        return R.resourceManager().create(new StringSource(TemplateCache.instance().getJsArray(), MimeTypes.JAVASCRIPT, null));
     }
 
     /**

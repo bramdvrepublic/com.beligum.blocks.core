@@ -2,27 +2,24 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.ifaces.*;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import net.htmlparser.jericho.*;
-import net.htmlparser.jericho.Attribute;
-import net.htmlparser.jericho.Attributes;
-import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.Source;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.*;
+import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
@@ -96,6 +93,9 @@ public abstract class HtmlTemplate
      */
     protected static String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
+
+    private static URI cachedDefaultRdfVocabAttr;
+    private static Map<String, URI> cachedDefaultRdfPrefixAttr;
 
     //-----VARIABLES-----
     protected Map<String, String> attributes;
@@ -203,17 +203,17 @@ public abstract class HtmlTemplate
         if (superTemplate != null) {
             StringBuilder superTemplateResourceHtml = new StringBuilder();
             this.inlineStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(),
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getInlineStyleElements(),
                                                       null);
             this.externalStyleElements =
                             addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements,
-                                                      superTemplate.getAllExternalStyleElements(), "href");
+                                                      superTemplate.getExternalStyleElements(), "href");
             this.inlineScriptElements =
                             addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements,
-                                                      superTemplate.getAllInlineScriptElements(), null);
+                                                      superTemplate.getInlineScriptElements(), null);
             this.externalScriptElements =
                             addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
-                                                      superTemplate.getAllExternalScriptElements(), "src");
+                                                      superTemplate.getExternalScriptElements(), "src");
 
             //insert all (processed) super resources at the beginning of the html
             tempHtml.insert(0, superTemplateResourceHtml);
@@ -470,6 +470,24 @@ public abstract class HtmlTemplate
 
         return new StringSource(source.getUri(), result, source.getMimeType(), source.getLanguage());
     }
+    public static URI getDefaultRdfVocab()
+    {
+        if (cachedDefaultRdfVocabAttr == null) {
+            cachedDefaultRdfVocabAttr = Settings.instance().getRdfOntologyUri();
+        }
+
+        return cachedDefaultRdfVocabAttr;
+    }
+    public static Map<String, URI> getDefaultRdfPrefixes()
+    {
+        if (cachedDefaultRdfPrefixAttr == null) {
+            cachedDefaultRdfPrefixAttr = new LinkedHashMap<>();
+            //TODO ideally, this should set the other prefixes too..., but it's more complex...
+            cachedDefaultRdfPrefixAttr.put(Settings.instance().getRdfOntologyPrefix(), Settings.instance().getRdfOntologyUri());
+        }
+
+        return cachedDefaultRdfPrefixAttr;
+    }
 
     //-----PUBLIC METHODS-----
     /**
@@ -539,38 +557,38 @@ public abstract class HtmlTemplate
     {
         return superTemplate;
     }
-    public Iterable<Element> getAllInlineScriptElements()
+    public Iterable<Element> getInlineScriptElements()
     {
         return inlineScriptElements;
     }
-    public Iterable<Element> getAllExternalScriptElements()
+    public Iterable<Element> getExternalScriptElements()
     {
         return externalScriptElements;
     }
-    public Iterable<Element> getAllInlineStyleElements()
+    public Iterable<Element> getInlineStyleElements()
     {
         return inlineStyleElements;
     }
-    public Iterable<Element> getAllExternalStyleElements()
+    public Iterable<Element> getExternalStyleElements()
     {
         return externalStyleElements;
     }
     //TODO we should probably optimize this a bit, but beware, it still needs to be user-dynamic...
     public Iterable<Element> getInlineScriptElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getAllInlineScriptElements());
+        return this.buildScopeResourceIterator(this.getInlineScriptElements());
     }
     public Iterable<Element> getExternalScriptElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getAllExternalScriptElements());
+        return this.buildScopeResourceIterator(this.getExternalScriptElements());
     }
     public Iterable<Element> getInlineStyleElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getAllInlineStyleElements());
+        return this.buildScopeResourceIterator(this.getInlineStyleElements());
     }
     public Iterable<Element> getExternalStyleElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getAllExternalStyleElements());
+        return this.buildScopeResourceIterator(this.getExternalStyleElements());
     }
     /**
      * Will create a new html tag; eg for <template class="classname"></template>,
@@ -848,6 +866,7 @@ public abstract class HtmlTemplate
                 //validate the URI
                 URI uri = UriBuilder.fromUri(attrValue).build();
                 Resource resource = R.resourceManager().get(uri);
+
                 //this means the resource exists in our local system
                 if (resource != null) {
                     //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now

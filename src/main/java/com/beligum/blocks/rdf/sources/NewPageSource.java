@@ -4,11 +4,12 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.base.Joiner;
 import org.apache.commons.lang.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
@@ -162,14 +163,12 @@ public class NewPageSource extends PageSource
         }
 
         if (StringUtils.isEmpty(vocabAttr)) {
-            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, Settings.instance().getRdfOntologyUri().toString());
+            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, HtmlTemplate.getDefaultRdfVocab().toString());
         }
 
         if (StringUtils.isEmpty(prefixAttr)) {
             //Note: separate multiple prefixes by a space, like so: prefix="dc: http://purl.org/dc/terms/ schema: http://schema.org/"
-            String[] prefixes = new String[] { Settings.instance().getRdfOntologyPrefix() + ": " + Settings.instance().getRdfOntologyUri().toString() };
-            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, StringUtils.join(prefixes, " "));
-            //TODO ideally, this should set the other prefixes too..., but it's more complex...
+            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlTemplate.getDefaultRdfPrefixes()));
         }
     }
     private HtmlAnalyzer findTranslationAnalyzer() throws IOException

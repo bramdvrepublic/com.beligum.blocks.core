@@ -1,6 +1,5 @@
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.collect.Iterators;
 
@@ -11,6 +10,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
+ * This is a little container for all resources in the current request.
+ *
  * Created by bram on 5/18/15.
  */
 public class TemplateResources
@@ -222,32 +223,32 @@ public class TemplateResources
         //-----PRIVATE METHODS-----
         private void checkElementFingerprint()
         {
-            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
-                //optimization: if the value==the element, we'll do both at once
-                boolean same = this.value.equals(this.element);
-                this.element = R.resourceManager().getFingerprinter().fingerprintUris(this.element);
-
-                this.fingerprintedElement = true;
-                if (same) {
-                    this.value = this.element;
-                    this.fingerprintedValue = true;
-                }
-            }
+//            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
+//                //optimization: if the value==the element, we'll do both at once
+//                boolean same = this.value.equals(this.element);
+//                this.element = R.resourceManager().getFingerprinter().fingerprintUris(this.element);
+//
+//                this.fingerprintedElement = true;
+//                if (same) {
+//                    this.value = this.element;
+//                    this.fingerprintedValue = true;
+//                }
+//            }
         }
         private void checkValueFingerprint()
         {
-            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue) {
-                //optimization: if the value==the element, we'll do both at once
-                boolean same = this.value.equals(this.element);
-                //Note: if the uri is already fingerprinted, this will do nothing
-                this.value = R.resourceManager().getFingerprinter().fingerprintUris(this.value);
-
-                this.fingerprintedValue = true;
-                if (same) {
-                    this.element = this.value;
-                    this.fingerprintedElement = true;
-                }
-            }
+//            if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue) {
+//                //optimization: if the value==the element, we'll do both at once
+//                boolean same = this.value.equals(this.element);
+//                //Note: if the uri is already fingerprinted, this will do nothing
+//                this.value = R.resourceManager().getFingerprinter().fingerprintUris(this.value);
+//
+//                this.fingerprintedValue = true;
+//                if (same) {
+//                    this.element = this.value;
+//                    this.fingerprintedElement = true;
+//                }
+//            }
         }
 
         //-----MANAGEMENT METHODS-----

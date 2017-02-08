@@ -17,11 +17,26 @@ public class PageTemplate extends HtmlTemplate
 {
     //-----CONSTANTS-----
 
+    //-----VARIABLES-----
+
     //-----CONSTRUCTORS-----
     protected PageTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
         super(templateName, document, absolutePath, relativePath, parent);
+
+        //Not yet activated...
+//        //two default RDF attributes are set during a page save: vocab and prefix,
+//        //so push those two on the stacks if we encounter a page template, cause any page
+//        //that's created (and eventually saved), will have them too
+//        if (this.rdfVocab == null) {
+//            this.rdfVocab = HtmlTemplate.getDefaultRdfVocab();
+//        }
+//        if (this.rdfPrefixes.isEmpty()) {
+//            this.rdfPrefixes.putAll(HtmlTemplate.getDefaultRdfPrefixes());
+//        }
     }
+
+    //-----PUBLIC STATIC METHODS-----
 
     //-----PUBLIC METHODS-----
     @Override
@@ -56,7 +71,7 @@ public class PageTemplate extends HtmlTemplate
         // to this: <html $!{HTML_TAG_ARGS}> (NOTE THAT THE SPACE IN BETWEEN html and $ is mandatory for parsing reasons!)
         // and set the HTML_TAG_ARGS variable while instantiating a page template, so we support all the arguments of the page template instance
         //document.replace(templateAttr, Attributes.generateHTML(attrs));
-        document.replace(templateAttr, " $!{"+HtmlParser.HTML_ROOT_ARGS_VARIABLE_NAME+"}");
+        document.replace(templateAttr, " $!{" + HtmlParser.HTML_ROOT_ARGS_VARIABLE_NAME + "}");
 
         this.attributes = attrs;
 

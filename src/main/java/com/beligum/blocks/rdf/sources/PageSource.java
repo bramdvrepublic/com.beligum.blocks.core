@@ -5,6 +5,7 @@ import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
+import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -36,8 +37,8 @@ public abstract class PageSource extends AbstractSource implements Source
      */
     public static final String HTML_ROOT_SUBJECT_ATTR = "about";
     public static final String HTML_ROOT_TYPEOF_ATTR = "typeof";
-    public static final String HTML_ROOT_VOCAB_ATTR = "vocab";
-    public static final String HTML_ROOT_PREFIX_ATTR = "prefix";
+    public static final String HTML_ROOT_VOCAB_ATTR = HtmlParser.RDF_VOCAB_ATTR;
+    public static final String HTML_ROOT_PREFIX_ATTR = HtmlParser.RDF_PREFIX_ATTR;
     public static final String HTML_TITLE_ELEMENT = "title";
 
     private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;

@@ -70,6 +70,7 @@ public class TemplateResourcesDirective extends Directive
             R.cacheManager().getRequestCache().put(CacheKey.BLOCKS_TEMPLATE_RES, retVal = new TemplateResources());
         }
 
+        //We don't do this anymore, see TemplateResourcesDirective.render()
         //        InternalContextAdapter baseContext = context.getBaseContext();
         //        synchronized (baseContext) {
         //            retVal = (TemplateResources) baseContext.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
