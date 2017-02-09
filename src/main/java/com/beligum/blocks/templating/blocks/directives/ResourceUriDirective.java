@@ -42,10 +42,9 @@ public class ResourceUriDirective extends Directive
     {
         Node uriArg = node.jjtGetNumChildren() > 0 ? node.jjtGetChild(0) : null;
         if (uriArg != null) {
-            //Note that this directive is only activated when fingerprinting is enabled and the resource endpoint is non-static,
+            //Note that this directive is only activated when fingerprinting is enabled and the resource is non-immutable,
             //if we need to post-parse URIs for other uses, please change the code in HtmlParser
-            String uriStr = (String) uriArg.value(context);
-            writer.write(R.resourceManager().getFingerprinter().fingerprintUri(uriStr));
+            writer.write(R.resourceManager().getFingerprinter().fingerprintAllUris((String) uriArg.value(context)));
         }
 
         return true;

@@ -100,6 +100,7 @@ public class PageTemplateWrapperDirective extends Directive
             //this renders out the entire page directive
             retVal = node.jjtGetChild(0).render(context, writer);
 
+            //iterate over all saved resource locations and see what we need to do with them (inline, print, pack, etc.)
             List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
             if (inserts != null) {
                 StringBuffer buffer = ((StringWriter) writer).getBuffer();
@@ -199,8 +200,8 @@ public class PageTemplateWrapperDirective extends Directive
                     case inlineStyles:
                     case inlineScripts:
 
-                        //for now, we don't register inline styles/scripts,
-                        // so we need to output any saved up assets here to maintain correct order
+                        //for now, we don't register inline styles/scripts, but before we start a new pack,
+                        // we need to output any saved up assets here to maintain correct order
                         this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
                         hash = 0;
                         lastType = res.getType();
@@ -222,7 +223,7 @@ public class PageTemplateWrapperDirective extends Directive
                             currentAssetPack = new ArrayList<>();
                         }
 
-                        //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
+                        //Note that the Value will contain the resource-URL for externalStyles and externalScripts
                         URI srcUri = URI.create(res.getValue());
                         //make the format universal so we can join local and non-local resources easily
                         if (!srcUri.isAbsolute()) {
@@ -245,6 +246,7 @@ public class PageTemplateWrapperDirective extends Directive
         }
 
         buffer.insert(position, sb);
+
         return sb.length();
     }
     private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb,
@@ -253,12 +255,10 @@ public class PageTemplateWrapperDirective extends Directive
         //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
         //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
         //      consider it for later use if we run into caching problems
-        String cacheKey = StringFunctions.intToBase64(hash, true);
-
-        Resource assetPack = JoinRepository.registerAssetPack(cacheKey, currentAssetPack);
+        Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack);
 
         String mimeType = lastType.getMatchingMimeType().toString();
-        if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
+        if (lastType.equals(TemplateResourcesDirective.Argument.externalStyles) || lastType.equals(TemplateResourcesDirective.Argument.inlineStyles)) {
             if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
                 sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
             }
@@ -338,7 +338,7 @@ public class PageTemplateWrapperDirective extends Directive
                 //this is especiallly handy when using font-packs!
                 if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
                     if (type == externalStyles || type == externalScripts) {
-                        content = R.resourceManager().getFingerprinter().fingerprintUris(content);
+                        content = R.resourceManager().getFingerprinter().fingerprintAllUris(content);
                     }
                 }
 

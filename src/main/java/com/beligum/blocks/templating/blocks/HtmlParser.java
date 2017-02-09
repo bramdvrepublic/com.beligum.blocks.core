@@ -9,13 +9,17 @@ import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
+import com.beligum.blocks.templating.blocks.directives.ResourceUriDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
+import com.google.common.collect.Sets;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +36,7 @@ import java.util.regex.Pattern;
  * <p>
  * Note: the reverse of this class is com.beligum.blocks.templating.blocks.HtmlAnalyzer
  */
-public class HtmlParser implements ResourceParser/*, UriDetector.ReplaceCallback*/
+public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 {
     //-----CONSTANTS-----
     private static final String NEWLINE = "\n";
@@ -50,32 +54,32 @@ public class HtmlParser implements ResourceParser/*, UriDetector.ReplaceCallback
     public static final String HTML_ROOT_TEMPLATE_ATTR = "data-template";
     public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
 
-//    //used this: http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
-//    public static final Set<String> ALL_SIMPLE_URL_ATTR = Sets.newHashSet(
-//                    "action",
-//                    "background",
-//                    "cite",
-//                    "classid",
-//                    "codebase",
-//                    "data",
-//                    "dynsrc",
-//                    "formaction",
-//                    "href",
-//                    "icon",
-//                    "longdesc",
-//                    "lowsrc",
-//                    "manifest",
-//                    "poster",
-//                    "profile",
-//                    "src",
-//                    "usemap"
-//    );
-//    public static final Set<String> ALL_COMPLEX_URL_ATTR = Sets.newHashSet(
-//                    "srcset",
-//                    "archive",
-//                    "content",
-//                    "style"
-//    );
+    //used this: http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
+    public static final Set<String> ALL_SIMPLE_URL_ATTR = Sets.newHashSet(
+                    "action",
+                    "background",
+                    "cite",
+                    "classid",
+                    "codebase",
+                    "data",
+                    "dynsrc",
+                    "formaction",
+                    "href",
+                    "icon",
+                    "longdesc",
+                    "lowsrc",
+                    "manifest",
+                    "poster",
+                    "profile",
+                    "src",
+                    "usemap"
+    );
+    public static final Set<String> ALL_COMPLEX_URL_ATTR = Sets.newHashSet(
+                    "srcset",
+                    "archive",
+                    "content",
+                    "style"
+    );
 
     //-----VARIABLES-----
 
@@ -189,8 +193,8 @@ public class HtmlParser implements ResourceParser/*, UriDetector.ReplaceCallback
             if (node instanceof StartTag) {
                 Element element = ((StartTag) node).getElement();
 
-//                //fingerprint URIs in attributes
-//                this.processUris(element, retVal);
+                //fingerprint URIs in attributes
+                this.processUris(element, retVal);
 
                 //check if the element is an instance of a template and replace it with it's parsed version if it's the case
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
@@ -202,68 +206,72 @@ public class HtmlParser implements ResourceParser/*, UriDetector.ReplaceCallback
 
         return retVal;
     }
-//    /**
-//     * Do a find/replace on all detected URIs in the element's attributes if fingerprinting is enabled
-//     */
-//    private void processUris(Element element, OutputDocument retVal)
-//    {
-//        //for now, we only parse URIs for fingerprinting
-//        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-//            String name = element.getName().toLowerCase();
-//            String relAttr = element.getAttributeValue("rel");
-//
-//            //skip the resource URIs
-//            if (name.equals("script") || name.equals("style") || (name.equals("link") && relAttr != null && relAttr.trim().equalsIgnoreCase("stylesheet"))) {
-//                //skip these, the URI will be wrapped/parsed more extensively by #btrd (see HtmlTemplate.buildResourceHtml())
-//            }
-//            else {
-//                Attributes attributes = element.getAttributes();
-//                if (attributes != null) {
-//                    for (Attribute att : attributes) {
-//                        String val = att.getValue();
-//                        if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
-//                            if (!StringUtils.isEmpty(val)) {
-//                                //Note: by pulling the URI string through the UriBuilder parser, we get a chance to straighten invalid URIs
-//                                // eg. replace all spaces with %20 and so on...
-//                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().processUri(UriBuilder.fromUri(val).build().toString(), this) + "\"");
-//                            }
-//                        }
-//                        else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
-//                            //note that we can't check for spaces here, let's just hope for the best...
-//                            if (!StringUtils.isEmpty(val)) {
-//                                //sadly, we can't use our extra validation step here, so make sure all uris are valid ;-)
-//                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().processUris(val, this) + "\"");
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    /**
-//     * Implemented interface callback for the fingerprinter call above
-//     */
-//    @Override
-//    public String uriDetected(URI uri)
-//    {
-//        String retVal = null;
-//
-//        //if the endpoint is immutable, we'll generate our fingerprint right now,
-//        //if not, we'll wrap the URI in a directive to re-parse it on every request.
-//        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
-//        //if that would change, we must wipe this optimization step
-//        Resource resource = R.resourceManager().get(uri);
-//        if (resource != null && resource.isImmutable()) {
-//            retVal = R.resourceManager().getFingerprinter().fingerprintUri(uri.toString());
-//        }
-//
-//        //this means we'll postpone the processing of the URI to the render phase, just wrap it in our directive
-//        if (retVal == null) {
-//            retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("(\"").append(uri.toString()).append("\")").toString();
-//        }
-//
-//        return retVal;
-//    }
+    /**
+     * Do a find/replace on all detected URIs in the element's attributes if fingerprinting is enabled.
+     */
+    private void processUris(Element element, OutputDocument retVal)
+    {
+        //for now, we only parse URIs for fingerprinting
+        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+
+            //skip resource elements, the URI will be wrapped/parsed more extensively because of packing and inlining; see HtmlTemplate.buildResourceHtml()
+            if (!HtmlTemplate.isResourceElement(element)) {
+                Attributes attributes = element.getAttributes();
+                if (attributes != null) {
+                    for (Attribute att : attributes) {
+                        String val = att.getValue();
+                        if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
+                            if (!StringUtils.isEmpty(val)) {
+                                //Note: by pulling the URI string through the UriBuilder parser, we get a chance to straighten invalid URIs
+                                // eg. replace all spaces with %20 and so on...
+
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllUris(UriBuilder.fromUri(val).build().toString(), this) + "\"");
+                            }
+                        }
+                        else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
+                            //note that we can't check for spaces here, let's just hope for the best...
+                            if (!StringUtils.isEmpty(val)) {
+                                //sadly, we can't use our extra validation step here, so make sure all uris are valid ;-)
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllUris(val, this) + "\"");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * Implemented interface callback for the fingerprinter call above
+     */
+    @Override
+    public String uriDetected(URI uri)
+    {
+        String retVal = null;
+
+        //if the endpoint is immutable, we'll generate our fingerprint right now,
+        //if not, we'll wrap the URI in a directive to re-parse it on every request.
+        //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
+        //if that would change, we must wipe this optimization step
+        Resource resource = R.resourceManager().get(uri);
+
+        //this means we're dealing with a local uri
+        if (resource != null) {
+            if (resource.isImmutable()) {
+                retVal = resource.getFingerprintedUri().toString();
+            }
+            else {
+                //this means we'll postpone the fingerprinting of the URI to the render phase, just wrap it in our fingerprint directive
+                retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("('").append(uri.toString()).append("')").toString();
+            }
+        }
+
+        //never return null; if nothing was found, the uri was probably an external one
+        if (retVal == null) {
+            retVal = uri.toString();
+        }
+
+        return retVal;
+    }
     /**
      * Process an instance of a (page or tag) template to a HTML string
      */
@@ -313,7 +321,7 @@ public class HtmlParser implements ResourceParser/*, UriDetector.ReplaceCallback
                 // but watch out: an <img> element doens't have and end tag, so check for null
                 if (!isVoidTag) {
                     if (immediateChild.getEndTag() != null) {
-                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()));
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag())) ;
                     }
                 }
 

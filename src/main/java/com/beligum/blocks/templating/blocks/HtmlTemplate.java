@@ -87,11 +87,6 @@ public abstract class HtmlTemplate
         HIDDEN
     }
 
-    /**
-     * These are the names of first folders that won't be taken into account when building the name of the element
-     * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
-     */
-    protected static String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
     private static URI cachedDefaultRdfVocabAttr;
@@ -194,10 +189,10 @@ public abstract class HtmlTemplate
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
 
-        this.inlineStyleElements = getInlineStyles(tempHtml);
-        this.externalStyleElements = getExternalStyles(tempHtml);
-        this.inlineScriptElements = getInlineScripts(tempHtml);
-        this.externalScriptElements = getExternalScripts(tempHtml);
+        this.inlineStyleElements = parseInlineStyles(tempHtml);
+        this.externalStyleElements = parseExternalStyles(tempHtml);
+        this.inlineScriptElements = parseInlineScripts(tempHtml);
+        this.externalScriptElements = parseExternalScripts(tempHtml);
 
         //prepend the html with the parent resources if it's there
         if (superTemplate != null) {
@@ -488,6 +483,12 @@ public abstract class HtmlTemplate
 
         return cachedDefaultRdfPrefixAttr;
     }
+    public static boolean isResourceElement(Element element)
+    {
+        String name = element.getName().toLowerCase();
+        String relAttr = element.getAttributeValue("rel");
+        return name.equals("script") || name.equals("style") || (name.equals("link") && relAttr != null && relAttr.trim().equalsIgnoreCase("stylesheet"));
+    }
 
     //-----PUBLIC METHODS-----
     /**
@@ -633,37 +634,6 @@ public abstract class HtmlTemplate
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
 
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException;
-    protected static String parseTemplateName(Path relativePath) throws ParseException
-    {
-        String retVal = null;
-
-        Path namePath = relativePath;
-        if (relativePath != null) {
-            for (String invisiblePrefix : INVISIBLE_START_FOLDERS) {
-                if (namePath.startsWith(invisiblePrefix) || namePath.startsWith(namePath.getFileSystem().getSeparator() + invisiblePrefix)) {
-                    namePath = namePath.subpath(1, namePath.getNameCount());
-                    //this is a safe choice that might change in the future: do we want to keep eating first folders? Of so, then we should actually created over, no?
-                    break;
-                }
-            }
-            retVal = StringUtils.strip(namePath.toString().replaceAll("/", "-"), "-");
-            int lastDot = retVal.lastIndexOf(".");
-            if (lastDot >= 0) {
-                retVal = retVal.substring(0, lastDot);
-            }
-            //note: we may want to let the user override the name with an id attribute on the <template> tag
-
-            // In Web Components speak, this new element is a Custom Element,
-            // and the only two requirements are that its name must contain a dash,
-            // and its prototype must extend HTMLElement.
-            // See https://css-tricks.com/modular-future-web-components/
-            if (!retVal.contains("-")) {
-                throw new ParseException("The name of an import template should always contain at least one dash; '" + retVal + "' in " + relativePath, 0);
-            }
-        }
-
-        return retVal;
-    }
 
     //-----PRIVATE METHODS-----
     private static boolean isTagTemplate(Source source)
@@ -761,7 +731,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getInlineStyles(OutputDocument html) throws IOException
+    private Iterable<Element> parseInlineStyles(OutputDocument html) throws IOException
     {
         List<Element> retVal = new ArrayList<>();
 
@@ -776,17 +746,14 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getExternalStyles(OutputDocument html) throws IOException
+    private Iterable<Element> parseExternalStyles(OutputDocument html) throws IOException
     {
         List<Element> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("rel", styleLinkRelAttrValue).iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
-            if (!element.getName().equals("link")) {
-                iter.remove();
-            }
-            else {
+            if (element.getName().equals("link")) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, parsedElement, "href"));
                 retVal.add(parsedElement);
@@ -795,17 +762,14 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getInlineScripts(OutputDocument html) throws IOException
+    private Iterable<Element> parseInlineScripts(OutputDocument html) throws IOException
     {
         List<Element> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
-            if (element.getAttributeValue("src") != null) {
-                iter.remove();
-            }
-            else {
+            if (element.getAttributeValue("src") == null) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineScripts, parsedElement, null));
                 retVal.add(parsedElement);
@@ -814,17 +778,14 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getExternalScripts(OutputDocument html) throws IOException
+    private Iterable<Element> parseExternalScripts(OutputDocument html) throws IOException
     {
         List<Element> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
-            if (element.getAttributeValue("src") == null) {
-                iter.remove();
-            }
-            else {
+            if (element.getAttributeValue("src") != null) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, "src"));
                 retVal.add(parsedElement);
@@ -852,16 +813,15 @@ public abstract class HtmlTemplate
     /**
      * Build a #btrd() directive for the supplied element's attribute
      */
-    private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr) throws IOException
+    private StringBuilder buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr) throws IOException
     {
         final boolean print = false;
         String attrValue = attr == null ? null : element.getAttributeValue(attr);
         String elementStr = element.toString();
-        //Note: in case of a dynamic (=non-immutable) asset, we'll postpone the fingerprinting all the way till
-        //com.beligum.blocks.templating.blocks.TemplateResources.Resource.getElement() and getValue()
 
+        boolean fingerprinted = false;
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-            //this means we're dealing with an external resource that may need fingerprinting
+            //this means we're dealing with an external resource that may get fingerprinting optimization
             if (attrValue != null) {
                 //validate the URI
                 URI uri = UriBuilder.fromUri(attrValue).build();
@@ -872,36 +832,47 @@ public abstract class HtmlTemplate
                     //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now
                     if (resource.isImmutable()) {
                         //first, replace the attribute value
-                        attrValue = R.resourceManager().getFingerprinter().fingerprintUri(uri.toString());
+                        String fingerprintedUri = resource.getFingerprintedUri().toString();
 
-                        //but also replace the attribute in the element itself
+                        attrValue = fingerprintedUri;
+
+                        //also replace the attribute in the element itself
                         Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
                         OutputDocument outputDocument = new OutputDocument(element);
-                        outputDocument.replace(attrValueSeg, attrValue);
+                        outputDocument.replace(attrValueSeg, fingerprintedUri);
                         elementStr = outputDocument.toString();
+
+                        //in all other cases, we'll postpone the fingerprinting to the render phase
+                        fingerprinted = true;
                     }
                 }
             }
         }
 
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
-        return new StringBuilder().append("#").append(TagTemplateResourceDirective.NAME).append("(")
+        return new StringBuilder().append("#").append(TagTemplateResourceDirective.NAME)
 
+                                  .append("(")
                                   .append(type.ordinal()).append(",")
                                   .append(print).append(",'")
-                                  .append(attrValue).append("','")
+                                  //Note: this value will be used to calculate the hashes of the asset packs,
+                                  //so make sure you pass the fingerprinted uri here
+                                  .append(attrValue).append("',")
+                                  .append(fingerprinted).append(",'")
                                   .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                                   .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                                   .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
-
                                   .append(")")
+
                                   .append(elementStr)
-                                  .append("#end").toString();
+
+                                  .append("#end");
     }
     /**
      * Puts the element's html through the template engine to render out all needed context variables (constants/messages)
      * Note that this is executed during boot, so eg. the language for the messages will probably not be initialized correctly,
      * so avoid using $MESSAGES in resource element names. This is mainly made for using $CONSTANTS in the resource URLs.
+     * Also note that this will automatically fingerprint the URIs in the resources.
      */
     private Element renderResourceElement(Element element) throws IOException
     {

@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -20,6 +21,16 @@ import java.util.*;
 public class TemplateCache
 {
     //-----CONSTANTS-----
+    /**
+     * The root resource folder where all templates will be searched
+     */
+    private static String RESOURCES_IMPORTS_FOLDER = "imports";
+
+    /**
+     * These are the names of first folders that won't be taken into account when building the name of the element
+     * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
+     */
+    private static String[] INVISIBLE_START_FOLDERS = { RESOURCES_IMPORTS_FOLDER };
 
     //-----VARIABLES-----
     private Map<String, HtmlTemplate> nameMapping;
@@ -195,7 +206,7 @@ public class TemplateCache
         templateCache.clear();
 
         List<ClasspathSearchResult> htmlFiles = new ArrayList<>();
-        htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/imports/**.{html,htm}"));
+        htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/" + RESOURCES_IMPORTS_FOLDER + "/**.{html,htm}"));
 
         // first, we'll keep a reference to all the templates with the same name in the path
         // they're returned priority-first, so the parents and grandparents will end up deepest in the list
@@ -204,7 +215,7 @@ public class TemplateCache
             Path absolutePath = htmlFile.getResource();
             //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
             Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
-            String templateName = HtmlTemplate.parseTemplateName(relativePath);
+            String templateName = TemplateCache.parseTemplateName(relativePath);
 
             List<Path[]> entries = inheritanceTree.get(templateName);
             if (entries == null) {
@@ -254,6 +265,37 @@ public class TemplateCache
                 }
             }
         }
+    }
+    private static String parseTemplateName(Path relativePath) throws ParseException
+    {
+        String retVal = null;
+
+        Path namePath = relativePath;
+        if (relativePath != null) {
+            for (String invisiblePrefix : INVISIBLE_START_FOLDERS) {
+                if (namePath.startsWith(invisiblePrefix) || namePath.startsWith(namePath.getFileSystem().getSeparator() + invisiblePrefix)) {
+                    namePath = namePath.subpath(1, namePath.getNameCount());
+                    //this is a safe choice that might change in the future: do we want to keep eating first folders? Of so, then we should actually created over, no?
+                    break;
+                }
+            }
+            retVal = StringUtils.strip(namePath.toString().replaceAll("/", "-"), "-");
+            int lastDot = retVal.lastIndexOf(".");
+            if (lastDot >= 0) {
+                retVal = retVal.substring(0, lastDot);
+            }
+            //note: we may want to let the user override the name with an id attribute on the <template> tag
+
+            // In Web Components speak, this new element is a Custom Element,
+            // and the only two requirements are that its name must contain a dash,
+            // and its prototype must extend HTMLElement.
+            // See https://css-tricks.com/modular-future-web-components/
+            if (!retVal.contains("-")) {
+                throw new ParseException("The name of an import template should always contain at least one dash; '" + retVal + "' in " + relativePath, 0);
+            }
+        }
+
+        return retVal;
     }
     private void resetCache()
     {
