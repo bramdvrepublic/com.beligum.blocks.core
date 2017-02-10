@@ -5,6 +5,7 @@ import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirectiv
 import com.google.common.collect.Iterators;
 
 import java.io.StringWriter;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -109,19 +110,19 @@ public class TemplateResources
     }
     public boolean addInlineStyle(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
     {
-        return this.addResource(writer, print, new InlineStyle(element, writer.getBuffer().length(), joinHint, fingerprinted), this.styles);
+        return this.addResource(writer, print, new InlineStyle(element, joinHint, fingerprinted), this.styles);
     }
-    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted, boolean isLocalResource)
     {
-        return this.addResource(writer, print, new ExternalStyle(element, href, writer.getBuffer().length(), joinHint, fingerprinted), this.styles);
+        return this.addResource(writer, print, new ExternalStyle(element, href, joinHint, fingerprinted, isLocalResource), this.styles);
     }
     public boolean addInlineScript(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
     {
-        return this.addResource(writer, print, new InlineScript(element, writer.getBuffer().length(), joinHint, fingerprinted), this.scripts);
+        return this.addResource(writer, print, new InlineScript(element, joinHint, fingerprinted), this.scripts);
     }
-    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted, boolean isLocalResource)
     {
-        return this.addResource(writer, print, new ExternalScript(element, src, writer.getBuffer().length(), joinHint, fingerprinted), this.scripts);
+        return this.addResource(writer, print, new ExternalScript(element, src, joinHint, fingerprinted, isLocalResource), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -162,44 +163,29 @@ public class TemplateResources
         //type of this class so we can use it in switch statements
         private TemplateResourcesDirective.Argument type;
 
-        //this is the value that will be used to compare two resources
-        //in the case of inline resources, this is the same value as the value variable
-        //in the case of external resources, this will only hold the URI of the style or script
-        private String value;
-
         //this is the publicly accessible value
         //in the case of inline resources, this will hold the entire <script>...</script> and <style>...</style> strings
         //in the case of external resources, this will hold the <script src="..."></script> and <link href="..." rel="stylesheet"> tags
         //this value will be printed out when the resource is needed as-is (eg. no minification, no packing, etc)
         private String element;
 
-        //this is the position in the output writer the resource should be written (if not handled otherwise)
-        private int bufferPosition;
-
         //hints to the joiner system as to decide what to do (like 'don't join')
         private HtmlTemplate.ResourceJoinHint joinHint;
 
         //indicates if the supplied element and value are already fingerprinted or not
-        private boolean fingerprinted;
+        protected boolean alreadyFingerprinted;
 
         //keeps track if we already modified the value to it's fingerprinted equivalent so we don't do it twice while lazy parsing
-        private boolean fingerprintedValue;
         private boolean fingerprintedElement;
 
-        protected Resource(TemplateResourcesDirective.Argument type, String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
-        {
-            this(type, element, element, bufferPosition, joinHint, fingerprinted);
-        }
-        protected Resource(TemplateResourcesDirective.Argument type, String element, String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+        //-----CONSTRUCTORS-----
+        protected Resource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
             this.type = type;
-            this.value = value;
             this.element = element;
-            this.bufferPosition = bufferPosition;
             this.joinHint = joinHint;
-            this.fingerprinted = fingerprinted;
+            this.alreadyFingerprinted = alreadyFingerprinted;
 
-            this.fingerprintedValue = false;
             this.fingerprintedElement = false;
         }
 
@@ -210,15 +196,12 @@ public class TemplateResources
         }
         public String getElement()
         {
-            this.checkElementFingerprint();
+            if (!this.alreadyFingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
+                this.element = R.resourceManager().getFingerprinter().fingerprintAllUris(this.element);
+                this.fingerprintedElement = true;
+            }
 
             return this.element;
-        }
-        public String getValue()
-        {
-            this.checkValueFingerprint();
-
-            return this.value;
         }
         public HtmlTemplate.ResourceJoinHint getJoinHint()
         {
@@ -226,35 +209,6 @@ public class TemplateResources
         }
 
         //-----PRIVATE METHODS-----
-        private void checkElementFingerprint()
-        {
-            if (!this.fingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
-                //optimization: if the value==the element, we'll do both at once
-                boolean same = this.value.equals(this.element);
-                this.element = R.resourceManager().getFingerprinter().fingerprintAllUris(this.element);
-
-                this.fingerprintedElement = true;
-                if (same) {
-                    this.value = this.element;
-                    this.fingerprintedValue = true;
-                }
-            }
-        }
-        private void checkValueFingerprint()
-        {
-            if (!this.fingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedValue) {
-                //optimization: if the value==the element, we'll do both at once
-                boolean same = this.value.equals(this.element);
-                //Note: if the uri is already fingerprinted, this will do nothing
-                this.value = R.resourceManager().getFingerprinter().fingerprintAllUris(this.value);
-
-                this.fingerprintedValue = true;
-                if (same) {
-                    this.element = this.value;
-                    this.fingerprintedElement = true;
-                }
-            }
-        }
 
         //-----MANAGEMENT METHODS-----
         @Override
@@ -262,6 +216,7 @@ public class TemplateResources
         {
             return this.getElement();
         }
+        //These two are important to check if this resource is already present in the set of resources for this page
         @Override
         public boolean equals(Object o)
         {
@@ -272,45 +227,123 @@ public class TemplateResources
 
             Resource resource = (Resource) o;
 
-            return !(value != null ? !value.equals(resource.value) : resource.value != null);
+            return !(element != null ? !element.equals(resource.element) : resource.element != null);
 
         }
         @Override
         public int hashCode()
         {
-            return value != null ? value.hashCode() : 0;
+            return element != null ? element.hashCode() : 0;
+        }
+    }
+    public abstract class InlineResource extends Resource
+    {
+        protected InlineResource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        {
+            super(type, element, joinHint, alreadyFingerprinted);
+        }
+    }
+    public abstract class ExternalResource extends Resource
+    {
+        //this is the value that will be used to compare two resources
+        //in the case of inline resources, this is the same value as the value variable
+        //in the case of external resources, this will only hold the URI of the style or script
+        private String uriStr;
+        private boolean isLocalResource;
+        private URI uri;
+
+        protected ExternalResource(TemplateResourcesDirective.Argument type, String element, String uriStr, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
+        {
+            super(type, element, joinHint, alreadyFingerprinted);
+
+            this.uriStr = uriStr;
+            this.isLocalResource = isLocalResource;
+            this.uri = null;
+        }
+
+        public com.beligum.base.resources.ifaces.Resource getResource()
+        {
+            com.beligum.base.resources.ifaces.Resource retVal = null;
+
+            if (this.isLocalResource) {
+                retVal = R.resourceManager().get(this.getUri());
+            }
+
+            return retVal;
+        }
+        public URI getUri()
+        {
+            if (this.uri == null) {
+                String address = this.uriStr;
+                if (!this.alreadyFingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+                    //Note: if the uri is already fingerprinted, this will do nothing
+                    address = R.resourceManager().getFingerprinter().fingerprintAllUris(address);
+                }
+
+                this.uri = URI.create(address);
+
+                //make the format universal so we can join local and non-local resources easily
+                if (!this.uri.isAbsolute()) {
+                    this.uri = R.configuration().getSiteDomain().resolve(this.uri);
+                }
+            }
+
+            return this.uri;
+        }
+
+        //we choose to override these and make use of the URI alone to detect similarity;
+        //note that we might run into problems regarding the scopes etc
+        //(not adding a new resource that's already present, but with different scope)
+        //but it seems to work fine for now, so I'm leaving it overridden.
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof ExternalResource)) return false;
+            if (!super.equals(o)) return false;
+
+            ExternalResource that = (ExternalResource) o;
+
+            return getUri() != null ? getUri().equals(that.getUri()) : that.getUri() == null;
+        }
+        @Override
+        public int hashCode()
+        {
+            int result = super.hashCode();
+            result = 31 * result + (getUri() != null ? getUri().hashCode() : 0);
+            return result;
         }
     }
 
-    public class InlineStyle extends Resource
+    public class InlineStyle extends InlineResource
     {
-        public InlineStyle(String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+        public InlineStyle(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
-            super(TemplateResourcesDirective.Argument.inlineStyles, element, bufferPosition, joinHint, fingerprinted);
+            super(TemplateResourcesDirective.Argument.inlineStyles, element, joinHint, alreadyFingerprinted);
         }
     }
 
-    public class ExternalStyle extends Resource
+    public class InlineScript extends InlineResource
     {
-        public ExternalStyle(String element, String href, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+        public InlineScript(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
-            super(TemplateResourcesDirective.Argument.externalStyles, element, href, bufferPosition, joinHint, fingerprinted);
+            super(TemplateResourcesDirective.Argument.inlineScripts, element, joinHint, alreadyFingerprinted);
         }
     }
 
-    public class InlineScript extends Resource
+    public class ExternalStyle extends ExternalResource
     {
-        public InlineScript(String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+        public ExternalStyle(String element, String href, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
         {
-            super(TemplateResourcesDirective.Argument.inlineScripts, element, bufferPosition, joinHint, fingerprinted);
+            super(TemplateResourcesDirective.Argument.externalStyles, element, href, joinHint, alreadyFingerprinted, isLocalResource);
         }
     }
 
-    public class ExternalScript extends Resource
+    public class ExternalScript extends ExternalResource
     {
-        public ExternalScript(String element, String src, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+        public ExternalScript(String element, String src, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
         {
-            super(TemplateResourcesDirective.Argument.externalScripts, element, src, bufferPosition, joinHint, fingerprinted);
+            super(TemplateResourcesDirective.Argument.externalScripts, element, src, joinHint, alreadyFingerprinted, isLocalResource);
         }
     }
 }

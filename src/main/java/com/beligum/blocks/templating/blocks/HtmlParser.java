@@ -5,7 +5,6 @@ import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceParser;
-import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -20,9 +19,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -147,13 +148,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 sb.append(output.toString());
             }
 
-            //TODO should we still decorate here?
-            if (R.configuration().getResourceConfig().getMinifyResources()) {
-                retVal = new ResourceInputStream(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), source.getUri(), source.getMimeType()));
-            }
-            else {
-                retVal = new ResourceInputStream(sb.toString());
-            }
+            retVal = new ResourceInputStream(sb.toString());
         }
         catch (Exception e) {
             throw new IOException("Caught exception while parsing html file", e);
@@ -173,6 +168,12 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     {
         //FIXME maybe this should be VELOCITY instead?
         return MimeTypes.HTML;
+    }
+    @Override
+    public Priority getPriority()
+    {
+        //keep this high, so it executes before all other HTML parsers
+        return Priority.HIGH;
     }
     /**
      * This is the main processor of html content and is called (recursively) from a lot of places.

@@ -818,6 +818,7 @@ public abstract class HtmlTemplate
         final boolean print = false;
         String attrValue = attr == null ? null : element.getAttributeValue(attr);
         String elementStr = element.toString();
+        Resource resource = null;
 
         boolean fingerprinted = false;
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
@@ -825,7 +826,7 @@ public abstract class HtmlTemplate
             if (attrValue != null) {
                 //validate the URI
                 URI uri = UriBuilder.fromUri(attrValue).build();
-                Resource resource = R.resourceManager().get(uri);
+                resource = R.resourceManager().get(uri);
 
                 //this means the resource exists in our local system
                 if (resource != null) {
@@ -858,7 +859,8 @@ public abstract class HtmlTemplate
                                   //Note: this value will be used to calculate the hashes of the asset packs,
                                   //so make sure you pass the fingerprinted uri here
                                   .append(attrValue).append("',")
-                                  .append(fingerprinted).append(",'")
+                                  .append(fingerprinted).append(",")
+                                  .append(resource != null).append(",'")
                                   .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                                   .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                                   .append(HtmlTemplate.getResourceJoinHint(element).ordinal())

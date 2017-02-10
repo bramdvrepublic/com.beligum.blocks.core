@@ -1,7 +1,7 @@
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.resources.repositories.JoinRepository;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
@@ -174,7 +174,8 @@ public class PageTemplateWrapperDirective extends Directive
                     switch (res.getType()) {
                         case externalStyles:
                         case externalScripts:
-                            inlined = this.inlineResource(res, sb, accumulator);
+                            TemplateResources.ExternalResource extRes = (TemplateResources.ExternalResource) res;
+                            inlined = this.inlineExternalResource(extRes.getResource(), extRes.getType(), sb, accumulator);
                             break;
                     }
                 }
@@ -223,15 +224,25 @@ public class PageTemplateWrapperDirective extends Directive
                             currentAssetPack = new ArrayList<>();
                         }
 
-                        //Note that the Value will contain the resource-URL for externalStyles and externalScripts
-                        URI srcUri = URI.create(res.getValue());
-                        //make the format universal so we can join local and non-local resources easily
-                        if (!srcUri.isAbsolute()) {
-                            srcUri = R.configuration().getSiteDomain().resolve(srcUri);
+                        TemplateResources.ExternalResource externalResource = (TemplateResources.ExternalResource) res;
+
+                        //Note: the internals of getUri() decide on it's fingerprinting, no need to check that here anymore
+                        URI resourceUri = externalResource.getUri();
+
+                        //if this is not null we're dealing with a local resource URI;
+                        //check if it has a language set if it's not language agnostic.
+                        //This is important for eg. message resources that automatically/dynamically
+                        //select the right message bundle according to the request uri, but all have
+                        //the same uri. If we would build an asset pack for a certain language and don't
+                        //change the url here, it would be returned for other languages too because
+                        // the hash (and thus fingerprint) of the pack will be the same.
+                        Resource resource = externalResource.getResource();
+                        if (resource != null && !resource.isLanguageAgnostic()) {
+                            resourceUri = R.i18n().setUrlLocale(resourceUri);
                         }
-                        currentAssetPack.add(srcUri);
-                        //TODO: what about message files with auto languages?
-                        hash = 31 * hash + res.getValue().hashCode();
+
+                        currentAssetPack.add(resourceUri);
+                        hash = 31 * hash + resourceUri.hashCode();
 
                         break;
                     default:
@@ -252,19 +263,20 @@ public class PageTemplateWrapperDirective extends Directive
     private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb,
                                    InlinedBytesAccumulator accumulator) throws IOException
     {
+        MimeType mimeType = lastType.getMatchingMimeType();
+
         //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
         //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
         //      consider it for later use if we run into caching problems
-        Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack);
+        Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType);
 
-        String mimeType = lastType.getMatchingMimeType().toString();
         if (lastType.equals(TemplateResourcesDirective.Argument.externalStyles) || lastType.equals(TemplateResourcesDirective.Argument.inlineStyles)) {
-            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+            if (!this.inlineExternalResource(assetPack, lastType, sb, accumulator)) {
                 sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
             }
         }
         else {
-            if (!this.inlineResource(assetPack, lastType, sb, accumulator)) {
+            if (!this.inlineExternalResource(assetPack, lastType, sb, accumulator)) {
                 String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
                 sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + assetPack.getUri() + "\"></script>");
             }
@@ -307,30 +319,13 @@ public class PageTemplateWrapperDirective extends Directive
      * - <style> = 49K
      * - <script> = 139K
      */
-    private boolean inlineResource(TemplateResources.Resource res, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
-    {
-        URI uri = URI.create(res.getValue());
-
-        //make the format universal so we can join local and non-local resources easily
-        if (!uri.isAbsolute()) {
-            uri = R.configuration().getSiteDomain().resolve(uri);
-        }
-
-        //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
-        return this.inlineResource(R.resourceManager().get(uri), res.getType(), sb, accumulator);
-    }
-    private boolean inlineResource(Resource resource, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
+    private boolean inlineExternalResource(Resource resource, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
     {
         boolean retVal = false;
 
         long size = resource.getSize();
         if (accumulator.accumulate(size, type)) {
-            InputStream inputStream = null;
-            try {
-                inputStream = resource.newInputStream();
-                if (R.configuration().getResourceConfig().getMinifyResources()) {
-                    inputStream = new MinifiedInputStream(inputStream, resource.getUri(), resource.getMimeType());
-                }
+            try (InputStream inputStream = resource.newInputStream()) {
 
                 String content = IOUtils.toString(inputStream);
 
@@ -346,9 +341,6 @@ public class PageTemplateWrapperDirective extends Directive
                 sb.append(content);
                 sb.append(this.getInlineEndTagFor(type));
                 retVal = true;
-            }
-            finally {
-                IOUtils.closeQuietly(inputStream);
             }
         }
 

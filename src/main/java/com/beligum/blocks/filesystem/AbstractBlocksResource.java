@@ -223,7 +223,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
             boolean delete = false;
 
             //lazy deletion: if lock files should be deleted at startup and the mod time is older than the startup, delete it
-            if (Settings.instance().getDeleteLocksOnStartup() && R.bootTime() >= modTime) {
+            if (Settings.instance().getDeleteLocksOnStartup() && R.startTime() >= modTime) {
                 Logger.info("Deleting old lock file; " + lock);
                 delete = true;
             }
