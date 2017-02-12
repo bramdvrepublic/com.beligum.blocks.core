@@ -112,17 +112,17 @@ public class TemplateResources
     {
         return this.addResource(writer, print, new InlineStyle(element, joinHint, fingerprinted), this.styles);
     }
-    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted, boolean isLocalResource)
+    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
     {
-        return this.addResource(writer, print, new ExternalStyle(element, href, joinHint, fingerprinted, isLocalResource), this.styles);
+        return this.addResource(writer, print, new ExternalStyle(element, href, joinHint, fingerprinted), this.styles);
     }
     public boolean addInlineScript(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
     {
         return this.addResource(writer, print, new InlineScript(element, joinHint, fingerprinted), this.scripts);
     }
-    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted, boolean isLocalResource)
+    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
     {
-        return this.addResource(writer, print, new ExternalScript(element, src, joinHint, fingerprinted, isLocalResource), this.scripts);
+        return this.addResource(writer, print, new ExternalScript(element, src, joinHint, fingerprinted), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -249,27 +249,18 @@ public class TemplateResources
         //in the case of inline resources, this is the same value as the value variable
         //in the case of external resources, this will only hold the URI of the style or script
         private String uriStr;
-        private boolean isLocalResource;
         private URI uri;
 
-        protected ExternalResource(TemplateResourcesDirective.Argument type, String element, String uriStr, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
+        protected ExternalResource(TemplateResourcesDirective.Argument type, String element, String uriStr, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
             super(type, element, joinHint, alreadyFingerprinted);
 
             this.uriStr = uriStr;
-            this.isLocalResource = isLocalResource;
-            this.uri = null;
         }
 
         public com.beligum.base.resources.ifaces.Resource getResource()
         {
-            com.beligum.base.resources.ifaces.Resource retVal = null;
-
-            if (this.isLocalResource) {
-                retVal = R.resourceManager().get(this.getUri());
-            }
-
-            return retVal;
+            return R.resourceManager().get(this.getUri());
         }
         public URI getUri()
         {
@@ -281,11 +272,6 @@ public class TemplateResources
                 }
 
                 this.uri = URI.create(address);
-
-                //make the format universal so we can join local and non-local resources easily
-                if (!this.uri.isAbsolute()) {
-                    this.uri = R.configuration().getSiteDomain().resolve(this.uri);
-                }
             }
 
             return this.uri;
@@ -333,17 +319,17 @@ public class TemplateResources
 
     public class ExternalStyle extends ExternalResource
     {
-        public ExternalStyle(String element, String href, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
+        public ExternalStyle(String element, String href, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
-            super(TemplateResourcesDirective.Argument.externalStyles, element, href, joinHint, alreadyFingerprinted, isLocalResource);
+            super(TemplateResourcesDirective.Argument.externalStyles, element, href, joinHint, alreadyFingerprinted);
         }
     }
 
     public class ExternalScript extends ExternalResource
     {
-        public ExternalScript(String element, String src, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted, boolean isLocalResource)
+        public ExternalScript(String element, String src, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
         {
-            super(TemplateResourcesDirective.Argument.externalScripts, element, src, joinHint, alreadyFingerprinted, isLocalResource);
+            super(TemplateResourcesDirective.Argument.externalScripts, element, src, joinHint, alreadyFingerprinted);
         }
     }
 }

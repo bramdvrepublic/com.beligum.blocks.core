@@ -47,10 +47,9 @@ public class TagTemplateResourceDirective extends Directive
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 1);
         String urlArgument = (String) TagTemplateDirectiveUtils.readArg(context, node, 2);
         boolean fingerprinted = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 3);
-        boolean isLocalResource = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 4);
-        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 5));
-        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 6)];
-        HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 7)];
+        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 4));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 5)];
+        HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 6)];
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
             if (writer instanceof StringWriter) {
@@ -62,13 +61,13 @@ public class TagTemplateResourceDirective extends Directive
                         added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(element, (StringWriter) writer, print, joinHint, fingerprinted);
                         break;
                     case externalStyles:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(element, (StringWriter) writer, urlArgument, print, joinHint, fingerprinted, isLocalResource);
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(element, (StringWriter) writer, urlArgument, print, joinHint, fingerprinted);
                         break;
                     case inlineScripts:
                         added = TemplateResourcesDirective.getContextResources(context).addInlineScript(element, (StringWriter) writer, print, joinHint, fingerprinted);
                         break;
                     case externalScripts:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(element, (StringWriter) writer, urlArgument, print, joinHint, fingerprinted, isLocalResource);
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(element, (StringWriter) writer, urlArgument, print, joinHint, fingerprinted);
                         break;
                     default:
                         throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");

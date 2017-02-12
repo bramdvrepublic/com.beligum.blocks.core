@@ -186,7 +186,8 @@ public class PageTemplateWrapperDirective extends Directive
                     sb.append("\n");
                 }
             }
-            //no need to calculate extra stuff if it's disabled anyway
+            //this means we need to pack the resources together according to type
+            //and write out the joined URIs instead of the individual URIs
             else {
                 //bootstrap the data structures
                 if (lastType == null) {
@@ -270,17 +271,21 @@ public class PageTemplateWrapperDirective extends Directive
         //      consider it for later use if we run into caching problems
         Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType);
 
-        if (lastType.equals(TemplateResourcesDirective.Argument.externalStyles) || lastType.equals(TemplateResourcesDirective.Argument.inlineStyles)) {
-            if (!this.inlineExternalResource(assetPack, lastType, sb, accumulator)) {
+        boolean inlined = false;
+        if (R.configuration().getResourceConfig().getEnableInlineResources()) {
+            inlined = this.inlineExternalResource(assetPack, lastType, sb, accumulator);
+        }
+
+        if (!inlined) {
+            if (lastType.equals(TemplateResourcesDirective.Argument.externalStyles) || lastType.equals(TemplateResourcesDirective.Argument.inlineStyles)) {
                 sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + assetPack.getUri() + "\">");
             }
-        }
-        else {
-            if (!this.inlineExternalResource(assetPack, lastType, sb, accumulator)) {
+            else {
                 String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
                 sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + assetPack.getUri() + "\"></script>");
             }
         }
+
         sb.append("\n");
 
         //OLD, but useful code to show how we can possibly generate a join URL that can be un-joined
@@ -324,7 +329,10 @@ public class PageTemplateWrapperDirective extends Directive
         boolean retVal = false;
 
         long size = resource.getSize();
-        if (accumulator.accumulate(size, type)) {
+
+        //Note: we'll assume we won't be inlining resources that don't have an explicit size because
+        // we don't know what we get into (we might end up inlining thousands of bytes).
+        if (size >= 0 && accumulator.accumulate(size, type)) {
             try (InputStream inputStream = resource.newInputStream()) {
 
                 String content = IOUtils.toString(inputStream);

@@ -855,13 +855,12 @@ public abstract class HtmlTemplate
 
                                   .append("(")
                                   .append(type.ordinal()).append(",")
-                                  .append(print).append(",'")
+                                  .append(print).append(",")
                                   //Note: this value will be used to calculate the hashes of the asset packs,
                                   //so make sure you pass the fingerprinted uri here
-                                  .append(attrValue).append("',")
+                                  .append("'").append(attrValue).append("',")
                                   .append(fingerprinted).append(",")
-                                  .append(resource != null).append(",'")
-                                  .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
+                                  .append("'").append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                                   .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                                   .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
                                   .append(")")
