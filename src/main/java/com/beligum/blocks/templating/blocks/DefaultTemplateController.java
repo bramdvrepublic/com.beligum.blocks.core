@@ -4,6 +4,9 @@ import com.beligum.base.resources.ifaces.Source;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;
 
+import java.net.URI;
+import java.util.Locale;
+
 /**
  * Created by bram on 5/27/15.
  */
@@ -37,7 +40,7 @@ public abstract class DefaultTemplateController implements TemplateController
         //NOOP, override in subclass if you want to do something special
     }
     @Override
-    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput)
+    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage)
     {
         //NOOP, override in subclass if you want to do something special
     }

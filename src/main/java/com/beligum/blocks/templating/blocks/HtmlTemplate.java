@@ -452,14 +452,14 @@ public abstract class HtmlTemplate
 
         return new StringSource(source.getUri(), result, source.getMimeType(), source.getLanguage());
     }
-    public static com.beligum.base.resources.ifaces.Source prepareForCopy(com.beligum.base.resources.ifaces.Source source) throws IOException
+    public static com.beligum.base.resources.ifaces.Source prepareForCopy(com.beligum.base.resources.ifaces.Source source, URI targetUri, Locale targetLanguage) throws IOException
     {
         String result = HtmlTemplate.callTemplateControllerMethods(source, new ControllerCallback()
         {
             @Override
             public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller)
             {
-                controller.prepareForCopy(source, element, htmlOutput);
+                controller.prepareForCopy(source, element, htmlOutput, targetUri, targetLanguage);
             }
         });
 
@@ -677,7 +677,7 @@ public abstract class HtmlTemplate
                                 callback.encounteredTemplateTagController(htmlSource, htmlOutput, element, controllerClass.newInstance());
                             }
                             catch (Exception e) {
-                                throw new IOException("Error while creating new template controller instance; this shouldn't happen; " + controllerClass);
+                                throw new IOException("Error while creating new template controller instance; this shouldn't happen; " + controllerClass, e);
                             }
                         }
                     }

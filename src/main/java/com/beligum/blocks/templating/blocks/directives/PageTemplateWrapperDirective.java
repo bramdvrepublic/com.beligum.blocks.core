@@ -267,8 +267,7 @@ public class PageTemplateWrapperDirective extends Directive
         //Note about the caching: Asset packs should be allowed to be cached on the client side, either for a long time or not so long.
         //                        We enable the caching of asset packs in production mode because it's handy not to cache it in dev mode.
         //                        Since the name of the asset pack is built from the members, we also allow eternal caching if those member-uris are fingerprinted.
-        Resource
-                        assetPack =
+        Resource assetPack =
                         JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType, R.configuration().getProduction(),
                                                          R.configuration().getResourceConfig().getEnableFingerprintedResources());
 
@@ -329,32 +328,35 @@ public class PageTemplateWrapperDirective extends Directive
     {
         boolean retVal = false;
 
-        //if we know the size, let's see if the accumulater can take it, otherwise,
-        //we'll need to open the stream to get the real size and check again
-        long size = resource.getSize();
+        //Note: sometimes this will be null in case fo dynamically generated resources like reset.css and the like
+        if (resource != null) {
+            //if we know the size, let's see if the accumulater can take it, otherwise,
+            //we'll need to open the stream to get the real size and check again
+            long size = resource.getSize();
 
-        //if size is unknown, proceed, open the stream and check again
-        if (size < 0 || accumulator.accumulate(size, type)) {
+            //if size is unknown, proceed, open the stream and check again
+            if (size < 0 || accumulator.accumulate(size, type)) {
 
-            boolean proceed = size >= 0;
+                boolean proceed = size >= 0;
 
-            //This is probably not so performant, but I didn't find any other good way to get the actual stream size,
-            //because for all parsed resources, Resource.getSize() just returns -1, so we don't know what we'll end up with
-            //without opening up the stream and checking the actual size.
-            try (ResourceInputStream inputStream = resource.newInputStream()) {
+                //This is probably not so performant, but I didn't find any other good way to get the actual stream size,
+                //because for all parsed resources, Resource.getSize() just returns -1, so we don't know what we'll end up with
+                //without opening up the stream and checking the actual size.
+                try (ResourceInputStream inputStream = resource.newInputStream()) {
 
-                if (!proceed) {
-                    //Note: we'll assume we won't be inlining resources that don't have an explicit size because
-                    // we don't know what we get into (we might end up inlining thousands of bytes).
-                    size = inputStream.getSize();
-                    proceed = size >= 0 && accumulator.accumulate(size, type);
-                }
+                    if (!proceed) {
+                        //Note: we'll assume we won't be inlining resources that don't have an explicit size because
+                        // we don't know what we get into (we might end up inlining thousands of bytes).
+                        size = inputStream.getSize();
+                        proceed = size >= 0 && accumulator.accumulate(size, type);
+                    }
 
-                if (proceed) {
-                    sb.append(this.getInlineStartTagFor(type));
-                    sb.append(IOUtils.toString(inputStream));
-                    sb.append(this.getInlineEndTagFor(type));
-                    retVal = true;
+                    if (proceed) {
+                        sb.append(this.getInlineStartTagFor(type));
+                        sb.append(IOUtils.toString(inputStream));
+                        sb.append(this.getInlineEndTagFor(type));
+                        retVal = true;
+                    }
                 }
             }
         }

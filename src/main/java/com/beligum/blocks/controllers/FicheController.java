@@ -5,6 +5,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -14,6 +15,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.net.URI;
 import java.util.Iterator;
+import java.util.Locale;
 
 /**
  * Created by bram on 2/3/17.
@@ -41,9 +43,13 @@ public class FicheController extends DefaultTemplateController
      * if the fiche entry was normalized during save. But by doing it just before a copy, we are backwards compatible.
      */
     @Override
-    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput)
+    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage)
     {
         this.normalizeLabel(source, element, htmlOutput);
+
+        if (!source.getLanguage().equals(targetLanguage)) {
+            this.translateValue(source, element, htmlOutput, targetLanguage);
+        }
     }
 
     //-----PROTECTED METHODS-----
@@ -62,8 +68,8 @@ public class FicheController extends DefaultTemplateController
             String resourceType = HtmlTemplate.getPropertyAttribute(propertyEl.getStartTag());
             if (!StringUtils.isEmpty(resourceType)) {
                 RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resourceType));
-                if (rdfClass != null) {
-                    Element labelEl = element.getFirstElement(HtmlParser.NON_RDF_PROPERTY_ATTR, gen.com.beligum.blocks.core.constants.blocks.core.FICHE_ENTRY_NAME_PROPERTY, false);
+                if (rdfClass != null && rdfClass instanceof RdfProperty) {
+                    Element labelEl = element.getFirstElement(HtmlParser.NON_RDF_PROPERTY_ATTR, core.FICHE_ENTRY_NAME_PROPERTY, false);
                     if (labelEl != null) {
                         String testLabel = R.i18n().get(rdfClass.getLabelMessage(), source.getLanguage());
 
@@ -85,6 +91,25 @@ public class FicheController extends DefaultTemplateController
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+    /**
+     * When we copy a page with fiche entries, some of the values of the entries have been set during creation and in a specified language.
+     * We might want to re-read them to eg. set the name of the link to a translated value.
+     */
+    private void translateValue(Source source, Element element, OutputDocument htmlOutput, Locale toLanguage)
+    {
+        Element propertyEl = element.getFirstElementByClass(core.FICHE_ENTRY_PROPERTY_CLASS);
+        if (propertyEl != null) {
+            String resourceType = HtmlTemplate.getPropertyAttribute(propertyEl.getStartTag());
+            if (!StringUtils.isEmpty(resourceType)) {
+                RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resourceType));
+                if (rdfClass != null && rdfClass instanceof RdfProperty) {
+                    RdfProperty property = (RdfProperty) rdfClass;
+
+                    com.beligum.base.utils.Logger.info(property.getWidgetType());
                 }
             }
         }

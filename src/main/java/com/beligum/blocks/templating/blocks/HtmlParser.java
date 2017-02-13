@@ -744,7 +744,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
 
-        //this will allow us to use template variables as property attribute values and goes hand in hand with
+        //this will allow us to use template variables as property attribute values
         retVal = this.preprocessPropertyName(retVal);
 
         return retVal;

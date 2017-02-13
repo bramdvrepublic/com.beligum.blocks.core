@@ -4,6 +4,9 @@ import com.beligum.base.resources.ifaces.Source;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;
 
+import java.net.URI;
+import java.util.Locale;
+
 /**
  * Created by bram on 5/27/15.
  */
@@ -33,10 +36,10 @@ public interface TemplateController
     void prepareForSave(Source source, Element element, OutputDocument htmlOutput);
 
     /**
-     * This method is called just before a copy is created from the supplied source element.
+     * This method is called just before a copy is created from the supplied source element to the target uri and language.
      * If you want to change anything to the content of the html before a copy is made, this is the time.
      * Make sure you do your own replacements to the output document.
      * Note that we supply a Jericho element (instead of a JSoup element) to make low-level edits possible.
      */
-    void prepareForCopy(Source source, Element element, OutputDocument htmlOutput);
+    void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage);
 }

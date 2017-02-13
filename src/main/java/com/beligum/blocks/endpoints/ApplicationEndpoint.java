@@ -311,6 +311,7 @@ public class ApplicationEndpoint
                                 }
                                 else if (!StringUtils.isEmpty(newPageCopyUrl)) {
 
+                                    //read the page we'll copy from
                                     Page copyPage = R.resourceManager().get(URI.create(newPageCopyUrl), MimeTypes.HTML, Page.class);
 
                                     //First, we'll read in the normalized code of the copy page (important: in edit mode because we need the edit imports).
@@ -331,7 +332,7 @@ public class ApplicationEndpoint
                                                                          copyPage.getLanguage());
 
                                         //pull the source through our template controllers for some last-minute adaptations to the html source
-                                        source = HtmlTemplate.prepareForCopy(source);
+                                        source = HtmlTemplate.prepareForCopy(source, requestedUri, optimalLocale);
 
                                         //effectively make a copy
                                         PageSource html = new PageSourceCopy(source);
