@@ -1,6 +1,7 @@
 package com.beligum.blocks.templating.blocks.analyzer;
 
 import com.beligum.base.resources.ifaces.Source;
+import com.beligum.base.server.R;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.Element;
@@ -48,7 +49,12 @@ public class HtmlNormalizer
         HtmlTag root = new HtmlTag(this.source, startTag);
         this.parse(root, nodeIter, false);
 
-        return root.toNormalizedString();
+        CharSequence retVal = root.toNormalizedString();
+
+        //now we have the fully normalized html, we'll make sure all URIs are defingerprinted
+        retVal = R.resourceManager().getFingerprinter().defingerprintAllUris(retVal.toString());
+
+        return retVal;
     }
     public String getTitle()
     {

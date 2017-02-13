@@ -15,7 +15,6 @@ import java.util.Set;
 
 /**
  * Convert incoming html to a normalized form, based on the current page and tag templates.
- * TODO would be nice if unmodified properties and/or template-instances would be reverted to their 'collapsed' form
  * <p/>
  * Created by bram on 1/23/16.
  */
