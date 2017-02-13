@@ -26,6 +26,7 @@ import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
+import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.commons.io.IOUtils;
@@ -58,9 +59,19 @@ public class ApplicationEndpoint
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    /**
+     * Note: when the favicon is requested (a lot), we don't need to boot up the entire page-lookup below,
+     * but can skip it (because it needs to be below the /assets path anyway)
+     */
+    @Path("/favicon.ico")
+    @GET
+    public Response getFavicon() throws Exception
+    {
+        throw new NotFoundException();
+    }
     @Path("/{path:.*}")
     @GET
-    public Response getPage(@PathParam("path") String path, @HeaderParam("Referer") String referer) throws Exception
+    public Response getPage(@PathParam("path") String path, @HeaderParam(HttpHeaders.REFERER) String referer) throws Exception
     {
         Response.ResponseBuilder retVal = null;
 

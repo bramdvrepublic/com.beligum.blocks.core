@@ -5,10 +5,12 @@ import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -120,11 +122,17 @@ public abstract class PageSource extends AbstractSource implements Source
     //-----HTMl-ONLY PUBLIC METHODS-----
     public String toHtmlString()
     {
-        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml();
+        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document)
+                                                .syntax(Document.OutputSettings.Syntax.html)
+                                                .charset(DEFAULT_CHARSET)
+        ).outerHtml();
     }
     public String toXHtmlString()
     {
-        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml();
+        return this.document.outputSettings(this.buildNewStreamOutputSettings(this.document)
+                                                .syntax(Document.OutputSettings.Syntax.xml)
+                                                .charset(DEFAULT_CHARSET)
+        ).outerHtml();
     }
     public String getNormalizedHtml() throws IOException
     {
@@ -155,6 +163,26 @@ public abstract class PageSource extends AbstractSource implements Source
 
         //we'll normalize everything to XHTML (this means the newInputStream will also return xhtml)
         this.document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
+
+        //Note: there seems to be a problem with ampersands in inline CSS not being escaped during the parsing of the html,
+        //this is a workaround for that situation
+        Elements styleEls = this.document.select("style");
+        for (Element el : styleEls) {
+            String html = R.resourceManager().getFingerprinter().detectAllUris(el.html(), new UriDetector.ReplaceCallback()
+            {
+                @Override
+                public String uriDetected(URI uri)
+                {
+                    //Make sure we don't escape the ampersand of an "&amp;" to "&amp;amp;" by unescaping first
+                    String uriStr = uri.toString();
+                    uriStr = StringEscapeUtils.unescapeXml(uriStr);
+                    uriStr = StringEscapeUtils.escapeXml10(uriStr);
+                    return uriStr;
+                }
+            });
+
+            el.html(html);
+        }
     }
 
     //-----PRIVATE METHODS-----

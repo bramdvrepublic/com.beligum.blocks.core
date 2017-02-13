@@ -2,9 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
-import com.beligum.base.resources.ifaces.MimeType;
-import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.resources.ifaces.ResourceParser;
+import com.beligum.base.resources.ifaces.*;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -15,6 +13,7 @@ import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirect
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
 import net.htmlparser.jericho.*;
+import net.htmlparser.jericho.Source;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -90,6 +89,11 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean test(com.beligum.base.resources.ifaces.Source source, MimeType requestedMimeType)
+    {
+        return true;
+    }
     /**
      * This method is executed for all *.html files requested by the client (during postprocess phase of the ResourceLoader).
      * It should be optimized for speed but the result is cached by the ResourceManager, so in production mode,

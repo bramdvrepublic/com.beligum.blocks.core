@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.repositories.JoinRepository;
@@ -19,15 +20,11 @@ import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective.Argument.externalScripts;
-import static com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective.Argument.externalStyles;
 
 /**
  * Created by bram on 5/28/15.
@@ -72,18 +69,9 @@ public class PageTemplateWrapperDirective extends Directive
      * Evaluate the argument, convert to a String, and evaluate again
      * (with the same context).
      *
-     * @param context
-     * @param writer
-     * @param node
      * @return True if the directive rendered successfully.
-     * @throws IOException
-     * @throws ResourceNotFoundException
-     * @throws ParseErrorException
-     * @throws MethodInvocationException
      */
-    public boolean render(InternalContextAdapter context, Writer writer,
-                          Node node) throws IOException, ResourceNotFoundException,
-                                            ParseErrorException, MethodInvocationException
+    public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException, ResourceNotFoundException, ParseErrorException, MethodInvocationException
     {
         boolean retVal = false;
 
@@ -154,8 +142,8 @@ public class PageTemplateWrapperDirective extends Directive
     //-----PRIVATE METHODS-----
     private int writeResources(Iterable<TemplateResources.Resource> resources, StringBuffer buffer, int position) throws IOException
     {
-        //this will be incrementally augmented with a all hashes
-        int hash = 0;
+        //this will be incrementally augmented with all hashes
+        int hash = R.fingerprintHash();
         //this is what will be inserted
         StringBuilder sb = new StringBuilder();
         //this will make sure we only join consecutive types
@@ -205,7 +193,8 @@ public class PageTemplateWrapperDirective extends Directive
                         //for now, we don't register inline styles/scripts, but before we start a new pack,
                         // we need to output any saved up assets here to maintain correct order
                         this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
-                        hash = 0;
+                        //reset the hash
+                        hash = R.fingerprintHash();
                         lastType = res.getType();
                         currentAssetPack = new ArrayList<>();
 
@@ -220,7 +209,8 @@ public class PageTemplateWrapperDirective extends Directive
                         if (!lastType.equals(res.getType())) {
                             this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
 
-                            hash = 0;
+                            //reset the hash
+                            hash = R.fingerprintHash();
                             lastType = res.getType();
                             currentAssetPack = new ArrayList<>();
                         }
@@ -230,7 +220,7 @@ public class PageTemplateWrapperDirective extends Directive
                         //Note: the internals of getUri() decide on it's fingerprinting, no need to check that here anymore
                         URI resourceUri = externalResource.getUri();
 
-                        //if this is not null we're dealing with a local resource URI;
+                        //if this is not null if we're dealing with a local resource URI;
                         //check if it has a language set if it's not language agnostic.
                         //This is important for eg. message resources that automatically/dynamically
                         //select the right message bundle according to the request uri, but all have
@@ -243,6 +233,11 @@ public class PageTemplateWrapperDirective extends Directive
                         }
 
                         currentAssetPack.add(resourceUri);
+
+                        //Note: the asset pack does nothing more than group together a bunch of URIs,
+                        //but if the URI of the asset pack would get cached eternally, this can potentially
+                        //lead to stale client-side files. As a safeguard, we'll always start out with the fingerprint
+                        //of the server, so we're sure the uri will change after a server restart
                         hash = 31 * hash + resourceUri.hashCode();
 
                         break;
@@ -269,7 +264,13 @@ public class PageTemplateWrapperDirective extends Directive
         //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
         //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
         //      consider it for later use if we run into caching problems
-        Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType);
+        //Note about the caching: Asset packs should be allowed to be cached on the client side, either for a long time or not so long.
+        //                        We enable the caching of asset packs in production mode because it's handy not to cache it in dev mode.
+        //                        Since the name of the asset pack is built from the members, we also allow eternal caching if those member-uris are fingerprinted.
+        Resource
+                        assetPack =
+                        JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType, R.configuration().getProduction(),
+                                                         R.configuration().getResourceConfig().getEnableFingerprintedResources());
 
         boolean inlined = false;
         if (R.configuration().getResourceConfig().getEnableInlineResources()) {
@@ -328,27 +329,33 @@ public class PageTemplateWrapperDirective extends Directive
     {
         boolean retVal = false;
 
+        //if we know the size, let's see if the accumulater can take it, otherwise,
+        //we'll need to open the stream to get the real size and check again
         long size = resource.getSize();
 
-        //Note: we'll assume we won't be inlining resources that don't have an explicit size because
-        // we don't know what we get into (we might end up inlining thousands of bytes).
-        if (size >= 0 && accumulator.accumulate(size, type)) {
-            try (InputStream inputStream = resource.newInputStream()) {
+        //if size is unknown, proceed, open the stream and check again
+        if (size < 0 || accumulator.accumulate(size, type)) {
 
-                String content = IOUtils.toString(inputStream);
+            boolean proceed = size >= 0;
 
-                //if we're pulling in a remote style, we might as well fingerprint the remote URIs
-                //this is especiallly handy when using font-packs!
-                if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-                    if (type == externalStyles || type == externalScripts) {
-                        content = R.resourceManager().getFingerprinter().fingerprintAllUris(content);
-                    }
+            //This is probably not so performant, but I didn't find any other good way to get the actual stream size,
+            //because for all parsed resources, Resource.getSize() just returns -1, so we don't know what we'll end up with
+            //without opening up the stream and checking the actual size.
+            try (ResourceInputStream inputStream = resource.newInputStream()) {
+
+                if (!proceed) {
+                    //Note: we'll assume we won't be inlining resources that don't have an explicit size because
+                    // we don't know what we get into (we might end up inlining thousands of bytes).
+                    size = inputStream.getSize();
+                    proceed = size >= 0 && accumulator.accumulate(size, type);
                 }
 
-                sb.append(this.getInlineStartTagFor(type));
-                sb.append(content);
-                sb.append(this.getInlineEndTagFor(type));
-                retVal = true;
+                if (proceed) {
+                    sb.append(this.getInlineStartTagFor(type));
+                    sb.append(IOUtils.toString(inputStream));
+                    sb.append(this.getInlineEndTagFor(type));
+                    retVal = true;
+                }
             }
         }
 

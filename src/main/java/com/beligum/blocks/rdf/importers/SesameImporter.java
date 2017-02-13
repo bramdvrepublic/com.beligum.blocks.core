@@ -41,7 +41,7 @@ public class SesameImporter extends AbstractImporter
         }
         catch (Exception e) {
             //when an exception is thrown, it's very handy to have the html source code, so add it to the exception
-            throw new IOException("Exception caught while parsing RDF import source; "+source.toString(), e);
+            throw new IOException("Exception caught while parsing RDF import source; " + source.toString(), e);
         }
     }
     @Override
@@ -51,7 +51,7 @@ public class SesameImporter extends AbstractImporter
             return this.parseInputStream(inputStream, baseUri);
         }
         catch (Exception e) {
-            throw new IOException("Exception caught while parsing RDF import file; "+baseUri, e);
+            throw new IOException("Exception caught while parsing RDF import file; " + baseUri, e);
         }
     }
 
@@ -63,7 +63,7 @@ public class SesameImporter extends AbstractImporter
         // we needed to re-implement the SesameRDFaParser to make it work with Sesame 4;
         // so make an exception if we're using RDFa (so we don't have to create a service loader)
         RDFParser parser = null;
-        if (this.inputFormat==Format.RDFA) {
+        if (this.inputFormat == Format.RDFA) {
             parser = new SesameRDFaParser();
         }
         else {
@@ -90,7 +90,7 @@ public class SesameImporter extends AbstractImporter
             case NTRIPLES:
                 return RDFFormat.NTRIPLES;
             default:
-                throw new IOException("Unsupported importer format detected; "+inputFormat);
+                throw new IOException("Unsupported importer format detected; " + inputFormat);
         }
     }
     private void configureParser(RDFParser parser, Format inputFormat)
@@ -102,30 +102,31 @@ public class SesameImporter extends AbstractImporter
 
         parser.getParserConfig().setNonFatalErrors(new HashSet<RioSetting<?>>());
 
-//        parser.getParserConfig().set(BasicParserSettings.VERIFY_DATATYPE_VALUES, true);
-//        parser.getParserConfig().addNonFatalError(BasicParserSettings.VERIFY_DATATYPE_VALUES);
+        //        parser.getParserConfig().set(BasicParserSettings.VERIFY_DATATYPE_VALUES, true);
+        //        parser.getParserConfig().addNonFatalError(BasicParserSettings.VERIFY_DATATYPE_VALUES);
 
         // Disable verification to ensure that DBPedia is accessible, given it uses so many custom datatypes
-//        parser.getParserConfig().set(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES, false);
-//        parser.getParserConfig().addNonFatalError(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES);
+        //        parser.getParserConfig().set(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES, false);
+        //        parser.getParserConfig().addNonFatalError(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES);
 
         parser.getParserConfig().set(BasicParserSettings.NORMALIZE_DATATYPE_VALUES, false);
         parser.getParserConfig().addNonFatalError(BasicParserSettings.NORMALIZE_DATATYPE_VALUES);
 
-//        parser.getParserConfig().set(BasicParserSettings.VERIFY_RELATIVE_URIS, true);
-//        parser.getParserConfig().addNonFatalError(BasicParserSettings.VERIFY_RELATIVE_URIS);
+        //        parser.getParserConfig().set(BasicParserSettings.VERIFY_RELATIVE_URIS, true);
+        //        parser.getParserConfig().addNonFatalError(BasicParserSettings.VERIFY_RELATIVE_URIS);
 
         //specific config
         switch (inputFormat) {
             case RDFA:
                 parser.getParserConfig().set(RDFaParserSettings.RDFA_COMPATIBILITY, RDFaVersion.RDFA_1_1);
-//                parser.getParserConfig().set(RDFaParserSettings.VOCAB_EXPANSION_ENABLED, false);
+                //                parser.getParserConfig().set(RDFaParserSettings.VOCAB_EXPANSION_ENABLED, false);
                 //parser.getParserConfig().set(RDFaParserSettings.FAIL_ON_RDFA_UNDEFINED_PREFIXES, false);
                 break;
         }
     }
 
     //-----INNER CLASSES-----
+
     /**
      * Internal listener used to trace <i>RDF</i> parse errors.
      */
@@ -134,24 +135,24 @@ public class SesameImporter extends AbstractImporter
         @Override
         public void warning(String msg, long lineNo, long colNo)
         {
-            Logger.warn(msg+"\n" +
-                        "  line: "+lineNo+"\n" +
-                        "  column: "+colNo);
+            Logger.warn(msg + "\n" +
+                        "  line: " + lineNo + "\n" +
+                        "  column: " + colNo);
         }
         @Override
         public void error(String msg, long lineNo, long colNo)
         {
-            Logger.error(msg+"\n" +
-                        "  line: "+lineNo+"\n" +
-                        "  column: "+colNo);
+            Logger.error(msg + "\n" +
+                         "  line: " + lineNo + "\n" +
+                         "  column: " + colNo);
         }
         @Override
         public void fatalError(String msg, long lineNo, long colNo)
         {
             //TODO don't know if this is the best approach...
-            throw new RuntimeException(msg+"\n" +
-                        "  line: "+lineNo+"\n" +
-                        "  column: "+colNo);
+            throw new RuntimeException(msg + "\n" +
+                                       "  line: " + lineNo + "\n" +
+                                       "  column: " + colNo);
         }
     }
 }
