@@ -4,18 +4,30 @@ import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.utils.RdfTools;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.IOException;
 import java.net.URI;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Locale;
+
+import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_GMT_ATTR;
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Created by bram on 2/3/17.
@@ -43,7 +55,7 @@ public class FicheController extends DefaultTemplateController
      * if the fiche entry was normalized during save. But by doing it just before a copy, we are backwards compatible.
      */
     @Override
-    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage)
+    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage) throws IOException
     {
         this.normalizeLabel(source, element, htmlOutput);
 
@@ -99,7 +111,7 @@ public class FicheController extends DefaultTemplateController
      * When we copy a page with fiche entries, some of the values of the entries have been set during creation and in a specified language.
      * We might want to re-read them to eg. set the name of the link to a translated value.
      */
-    private void translateValue(Source source, Element element, OutputDocument htmlOutput, Locale toLanguage)
+    private void translateValue(Source source, Element element, OutputDocument htmlOutput, Locale toLanguage) throws IOException
     {
         Element propertyEl = element.getFirstElementByClass(core.FICHE_ENTRY_PROPERTY_CLASS);
         if (propertyEl != null) {
@@ -109,7 +121,62 @@ public class FicheController extends DefaultTemplateController
                 if (rdfClass != null && rdfClass instanceof RdfProperty) {
                     RdfProperty property = (RdfProperty) rdfClass;
 
-                    com.beligum.base.utils.Logger.info(property.getWidgetType());
+                    String content = propertyEl.getAttributeValue("content");
+                    String resource = propertyEl.getAttributeValue("resource");
+                    if (content != null || resource != null) {
+
+                        switch (property.getWidgetType()) {
+                            case Editor:
+                            case InlineEditor:
+                            case Boolean:
+                            case Number:
+                            case Color:
+                            case Uri:
+                                break;
+                            case Date:
+                            case Time:
+                            case DateTime:
+                                //note that the value is always stored in UTC zone (so the zone of this ZonedDateTime below should always be UTC)
+                                ZonedDateTime value = ZonedDateTime.parse(content, DateTimeFormatter.ISO_DATE_TIME);
+                                //this flag only controls how the value above is rendered out to the html, not how it's stored
+                                ZoneId zone = RdfTools.parseRdfaBoolean(propertyEl.getAttributeValue(INPUT_TYPE_TIME_GMT_ATTR)) ? UTC : ZoneId.systemDefault();
+
+                                switch (property.getWidgetType()) {
+                                    case Date:
+                                        htmlOutput.replace(propertyEl.getContent(), RdfTools.serializeDateHtml(zone, toLanguage, value));
+                                        break;
+                                    case Time:
+                                        htmlOutput.replace(propertyEl.getContent(), RdfTools.serializeTimeHtml(zone, toLanguage, value));
+                                        break;
+                                    case DateTime:
+                                        htmlOutput.replace(propertyEl.getContent(), RdfTools.serializeDateTimeHtml(zone, toLanguage, value));
+                                        break;
+                                }
+
+                                break;
+
+                            case Enum:
+
+                                //note: contrary to the resource endpoint below, we want the endpoint of the property, not the class, so don't use property.getDataType().getEndpoint() here
+                                Collection<AutocompleteSuggestion> enumSuggestion = property.getEndpoint().search(property, content, RdfQueryEndpoint.QueryType.NAME, toLanguage, 1);
+                                if (enumSuggestion.size() == 1) {
+                                    htmlOutput.replace(propertyEl.getContent(), RdfTools.serializeEnumHtml(enumSuggestion.iterator().next()));
+                                }
+
+                                break;
+
+                            case Resource:
+
+                                ResourceInfo resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), URI.create(resource), toLanguage);
+                                if (resourceInfo != null) {
+                                    htmlOutput.replace(propertyEl.getContent(), RdfTools.serializeResourceHtml(resourceInfo));
+                                }
+
+                                break;
+                            default:
+                                throw new IOException("Encountered unimplemented widget type parser, please fix; " + property.getWidgetType());
+                        }
+                    }
                 }
             }
         }

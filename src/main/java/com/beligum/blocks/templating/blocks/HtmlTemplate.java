@@ -444,7 +444,7 @@ public abstract class HtmlTemplate
         String result = HtmlTemplate.callTemplateControllerMethods(source, new ControllerCallback()
         {
             @Override
-            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller)
+            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller) throws IOException
             {
                 controller.prepareForSave(source, element, htmlOutput);
             }
@@ -457,7 +457,7 @@ public abstract class HtmlTemplate
         String result = HtmlTemplate.callTemplateControllerMethods(source, new ControllerCallback()
         {
             @Override
-            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller)
+            public void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller) throws IOException
             {
                 controller.prepareForCopy(source, element, htmlOutput, targetUri, targetLanguage);
             }
@@ -1041,7 +1041,7 @@ public abstract class HtmlTemplate
     //-----INNER CLASSES-----
     private interface ControllerCallback
     {
-        void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller);
+        void encounteredTemplateTagController(Source htmlSource, OutputDocument htmlOutput, Element element, TemplateController controller) throws IOException;
     }
 
     public interface SubstitionReferenceRenderer

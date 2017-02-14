@@ -1,15 +1,23 @@
 package com.beligum.blocks.utils;
 
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.HashMap;
+import java.util.Locale;
 
 import static com.beligum.base.server.R.configuration;
+import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_TZONE_CLASS;
 
 /**
  * Created by wouter on 27/04/15.
@@ -85,7 +93,7 @@ public class RdfTools
     {
         boolean retVal = false;
 
-        if (uri!=null && uri.getPath()!=null) {
+        if (uri != null && uri.getPath() != null) {
             Path path = Paths.get(uri.getPath());
             //A bit conservative: we need three segments: the word 'resource', the type of the resource and the ID
             if (path.getNameCount() == 3 && path.startsWith(Settings.RESOURCE_ENDPOINT)) {
@@ -133,159 +141,80 @@ public class RdfTools
         return retVal;
     }
 
+    /**
+     * Standard boolean parsing is too restrictive
+     */
+    public static boolean parseRdfaBoolean(String value)
+    {
+        Boolean retval = false;
 
+        if ("1".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) ||
+            "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)) {
+            retval = Boolean.TRUE;
+        }
 
+        return retval;
+    }
+    public static CharSequence serializeDateHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    {
+        return new StringBuilder()
+                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
+                        .append(" ")
+                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime));
+    }
+    public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    {
+        return new StringBuilder()
+                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
+                        .append("<span class=\"").append(INPUT_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
+                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
+                        .append(")</span>");
+    }
+    public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    {
+        return new StringBuilder()
+                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
+                        .append(" ")
+                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime))
+                        .append(" - ")
+                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
+                        .append("<span class=\"").append(INPUT_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
+                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
+                        .append(")</span>");
+    }
+    public static CharSequence serializeEnumHtml(AutocompleteSuggestion enumValue)
+    {
+        // <p> is consistent with JS
+        return new StringBuilder()
+                        .append("<p>")
+                        .append(enumValue.getTitle())
+                        .append("</p>");
+    }
+    public static CharSequence serializeResourceHtml(ResourceInfo resourceInfo)
+    {
+        CharSequence retVal = null;
 
+        StringBuilder labelHtml = new StringBuilder();
+        labelHtml.append(resourceInfo.getLabel());
+        if (resourceInfo.getImage() != null) {
+            //Note: title is for a tooltip
+            labelHtml.append("<img src=\"").append(resourceInfo.getImage()).append("\" alt=\"").append(resourceInfo.getLabel()).append("\" title=\"").append(resourceInfo.getLabel()).append("\">");
+        }
 
+        if (resourceInfo.getLink() != null) {
+            StringBuilder linkHtml = new StringBuilder();
+            linkHtml.append("<a href=\"").append(resourceInfo.getLink()).append("\"");
+            if (resourceInfo.isExternalLink() || resourceInfo.getLink().isAbsolute()) {
+                linkHtml.append(" target=\"_blank\"");
+            }
+            linkHtml.append(">").append(labelHtml).append("</a>");
 
+            retVal = linkHtml;
+        }
+        else {
+            retVal = labelHtml;
+        }
 
-    // ----- TO CHECK -----
-
-//    /*
-//    * create a local type based on the ontology in the config
-//    * e.g. http://www.republic.be/ontology/address
-//    * */
-//    public static URI createLocalType(String type)
-//    {
-//        return makeLocalAbsolute(type);
-//    }
-//
-//    /*
-//    * Make a path absolute relative to the local ontology uri
-//    * */
-//    public static URI makeLocalAbsolute(String relativePath)
-//    {
-//        return addToUri(Settings.instance().getRdfOntologyUri(), relativePath);
-//    }
-//
-//    /*
-//   * Make a path absolute relative to the local ontology uri
-//   * */
-//    public static URI addToUri(URI uri, String relativePath)
-//    {
-//        URI retVal = findInUrlCache(uri, relativePath);
-//
-//        if (retVal != null)
-//            return retVal;
-//
-//        if (relativePath.startsWith("/"))
-//            relativePath = relativePath.substring(1);
-//        String fragment = Settings.instance().getRdfOntologyUri().getFragment();
-//        if (fragment == null) {
-//            Path path = Paths.get(uri.getPath());
-//            path = path.resolve(relativePath).normalize();
-//            retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).replacePath(path.toString()).build();
-//        }
-//        // Add to fragment
-//        else {
-//            fragment = fragment.trim();
-//            if (fragment.equals("")) {
-//                retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).fragment(relativePath).build();
-//            }
-//            else {
-//                if (!fragment.endsWith("/"))
-//                    fragment = fragment + "/";
-//                retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).fragment(fragment + relativePath).build();
-//            }
-//        }
-//
-//        putInURLCache(uri, relativePath, retVal);
-//
-//        return retVal;
-//    }
-//
-//    /*
-//    * Parse a prefix attribute in the from of:
-//    * "rep:http://www.republic.be be: http://www.belgium.be
-//    *
-//    * */
-//    public static HashMap<String, URI> parsePrefixes(String prefixString) throws RdfException
-//    {
-//        // TODO the parsing of prefixes is not correct yet. see specs
-//
-//        HashMap<String, URI> retVal = new HashMap<>();
-//
-//        prefixString = prefixString.trim();
-//
-//        int index = 0;
-//        while (prefixString.length() > 0) {
-//            // find first prefix
-//            index = prefixString.indexOf(":");
-//
-//            if (index == -1) {
-//                throw new RdfException("Invalid prefix attribute value: " + prefixString);
-//            }
-//
-//            String prefix = prefixString.substring(0, index);
-//            index++;
-//
-//            // remove prefix from attribute, trim remainig string and url (until next space)
-//            // if no space is found, rest of string is url
-//            prefixString = prefixString.substring(index).trim();
-//            index = prefixString.indexOf(" ");
-//            String stringUri = prefixString;
-//            if (index > 0) {
-//                stringUri = prefixString.substring(0, index);
-//                prefixString.trim();
-//            }
-//
-//            // Check if valus is valid url
-//            URI uri = UriBuilder.fromUri(stringUri).build();
-//            if (!RdfTools.isValidAbsoluteURI(uri)) {
-//                throw new RdfException("Invalid prefix attribute value. Invalid url " + prefix + ": " + stringUri);
-//            }
-//
-//            retVal.put(prefix, uri);
-//        }
-//
-//        return retVal;
-//
-//    }
-//
-//    public static URI findInUrlCache(URI uri, String path)
-//    {
-//        URI retVal = null;
-//        if (urlcache.containsKey(uri)) {
-//            HashMap<String, URI> urls = urlcache.get(uri);
-//            if (urls.containsKey(path)) {
-//                retVal = urls.get(path);
-//            }
-//        }
-//        return retVal;
-//    }
-//
-//    public static void putInURLCache(URI uri, String path, URI result)
-//    {
-//        if (!urlcache.containsKey(uri)) {
-//            urlcache.put(uri, new HashMap<String, URI>());
-//        }
-//        urlcache.get(uri).put(path, result);
-//    }
-//
-//    /*
-//    * Checks if a URI is a valid absolute URI
-//    * */
-//    public static boolean isValidAbsoluteURI(URI uri)
-//    {
-//        return uri.getHost() != null && uri.getScheme() != null;
-//    }
-//
-//    /*
-//    * Create a field name to be used in the db
-//    * Allow only a-z A-Z 0-9, replace them with underscore
-//    *
-//    * use host, path and fragment if available
-//    * http://www.example.com/test@address -> www_example_com_test_address
-//    *
-//    * */
-//    public static String makeDbFieldFromUri(URI field)
-//    {
-//        String retVal = field.getHost() + "_" + field.getPath();
-//        if (field.getFragment() != null)
-//            retVal = retVal + "_" + field.getFragment();
-//        retVal = retVal.trim().replaceAll("[^A-Za-z0-9]", "_");
-//        retVal = retVal.replaceAll("_+", "_");
-//        return retVal;
-//    }
-
+        return retVal;
+    }
 }

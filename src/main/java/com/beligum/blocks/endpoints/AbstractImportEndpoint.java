@@ -7,6 +7,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.utils.RdfTools;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -49,13 +50,7 @@ public abstract class AbstractImportEndpoint
                 break;
 
             case Boolean:
-                //standard boolean parsing is too restrictive
-                Boolean bool = false;
-                if ("1".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) ||
-                    "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)) {
-                    bool = Boolean.TRUE;
-                }
-                retVal = bool;
+                retVal = RdfTools.parseRdfaBoolean(value);
                 break;
 
             case Number:
@@ -196,9 +191,7 @@ public abstract class AbstractImportEndpoint
 
                 //https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html
                 //eg. Wednesday September 4 1986
-                html =
-                                DateTimeFormatter.ofPattern("cccc").withZone(localZone).withLocale(language).format(utcDate) + " " +
-                                DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(localZone).withLocale(language).format(utcDate);
+                html = RdfTools.serializeDateHtml(localZone, language, utcDate).toString();
 
                 break;
 
@@ -222,11 +215,7 @@ public abstract class AbstractImportEndpoint
                 ficheEntryHtml.append(" data-gmt=\"false\"");
 
                 //html = "Friday January 1, 2016 - 1:00 AM<span class=\"timezone\">(UTC+01:00)</span>";
-                html =
-                                DateTimeFormatter.ofPattern("cccc").withZone(localZone).withLocale(language).format(utcDateTime) + " " +
-                                DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(localZone).withLocale(language).format(utcDateTime) + " - " +
-                                DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(localZone).withLocale(language).format(utcDateTime) + "<span class=\"timezone\">(UTC" +
-                                DateTimeFormatter.ofPattern("xxxxx").withZone(localZone).withLocale(language).format(utcDateTime) + ")</span>";
+                html = RdfTools.serializeDateTimeHtml(localZone, language, utcDateTime).toString();
 
                 break;
 
@@ -264,8 +253,7 @@ public abstract class AbstractImportEndpoint
                     AutocompleteSuggestion enumValue = enumSuggestion.iterator().next();
                     addDataType = true;
                     content = enumValue.getValue();
-                    //consistent with JS
-                    html = "<p>"+enumValue.getTitle()+"</p>";
+                    html = RdfTools.serializeEnumHtml(enumValue).toString();
                 }
                 else {
                     throw new IOException("Unable to find enum value; " + enumKey);
@@ -281,24 +269,7 @@ public abstract class AbstractImportEndpoint
                 addDataType = false;
                 ficheEntryHtml.append(" resource=\"" + resourceInfo.getResourceUri().toString() + "\"");
                 if (resourceInfo != null) {
-                    String labelHtml = resourceInfo.getLabel();
-                    if (resourceInfo.getImage() != null) {
-                        //Note: title is for a tooltip
-                        labelHtml = "<img src=\"" + resourceInfo.getImage() + "\" alt=\"" + resourceInfo.getLabel() + "\" title=\"" + resourceInfo.getLabel() + "\">";
-                    }
-
-                    if (resourceInfo.getLink() != null) {
-                        String linkHtml = "<a href=\"" + resourceInfo.getLink() + "\"";
-                        if (resourceInfo.isExternalLink() || resourceInfo.getLink().isAbsolute()) {
-                            linkHtml += " target=\"_blank\"";
-                        }
-                        linkHtml += ">" + labelHtml + "</a>";
-
-                        html = linkHtml;
-                    }
-                    else {
-                        html = labelHtml;
-                    }
+                    html = RdfTools.serializeResourceHtml(resourceInfo).toString();
                 }
                 else {
                     throw new IOException("Unable to find resource; " + resourceId);

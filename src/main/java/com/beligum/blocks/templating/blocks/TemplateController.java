@@ -4,6 +4,7 @@ import com.beligum.base.resources.ifaces.Source;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
 
@@ -33,7 +34,7 @@ public interface TemplateController
      * Make sure you do your own replacements to the output document.
      * Note that we supply a Jericho element (instead of a JSoup element) to make low-level edits possible.
      */
-    void prepareForSave(Source source, Element element, OutputDocument htmlOutput);
+    void prepareForSave(Source source, Element element, OutputDocument htmlOutput) throws IOException;
 
     /**
      * This method is called just before a copy is created from the supplied source element to the target uri and language.
@@ -41,5 +42,5 @@ public interface TemplateController
      * Make sure you do your own replacements to the output document.
      * Note that we supply a Jericho element (instead of a JSoup element) to make low-level edits possible.
      */
-    void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage);
+    void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage) throws IOException;
 }

@@ -32,16 +32,10 @@ public class PageSourceCopy extends PageSource
     {
         super.parseHtml(source);
 
-        //We'll remove all attributes we know so the new page doesn't have
-        // any backreferences to the old page we're copying from.
-        //Note: we can't just delete all attributes because we eg. can't touch the page template attribute
-
+        //We'll remove all language attributes because 9/10 we're creating a copy from another language
+        //note that it will be added again on save
         this.language = null;
         this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_PREFIX_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_TYPEOF_ATTR);
-        this.htmlTag.removeAttr(HTML_ROOT_VOCAB_ATTR);
     }
 
     //-----PRIVATE METHODS-----

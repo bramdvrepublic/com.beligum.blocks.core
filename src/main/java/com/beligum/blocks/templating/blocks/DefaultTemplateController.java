@@ -4,6 +4,7 @@ import com.beligum.base.resources.ifaces.Source;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
 
@@ -35,12 +36,12 @@ public abstract class DefaultTemplateController implements TemplateController
         return this;
     }
     @Override
-    public void prepareForSave(Source source, Element element, OutputDocument htmlOutput)
+    public void prepareForSave(Source source, Element element, OutputDocument htmlOutput) throws IOException
     {
         //NOOP, override in subclass if you want to do something special
     }
     @Override
-    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage)
+    public void prepareForCopy(Source source, Element element, OutputDocument htmlOutput, URI targetUri, Locale targetLanguage) throws IOException
     {
         //NOOP, override in subclass if you want to do something special
     }
