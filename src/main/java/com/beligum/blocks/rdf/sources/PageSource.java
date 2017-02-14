@@ -171,10 +171,9 @@ public abstract class PageSource extends AbstractSource implements Source
             String html = R.resourceManager().getFingerprinter().detectAllUris(el.html(), new UriDetector.ReplaceCallback()
             {
                 @Override
-                public String uriDetected(URI uri)
+                public String uriDetected(String uriStr)
                 {
                     //Make sure we don't escape the ampersand of an "&amp;" to "&amp;amp;" by unescaping first
-                    String uriStr = uri.toString();
                     uriStr = StringEscapeUtils.unescapeXml(uriStr);
                     uriStr = StringEscapeUtils.escapeXml10(uriStr);
                     return uriStr;

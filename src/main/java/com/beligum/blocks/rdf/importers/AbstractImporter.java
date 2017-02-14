@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.Format;
@@ -54,7 +55,7 @@ public abstract class AbstractImporter implements Importer
     /**
      * Note: this returns a newly created (memory based) model, so all connections with a possible underlying store are cut
      */
-    protected Model filterRelevantNodes(Model model, URI documentBaseUri) throws IOException
+    protected Model filterModel(Model model, URI documentBaseUri) throws IOException
     {
         final boolean IGNORE_STYLESHEETS = true;
         final boolean IGNORE_FAVICON = true;
@@ -119,7 +120,7 @@ public abstract class AbstractImporter implements Importer
                 if (stmt.getSubject() instanceof IRI) {
                     URI subject = URI.create(stmt.getSubject().stringValue());
                     MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(subject);
-                    if (queryParams!=null && queryParams.containsKey(I18nFactory.LANG_QUERY_PARAM)) {
+                    if (queryParams != null && queryParams.containsKey(I18nFactory.LANG_QUERY_PARAM)) {
                         URI noLangUri = UriBuilder.fromUri(subject).replaceQueryParam(I18nFactory.LANG_QUERY_PARAM).build();
                         newSubject = factory.createIRI(noLangUri.toString());
                     }
@@ -146,17 +147,29 @@ public abstract class AbstractImporter implements Importer
                             throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype());
                         }
                     }
+
+                    //let's give ourself the chance to (try to) correct invalid URIs that were picked up as literals because
+                    //of wrong formatting. In particular, this is the case for relative paths that were expected to be parsed as domain-relative URIs
+                    if (literal.getDatatype().equals(XMLSchema.ANYURI)) {
+                        Logger.warn("Discovered a literal value that should have been parsed as a URI. Trying to fix this; "+literal);
+                        URI object = URI.create(literal.stringValue());
+                        if (!object.isAbsolute()) {
+                            object = documentBaseUri.resolve(object);
+                        }
+
+                        newObject = factory.createIRI(object.toString());
+                    }
                 }
 
                 //check if we need to change the statement: remove it from the model and add it again later on
-                if (newSubject!=null || newObject!=null || newPredicate!=null) {
-                    if (newSubject==null) {
+                if (newSubject != null || newObject != null || newPredicate != null) {
+                    if (newSubject == null) {
                         newSubject = stmt.getSubject();
                     }
-                    if (newPredicate==null) {
+                    if (newPredicate == null) {
                         newPredicate = stmt.getPredicate();
                     }
-                    if (newObject==null) {
+                    if (newObject == null) {
                         newObject = stmt.getObject();
                     }
 

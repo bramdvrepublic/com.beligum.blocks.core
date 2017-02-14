@@ -106,7 +106,7 @@
 //        }
 //
 //        if (retVal!=null) {
-//            retVal = this.filterRelevantNodes(retVal, baseURI);
+//            retVal = this.filterModel(retVal, baseURI);
 //        }
 //
 //        return retVal;

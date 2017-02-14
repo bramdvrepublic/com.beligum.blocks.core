@@ -81,7 +81,15 @@ public class BreadcrumbController extends DefaultTemplateController
                 // forgetting about the hierarchy of the original '/resource/RCB' path.
 
                 BooleanQuery pageQuery = new BooleanQuery();
-                pageQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), uri.toString())), BooleanClause.Occur.FILTER);
+
+                //sameAs values are indexed relatively for local paths, so to be sure we'll add both the absolute and relative URI (in case of an absolute URI)
+                BooleanQuery sameAsQuery = new BooleanQuery();
+                sameAsQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), uri.toString())), BooleanClause.Occur.SHOULD);
+                if (uri.isAbsolute()) {
+                    sameAsQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), uri.getPath())), BooleanClause.Occur.SHOULD);
+                }
+
+                pageQuery.add(sameAsQuery, BooleanClause.Occur.FILTER);
                 pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), currentLocale.getLanguage())), BooleanClause.Occur.FILTER);
                 IndexSearchResult results = queryConnection.search(pageQuery, -1);
                 if (results.getTotalHits()>0) {

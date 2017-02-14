@@ -2,7 +2,9 @@ package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
-import com.beligum.base.resources.ifaces.*;
+import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.ResourceParser;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -13,11 +15,9 @@ import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirect
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
 import net.htmlparser.jericho.*;
-import net.htmlparser.jericho.Source;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -225,18 +225,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 if (attributes != null) {
                     for (Attribute att : attributes) {
                         String val = att.getValue();
-                        if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
-                            if (!StringUtils.isEmpty(val)) {
-                                //Note: by pulling the URI string through the UriBuilder parser, we get a chance to straighten invalid URIs
-                                // eg. replace all spaces with %20 and so on...
-
-                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllUris(UriBuilder.fromUri(val).build().toString(), this) + "\"");
-                            }
-                        }
-                        else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
-                            //note that we can't check for spaces here, let's just hope for the best...
-                            if (!StringUtils.isEmpty(val)) {
-                                //sadly, we can't use our extra validation step here, so make sure all uris are valid ;-)
+                        if (!StringUtils.isEmpty(val)) {
+                            //Note that we used to split up the simple and complex attributes here and treat them differently
+                            // with a pre-validate step for the simple attributes (using UriBuilder.fromUri()) that escapes (invalid) spaces in URIs and so on,
+                            // but because I forgot simple attributes can contain templating code, it's not always that easy to just take the entire
+                            // attribute and try to parse it to a URI. Now, we fallback to detectAllUris() instead.
+                            String name = att.getName().toLowerCase();
+                            if (ALL_SIMPLE_URL_ATTR.contains(name) || ALL_COMPLEX_URL_ATTR.contains(name)) {
                                 retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllUris(val, this) + "\"");
                             }
                         }
@@ -249,15 +244,16 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
      * Implemented interface callback for the fingerprinter call above
      */
     @Override
-    public String uriDetected(URI uri)
+    public String uriDetected(String uriStr)
     {
-        String retVal = null;
+        //never return null; if nothing was found, the uri was probably an external one
+        String retVal = uriStr;
 
         //if the endpoint is immutable, we'll generate our fingerprint right now,
         //if not, we'll wrap the URI in a directive to re-parse it on every request.
         //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
         //if that would change, we must wipe this optimization step
-        Resource resource = R.resourceManager().get(uri);
+        Resource resource = R.resourceManager().get(URI.create(uriStr));
 
         //this means we're dealing with a local uri
         if (resource != null) {
@@ -266,13 +262,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
             else {
                 //this means we'll postpone the fingerprinting of the URI to the render phase, just wrap it in our fingerprint directive
-                retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("('").append(uri.toString()).append("')").toString();
+                retVal = new StringBuilder("#").append(ResourceUriDirective.NAME).append("('").append(uriStr).append("')").toString();
             }
-        }
-
-        //never return null; if nothing was found, the uri was probably an external one
-        if (retVal == null) {
-            retVal = uri.toString();
         }
 
         return retVal;

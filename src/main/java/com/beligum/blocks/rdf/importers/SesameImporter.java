@@ -78,7 +78,7 @@ public class SesameImporter extends AbstractImporter
 
         parser.parse(is, baseURI.toString());
 
-        model = this.filterRelevantNodes(model, baseURI);
+        model = this.filterModel(model, baseURI);
 
         return model;
     }

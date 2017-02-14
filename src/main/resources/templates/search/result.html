@@ -2,7 +2,8 @@
     <div class="media">
         <div class="media-left">
             <div class="img-wrapper">
-                <img class="media-object" src="#if($result.getImage())$result.getImage()#else/assets/images/blocks/placeholder_image_1.png#end" />
+                ##Note: we need the extra space after the URIs for correct fingerprinting
+                <img class="media-object" src="#if($result.image)$result.image #{else}/assets/images/blocks/placeholder_image_1.png #{end}" />
             </div>
         </div>
         <div class="media-body">

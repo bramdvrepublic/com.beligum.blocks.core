@@ -36,7 +36,7 @@
 //            model.read(is, source.getBaseUri().toString(), this.translateFormat(this.inputFormat));
 //        }
 //
-//        model = this.filterRelevantNodes(model, source.getBaseUri());
+//        model = this.filterModel(model, source.getBaseUri());
 //
 //        return model;
 //    }

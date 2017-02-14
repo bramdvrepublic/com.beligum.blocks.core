@@ -60,7 +60,7 @@
 //
 //        RDFDataMgr.read(model, is, this.translateFormat(this.inputFormat));
 //
-//        model = this.filterRelevantNodes(model, baseURI);
+//        model = this.filterModel(model, baseURI);
 //
 //        return model;
 //    }
