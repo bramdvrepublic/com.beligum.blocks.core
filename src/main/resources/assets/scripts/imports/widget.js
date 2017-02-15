@@ -4,7 +4,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, Class, Commons, Notification)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification)
 {
     var Widget = this;
 
@@ -587,12 +587,23 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         addValueAttribute: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
         {
             var selectedFilePath = element.attr(attribute);
+
+            if (Commons.isUriAttribute(attribute)) {
+                selectedFilePath = Commons.defingerprint(selectedFilePath);
+            }
+
             var inputActions = this.buildInputActions(Sidebar, fileSelect, pageSelect, selectedFilePath);
 
             var content = this.createTextInput(Sidebar,
                 function getterFunction()
                 {
-                    return element.attr(attribute);
+                    var retVal = element.attr(attribute);
+
+                    if (Commons.isUriAttribute(attribute)) {
+                        retVal = Commons.defingerprint(retVal);
+                    }
+
+                    return retVal;
                 },
                 function setterFunction(val)
                 {
@@ -914,10 +925,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     var finderOptions = {};
 
-                    //TODO make this MediaCommonsConstants.HDFS_URL_BASE
-                    if (selectedFilePath && selectedFilePath.indexOf('/webhdfs') === 0) {
+                    if (selectedFilePath && selectedFilePath.indexOf(MediaCommonsConstants.HDFS_URL_BASE) === 0) {
+
+                        var mediaFilePath = decodeURI(selectedFilePath);
+
                         //decode it as the reverse of the encode below
-                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = decodeURI(selectedFilePath);
+                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = mediaFilePath;
                     }
 
                     finderOptions.onSelect = function (selectedFileUrls)
