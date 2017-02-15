@@ -73,7 +73,7 @@ public class PageRepository extends AbstractResourceRepository
                 retVal = page;
             }
         }
-        catch (IOException e) {
+        catch (Exception e) {
             Logger.error("Error while resolving html resource for " + resourceRequest.getUri(), e);
         }
 

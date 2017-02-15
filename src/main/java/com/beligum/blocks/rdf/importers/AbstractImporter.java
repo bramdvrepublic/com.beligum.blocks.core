@@ -1,7 +1,6 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.Format;
@@ -146,18 +145,6 @@ public abstract class AbstractImporter implements Importer
                         else {
                             throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype());
                         }
-                    }
-
-                    //let's give ourself the chance to (try to) correct invalid URIs that were picked up as literals because
-                    //of wrong formatting. In particular, this is the case for relative paths that were expected to be parsed as domain-relative URIs
-                    if (literal.getDatatype().equals(XMLSchema.ANYURI)) {
-                        Logger.warn("Discovered a literal value that should have been parsed as a URI. Trying to fix this; "+literal);
-                        URI object = URI.create(literal.stringValue());
-                        if (!object.isAbsolute()) {
-                            object = documentBaseUri.resolve(object);
-                        }
-
-                        newObject = factory.createIRI(object.toString());
                     }
                 }
 

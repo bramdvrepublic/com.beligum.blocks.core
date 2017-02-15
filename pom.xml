@@ -5,7 +5,7 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
-    <version>0.2.48-SNAPSHOT</version>
+    <version>0.2.48</version>
     <packaging>jar</packaging>
 
     
@@ -46,12 +46,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.44</version>
+            <version>0.3.45</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.1.14</version>
+            <version>0.1.15</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>

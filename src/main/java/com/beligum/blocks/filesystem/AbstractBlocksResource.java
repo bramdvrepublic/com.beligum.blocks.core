@@ -76,6 +76,11 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         return this.fileContext.util().exists(this.localStoragePath);
     }
     @Override
+    public boolean isDirectory() throws IOException
+    {
+        return this.exists() && this.fileContext.getFileStatus(this.localStoragePath).isDirectory();
+    }
+    @Override
     public long getLastModifiedTime() throws IOException
     {
         return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.localStoragePath).getModificationTime()),
