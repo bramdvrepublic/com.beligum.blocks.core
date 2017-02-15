@@ -35,7 +35,6 @@ public class TemplatesEndpoint
     }
 
     @GET
-    //note: the .less is needed to use @include in other less files
     @Path("/styles/imports/reset.css")
     public Resource getResources()
     {
@@ -44,7 +43,6 @@ public class TemplatesEndpoint
     }
 
     @GET
-    //note: the .less is needed to use @include in other less files
     @Path("/scripts/imports/all.js")
     public Resource getImportsArray()
     {

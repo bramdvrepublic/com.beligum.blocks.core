@@ -59,6 +59,12 @@ public class PageRepository extends AbstractResourceRepository
         return new ResourceRepositoryPrefix[] { new ResourceRepositoryPrefix(this, URI.create(PUBLIC_PATH_PREFIX), MimeTypes.HTML) };
     }
     @Override
+    public ResourceRequest request(URI uri, MimeType forcedMimeType)
+    {
+        //all pages are forced to HTML
+        return super.request(uri, MimeTypes.HTML);
+    }
+    @Override
     public Resource get(ResourceRequest resourceRequest)
     {
         Resource retVal = null;
