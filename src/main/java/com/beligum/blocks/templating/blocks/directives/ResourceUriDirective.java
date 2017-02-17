@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
+ * This directive is a dynamic URL wrapper that fingerprints an URL it the last moment possible (during template rendering)
+ *
  * Created by bram on 4/25/15.
  */
 @VelocityDirective(ResourceUriDirective.NAME)
@@ -42,7 +44,7 @@ public class ResourceUriDirective extends Directive
     {
         Node uriArg = node.jjtGetNumChildren() > 0 ? node.jjtGetChild(0) : null;
         if (uriArg != null) {
-            //Note that this directive is only activated when fingerprinting is enabled and the resource is non-immutable,
+            //Note that this directive is only activated when fingerprinting is enabled and the resource is local and is non-immutable,
             //if we need to post-parse URIs for other uses, please change the code in HtmlParser
             writer.write(R.resourceManager().getFingerprinter().fingerprintAllUris((String) uriArg.value(context)));
         }

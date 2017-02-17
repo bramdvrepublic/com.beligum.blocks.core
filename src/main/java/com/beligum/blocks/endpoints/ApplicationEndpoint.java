@@ -115,7 +115,7 @@ public class ApplicationEndpoint
         else {
             // Since we allow the user to create pretty url's, it's mime type will not always be clear, so pass it on explicitly
             //Note: this will return null if the resource wasn't found
-            Page page = R.resourceManager().get(requestedUri, MimeTypes.HTML, Page.class);
+            Page page = R.resourceManager().get(requestedUri, Page.class);
 
             if (page != null) {
 
@@ -312,7 +312,7 @@ public class ApplicationEndpoint
                                 else if (!StringUtils.isEmpty(newPageCopyUrl)) {
 
                                     //read the page we'll copy from
-                                    Page copyPage = R.resourceManager().get(URI.create(newPageCopyUrl), MimeTypes.HTML, Page.class);
+                                    Page copyPage = R.resourceManager().get(URI.create(newPageCopyUrl), Page.class);
 
                                     //First, we'll read in the normalized code of the copy page (important: in edit mode because we need the edit imports).
                                     //Note that we need to read the normalized version because the templates might have changed in the mean time (between store and copy)
@@ -459,7 +459,7 @@ public class ApplicationEndpoint
             Locale lang = l.getValue();
             UriBuilder translatedUri = UriBuilder.fromUri(uri);
             if (R.i18n().getUrlLocale(uri, translatedUri, lang) != null) {
-                Page transPage = R.resourceManager().get(translatedUri.build(), MimeTypes.HTML, Page.class);
+                Page transPage = R.resourceManager().get(translatedUri.build(), Page.class);
                 if (transPage != null) {
                     retVal.put(lang, transPage);
                 }

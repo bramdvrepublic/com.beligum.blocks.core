@@ -114,6 +114,14 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.getNormalizedPageProxyPath()).getModificationTime()),
                         this.calcChildrenLastModificationTime());
     }
+    /**
+     * We'll overload this method to just return the default URI because we don't want page URIs to get fingerprinted
+     */
+    @Override
+    public URI getFingerprintedUri()
+    {
+        return this.getUri();
+    }
     @Override
     public URI getCanonicalAddress()
     {

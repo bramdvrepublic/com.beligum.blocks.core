@@ -168,7 +168,7 @@ public abstract class PageSource extends AbstractSource implements Source
         //this is a workaround for that situation
         Elements styleEls = this.document.select("style");
         for (Element el : styleEls) {
-            String html = R.resourceManager().getFingerprinter().detectAllUris(el.html(), new UriDetector.ReplaceCallback()
+            String html = R.resourceManager().getFingerprinter().detectAllResourceUris(el.html(), new UriDetector.ReplaceCallback()
             {
                 @Override
                 public String uriDetected(String uriStr)

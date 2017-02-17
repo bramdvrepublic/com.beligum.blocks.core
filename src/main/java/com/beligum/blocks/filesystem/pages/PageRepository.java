@@ -62,6 +62,13 @@ public class PageRepository extends AbstractResourceRepository
     public ResourceRequest request(URI uri, MimeType forcedMimeType)
     {
         //all pages are forced to HTML
+        //note that this is necessary and tricky:
+        // if a page is requested with another page in a <a> tag,
+        // it will get looked up during fingerprinting, but at that
+        // time, we can't force the mime type of that link,
+        // so it will return a null request object in the ResourceManager.
+        // In production mode, this null value gets cached and the page
+        // is blocked from future (direct) requests, returning a 404
         return super.request(uri, MimeTypes.HTML);
     }
     @Override

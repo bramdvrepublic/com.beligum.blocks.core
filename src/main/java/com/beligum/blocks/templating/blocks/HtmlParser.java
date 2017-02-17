@@ -229,10 +229,10 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                             //Note that we used to split up the simple and complex attributes here and treat them differently
                             // with a pre-validate step for the simple attributes (using UriBuilder.fromUri()) that escapes (invalid) spaces in URIs and so on,
                             // but because I forgot simple attributes can contain templating code, it's not always that easy to just take the entire
-                            // attribute and try to parse it to a URI. Now, we fallback to detectAllUris() instead.
+                            // attribute and try to parse it to a URI. Now, we fallback to detectAllResourceUris() instead.
                             String name = att.getName().toLowerCase();
                             if (ALL_SIMPLE_URL_ATTR.contains(name) || ALL_COMPLEX_URL_ATTR.contains(name)) {
-                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllUris(val, this) + "\"");
+                                retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllResourceUris(val, this) + "\"");
                             }
                         }
                     }
@@ -255,7 +255,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //if that would change, we must wipe this optimization step
         Resource resource = R.resourceManager().get(URI.create(uriStr));
 
-        //this means we're dealing with a local uri
+        //this means we're dealing with a local uri; we only support fingerprinting of local resources
         if (resource != null) {
             if (resource.isImmutable()) {
                 retVal = resource.getFingerprintedUri().toString();

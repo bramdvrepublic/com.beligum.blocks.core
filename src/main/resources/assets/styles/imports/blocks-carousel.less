@@ -3,6 +3,9 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/responsive-visibility.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/responsive-utilities.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/icons.less";
 @import (reference) "/assets/styles/imports/blocks-common.less";
 @import (reference) "/constants/blocks/core?type=less";
 
@@ -17,8 +20,25 @@ blocks-carousel {
   }
 
   .carousel {
+    //these are the bullets at the bottom
     .carousel-indicators {
       .hidden-xs();
+    }
+    //these are the arrows left and right
+    .carousel-control {
+      .glyphicon {
+        .fa-icon();
+        //revert to the parent again (fa-icon() overloads it)
+        font-size: 30px;
+      }
+      .icon-prev,
+      .glyphicon-chevron-left {
+        &:extend(.fa-chevron-left all);
+      }
+      .icon-next,
+      .glyphicon-chevron-right {
+        &:extend(.fa-chevron-right all);
+      }
     }
     .item {
       //stretch the image to it's full with, but chop it vertically to a standard

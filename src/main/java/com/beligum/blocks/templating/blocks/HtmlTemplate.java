@@ -8,6 +8,7 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
@@ -820,16 +821,18 @@ public abstract class HtmlTemplate
         String elementStr = element.toString();
         Resource resource = null;
 
-        boolean fingerprinted = false;
+        //activate this if the resource needs to be fingerprinted dynamically
+        boolean enableDynamicFingerprinting = false;
+
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
-            //this means we're dealing with an external resource that may get fingerprinting optimization
+            //this means we're dealing with an external resource
             if (attrValue != null) {
                 //validate the URI
-                URI uri = UriBuilder.fromUri(attrValue).build();
-                resource = R.resourceManager().get(uri);
+                resource = R.resourceManager().get(UriBuilder.fromUri(attrValue).build());
 
                 //this means the resource exists in our local system
                 if (resource != null) {
+
                     //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now
                     if (resource.isImmutable()) {
                         //first, replace the attribute value
@@ -842,9 +845,35 @@ public abstract class HtmlTemplate
                         OutputDocument outputDocument = new OutputDocument(element);
                         outputDocument.replace(attrValueSeg, fingerprintedUri);
                         elementStr = outputDocument.toString();
+                    }
+                    else {
+                        enableDynamicFingerprinting = true;
+                    }
+                }
+            }
+            //this means we're dealing with an inline resource; iterate all uri's to see if we can fingerprint them
+            else {
+                //Tried to wrap all URIs in a #brud directive, but that didn't really work,
+                //so switched to "block-mode" where we'll parsed all URIs in this inline resource and keep
+                //some statistics to see if we can alter the resource code right now, or need to defer to dynamic fingerprinting
+                InlineUriDetector inlineDetector = new InlineUriDetector();
+                String fingerprintedResource = R.resourceManager().getFingerprinter().detectAllResourceUris(elementStr, inlineDetector);
 
-                        //in all other cases, we'll postpone the fingerprinting to the render phase
-                        fingerprinted = true;
+                //no need to do anything if no URIs were detected
+                if (inlineDetector.hasUri) {
+                    //if all detected URIs were immutable, we can safely use the fingerprinted code
+                    // instead of the original and disable dynamic fingerprinting
+                    if (inlineDetector.allImmutable) {
+                        elementStr = fingerprintedResource;
+                    }
+                    //here, we have at least one non-immutable uri in the inline code,
+                    //so we can't replace the code, but need to activate dynamic fingerprinting instead
+                    else {
+                        //since we only fingerprint local URIs, we don't need to activate dynamic fingerprinting
+                        //if no local URIs were detected
+                        if (inlineDetector.hasInternal) {
+                            enableDynamicFingerprinting = true;
+                        }
                     }
                 }
             }
@@ -859,7 +888,7 @@ public abstract class HtmlTemplate
                                   //Note: this value will be used to calculate the hashes of the asset packs,
                                   //so make sure you pass the fingerprinted uri here
                                   .append("'").append(attrValue).append("',")
-                                  .append(fingerprinted).append(",")
+                                  .append(enableDynamicFingerprinting).append(",")
                                   .append("'").append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                                   .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
                                   .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
@@ -1222,6 +1251,74 @@ public abstract class HtmlTemplate
                         }
                     }
                 }
+            }
+
+            return retVal;
+        }
+    }
+
+    private class InlineUriDetector implements UriDetector.ReplaceCallback
+    {
+        /**
+         * Will be true if we detected at least one URI
+         */
+        private boolean hasUri;
+
+        /**
+         * Will be true if and only if all detected URIs were immutable
+         */
+        private boolean allImmutable;
+
+        /**
+         * Will be true if at least one of the detected URIs were non-local
+         */
+        private boolean hasExternal;
+
+        /**
+         * Will be true if at least one of the detected URIs were local
+         */
+        private boolean hasInternal;
+
+        public InlineUriDetector()
+        {
+            this.hasUri = false;
+            this.allImmutable = false;
+            this.hasExternal = false;
+            this.hasInternal = false;
+        }
+
+        @Override
+        public String uriDetected(String uriStr)
+        {
+            //never return null; if nothing was found, the uri was probably an external one
+            String retVal = uriStr;
+
+            //we keep allImmutable false until we encounter the first URI,
+            if (!this.hasUri) {
+                this.allImmutable = true;
+            }
+            this.hasUri = true;
+
+            //if the endpoint is immutable, we'll generate our fingerprint right now,
+            //if not, we'll wrap the URI in a directive to re-parse it on every request.
+            //Note: this means we won't do any other post-processing next to fingerprinting in that directive anymore,
+            //if that would change, we must wipe this optimization step
+            Resource resource = R.resourceManager().get(URI.create(uriStr));
+
+            //this means we're dealing with a local uri; we only support fingerprinting of local resources
+            if (resource != null) {
+                this.hasInternal = true;
+                if (resource.isImmutable()) {
+                    retVal = resource.getFingerprintedUri().toString();
+                }
+                else {
+                    this.allImmutable = false;
+                }
+            }
+            else {
+                this.hasExternal = true;
+                //note that external resources are never immutable
+                this.allImmutable = false;
             }
 
             return retVal;

@@ -169,13 +169,14 @@ public class PageAdminEndpoint
     {
         HashMap<String, Object> retVal = new HashMap<>();
 
-        HtmlTemplate htmlTemplate = null;
-        for (HtmlTemplate t : TemplateCache.instance().values()) {
-            if (t.getTemplateName().equals(name)) {
-                htmlTemplate = t;
-                break;
-            }
-        }
+        HtmlTemplate htmlTemplate = TemplateCache.instance().getByTagName(name);
+
+        //we drag-and-dropped a block in a certain page and this is the callback to get the html for that block,
+        //so it makes sense to try to use the language of that page
+        Locale lang = R.i18n().getOptimalRefererLocale();
+
+        //note that we need to force this request to be that language, otherwise, a regular getOptimalLocale() will be used
+        R.i18n().setManualLocale(lang);
 
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
@@ -185,9 +186,10 @@ public class PageAdminEndpoint
                                                                           MimeTypes.HTML,
                                                                           //since this is the value of the template context lang,
                                                                           //it makes sense to create the string in the same lang
-                                                                          R.i18n().getOptimalLocale()));
+                                                                          lang));
 
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
+
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
                    Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),

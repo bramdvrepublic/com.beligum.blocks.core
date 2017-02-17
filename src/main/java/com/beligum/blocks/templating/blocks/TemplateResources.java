@@ -108,21 +108,21 @@ public class TemplateResources
             }
         };
     }
-    public boolean addInlineStyle(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addInlineStyle(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
     {
-        return this.addResource(writer, print, new InlineStyle(element, joinHint, fingerprinted), this.styles);
+        return this.addResource(writer, print, new InlineStyle(element, joinHint, enableDynamicFingerprinting), this.styles);
     }
-    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addExternalStyle(String element, StringWriter writer, String href, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
     {
-        return this.addResource(writer, print, new ExternalStyle(element, href, joinHint, fingerprinted), this.styles);
+        return this.addResource(writer, print, new ExternalStyle(element, href, joinHint, enableDynamicFingerprinting), this.styles);
     }
-    public boolean addInlineScript(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addInlineScript(String element, StringWriter writer, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
     {
-        return this.addResource(writer, print, new InlineScript(element, joinHint, fingerprinted), this.scripts);
+        return this.addResource(writer, print, new InlineScript(element, joinHint, enableDynamicFingerprinting), this.scripts);
     }
-    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean fingerprinted)
+    public boolean addExternalScript(String element, StringWriter writer, String src, boolean print, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
     {
-        return this.addResource(writer, print, new ExternalScript(element, src, joinHint, fingerprinted), this.scripts);
+        return this.addResource(writer, print, new ExternalScript(element, src, joinHint, enableDynamicFingerprinting), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -173,18 +173,18 @@ public class TemplateResources
         private HtmlTemplate.ResourceJoinHint joinHint;
 
         //indicates if the supplied element and value are already fingerprinted or not
-        protected boolean alreadyFingerprinted;
+        protected boolean enableDynamicFingerprinting;
 
         //keeps track if we already modified the value to it's fingerprinted equivalent so we don't do it twice while lazy parsing
         private boolean fingerprintedElement;
 
         //-----CONSTRUCTORS-----
-        protected Resource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        protected Resource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
             this.type = type;
             this.element = element;
             this.joinHint = joinHint;
-            this.alreadyFingerprinted = alreadyFingerprinted;
+            this.enableDynamicFingerprinting = enableDynamicFingerprinting;
 
             this.fingerprintedElement = false;
         }
@@ -196,7 +196,7 @@ public class TemplateResources
         }
         public String getElement()
         {
-            if (!this.alreadyFingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources() && !this.fingerprintedElement) {
+            if (this.enableDynamicFingerprinting && !this.fingerprintedElement) {
                 this.element = R.resourceManager().getFingerprinter().fingerprintAllUris(this.element);
                 this.fingerprintedElement = true;
             }
@@ -238,9 +238,9 @@ public class TemplateResources
     }
     public abstract class InlineResource extends Resource
     {
-        protected InlineResource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        protected InlineResource(TemplateResourcesDirective.Argument type, String element, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(type, element, joinHint, alreadyFingerprinted);
+            super(type, element, joinHint, enableDynamicFingerprinting);
         }
     }
     public abstract class ExternalResource extends Resource
@@ -251,9 +251,9 @@ public class TemplateResources
         private String uriStr;
         private URI uri;
 
-        protected ExternalResource(TemplateResourcesDirective.Argument type, String element, String uriStr, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        protected ExternalResource(TemplateResourcesDirective.Argument type, String element, String uriStr, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(type, element, joinHint, alreadyFingerprinted);
+            super(type, element, joinHint, enableDynamicFingerprinting);
 
             this.uriStr = uriStr;
         }
@@ -266,7 +266,7 @@ public class TemplateResources
         {
             if (this.uri == null) {
                 String address = this.uriStr;
-                if (!this.alreadyFingerprinted && R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+                if (this.enableDynamicFingerprinting) {
                     //Note: if the uri is already fingerprinted, this will do nothing
                     address = R.resourceManager().getFingerprinter().fingerprintAllUris(address);
                 }
@@ -303,33 +303,33 @@ public class TemplateResources
 
     public class InlineStyle extends InlineResource
     {
-        public InlineStyle(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        public InlineStyle(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(TemplateResourcesDirective.Argument.inlineStyles, element, joinHint, alreadyFingerprinted);
+            super(TemplateResourcesDirective.Argument.inlineStyles, element, joinHint, enableDynamicFingerprinting);
         }
     }
 
     public class InlineScript extends InlineResource
     {
-        public InlineScript(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        public InlineScript(String element, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(TemplateResourcesDirective.Argument.inlineScripts, element, joinHint, alreadyFingerprinted);
+            super(TemplateResourcesDirective.Argument.inlineScripts, element, joinHint, enableDynamicFingerprinting);
         }
     }
 
     public class ExternalStyle extends ExternalResource
     {
-        public ExternalStyle(String element, String href, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        public ExternalStyle(String element, String href, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(TemplateResourcesDirective.Argument.externalStyles, element, href, joinHint, alreadyFingerprinted);
+            super(TemplateResourcesDirective.Argument.externalStyles, element, href, joinHint, enableDynamicFingerprinting);
         }
     }
 
     public class ExternalScript extends ExternalResource
     {
-        public ExternalScript(String element, String src, HtmlTemplate.ResourceJoinHint joinHint, boolean alreadyFingerprinted)
+        public ExternalScript(String element, String src, HtmlTemplate.ResourceJoinHint joinHint, boolean enableDynamicFingerprinting)
         {
-            super(TemplateResourcesDirective.Argument.externalScripts, element, src, joinHint, alreadyFingerprinted);
+            super(TemplateResourcesDirective.Argument.externalScripts, element, src, joinHint, enableDynamicFingerprinting);
         }
     }
 }
