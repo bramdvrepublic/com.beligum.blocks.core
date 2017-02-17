@@ -26,6 +26,7 @@ import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
@@ -365,9 +366,12 @@ public class ApplicationEndpoint
                                     }
                                     //OPTION 7: show the create-new page list
                                     else {
+                                        //we'll use the admin-interface language to render this page, not the language of the content
+                                        R.i18n().setManualLocale(R.i18n().getBrowserLocale());
+
                                         Template newPageTemplateList = new_page.get().getNewTemplate();
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
-                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildPageTemplateMap());
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.searchAllPageTranslations(requestedUri));
 
                                         //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
@@ -397,53 +401,18 @@ public class ApplicationEndpoint
         //for velocity templates
         template.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
     }
-    private List<Map<String, String>> buildLocalizedPageTemplateMap()
+    private List<Map<String, String>> buildPageTemplateMap()
     {
         List<Map<String, String>> retVal = new ArrayList<>();
 
-        TemplateCache cache = TemplateCache.instance();
-        Locale requestLocale = R.i18n().getOptimalLocale();
-        for (HtmlTemplate template : cache.values()) {
-            if (template instanceof PageTemplate) {
-                HashMap<String, String> pageTemplate = new HashMap();
-                String title = null;
-                String description = null;
-                // current getLanguage of the request
-                if (template.getTitles().containsKey(requestLocale)) {
-                    title = template.getTitles().get(requestLocale);
-                    description = template.getDescriptions().get(requestLocale);
-                }
-                // default getLanguage of the site
-                else if (template.getTitles().containsKey(R.configuration().getDefaultLanguage())) {
-                    title = template.getTitles().get(R.configuration().getDefaultLanguage());
-                    description = template.getDescriptions().get(R.configuration().getDefaultLanguage());
-                }
-                // No getLanguage if available
-                else if (template.getTitles().containsKey(Locale.ROOT)) {
-                    title = template.getTitles().get(Locale.ROOT);
-                    description = template.getDescriptions().get(Locale.ROOT);
-                }
-                // Random title and description
-                else if (template.getTitles().values().size() > 0) {
-                    title = (String) template.getTitles().values().toArray()[0];
-                    if (template.getDescriptions().values().size() > 0) {
-                        description = (String) template.getDescriptions().values().toArray()[0];
-                    }
-                }
-
-                // No title available
-                if (StringUtils.isEmpty(title)) {
-                    title = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle.toString();
-                }
-                if (StringUtils.isEmpty(description)) {
-                    description = gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription.toString();
-                }
-
-                pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName());
-                pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue(), title);
-                pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_DESCRIPTION.getValue(), description);
-
-                retVal.add(pageTemplate);
+        for (HtmlTemplate template : TemplateCache.instance().values()) {
+            if (template instanceof PageTemplate && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+                retVal.add(ImmutableMap.<String, String>builder()
+                                              .put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName())
+                                              .put(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue(), template.getTitle())
+                                              .put(core.Entries.NEW_PAGE_TEMPLATE_DESCRIPTION.getValue(), template.getDescription())
+                                              .build()
+                );
             }
         }
 

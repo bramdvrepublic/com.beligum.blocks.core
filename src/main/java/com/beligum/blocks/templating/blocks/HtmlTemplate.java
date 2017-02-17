@@ -16,6 +16,7 @@ import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirectiv
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -98,9 +99,9 @@ public abstract class HtmlTemplate
     protected Path absolutePath;
     protected Path relativePath;
     protected String templateName;
-    protected Map<Locale, String> titles;
-    protected Map<Locale, String> descriptions;
-    protected Map<Locale, String> icons;
+    protected String title;
+    protected String description;
+    protected String icon;
     protected Class<TemplateController> controllerClass;
     protected Iterable<Element> inlineScriptElements;
     protected Iterable<Element> externalScriptElements;
@@ -160,14 +161,32 @@ public abstract class HtmlTemplate
         HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.rdfPrefixes);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
-        this.titles = superTemplate != null ? superTemplate.getTitles() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.titles, MetaProperty.title, true);
+        this.title = superTemplate != null ? superTemplate.getTitle() : null;
+        String thisTitle = this.getMetaValue(tempHtml, MetaProperty.title, true);
+        if (!StringUtils.isEmpty(thisTitle)) {
+            this.title = thisTitle;
+        }
+        if (StringUtils.isEmpty(this.title)) {
+            this.title = core.Entries.emptyTemplateTitle.toString();
+        }
 
-        this.descriptions = superTemplate != null ? superTemplate.getDescriptions() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.descriptions, MetaProperty.description, true);
+        this.description = superTemplate != null ? superTemplate.getDescription() : null;
+        String thisDescription = this.getMetaValue(tempHtml, MetaProperty.description, true);
+        if (!StringUtils.isEmpty(thisDescription)) {
+            this.description = thisDescription;
+        }
+        if (StringUtils.isEmpty(this.title)) {
+            this.description = core.Entries.emptyTemplateTitle.toString();
+        }
 
-        this.icons = superTemplate != null ? superTemplate.getIcons() : new HashMap<Locale, String>();
-        this.fillMetaValues(tempHtml, this.icons, MetaProperty.icon, true);
+        this.icon = superTemplate != null ? superTemplate.getIcon() : null;
+        String thisIcon = this.getMetaValue(tempHtml, MetaProperty.icon, true);
+        if (!StringUtils.isEmpty(thisIcon)) {
+            this.icon = thisIcon;
+        }
+        if (StringUtils.isEmpty(this.title)) {
+            this.icon = core.Entries.emptyTemplateTitle.toString();
+        }
 
         String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
@@ -539,17 +558,17 @@ public abstract class HtmlTemplate
     {
         return relativePath;
     }
-    public Map<Locale, String> getTitles()
+    public String getTitle()
     {
-        return titles;
+        return title;
     }
-    public Map<Locale, String> getDescriptions()
+    public String getDescription()
     {
-        return descriptions;
+        return description;
     }
-    public Map<Locale, String> getIcons()
+    public String getIcon()
     {
-        return icons;
+        return icon;
     }
     public Class<TemplateController> getControllerClass()
     {
@@ -689,28 +708,6 @@ public abstract class HtmlTemplate
         }
 
         return retVal;
-    }
-    private void fillMetaValues(OutputDocument html, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
-    {
-        List<Element> metas = html.getSegment().getAllElements("meta");
-        Iterator<Element> iter = metas.iterator();
-        while (iter.hasNext()) {
-            Element element = iter.next();
-            String propertyVal = element.getAttributeValue("property");
-            if (propertyVal != null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX + property.toString())) {
-                Locale locale = Locale.ROOT;
-                String localeStr = element.getAttributeValue("lang");
-                if (localeStr != null) {
-                    locale = Locale.forLanguageTag(localeStr);
-                }
-                String value = element.getAttributeValue("content");
-                target.put(locale, value);
-
-                if (eatItUp) {
-                    html.remove(element);
-                }
-            }
-        }
     }
     private String getMetaValue(OutputDocument output, MetaProperty property, boolean eatItUp)
     {

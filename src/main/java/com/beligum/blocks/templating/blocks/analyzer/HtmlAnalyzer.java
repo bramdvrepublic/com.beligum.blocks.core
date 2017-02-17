@@ -3,6 +3,9 @@ package com.beligum.blocks.templating.blocks.analyzer;
 import com.beligum.base.server.R;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.templating.blocks.PageTemplate;
+import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
 
@@ -95,7 +98,16 @@ public class HtmlAnalyzer
 
         Element rootElement = this.htmlDocument.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
         if (rootElement == null) {
-            throw new IOException("Encountered an attempt to save html without a <" + HtmlParser.HTML_ROOT_ELEM + "> template; this shouldn't happen; " + pageSource);
+            //this will make sure we also support normalized pages (which is needed because the default inputstream of a page is the normalized source)
+            Element firstElement = this.htmlDocument.getFirstElement();
+            HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(firstElement.getName());
+            if (pageTemplate!=null && pageTemplate instanceof PageTemplate) {
+                rootElement = firstElement;
+            }
+
+            if (rootElement == null) {
+                throw new IOException("Encountered an attempt to save html without a <" + HtmlParser.HTML_ROOT_ELEM + "> template; this shouldn't happen; " + pageSource);
+            }
         }
 
         //extract the base resource id

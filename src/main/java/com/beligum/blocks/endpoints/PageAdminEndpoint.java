@@ -23,8 +23,9 @@ import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
+import gen.com.beligum.blocks.core.fs.html.views.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -130,27 +131,22 @@ public class PageAdminEndpoint
     {
         TemplateCache cache = TemplateCache.instance();
         List<Map<String, String>> templates = new ArrayList<>();
-        Locale browserLang = R.i18n().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
-                HashMap<String, String> pageTemplate = new HashMap();
-
-                //the order of locales in which the templates will be searched
-                final Locale[] LANGS = { browserLang, R.configuration().getDefaultLanguage(), Locale.ROOT };
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(),
-                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.toString()));
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(),
-                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.toString()));
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), this.findI18NValue(LANGS, template.getIcons(), null));
-                templates.add(pageTemplate);
+                templates.add(ImmutableMap.<String, String>builder()
+                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName())
+                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(), template.getTitle())
+                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getDescription())
+                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), template.getIcon())
+                                              .build()
+                );
             }
         }
 
         //sort the blocks by title
         Collections.sort(templates, new MapComparator(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue()));
 
-        Template template = newblock.get().getNewTemplate();
+        Template template = new_block.get().getNewTemplate();
         template.set(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TEMPLATES.getValue(), templates);
 
         return Response.ok(template).build();
@@ -388,31 +384,6 @@ public class PageAdminEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
-    {
-        String retVal = null;
-
-        if (!values.isEmpty()) {
-            for (Locale l : langs) {
-                retVal = values.get(l);
-
-                if (retVal != null) {
-                    break;
-                }
-            }
-
-            if (retVal == null) {
-                retVal = values.values().iterator().next();
-            }
-        }
-
-        if (retVal == null) {
-            retVal = defaultValue;
-        }
-
-        return retVal;
-    }
-
     private static class ReindexThread extends Thread
     {
         private final Integer start;
