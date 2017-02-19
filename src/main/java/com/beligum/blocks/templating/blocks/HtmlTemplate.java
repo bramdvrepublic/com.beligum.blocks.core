@@ -997,17 +997,17 @@ public abstract class HtmlTemplate
         this.normalizationSubstitutions.addAll(phase2);
     }
     /**
-     * This is the exact same code as org.jsoup.nodes.Element.cssSelector() but with the classes commented out
-     * because in our case, the classes are often constants and cause troubles. From what I tested, and because
+     * This is the exact same code as org.jsoup.nodes.Element.cssSelector() but with the id and classes commented out
+     * because in our case, the id or classes are often constants and the special chars cause trouble. From what I tested, and because
      * of the way we double check by testing the rendered out values during comparison, I don't think this will
      * cause problems.
      * Note that we're still backwards compatible with the Element.select() code though...
      */
     private String cssSelector(org.jsoup.nodes.Element element)
     {
-        if (element.id().length() > 0) {
-            return "#" + element.id();
-        }
+        //        if (element.id().length() > 0) {
+        //            return "#" + element.id();
+        //        }
 
         StringBuilder selector = new StringBuilder(element.tagName());
         //        String classes = StringUtil.join(element.classNames(), ".");

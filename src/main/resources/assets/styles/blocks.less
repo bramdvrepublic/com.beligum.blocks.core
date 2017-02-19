@@ -15,10 +15,7 @@
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/list.less";
 
 @import (reference) "/assets/styles/loader.less";
-//Note: this is no references, we need to include it entirely
-@import "/assets/styles/finder.less";
-
-@finderBgColor: #ffffff;
+@import (reference) "/assets/styles/finder.less";
 
 //-----BASIC BOOTSTRAP MIXINS-----
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
@@ -934,128 +931,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
-//-----MEDIUM EDITOR-----
-.medium-editor-placeholder {
-  position: relative;
-
-  &:after {
-    content: attr(data-placeholder) !important;
-    font-style: italic;
-    left: 0;
-    position: absolute;
-    top: 0;
-    white-space: pre;
-  }
-}
-
-.medium-editor-toolbar {
-  position: absolute;
-  visibility: hidden;
-  z-index: 2000;
-  //these will be set in JS
-  top: 0;
-  left: 0;
-  //needed to align the toolbar with the dotted border of the active block
-  margin-left: -1px;
-
-  .form-inline();
-  &:extend(.form-inline);
-
-  ul.medium-editor-toolbar-actions {
-    .btn-group();
-    .list-unstyled();
-    .list-inline();
-
-    padding: 0;
-    margin: 0;
-
-    & > li {
-      margin: 0;
-      padding: 0;
-
-      button {
-        //last one removes double border
-        &:extend(.btn, .btn-default, .btn-group .btn + .btn);
-
-        &.medium-editor-button-active {
-          .btn.active;
-          .btn-default.active;
-        }
-
-        .border-radius(0, 0, 0, 0) !important;
-        .box-shadow(none) !important;
-      }
-    }
-  }
-}
-
-.medium-editor-toolbar-active {
-  visibility: visible;
-}
-
-.medium-editor-sticky-toolbar {
-  position: fixed;
-  top: 1px;
-}
-
-.medium-editor-hidden {
-  display: none;
-}
-
-.medium-editor-toolbar-form {
-  display: none;
-
-  border: 1px solid @btn-default-border;
-  padding: 3px 3px;
-  background-color: #FFFFFF;
-
-  @inputWidth: 250px; //makes sure the form doesn't grow when the inline buttons are shown (little css bug to fix)
-  input {
-    width: @inputWidth;
-  }
-  .input-group {
-    .inline-input-buttons();
-    width: @inputWidth;
-  }
-  .btn-primary {
-    margin-left: 5px;
-  }
-}
-
-.@{TEXT_EDITOR_STYLES_CLASS} {
-  ul {
-    li {
-      &.active {
-        a {
-          @activePadding: 20px;
-
-          padding-left: @activePadding;
-          &:before {
-            content: "\f111";
-            font-family: FontAwesome;
-            display: inline-block;
-            margin-left: -@activePadding;
-            width: @activePadding;
-            text-align: center;
-            font-size: 0.6em;
-            color: rgba(0, 0, 0, .3);
-            text-shadow: 0px 1px 0px rgba(255, 255, 255, .3), 0px -1px 0px rgba(0, 0, 0, .3);
-          }
-
-          //revert the colors, we'll use bullets instead
-          color: @dropdown-link-color;
-          background-color: transparent;
-
-          //normal hover re-activates the bright primary, override
-          &:hover {
-            color: @dropdown-link-hover-color;
-            background-color: @dropdown-link-hover-bg;
-          }
-        }
-      }
-    }
-  }
-}
 
 
 
