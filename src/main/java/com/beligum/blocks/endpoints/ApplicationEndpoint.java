@@ -407,12 +407,16 @@ public class ApplicationEndpoint
 
         for (HtmlTemplate template : TemplateCache.instance().values()) {
             if (template instanceof PageTemplate && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
-                retVal.add(ImmutableMap.<String, String>builder()
-                                              .put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName())
-                                              .put(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue(), template.getTitle())
-                                              .put(core.Entries.NEW_PAGE_TEMPLATE_DESCRIPTION.getValue(), template.getDescription())
-                                              .build()
-                );
+
+                ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
+                                .put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getTemplateName())
+                                .put(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue(), template.getTitle());
+
+                if (!StringUtils.isEmpty(template.getDescription())) {
+                    map.put(core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getDescription());
+                }
+
+                retVal.add(map.build());
             }
         }
 

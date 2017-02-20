@@ -8,7 +8,6 @@ import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.utils.RdfTools;
-import gen.com.beligum.blocks.core.constants.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 
@@ -148,18 +147,18 @@ public abstract class AbstractImportEndpoint
     }
     protected String propertyValueToHtml(RdfProperty property, Object value, Locale language, RdfProperty previous) throws IOException, ParseException
     {
-        StringBuilder ficheEntryHtml = new StringBuilder();
+        StringBuilder factEntryHtml = new StringBuilder();
 
         if (previous!=null && previous.equals(property)) {
-            ficheEntryHtml.append("<blocks-fiche-entry class=\"" + core.Entries.FICHE_ENTRY_DOUBLE_CLASS + "\">");
+            factEntryHtml.append("<blocks-fact-entry class=\"double\">");
         }
         else {
-            ficheEntryHtml.append("<blocks-fiche-entry>");
+            factEntryHtml.append("<blocks-fact-entry>");
         }
-        ficheEntryHtml.append("<div data-property=\"name\"><p>").append(R.i18n().get(property.getLabelKey(), language)).append("</p></div>");
-        ficheEntryHtml.append("<div data-property=\"value\">");
-        ficheEntryHtml.append("<div class=\"property ").append(property.getWidgetType().getConstant()).append("\"");
-        ficheEntryHtml.append(" property=\"").append(property.getCurieName()).append("\"");
+        factEntryHtml.append("<div data-property=\"name\"><p>").append(R.i18n().get(property.getLabelKey(), language)).append("</p></div>");
+        factEntryHtml.append("<div data-property=\"value\">");
+        factEntryHtml.append("<div class=\"property ").append(property.getWidgetType().getConstant()).append("\"");
+        factEntryHtml.append(" property=\"").append(property.getCurieName()).append("\"");
 
         //"#"+Integer.toHexString(color.getRGB()).substring(2)
 
@@ -172,7 +171,7 @@ public abstract class AbstractImportEndpoint
                 html = value.toString();
                 break;
             case InlineEditor:
-                ficheEntryHtml.append(" data-editor-options=\"force-inline no-toolbar\"");
+                factEntryHtml.append(" data-editor-options=\"force-inline no-toolbar\"");
                 html = value.toString();
                 break;
             case Boolean:
@@ -187,7 +186,7 @@ public abstract class AbstractImportEndpoint
                 LocalDate localDate = (LocalDate) value;
                 ZonedDateTime utcDate = ZonedDateTime.ofInstant(localDate.atStartOfDay(localZone).toInstant(), UTC);
                 content = utcDate.format(DateTimeFormatter.ISO_DATE);
-                ficheEntryHtml.append(" data-gmt=\"false\"");
+                factEntryHtml.append(" data-gmt=\"false\"");
 
                 //https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html
                 //eg. Wednesday September 4 1986
@@ -199,7 +198,7 @@ public abstract class AbstractImportEndpoint
                 LocalTime localTime = (LocalTime) value;
                 ZonedDateTime utcTime = ZonedDateTime.ofInstant(ZonedDateTime.of(LocalDate.now(), localTime, localZone).toInstant(), UTC);
                 content = utcTime.format(DateTimeFormatter.ISO_TIME);
-                ficheEntryHtml.append(" data-gmt=\"false\"");
+                factEntryHtml.append(" data-gmt=\"false\"");
 
                 //html = "1:00 AM<span class=\"timezone\">(UTC+01:00)</span>";
                 html =
@@ -212,7 +211,7 @@ public abstract class AbstractImportEndpoint
                 LocalDateTime localDateTime = (LocalDateTime) value;
                 ZonedDateTime utcDateTime = ZonedDateTime.ofInstant(ZonedDateTime.of(localDateTime, localZone).toInstant(), UTC);
                 content = utcDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
-                ficheEntryHtml.append(" data-gmt=\"false\"");
+                factEntryHtml.append(" data-gmt=\"false\"");
 
                 //html = "Friday January 1, 2016 - 1:00 AM<span class=\"timezone\">(UTC+01:00)</span>";
                 html = RdfTools.serializeDateTimeHtml(localZone, language, utcDateTime).toString();
@@ -233,7 +232,7 @@ public abstract class AbstractImportEndpoint
                 // text of the hyperlink as a value (instead of using the href value and serializing it as a URI). This is because the property attribute is set on the
                 // wrapping <div> instead of on the <a> tag.
                 //Note: from the RDFa docs: "@content is used to indicate the value of a plain literal", and since it's a URI, we add it as a resource value
-                ficheEntryHtml.append(" resource=\"" + uriValue.getUri().toString() + "\"");
+                factEntryHtml.append(" resource=\"" + uriValue.getUri().toString() + "\"");
 
                 html = "<a href=\"" + uriValue.getUri().toString() + "\"";
                 if (uriValue.getUri().isAbsolute()) {
@@ -267,7 +266,7 @@ public abstract class AbstractImportEndpoint
                 ResourceInfo resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
 
                 addDataType = false;
-                ficheEntryHtml.append(" resource=\"" + resourceInfo.getResourceUri().toString() + "\"");
+                factEntryHtml.append(" resource=\"" + resourceInfo.getResourceUri().toString() + "\"");
                 if (resourceInfo != null) {
                     html = RdfTools.serializeResourceHtml(resourceInfo).toString();
                 }
@@ -281,23 +280,23 @@ public abstract class AbstractImportEndpoint
         }
 
         if (addDataType) {
-            ficheEntryHtml.append(" datatype=\"").append(property.getDataType().getCurieName()).append("\"");
+            factEntryHtml.append(" datatype=\"").append(property.getDataType().getCurieName()).append("\"");
         }
 
         if (content != null) {
-            ficheEntryHtml.append(" content=\"").append(content).append("\"");
+            factEntryHtml.append(" content=\"").append(content).append("\"");
         }
 
         //extra tag options
-        ficheEntryHtml.append(">");
+        factEntryHtml.append(">");
 
-        ficheEntryHtml.append(html);
+        factEntryHtml.append(html);
 
-        ficheEntryHtml.append("</div>");
-        ficheEntryHtml.append("</div>");
-        ficheEntryHtml.append("</blocks-fiche-entry>");
+        factEntryHtml.append("</div>");
+        factEntryHtml.append("</div>");
+        factEntryHtml.append("</blocks-fact-entry>");
 
-        return ficheEntryHtml.toString();
+        return factEntryHtml.toString();
     }
 
     protected String buildResourceImageHtml(NamedUri uri)

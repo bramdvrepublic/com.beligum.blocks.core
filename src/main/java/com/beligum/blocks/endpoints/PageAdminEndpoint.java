@@ -133,13 +133,20 @@ public class PageAdminEndpoint
         List<Map<String, String>> templates = new ArrayList<>();
         for (HtmlTemplate template : cache.values()) {
             if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
-                templates.add(ImmutableMap.<String, String>builder()
-                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName())
-                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(), template.getTitle())
-                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getDescription())
-                                              .put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), template.getIcon())
-                                              .build()
-                );
+
+                ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
+                                .put(Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName())
+                                .put(Entries.NEW_BLOCK_TITLE.getValue(), template.getTitle());
+
+                if (!StringUtils.isEmpty(template.getDescription())) {
+                    map.put(Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getDescription());
+                }
+
+                if (!StringUtils.isEmpty(template.getIcon())) {
+                    map.put(Entries.NEW_BLOCK_ICON.getValue(), template.getIcon());
+                }
+
+                templates.add(map.build());
             }
         }
 
