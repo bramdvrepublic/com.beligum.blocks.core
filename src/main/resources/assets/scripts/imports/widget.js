@@ -622,18 +622,25 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * labelText: name to show as label
          * placeholderText: string to show as placeholder
          * confirm: value only changes when user clicks apply button
+         * textarea: set to true if you want to render a <textarea> element instead of an <input> element
          **/
-        addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm)
+        addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm, textarea)
         {
-            return this.createTextInput(Sidebar,
-                function getterFunction()
-                {
-                    return $.trim(element.html());
-                },
-                function setterFunction(val)
-                {
-                    return element.html($.trim(val));
-                }, labelText, placeholderText, confirm);
+            var getterFunction = function ()
+            {
+                return $.trim(element.html());
+            };
+            var setterFunction = function (val)
+            {
+                return element.html($.trim(val));
+            }
+
+            if (textarea) {
+                return this.createTextareaInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText);
+            }
+            else {
+                return this.createTextInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm);
+            }
         },
 
         /**
@@ -690,16 +697,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
             if (labelText) {
                 //TODO the name is never used as Id (only as common name for all radio buttons), maybe add it somewhere?
-                var label = ($('<label for="'+name+'">' + labelText + '</label>')).appendTo(formGroup);
+                var label = ($('<label for="' + name + '">' + labelText + '</label>')).appendTo(formGroup);
             }
 
             var radioGroup = $('<div class="' + BlocksConstants.RADIO_GROUP_CLASS + '" />').appendTo(formGroup);
 
-            var initStateCallback = function(value)
+            var initStateCallback = function (value)
             {
                 var retVal = false;
 
-                if (initialValue && value==initialValue) {
+                if (initialValue && value == initialValue) {
                     retVal = true;
                 }
 
@@ -969,7 +976,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //first move the sidebar, then load it, because we don't have a watcher that updates the components-size
                     // (was problematic with the statusbar elements)
                     if (windowWidth / 2 > sidebarWidth) {
-                        Sidebar.animateSidebarWidth(windowWidth / 2, function(){
+                        Sidebar.animateSidebarWidth(windowWidth / 2, function ()
+                        {
                             Sidebar.loadFinder(finderOptions);
                         });
                     }
@@ -1186,6 +1194,18 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return formGroup;
         },
 
+        /**
+         * Create an autocomplete input box that communicates with a configurable backend endpoint for supplying values.
+         *
+         * @param element
+         * @param contentAttr
+         * @param formGroupExtraClass
+         * @param acEndpointOptions
+         * @param labelText
+         * @param initialValue
+         * @param setterFunction
+         * @returns {*|jQuery|HTMLElement}
+         */
         createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acEndpointOptions, labelText, initialValue, setterFunction)
         {
             var id = Commons.generateId();
@@ -1252,7 +1272,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             ////init and attach the change listener
 
             var firstValue = undefined;
-            if (typeof initialValue !== typeof undefined && initialValue!==null) {
+            if (typeof initialValue !== typeof undefined && initialValue !== null) {
                 firstValue = initialValue;
             }
             else {
@@ -1285,6 +1305,60 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 //signal the setter function to reset the tag (with data==null)
                 setterFunction(element, null);
             }
+
+            return formGroup;
+        },
+
+        /**
+         * Create a text area input box
+         *
+         * getterFunction: the function to use to get the value we're changing
+         * setterFunction: the function to use to set the value we're changing
+         * labelText: name to show as label
+         * placeholderText: string to show as placeholder
+         * numRows: the number of rows to show (eg. the height of the textarea)
+         **/
+        createTextareaInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, numRows)
+        {
+            var id = Commons.generateId();
+
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+            var inputGroupText = $('<div class="input-group"></div>').appendTo(formGroup);
+            var input = $('<textarea id="' + id + '" rows="' + (numRows ? numRows : 5) + '" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroupText);
+
+            var oldVal = '';
+            if (getterFunction) {
+                oldVal = getterFunction();
+                if (!oldVal) {
+                    oldVal = '';
+                }
+            }
+            input.val(oldVal);
+            input.change();
+
+            var inputActions = $('<div class="input-group actions"/>').appendTo(formGroup);
+
+            var applyBtn = $('<a title="Apply value" class="btn btn-sm btn-primary"><i class="fa fa-check"/> Apply</a>').appendTo(inputActions);
+            applyBtn.click(function (e)
+            {
+                if (setterFunction) {
+                    setterFunction(input.val());
+                }
+            });
+            inputActions.append('&#160;');
+
+            //append the clear button
+            var clearBtn = $('<a title="Clear value" class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> Clear</a>').appendTo(inputActions);
+            clearBtn.click(function (e)
+            {
+                input.val('');
+                input.change();
+                input.focus();
+            });
+            inputActions.append('&#160;');
 
             return formGroup;
         },

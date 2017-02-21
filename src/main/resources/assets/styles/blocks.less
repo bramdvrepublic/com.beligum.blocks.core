@@ -131,6 +131,10 @@ html {
 body.@{BODY_EDIT_MODE_CLASS} {
   //this will allow the sidebar and the page wrapper scroll independently from the body (now done in js code)
   //overflow: hidden;
+
+  iframe {
+    pointer-events: none;
+  }
 }
 
 .@{BLOCK_OVERLAYS_WRAPPER_CLASS} {
@@ -346,17 +350,9 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
   user-select: none;
 }
 
-iframe {
-  pointer-events: none;
-}
-
 // force for height wrapping divs
 .image {
   display: inline-block;
-}
-
-iframe.edit {
-  pointer-events: auto;
 }
 
 .blocks-resizing {
