@@ -1,5 +1,6 @@
 package com.beligum.blocks.rdf.sources;
 
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.Source;
@@ -9,6 +10,7 @@ import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
+import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
@@ -20,6 +22,7 @@ import org.jsoup.select.Elements;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.Set;
 
 /**
  * Created by bram on 1/23/16.
@@ -44,6 +47,9 @@ public abstract class PageSource extends AbstractSource implements Source
     public static final String HTML_TITLE_ELEMENT = "title";
 
     private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
+
+    //these are the supported query params (all other ones will be removed from the URI during postparse)
+    private static final Set<String> SUPPORTED_PARAMS = Sets.newHashSet(I18nFactory.LANG_QUERY_PARAM);
 
     //-----VARIABLES-----
     protected Document document;
@@ -75,6 +81,8 @@ public abstract class PageSource extends AbstractSource implements Source
         finally {
             IOUtils.closeQuietly(is);
         }
+
+        this.postparseUri();
     }
     protected PageSource(Source source) throws IOException
     {
@@ -84,6 +92,8 @@ public abstract class PageSource extends AbstractSource implements Source
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
         }
+
+        this.postparseUri();
     }
     protected PageSource(URI uri, InputStream html) throws IOException
     {
@@ -91,13 +101,15 @@ public abstract class PageSource extends AbstractSource implements Source
         super(preparseUri(uri), MimeTypes.HTML, null);
 
         this.parseHtml(html);
+
+        this.postparseUri();
     }
     protected PageSource(URI uri)
     {
         //note: the language will be set in parseHtml()
         super(preparseUri(uri), MimeTypes.HTML, null);
 
-        //Note: subclass must call parseHtml() manually
+        //Note: subclass must call parseHtml() and postparseUri() manually
     }
 
     //-----PUBLIC METHODS-----
@@ -182,6 +194,21 @@ public abstract class PageSource extends AbstractSource implements Source
 
             el.html(html);
         }
+    }
+    protected void postparseUri()
+    {
+//        //remove all unsupported query params from the URI
+//        URI uri = this.getUri();
+//
+//        UriBuilder uriBuilder = UriBuilder.fromUri(uri);
+//        MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(uri);
+//        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
+//            if (!SUPPORTED_PARAMS.contains(param.getKey())) {
+//                uriBuilder.replaceQueryParam(param.getKey(), null);
+//            }
+//        }
+//
+//        this.uri = uriBuilder.build();
     }
 
     //-----PRIVATE METHODS-----

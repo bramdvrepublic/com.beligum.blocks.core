@@ -6,6 +6,7 @@ import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -36,7 +37,6 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     protected static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
-    protected Locale language;
     protected URI canonicalAddress;
 
     protected URI cachedAbsoluteAddress;
@@ -181,7 +181,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //explicitly read the model from disk so we can use this stand alone
         Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
         try (InputStream is = this.getFileContext().open(this.getRdfExportFile())) {
-            retVal = rdfImporter.importDocument(is, this.getPublicRelativeAddress());
+            //note that all RDF needs absolute addresses
+            retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
         }
 
         return retVal;
@@ -229,7 +230,14 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
 
         //strip off the language and save it in a local variable
         //note that this will be null if the uri doesn't contain any language; that's ok for now
-        this.language = R.i18n().getUrlLocale(uri, uriBuilder, null);
+        Locale urlLang = R.i18n().getUrlLocale(uri, uriBuilder, null);
+        //let's not overwrite a possible initialized this.language with null
+        if (urlLang != null) {
+            if (this.language != null) {
+                Logger.warn("Overwriting the language of page '" + uri + "' with a new value '" + urlLang + "', this is probably a mistake.");
+            }
+            this.language = urlLang;
+        }
 
         //we strip off all extra parameters: for now we don't support query (or other) parameters during page requests,
         // mainly because they don't map well to file/folder names

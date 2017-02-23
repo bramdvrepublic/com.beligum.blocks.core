@@ -82,7 +82,8 @@ public class ApplicationEndpoint
         }
 
         //security; rebuild the url instead of blindly accepting what comes in
-        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(path)
+        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain())
+                                     .replacePath(path)
                                      //note: the randomURL doesn't include the query params; get them from the requestContext
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery())
                                      .build();

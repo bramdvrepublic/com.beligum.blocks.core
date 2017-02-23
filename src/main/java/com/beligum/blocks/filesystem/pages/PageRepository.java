@@ -242,14 +242,14 @@ public class PageRepository extends AbstractResourceRepository
                 //we're overwriting; make an entry in the history folder (because it won't be deleted; allows us to implement undo later on)
                 rwPage.writeHistoryEntry(rwPage);
 
+                //reindex the page (not that we need to call this before the filesystem delete() below because it might want to read in some file structures during unindex)
+                this.unindex(rwPage, pageIndexer, triplestoreIndexer);
+
                 //delete the necessary file structures
                 rwPage.delete();
 
                 //write out a log entry that the page was deleted
                 rwPage.writeLogEntry(editor, PageLogEntry.Action.DELETE);
-
-                //reindex the page
-                this.unindex(rwPage, pageIndexer, triplestoreIndexer);
 
                 //expire the cache
                 this.expire(rwPage);

@@ -2,7 +2,6 @@ package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.base.resources.ifaces.Source;
 import com.beligum.blocks.rdf.importers.semargl.SesameRDFaParser;
 import org.openrdf.model.Model;
 import org.openrdf.model.impl.LinkedHashModel;
@@ -34,21 +33,10 @@ public class SesameImporter extends AbstractImporter
 
     //-----PUBLIC METHODS-----
     @Override
-    public Model importDocument(Source source) throws IOException
-    {
-        try (InputStream is = source.newInputStream()) {
-            return this.parseInputStream(is, source.getUri());
-        }
-        catch (Exception e) {
-            //when an exception is thrown, it's very handy to have the html source code, so add it to the exception
-            throw new IOException("Exception caught while parsing RDF import source; " + source.toString(), e);
-        }
-    }
-    @Override
-    public Model importDocument(InputStream inputStream, URI baseUri) throws IOException
+    public Model importDocument(URI baseUri, InputStream inputStream) throws IOException
     {
         try {
-            return this.parseInputStream(inputStream, baseUri);
+            return this.parseInputStream(baseUri, inputStream);
         }
         catch (Exception e) {
             throw new IOException("Exception caught while parsing RDF import file; " + baseUri, e);
@@ -58,7 +46,7 @@ public class SesameImporter extends AbstractImporter
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private Model parseInputStream(InputStream is, URI baseURI) throws IOException, RDFParseException, RDFHandlerException
+    private Model parseInputStream(URI baseURI, InputStream is) throws IOException, RDFParseException, RDFHandlerException
     {
         // we needed to re-implement the SesameRDFaParser to make it work with Sesame 4;
         // so make an exception if we're using RDFa (so we don't have to create a service loader)

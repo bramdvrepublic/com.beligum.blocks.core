@@ -1,6 +1,5 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.resources.ifaces.Source;
 import org.openrdf.model.Model;
 
 import java.io.IOException;
@@ -19,8 +18,7 @@ public interface Importer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    Model importDocument(Source source) throws IOException;
-    Model importDocument(InputStream inputStream, URI baseUri) throws IOException;
+    Model importDocument(URI baseUri, InputStream inputStream) throws IOException;
 
     //-----PROTECTED METHODS-----
 

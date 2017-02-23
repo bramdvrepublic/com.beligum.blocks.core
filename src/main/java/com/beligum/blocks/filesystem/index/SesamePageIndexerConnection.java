@@ -22,9 +22,7 @@ import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
-import org.openrdf.model.Value;
+import org.openrdf.model.*;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.QueryResults;
 import org.openrdf.query.TupleQuery;
@@ -155,8 +153,15 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertTransaction();
 
-        //TODO tricky stuff, what do we delete?
-        //First idea: we should delete all statements in the page, excluding the statements that are present in translations...
+        //we'll be deleting all the triples in the model of the page,
+        //except the ones that are present in another language.
+        Model pageModel = page.readRdfModel();
+        Map<Locale, Page> translations = page.getTranslations();
+        for (Page p : translations.values()) {
+            pageModel.removeAll(p.readRdfModel());
+        }
+
+        this.connection.remove(pageModel);
     }
     @Override
     public void update(Page page) throws IOException
@@ -440,6 +445,35 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         }
 
         return retVal;
+    }
+    /**
+     * Note: untested (saved for future reference)
+     */
+    private Model queryModel(Page page) throws IOException
+    {
+        IRI publicPageIri = this.connection.getValueFactory().createIRI(page.getPublicAbsoluteAddress().toString());
+        //note that RDF requires absolute urls
+        URI resourceUri = URI.create(page.createAnalyzer().getHtmlAbout().value);
+        if (!resourceUri.isAbsolute()) {
+            resourceUri = R.configuration().getSiteDomain().resolve(resourceUri);
+        }
+        IRI resourceIri = this.connection.getValueFactory().createIRI(resourceUri.toString());
+
+        Model model = QueryResults.asModel(this.connection.getStatements(publicPageIri, null, null));
+        model.addAll(QueryResults.asModel(this.connection.getStatements(resourceIri, null, null)));
+
+        Iterator<Statement> iter = model.iterator();
+        while (iter.hasNext()) {
+            Statement stmt = iter.next();
+            if (stmt.getObject() instanceof Literal) {
+                Literal literal = (Literal) stmt.getObject();
+                if (literal.getLanguage().isPresent() && !literal.getLanguage().get().equals(page.getLanguage().getLanguage())) {
+                    iter.remove();
+                }
+            }
+        }
+
+        return model;
     }
 
     //-----INNER CLASSES-----

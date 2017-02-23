@@ -68,9 +68,11 @@ public class ReadWritePage extends DefaultPage
         }
 
         //parse, generate and save the RDF model from the RDFa in the HTML page
-        Model rdfModel = this.createImporter(Format.RDFA).importDocument(source);
-        try (OutputStream os = this.getFileContext().create(this.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-            this.createExporter(this.getRdfExportFileFormat()).exportModel(rdfModel, os);
+        try (InputStream is = source.newInputStream()) {
+            Model rdfModel = this.createImporter(Format.RDFA).importDocument(this.getPublicAbsoluteAddress(), is);
+            try (OutputStream os = this.getFileContext().create(this.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                this.createExporter(this.getRdfExportFileFormat()).exportModel(rdfModel, os);
+            }
         }
 
         //if all went well, we can update the hash file
