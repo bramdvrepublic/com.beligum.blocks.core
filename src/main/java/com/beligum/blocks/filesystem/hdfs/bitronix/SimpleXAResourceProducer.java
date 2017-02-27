@@ -70,7 +70,7 @@ public class SimpleXAResourceProducer extends ResourceBean implements CustomBitr
     @Override
     public void endRecovery() throws RecoveryException
     {
-        // ?
+        //?
     }
     @Override
     public void setFailed(boolean failed)
@@ -91,7 +91,7 @@ public class SimpleXAResourceProducer extends ResourceBean implements CustomBitr
     @Override
     public void close()
     {
-        if (this.resourceHolders!=null) {
+        if (this.resourceHolders != null) {
             this.resourceHolders.clear();
             this.resourceHolders = null;
         }
