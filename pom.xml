@@ -17,7 +17,6 @@
     </parent>
 
     <properties>
-
         <git.url.repo.name>${git.url.repo.prefix}blocks.core</git.url.repo.name>
 
         <hadoop.hdfs.version>2.7.1</hadoop.hdfs.version>
