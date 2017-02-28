@@ -183,7 +183,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
         StringBuilder queryBuilder = new StringBuilder();
-        final String searchPrefix = "templates/search";
+        final String searchPrefix = "search";
         queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
         queryBuilder.append("PREFIX ").append(searchPrefix).append(": <").append(LuceneSailSchema.NAMESPACE).append("> \n");
         queryBuilder.append("\n");
@@ -211,7 +211,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         }
 
         //---triple selection---
-        queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?p ?o").append(" .\n");
+        queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" .\n");
 
         //---Filters---
         if (fieldValues != null) {
@@ -244,15 +244,16 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //---Paging---
         queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
 
-        return this.search(queryBuilder.toString(), type, language);
+        return this.search(queryBuilder.toString(), language);
     }
     @Override
-    public IndexSearchResult search(String sparqlQuery, RdfClass type, Locale language) throws IOException
+    public IndexSearchResult search(String sparqlQuery, Locale language) throws IOException
     {
         long searchStart = System.currentTimeMillis();
         long sparqlTime = 0;
         long parseTime = 0;
         long luceneTime = 0;
+        long end = 0;
 
         IndexSearchResult retVal = new IndexSearchResult(new ArrayList<>());
 
@@ -277,7 +278,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //Connect with the page indexer here so we can re-use the connection for all results
         LuceneQueryConnection luceneConnection = StorageFactory.getMainPageQueryConnection();
 
-        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, siteDomain);
+        TupleQuery query = this.query(sparqlQuery);
         try (TupleQueryResult result = query.evaluate()) {
             sparqlTime = System.currentTimeMillis();
 
@@ -351,16 +352,22 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 }
             }
         }
-        luceneTime = System.currentTimeMillis();
 
-        long end = System.currentTimeMillis();
-        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
-        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
-        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
-        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
-        Logger.info("\n");
+        luceneTime = System.currentTimeMillis();
+        end = System.currentTimeMillis();
+
+//        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
+//        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
+//        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
+//        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
+//        Logger.info("\n");
 
         return retVal;
+    }
+    @Override
+    public TupleQuery query(String sparqlQuery)
+    {
+        return this.connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
     }
     @Override
     protected void begin() throws IOException

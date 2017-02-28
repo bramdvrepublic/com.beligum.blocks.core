@@ -6,6 +6,11 @@ package com.beligum.blocks.rdf.ifaces;
 public interface RdfValueResource extends RdfResource
 {
     /**
+     * Returns the name of this literal or URI value
+     */
+    String getName();
+
+    /**
      * Returns the string-representation of this literal or URI value.
      */
     String getValue();

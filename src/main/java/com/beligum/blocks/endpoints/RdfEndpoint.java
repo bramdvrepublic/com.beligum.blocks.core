@@ -34,14 +34,14 @@ public class RdfEndpoint
 {
     //-----CONSTANTS-----
     //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
-    public static final RdfClass SEARCH_ALL = new RdfClassImpl("All",
-                                                               null,
-                                                               core.Entries.searchClassAllTitle,
-                                                               core.Entries.searchClassAllLabel,
-                                                               new URI[] {},
-                                                               false,
-                                                               new SettingsQueryEndpoint(),
-                                                               null);
+    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
+                                                                null,
+                                                                core.Entries.searchClassAllTitle,
+                                                                core.Entries.searchClassAllLabel,
+                                                                new URI[] {},
+                                                                false,
+                                                                new SettingsQueryEndpoint(),
+                                                                null);
 
     //-----VARIABLES-----
 
@@ -98,7 +98,7 @@ public class RdfEndpoint
         //support a search-all-types-query when the type is empty
         RdfClass rdfClass = null;
         if (resourceTypeCurie == null || StringUtils.isEmpty(resourceTypeCurie.toString())) {
-            rdfClass = SEARCH_ALL;
+            rdfClass = ALL_CLASSES;
         }
         else {
             rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
@@ -112,7 +112,7 @@ public class RdfEndpoint
                     queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
                 }
 
-                retVal = endpoint.search(rdfClass == SEARCH_ALL ? null : rdfClass, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
+                retVal = endpoint.search(rdfClass == ALL_CLASSES ? null : rdfClass, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
             }
         }
         else {
@@ -149,17 +149,6 @@ public class RdfEndpoint
         else {
             return Response.ok(retVal).build();
         }
-    }
-
-    @GET
-    @Path("/search/classes/")
-    @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getSearchClasses() throws IOException
-    {
-        Set<RdfClass> retVal = RdfFactory.getClasses();
-        retVal.add(SEARCH_ALL);
-        return Response.ok(retVal).build();
     }
 
     //-----PROTECTED METHODS-----

@@ -4,6 +4,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import org.openrdf.query.TupleQuery;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -41,7 +42,12 @@ public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryCo
     /**
      * Search the triple store with the specified raw Sparql query
      */
-    IndexSearchResult search(String sparqlQuery, RdfClass type, Locale language) throws IOException;
+    IndexSearchResult search(String sparqlQuery, Locale language) throws IOException;
+
+    /**
+     * Build a low-level query object from the supplied SPARQL query
+     */
+    TupleQuery query(String sparqlQuery);
 
     //-----PROTECTED METHODS-----
 

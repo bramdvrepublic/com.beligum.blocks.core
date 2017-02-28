@@ -13,6 +13,7 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private String name;
     private String value;
     private RdfClass dataType;
 
@@ -26,6 +27,7 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
     {
         super(isPublic);
 
+        this.name = name;
         this.value = value;
         this.dataType = dataType;
 
@@ -34,6 +36,11 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public String getName()
+    {
+        return name;
+    }
     @Override
     public String getValue()
     {

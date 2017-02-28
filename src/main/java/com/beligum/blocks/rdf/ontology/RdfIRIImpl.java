@@ -15,6 +15,7 @@ public class RdfIRIImpl extends AbstractRdfResourceImpl implements RdfIRI
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private String name;
     private URI value;
     private RdfClass dataType;
 
@@ -28,6 +29,7 @@ public class RdfIRIImpl extends AbstractRdfResourceImpl implements RdfIRI
     {
         super(isPublic);
 
+        this.name = name;
         this.value = value;
         this.dataType = dataType;
 
@@ -37,6 +39,11 @@ public class RdfIRIImpl extends AbstractRdfResourceImpl implements RdfIRI
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public String getName()
+    {
+        return name;
+    }
     @Override
     public String getValue()
     {
