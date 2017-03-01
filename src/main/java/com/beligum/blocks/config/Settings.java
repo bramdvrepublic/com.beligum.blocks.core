@@ -13,9 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import javax.transaction.TransactionManager;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +31,6 @@ public class Settings
     private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
     private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder().build();
 
-    private static final String CONTEXT_LOCAL_ROOT_DIR_KEY = "blocks.core.context.local.root-dir";
     private static final String CONTEXT_DEFAULT_PAGES_DIR = "pages";
     //this constant wil be used from the blocks-media module, but is defined here to group the subdirs together a little bit...
     public static final String CONTEXT_DEFAULT_MEDIA_DIR = "media";
@@ -53,7 +49,6 @@ public class Settings
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
 
     private static Settings instance;
-    private URI cachedContextLocalRootDir;
     private Boolean cachedDeleteLocksOnStartup;
     private URI cachedRdfOntologyUri;
     private boolean triedRdfOntologyUri;
@@ -89,54 +84,6 @@ public class Settings
     public boolean hasBlocksCoreConfig()
     {
         return R.configuration().getMaxIndex("blocks.core") >= 0;
-    }
-    public URI getLocalContextRootDir()
-    {
-        if (this.cachedContextLocalRootDir == null) {
-            String dir = R.configuration().getString(CONTEXT_LOCAL_ROOT_DIR_KEY, null);
-            if (!StringUtils.isEmpty(dir)) {
-                //this is used to resolve files on, so make sure it's always a formal directory
-                if (!dir.endsWith("/")) {
-                    dir += "/";
-                }
-
-                this.cachedContextLocalRootDir = URI.create(dir);
-
-                //make sure we have a schema
-                if (StringUtils.isEmpty(this.cachedContextLocalRootDir.getScheme())) {
-                    //setting-name says we're in local context, so add the default local "file" schema prefix
-                    this.cachedContextLocalRootDir = URI.create("file" + "://" + this.cachedContextLocalRootDir.toString());
-                }
-            }
-
-            if (this.cachedContextLocalRootDir == null) {
-                throw new RuntimeException("Unable to find the context root dir setting (" + CONTEXT_LOCAL_ROOT_DIR_KEY + "), can't continue");
-            }
-        }
-
-        return this.cachedContextLocalRootDir;
-    }
-    public URI getLocalContextSubdir(String subdirName, boolean checkIfExists)
-    {
-        if (!subdirName.endsWith("/")) {
-            subdirName = subdirName + "/";
-        }
-
-        URI retVal = Settings.instance().getLocalContextRootDir().resolve(subdirName);
-
-        if (checkIfExists) {
-            Path localPagesRoot = Paths.get(retVal);
-            if (!Files.exists(localPagesRoot)) {
-                try {
-                    Files.createDirectories(localPagesRoot);
-                }
-                catch (Exception e) {
-                    throw new RuntimeException("Error while creating the pages root dir, can't continue; " + localPagesRoot, e);
-                }
-            }
-        }
-
-        return retVal;
     }
     /**
      * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
@@ -218,7 +165,7 @@ public class Settings
     }
     public URI getPagesRootPath()
     {
-        return getLocalContextSubdir(CONTEXT_DEFAULT_PAGES_DIR, true);
+        return R.configuration().getContextConfig().resolveLocalRoot(CONTEXT_DEFAULT_PAGES_DIR, true);
     }
     public URI getPagesStorePath()
     {

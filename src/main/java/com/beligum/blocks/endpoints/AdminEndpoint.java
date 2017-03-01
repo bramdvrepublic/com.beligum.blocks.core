@@ -16,6 +16,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
+import static gen.com.beligum.blocks.core.messages.blocks.core.Entries.templateResetSuccess;
+
 @Path("/admin")
 @RequiresRoles(PermissionsConfigurator.ADMIN_ROLE_NAME)
 public class AdminEndpoint
@@ -46,7 +48,7 @@ public class AdminEndpoint
                 //we might as well load it immediately; easier for debugging
                 TemplateCache.instance();
 
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "Template cache reset successfully"));
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, templateResetSuccess));
 
                 break;
 

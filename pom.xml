@@ -44,12 +44,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.4.0</version>
+            <version>0.4.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.1.17</version>
+            <version>0.1.18-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>

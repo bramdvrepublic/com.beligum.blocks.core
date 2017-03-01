@@ -25,10 +25,6 @@ public class BlocksSystemPropertyFactory implements SystemPropertyFactory
 
         Settings settings = Settings.instance();
 
-        //we'll instruct the JVM that our temp dir is located in the tmp folder of our local context dir
-        //(and create it if it doesn't exist)
-        retVal.put("java.io.tmpdir", settings.getLocalContextSubdir("tmp", true).getPath());
-
         //If we're using a Bitronix transaction manager, we must add some extra properties to specify the location of the
         //tx log files and maybe specify the custom timeout value.
 
