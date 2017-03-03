@@ -9,7 +9,6 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
     translations.click(function (e)
     {
         var link = $(this);
-
         NewPage.handleSelect(null, link.attr(BlocksConstants.NEW_PAGE_TRANSLATION_ATTR), null);
     });
 

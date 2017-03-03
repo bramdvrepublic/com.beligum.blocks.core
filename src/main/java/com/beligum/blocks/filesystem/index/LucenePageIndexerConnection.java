@@ -343,6 +343,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         final java.nio.file.Path retVal = Paths.get(Settings.instance().getPageMainIndexFolder());
 
+        boolean bootstrapFolder = false;
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
             if (!Files.exists(retVal)) {
                 Files.createDirectories(retVal);
@@ -351,8 +352,17 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                 throw new IOException("Lucene index directory is not writable, please check the path; " + retVal);
             }
 
+            //we can't bootstrap in here or we'll have endless recursion
+            bootstrapFolder = true;
+
             //we built it at least once, save that for later checking
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
+        }
+
+        if (bootstrapFolder) {
+            try (IndexWriter indexWriter = this.buildNewLuceneIndexWriter()) {
+                //just open and close the writer once, else we'll get a "no segments* file found" exception on first search
+            }
         }
 
         return retVal;
