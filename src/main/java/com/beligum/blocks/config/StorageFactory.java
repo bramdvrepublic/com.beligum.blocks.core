@@ -361,7 +361,7 @@ public class StorageFactory
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
             FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
-            //boot the XADisk instance too (probably still null here, good place to test them together)
+            //boot the XADisk instance too (probably still null here, good place to doIsValid them together)
             getPageStoreTransactionManager();
 
             //create the root folder if needed

@@ -1,14 +1,15 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.blocks.security.Permissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
+import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
+
 @Path("debug")
-@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+@RequiresRoles(ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
     @Path("sparql")

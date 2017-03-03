@@ -87,7 +87,7 @@ public class TagTemplate extends HtmlTemplate
 
         //same for the suffix but in reverse order
         //Note: I don't really know if we can call suffix.append(superTemplate.getSuffixHtml()) here,
-        // because I think this is never used, so I can't really test, but as far as I know, we never (as with the prefix)
+        // because I think this is never used, so I can't really doIsValid, but as far as I know, we never (as with the prefix)
         // mess with the prefix html by hand, so I think it's safe to call it.
         StringBuilder suffix = new StringBuilder();
         suffix.append(documentSource.subSequence(templateTag.getEnd(), documentSource.length()));

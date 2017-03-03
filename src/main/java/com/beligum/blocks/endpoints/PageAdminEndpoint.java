@@ -46,13 +46,14 @@ import java.util.concurrent.Executors;
 
 import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
 import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
+import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
  * Created by bram on 2/10/16.
  */
 @Path("/blocks/admin/page")
-@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+@RequiresRoles(ADMIN_ROLE_NAME)
 public class PageAdminEndpoint
 {
     //-----CONSTANTS-----

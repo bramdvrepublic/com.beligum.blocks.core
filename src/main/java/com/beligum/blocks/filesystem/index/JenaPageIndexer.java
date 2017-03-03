@@ -197,7 +197,7 @@
 //                EntityDefinition entDef = new EntityDefinition("uri", "text");
 //                entDef.setPrimaryPredicate(RDFS.label.asNode());
 //
-//                Directory luceneDir = new SimpleFSDirectory(new File("/home/bram/test/triplestore_index/"));
+//                Directory luceneDir = new SimpleFSDirectory(new File("/home/bram/doIsValid/triplestore_index/"));
 //
 //                Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 //                Dataset indexedDataset = TextDatasetFactory.createLucene(dataset, luceneDir, entDef, analyzer);

@@ -329,7 +329,7 @@ public abstract class HtmlTemplate
     public static boolean testResourceModeScope(ResourceScopeMode mode)
     {
         switch (mode) {
-            // if you specifically set the mode flag, test it
+            // if you specifically set the mode flag, doIsValid it
             case edit:
                 return mode.equals(R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE));
 
@@ -348,7 +348,7 @@ public abstract class HtmlTemplate
         return startTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null || startTag.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
     }
     /**
-     * Same test as the method above, but with a JSoup element
+     * Same doIsValid as the method above, but with a JSoup element
      */
     public static boolean isPropertyTag(org.jsoup.nodes.Element element)
     {
@@ -384,7 +384,7 @@ public abstract class HtmlTemplate
         return retVal;
     }
     /**
-     * Same test as the method above, but with a JSoup element
+     * Same doIsValid as the method above, but with a JSoup element
      */
     public static String getPropertyAttribute(org.jsoup.nodes.Element element)
     {
@@ -425,7 +425,7 @@ public abstract class HtmlTemplate
         return retVal;
     }
     /**
-     * Same test as the method above, but with a JSoup element
+     * Same doIsValid as the method above, but with a JSoup element
      */
     public static String getFirstPropertyInside(org.jsoup.nodes.Element element)
     {
@@ -518,7 +518,7 @@ public abstract class HtmlTemplate
 
     /**
      * @return the name of the file, without the file extension, where parent directories are represented by dashes.
-     * Eg. /blocks/test/tag.html will have the name "blocks-test-tag" and result in tags like <blocks-test-tag></blocks-test-tag>
+     * Eg. /blocks/doIsValid/tag.html will have the name "blocks-doIsValid-tag" and result in tags like <blocks-doIsValid-tag></blocks-doIsValid-tag>
      * Please note that the HTML spec forces you to include at lease one dash in custom tag names to ensure their future tag names.
      */
     public String getTemplateName()

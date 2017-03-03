@@ -1,6 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.validation.messages.DefaultFeedbackMessage;
 import com.beligum.base.validation.messages.FeedbackMessage;
@@ -16,10 +15,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
+import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 import static gen.com.beligum.blocks.core.messages.blocks.core.Entries.templateResetSuccess;
 
 @Path("/admin")
-@RequiresRoles(PermissionsConfigurator.ADMIN_ROLE_NAME)
+@RequiresRoles(ADMIN_ROLE_NAME)
 public class AdminEndpoint
 {
     private static final String RESET_TEMPLATES = "templates";

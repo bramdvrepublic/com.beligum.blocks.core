@@ -182,7 +182,7 @@ public class HtmlNormalizer
     //                            URI uri = URI.create(attr.getValue());
     //                            //if the url is relative to this domain or is abolute and inside this domain, store as internal ref
     //                            //note that we need to include the port in the check (authority instead of host)
-    //                            //TODO: note that, for now, this will also contain garbage URI's that passed the create() test above like "IE=edge"
+    //                            //TODO: note that, for now, this will also contain garbage URI's that passed the create() doIsValid above like "IE=edge"
     //                            if (StringUtils.isEmpty(uri.getAuthority()) || SITE_DOMAINS.contains(uri.getAuthority())) {
     //                                this.internalRefs.put(uri, new ReferenceRef(attr));
     //                            }

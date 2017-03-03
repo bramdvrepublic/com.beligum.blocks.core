@@ -74,7 +74,7 @@ public class ApplicationEndpoint
     @GET
     public Response getPage(@PathParam("path") String path, @HeaderParam(HttpHeaders.REFERER) String referer) throws Exception
     {
-        Response.ResponseBuilder retVal = null;
+        Response.ResponseBuilder retValBuilder = null;
 
         //make sure the path always starts with a slash (eg. not the case when this endpoint matched the root ("") path)
         if (!path.startsWith("/")) {
@@ -112,7 +112,7 @@ public class ApplicationEndpoint
 
         //if we found an external redirect URL, redirect there, otherwise continue
         if (externalRedirectUri != null) {
-            retVal = Response.seeOther(externalRedirectUri);
+            retValBuilder = Response.seeOther(externalRedirectUri);
         }
         else {
             // Since we allow the user to create pretty url's, it's mime type will not always be clear, so pass it on explicitly
@@ -128,7 +128,7 @@ public class ApplicationEndpoint
                     this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
                 }
 
-                retVal = Response.ok(template);
+                retValBuilder = Response.ok(template);
             }
 
             // General remark: we force the page to be created to have a language using redirects. It's not strictly necessary,
@@ -172,7 +172,7 @@ public class ApplicationEndpoint
 
                 if (selectedEntry != null) {
                     //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                    retVal = Response.seeOther(URI.create(selectedEntry.getId()));
+                    retValBuilder = Response.seeOther(URI.create(selectedEntry.getId()));
                 }
                 //here, we decided the page really doesn't exist and we'll try to do something about that
                 else {
@@ -205,12 +205,12 @@ public class ApplicationEndpoint
                         selectedEntry = PageIndexEntry.selectBestForLanguage(results, optimalLocale);
                         if (selectedEntry != null) {
                             //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                            retVal = Response.seeOther(URI.create(selectedEntry.getId()));
+                            retValBuilder = Response.seeOther(URI.create(selectedEntry.getId()));
                         }
                     }
 
                     //OPTION 3: if we have permission to create a new page, do it, otherwise, the page doesn't exist
-                    if (retVal == null) {
+                    if (retValBuilder == null) {
 
                         //if we reach this stage, we're 'deep enough' in the processing algo to assume there's a language present in the requested URI
                         // so it's a good time to demand for a language or redirect away otherwise (in which case this method will be called again)
@@ -253,16 +253,16 @@ public class ApplicationEndpoint
                                 //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
                                 //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
                                 if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
-                                    retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
+                                    retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
                                 }
                                 else {
-                                    retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/" + redirectLocale.getLanguage() + requestedUri.getPath()).build());
+                                    retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/" + redirectLocale.getLanguage() + requestedUri.getPath()).build());
                                 }
                             }
                         }
 
                         //this means we haven't redirected away to an address with a language
-                        if (retVal == null) {
+                        if (retValBuilder == null) {
                             if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                                 throw new NotFoundException("Can't find this page and you have no rights to create it; " + path);
                             }
@@ -305,7 +305,7 @@ public class ApplicationEndpoint
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
 
-                                        retVal = Response.ok(newPageInstance);
+                                        retValBuilder = Response.ok(newPageInstance);
                                     }
                                     else {
                                         throw new InternalServerErrorException("Requested to create a new page (" + requestedUri + ") with an invalid page template name; " + newPageTemplateName);
@@ -347,7 +347,7 @@ public class ApplicationEndpoint
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
 
-                                        retVal = Response.ok(template);
+                                        retValBuilder = Response.ok(template);
                                     }
                                     else {
                                         throw new InternalServerErrorException("Requested to create a new page (" + requestedUri + ") with an unknown page to copy from; " + newPageCopyUrl);
@@ -363,7 +363,7 @@ public class ApplicationEndpoint
 
                                     //OPTION 6: URL is not safe: fix it and redirect
                                     if (!path.equals(safePage)) {
-                                        retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath(safePage).build());
+                                        retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath(safePage).build());
                                     }
                                     //OPTION 7: show the create-new page list
                                     else {
@@ -378,7 +378,7 @@ public class ApplicationEndpoint
                                         //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.create, newPageTemplateList);
 
-                                        retVal = Response.ok(newPageTemplateList);
+                                        retValBuilder = Response.ok(newPageTemplateList);
                                     }
                                 }
                             }
@@ -388,7 +388,15 @@ public class ApplicationEndpoint
             }
         }
 
-        return retVal.build();
+        Response retVal = retValBuilder.build();
+
+        //if we're redirecting straight away, but we have some entities in the flash cache, we'll propagate them again,
+        //otherwise we would lose eg. feedback messages (eg. when a successful login redirects automatically from "/" to "/en/")
+        if (retVal.getStatus() == Response.Status.SEE_OTHER.getStatusCode() && R.cacheManager().getFlashCache().getTransferredEntries() != null) {
+            R.cacheManager().getFlashCache().putAll(R.cacheManager().getFlashCache().getTransferredEntries());
+        }
+
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----
@@ -396,7 +404,7 @@ public class ApplicationEndpoint
     //-----PRIVATE METHODS-----
     private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, Template template)
     {
-        //this one is used by HtmlParser to test if we need to include certain tags
+        //this one is used by HtmlParser to doIsValid if we need to include certain tags
         R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
 
         //for velocity templates

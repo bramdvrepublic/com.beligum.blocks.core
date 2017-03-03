@@ -1,21 +1,27 @@
 #if($FEEDBACK_MESSAGES)
-<div class="container-fluid">
+<div class="container-fluid $CONSTANTS.blocks.core.FEEDBACK_CONTAINER_CLASS">
     <div class="row">
-        <div class="col-md-8 col-md-offset-2 feedback-messages">
+        <div class="col-md-8 col-md-offset-2">
             #foreach($msg in $FEEDBACK_MESSAGES)
-                <div class="alert alert-$msg.level.styleClass alert-dismissible" role="alert">
-                    $MESSAGES.getMessage($msg.messageTemplate, $msg.message)
+                <div class="alert alert-dismissible fade #if($foreach.first)in#end $msg.level.styleClass" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <p>$msg.message</p>
                 </div>
             #end
         </div>
     </div>
 </div>
 #elseif($feedbackMessage)
-<div class="container-fluid">
+<div class="container-fluid $CONSTANTS.blocks.core.FEEDBACK_CONTAINER_CLASS">
     <div class="row">
-        <div class="col-md-8 col-md-offset-2 feedback-messages">
-            <div class="alert alert-$feedbackMessage.level.styleClass alert-dismissible" role="alert">
-                $feedbackMessage.message
+        <div class="col-md-8 col-md-offset-2">
+            <div class="alert alert-dismissible fade in $feedbackMessage.level.styleClass" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <p>$feedbackMessage.message</p>
             </div>
         </div>
     </div>

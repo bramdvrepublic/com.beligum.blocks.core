@@ -10,7 +10,6 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.RdfClassImpl;
 import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.SettingsQueryEndpoint;
-import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
+import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
@@ -51,7 +51,7 @@ public class RdfEndpoint
     @GET
     @Path("/classes/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    @RequiresRoles(ADMIN_ROLE_NAME)
     public Response getClasses() throws IOException
     {
         return Response.ok(RdfFactory.getClasses()).build();
@@ -60,7 +60,7 @@ public class RdfEndpoint
     @GET
     @Path("/properties/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    @RequiresRoles(ADMIN_ROLE_NAME)
     public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
         Set<RdfProperty> retVal = null;
@@ -88,7 +88,7 @@ public class RdfEndpoint
     @GET
     @Path("/resources/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    @RequiresRoles(ADMIN_ROLE_NAME)
     //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
     public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults,
                                  @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException

@@ -20,7 +20,7 @@ public class ReadOnlyPage extends DefaultPage
     public ReadOnlyPage(ResourceRequest request) throws IOException
     {
         // Note the selection of the filesystem: if we have a transaction running, we return a transactional file system (despite the fact this is a read-only page)
-        // because it's expected behavior: if we're in the middle of manipulating files and we eg. test the existence of a new ReadOnlyPage, we expect it to seamlessly
+        // because it's expected behavior: if we're in the middle of manipulating files and we eg. doIsValid the existence of a new ReadOnlyPage, we expect it to seamlessly
         // enter the flow of the transaction, so it doesn't return a file if that file has been deleted during the request transaction.
         super(request, Settings.instance().getPagesViewPath(), StorageFactory.hasCurrentRequestTx() ? StorageFactory.getPageStoreFileSystem() : StorageFactory.getPageViewFileSystem());
     }

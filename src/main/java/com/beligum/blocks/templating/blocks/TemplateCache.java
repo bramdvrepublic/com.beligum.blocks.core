@@ -28,7 +28,7 @@ public class TemplateCache
 
     /**
      * These are the names of first folders that won't be taken into account when building the name of the element
-     * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
+     * Eg. /imports/blocks/doIsValid/tag.html will have the name "blocks-doIsValid-tag"
      */
     private static String[] INVISIBLE_START_FOLDERS = { RESOURCES_IMPORTS_FOLDER };
 

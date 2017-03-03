@@ -623,8 +623,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         sb.append("#{else}");
         // This is something special:
         // If we have multiple properties, eg. like this:
-        //     <meta property="description" content="Double tag test Nederlands" lang="nl">
-        //     <meta property="description" content="Double tag test English" lang="en">
+        //     <meta property="description" content="Double tag doIsValid Nederlands" lang="nl">
+        //     <meta property="description" content="Double tag doIsValid English" lang="en">
         // These will get serialized into an array object (actually a special PropertyArray that spits out the joined string), in the correct order
         // (see above, specifically in TemplateInstanceStackDirective). But when we would spit out that array for every occurrence of this array variable,
         // the output would get doubled (or more). By ensuring we only write one entry per one, with a special method, we keep the order and don't get doubles.

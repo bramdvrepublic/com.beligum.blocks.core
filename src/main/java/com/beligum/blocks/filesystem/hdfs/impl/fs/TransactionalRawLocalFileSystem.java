@@ -682,7 +682,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                         // but simply appends to the end of the file. So avoid using the truncate function altogether...
                         //tx.truncateFile(file, 0l);
                         tx.deleteFile(file);
-                        //Note: file is created in the test below
+                        //Note: file is created in the doIsValid below
                     }
 
                     //method below needs the file to exist before we can write to it
