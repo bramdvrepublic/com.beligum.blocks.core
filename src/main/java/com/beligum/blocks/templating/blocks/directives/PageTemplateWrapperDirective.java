@@ -363,35 +363,42 @@ public class PageTemplateWrapperDirective extends Directive
 
         return retVal;
     }
-    private String getInlineStartTagFor(TemplateResourcesDirective.Argument type) throws IOException
+    private CharSequence getInlineStartTagFor(TemplateResourcesDirective.Argument type) throws IOException
     {
-        return "<" + this.getTagInnerFor(type) + ">";
+        StringBuilder retVal = new StringBuilder("<" + this.getTagInnerFor(type) + ">");
+
+        //this will make sure the RDFa parses correctly
+        if (type.isScript()) {
+            retVal.append("//<![CDATA[\n");
+        }
+
+        return retVal;
     }
-    private String getInlineEndTagFor(TemplateResourcesDirective.Argument type) throws IOException
+    private CharSequence getInlineEndTagFor(TemplateResourcesDirective.Argument type) throws IOException
     {
-        return "</" + this.getTagInnerFor(type) + ">";
+        StringBuilder retVal = new StringBuilder( );
+
+        //this will make sure the RDFa parses correctly
+        if (type.isScript()) {
+            retVal.append("\n//]]>");
+        }
+
+        retVal.append("</" + this.getTagInnerFor(type) + ">");
+
+        return retVal;
     }
     private String getTagInnerFor(TemplateResourcesDirective.Argument type) throws IOException
     {
         String retVal = null;
 
-        switch (type) {
-            case inlineStyles:
-            case externalStyles:
-            case styles:
-
-                retVal = "style";
-                break;
-
-            case inlineScripts:
-            case externalScripts:
-            case scripts:
-
-                retVal = "script";
-                break;
-
-            default:
-                throw new IOException("Encountered unimplemented resource type while getting the inner tag for it, this shouldn't happen; " + type);
+        if (type.isStyle()) {
+            retVal = "style";
+        }
+        else if (type.isScript()) {
+            retVal = "script";
+        }
+        else {
+            throw new IOException("Encountered unimplemented resource type while getting the inner tag for it, this shouldn't happen; " + type);
         }
 
         return retVal;

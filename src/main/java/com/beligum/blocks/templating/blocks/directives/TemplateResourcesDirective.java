@@ -38,22 +38,40 @@ public class TemplateResourcesDirective extends Directive
 
     public enum Argument
     {
-        inlineStyles(MimeTypes.CSS),
-        externalStyles(MimeTypes.CSS),
-        styles(MimeTypes.CSS),
-        inlineScripts(MimeTypes.JAVASCRIPT),
-        externalScripts(MimeTypes.JAVASCRIPT),
-        scripts(MimeTypes.JAVASCRIPT),
-        all(null),;
+        inlineStyles(MimeTypes.CSS, true, false, true),
+        externalStyles(MimeTypes.CSS, true, false, false),
+        styles(MimeTypes.CSS, true, false, false),
+        inlineScripts(MimeTypes.JAVASCRIPT, false, true, true),
+        externalScripts(MimeTypes.JAVASCRIPT, false, true, false),
+        scripts(MimeTypes.JAVASCRIPT, false, true, false),
+        all(null, false, false, false);
 
         private MimeType matchingMimeType;
-        Argument(MimeType matchingMimeType)
+        private boolean inline;
+        private boolean script;
+        private boolean style;
+        Argument(MimeType matchingMimeType, boolean style, boolean script, boolean inline)
         {
             this.matchingMimeType = matchingMimeType;
+            this.style = style;
+            this.script = script;
+            this.inline = inline;
         }
         public MimeType getMatchingMimeType()
         {
             return matchingMimeType;
+        }
+        public boolean isStyle()
+        {
+            return style;
+        }
+        public boolean isScript()
+        {
+            return script;
+        }
+        public boolean isInline()
+        {
+            return inline;
         }
     }
 
