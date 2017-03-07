@@ -233,7 +233,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         Locale urlLang = R.i18n().getUrlLocale(uri, uriBuilder, null);
         //let's not overwrite a possible initialized this.language with null
         if (urlLang != null) {
-            if (this.language != null) {
+            if (this.language != null && !this.language.equals(urlLang)) {
                 Logger.warn("Overwriting the language of page '" + uri + "' with a new value '" + urlLang + "', this is probably a mistake.");
             }
             this.language = urlLang;
