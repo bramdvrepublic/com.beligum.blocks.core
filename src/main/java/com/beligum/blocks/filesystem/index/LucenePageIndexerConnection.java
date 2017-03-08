@@ -50,15 +50,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     public static final int MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
+    private static FSLockFactory luceneLockFactory = FSLockFactory.getDefault();
+
     private LucenePageIndexer pageIndexer;
-    private FSLockFactory luceneLockFactory;
     private boolean createdWriter;
 
     //-----CONSTRUCTORS-----
     public LucenePageIndexerConnection(LucenePageIndexer pageIndexer) throws IOException
     {
         this.pageIndexer = pageIndexer;
-        this.luceneLockFactory = FSLockFactory.getDefault();
         this.createdWriter = false;
     }
 
@@ -267,7 +267,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private void printLuceneIndex() throws IOException
     {
-        Directory dir = FSDirectory.open(this.getDocDir());
+        Directory dir = FSDirectory.open(getDocDir());
 
         try (IndexReader reader = DirectoryReader.open(dir)) {
             int numDocs = reader.numDocs();
@@ -277,13 +277,16 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             }
         }
     }
-    private IndexSearcher getLuceneIndexSearcher() throws IOException
+    private void indexChanged()
+    {
+        //will be re-initialized on next read/search
+        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
+    }
+    private synchronized IndexSearcher getLuceneIndexSearcher() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-            //make sure the basic structure to read stuff exists
-            this.getDocDir();
 
-            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(this.getDocDir()));
+            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(getDocDir()));
             IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
@@ -291,29 +294,46 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
-    private void indexChanged()
-    {
-        //will be re-initialized on next read/search
-        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
-    }
-    private IndexWriter getLuceneIndexWriter() throws IOException
+    private synchronized IndexWriter getLuceneIndexWriter() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, this.buildNewLuceneIndexWriter());
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, buildNewLuceneIndexWriter(getDocDir()));
         }
 
         //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
         IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
         if (retVal == null || !retVal.isOpen()) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = this.buildNewLuceneIndexWriter());
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = buildNewLuceneIndexWriter(getDocDir()));
         }
 
-        //register the writer on the first time we need it
+        //register the writer on the first time we need it in this connection
         if (!this.createdWriter) {
             //attach this connection to the transaction manager
             StorageFactory.getCurrentRequestTx().registerResource(this);
-
             this.createdWriter = true;
+        }
+
+        return retVal;
+    }
+    private synchronized static Path getDocDir() throws IOException
+    {
+        final java.nio.file.Path retVal = Paths.get(Settings.instance().getPageMainIndexFolder());
+
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
+            if (!Files.exists(retVal)) {
+                Files.createDirectories(retVal);
+            }
+            if (!Files.isWritable(retVal)) {
+                throw new IOException("Lucene index directory is not writable, please check the path; " + retVal);
+            }
+
+            try (IndexWriter indexWriter = buildNewLuceneIndexWriter(retVal)) {
+                //just open and close the writer once to create the necessary files,
+                // else we'll get a "no segments* file found" exception on first search
+            }
+
+            //we built it at least once, save that for later checking
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
         }
 
         return retVal;
@@ -330,41 +350,13 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
      * @return
      * @throws IOException
      */
-    private IndexWriter buildNewLuceneIndexWriter() throws IOException
+    private static IndexWriter buildNewLuceneIndexWriter(Path docDir) throws IOException
     {
         IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.DEFAULT_ANALYZER);
 
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-        return new IndexWriter(FSDirectory.open(this.getDocDir(), this.luceneLockFactory), iwc);
-    }
-    private Path getDocDir() throws IOException
-    {
-        final java.nio.file.Path retVal = Paths.get(Settings.instance().getPageMainIndexFolder());
-
-        boolean bootstrapFolder = false;
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
-            if (!Files.exists(retVal)) {
-                Files.createDirectories(retVal);
-            }
-            if (!Files.isWritable(retVal)) {
-                throw new IOException("Lucene index directory is not writable, please check the path; " + retVal);
-            }
-
-            //we can't bootstrap in here or we'll have endless recursion
-            bootstrapFolder = true;
-
-            //we built it at least once, save that for later checking
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
-        }
-
-        if (bootstrapFolder) {
-            try (IndexWriter indexWriter = this.buildNewLuceneIndexWriter()) {
-                //just open and close the writer once, else we'll get a "no segments* file found" exception on first search
-            }
-        }
-
-        return retVal;
+        return new IndexWriter(FSDirectory.open(docDir, luceneLockFactory), iwc);
     }
 }

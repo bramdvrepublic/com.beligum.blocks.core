@@ -38,12 +38,12 @@ public class SesamePageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public PageIndexConnection connect() throws IOException
+    public synchronized PageIndexConnection connect() throws IOException
     {
         return new SesamePageIndexerConnection(this);
     }
     @Override
-    public void shutdown() throws IOException
+    public synchronized void shutdown() throws IOException
     {
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
             try {

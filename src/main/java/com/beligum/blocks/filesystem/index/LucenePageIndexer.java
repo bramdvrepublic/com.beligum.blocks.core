@@ -55,12 +55,12 @@ public class LucenePageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public PageIndexConnection connect() throws IOException
+    public synchronized PageIndexConnection connect() throws IOException
     {
         return new LucenePageIndexerConnection(this);
     }
     @Override
-    public void shutdown()
+    public synchronized void shutdown()
     {
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
             IndexSearcher indexSearcher = (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);

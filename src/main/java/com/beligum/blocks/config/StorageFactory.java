@@ -223,12 +223,12 @@ public class StorageFactory
                         try {
                             tx.commit();
                         }
-                        catch (Exception e) {
+                        catch (Throwable e) {
                             try {
                                 Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", e);
                                 tx.rollback();
                             }
-                            catch (Exception e1) {
+                            catch (Throwable e1) {
                                 //don't wait for the next reboot before trying to revert to a clean state; try it now
                                 //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
                                 if (!StorageFactory.rebootPageStoreTransactionManager()) {
@@ -246,14 +246,14 @@ public class StorageFactory
                         }
                     }
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
                 }
                 finally {
                     try {
                         tx.close();
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         throw new IOException("Exception caught while closing a file system transaction; this is bad", e);
                     }
                     finally {
