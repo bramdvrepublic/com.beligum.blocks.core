@@ -541,6 +541,7 @@
             <artifactId>xadisk</artifactId>
             <version>1.2.3-020215_PATCHED</version>
         </dependency>
+
         <dependency>
             <groupId>javax.resource</groupId>
             <artifactId>connector-api</artifactId>

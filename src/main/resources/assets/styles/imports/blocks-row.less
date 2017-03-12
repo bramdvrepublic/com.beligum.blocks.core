@@ -1,0 +1,15 @@
+//-----IMPORTS-----
+@import (reference) "/constants/blocks/core?type=less";
+@import (reference) "/assets/styles/imports/blocks-common.less";
+
+//-----STYLES-----
+.row {
+
+  &.@{SEAMLESS_CLASS} {
+    & > [class*='col-'] {
+      padding-right: 0;
+      padding-left: 0;
+    }
+  }
+
+}
