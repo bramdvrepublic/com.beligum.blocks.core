@@ -460,24 +460,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         _this._termMappings[comboId][value] = entry;
                     });
 
-                    //sort the combobox entries on name
-                    comboEntries.sort(function (a, b)
-                    {
-                        //this makes sure the special 'empty valued' entries appear on top
-                        if (!a.value && b.value) {
-                            return -1;
-                        }
-                        else if (!b.value && a.value) {
-                            return 1;
-                        }
-                        //if both are non-empty or empty, just use the label
-                        else {
-                            var aName = a.name == null ? null : a.name.toLowerCase();
-                            var bName = b.name == null ? null : b.name.toLowerCase();
-
-                            return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
-                        }
-                    });
+                    _this.sortComboEntries(comboEntries);
 
                     var hasAttr = element.hasAttribute(attribute);
                     //get the value of the attribute on the element
@@ -768,7 +751,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //check if we need to show the reset button
             if (input.attr(Widget.OLD_VAL_ATTR) !== '') {
-                resetBtn = $('<a title="Reset value" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
+                resetBtn = $('<a title="'+BlocksMessages.inputActionResetValueTitle+'" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
                 resetBtn.click(function (e)
                 {
                     input.val(input.attr(Widget.OLD_VAL_ATTR));
@@ -783,7 +766,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             //append the clear button
-            var clearBtn = $('<a title="Clear value" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
+            var clearBtn = $('<a title="'+BlocksMessages.inputActionClearValueTitle+'" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
             input.on("change keyup focus", function (event)
             {
                 inputGroup.addClass('focus');
@@ -986,7 +969,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                 };
 
-                retVal["Select file from server..."] = fileSelectOptions;
+                retVal[BlocksMessages.inputActionSelectFileTitle] = fileSelectOptions;
             }
 
             if (pageSelect) {
@@ -1056,7 +1039,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             for (var i = 0; i < values.length; i++) {
                 var c = values[i];
                 var li = $('<li />').appendTo(dropdownMenu);
-                var a = $('<a data-value="' + c.value + '">' + c.name + '</a>').appendTo(li);
+                var title = c.name;
+                //note: this can be activated if you want subtitles
+                var subtitle = null/*c.value*/;
+                var a = $('<a data-value="' + c.value + '">' + title + (subtitle ? '<small>' + subtitle + '</small>' : '') + '</a>').appendTo(li);
 
                 var clickHandler = function (event, manualElement)
                 {
@@ -1064,7 +1050,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     var linkElement = manualElement || $(this);
 
                     var combo = linkElement.parents(".dropdown").find('.btn');
-                    var text = linkElement.text();
+                    //remove all sub elements before converting to text
+                    //var text = linkElement.text();
+                    var text = linkElement.clone().find(' *').remove().end().text();
                     var newValue = linkElement.data('value');
                     var oldValue = combo.val();
 
@@ -1217,7 +1205,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
             var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="Search...">').appendTo(inputGroup);
+            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="'+BlocksMessages.autocompleteInputPlaceholder+'">').appendTo(inputGroup);
 
             //init the typeahead plugin
             var engine = new Bloodhound(
@@ -1248,7 +1236,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
                 display: 'title',
                 templates: {
-                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
+                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.autocompleteResultsEmpty + '</p></div>',
                     //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
                     suggestion: Handlebars.compile('<div title="{{title}} - {{subTitle}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{subTitle}}</p></div>')
                 }
@@ -1341,7 +1329,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             var inputActions = $('<div class="input-group actions"/>').appendTo(formGroup);
 
-            var applyBtn = $('<a title="Apply value" class="btn btn-sm btn-primary"><i class="fa fa-check"/> Apply</a>').appendTo(inputActions);
+            var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"/> '+BlocksMessages.textareaApplyBtnTitle+'</a>').appendTo(inputActions);
             applyBtn.click(function (e)
             {
                 if (setterFunction) {
@@ -1351,7 +1339,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             inputActions.append('&#160;');
 
             //append the clear button
-            var clearBtn = $('<a title="Clear value" class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> Clear</a>').appendTo(inputActions);
+            var clearBtn = $('<a class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> '+BlocksMessages.textareaResetBtnTitle+'</a>').appendTo(inputActions);
             clearBtn.click(function (e)
             {
                 input.val('');
@@ -1362,5 +1350,26 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return formGroup;
         },
+        sortComboEntries: function(comboEntries)
+        {
+            //sort the combobox entries on name
+            comboEntries.sort(function (a, b)
+            {
+                //this makes sure the special 'empty valued' entries appear on top
+                if (!a.value && b.value) {
+                    return -1;
+                }
+                else if (!b.value && a.value) {
+                    return 1;
+                }
+                //if both are non-empty or empty, just use the label
+                else {
+                    var aName = a.name == null ? null : a.name.toLowerCase();
+                    var bName = b.name == null ? null : b.name.toLowerCase();
+
+                    return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+                }
+            });
+        }
     });
 }]);

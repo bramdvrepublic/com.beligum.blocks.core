@@ -34,9 +34,9 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             var retVal = [];
 
             var pageActions = $('<ul class="' + BlocksConstants.BLOCK_ACTIONS_CLASS + '"/>');
-            var savePage = $('<li><label>Save changes</label></li>').append($('<a class="' + BlocksConstants.SAVE_PAGE_BUTTON + ' btn btn-primary btn-sm pull-right"><i class="fa fa-fw fa-floppy-o"></i></a>')).appendTo(pageActions);
-            var deletePage = $('<li><label>Delete page</label></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
-            var newBlock = $('<li><label>New block</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
+            var savePage = $('<li><label>' + BlocksMessages.savePageLabel + '</label></li>').append($('<a class="' + BlocksConstants.SAVE_PAGE_BUTTON + ' btn btn-primary btn-sm pull-right"><i class="fa fa-fw fa-floppy-o"></i></a>')).appendTo(pageActions);
+            var deletePage = $('<li><label>' + BlocksMessages.deletePageLabel + '</label></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
+            var newBlock = $('<li><label>' + BlocksMessages.newBlockLabel + '</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="' + BlocksMessages.newBlockTooltip + '"><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 
             //activation is done in menu.js (we need one element)
             pageActions = pageActions.wrap('<div/>');
@@ -74,10 +74,10 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             }
 
             if (title.hasAttribute("property") || title.hasAttribute("data-property")) {
-                retVal.push(this.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
+                retVal.push(this.addValueHtml(Sidebar, title, BlocksMessages.pageTitleLabel, BlocksMessages.pageTitlePlaceholder, false));
             }
 
-            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), "Page subject", "typeof", "/blocks/admin/rdf/classes/", "title", "curieName", null));
+            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), BlocksMessages.pageSubjectLabel, "typeof", BlocksConstants.RDF_CLASSES_ENDPOINT, "title", "curieName", null));
 
             return retVal;
         },

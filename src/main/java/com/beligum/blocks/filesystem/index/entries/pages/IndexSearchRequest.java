@@ -16,6 +16,7 @@ public class IndexSearchRequest
     private String searchTerm;
     private List<String> fieldFilters;
     private RdfProperty sortField;
+    private Boolean sortDescending;
     private Integer pageIndex;
     private Integer pageSize;
     private RdfClass typeOf;
@@ -50,6 +51,14 @@ public class IndexSearchRequest
     public void setSortField(RdfProperty sortField)
     {
         this.sortField = sortField;
+    }
+    public Boolean getSortDescending()
+    {
+        return sortDescending;
+    }
+    public void setSortDescending(Boolean sortDescending)
+    {
+        this.sortDescending = sortDescending;
     }
     public Integer getPageIndex()
     {

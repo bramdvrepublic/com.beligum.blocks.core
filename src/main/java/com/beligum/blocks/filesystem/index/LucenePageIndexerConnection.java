@@ -104,7 +104,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         this.getLuceneIndexWriter().deleteAll();
     }
     @Override
-    public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
+    public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException
     {
         List<IndexEntry> retVal = new ArrayList<>();
 
@@ -122,7 +122,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //see http://stackoverflow.com/questions/29695307/sortiing-string-field-alphabetically-in-lucene-5-0
         //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
         if (sortField != null) {
-            Sort sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortAscending));
+            Sort sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortReversed));
 
             //found this here, I suppose we need to call this to allow very specific sort fields?
             //  https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/HEAD/root/projects/solr4/source/java/org/alfresco/solr/query/AlfrescoReRankQParserPlugin.java

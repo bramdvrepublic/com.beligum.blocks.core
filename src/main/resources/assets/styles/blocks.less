@@ -584,6 +584,11 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
               & > a {
                 cursor: pointer;
+
+                small {
+                  display: block;
+                  .opacity(0.5);
+                }
               }
             }
           }
@@ -838,10 +843,10 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             margin-right: 10px;
 
             &.@{INPUT_TYPE_RES_SUG_TITLE_CLASS} {
-              font-weight: bold;
               margin: 0;
             }
             &.@{INPUT_TYPE_RES_SUG_SUBTITLE_CLASS} {
+              .opacity(0.5);
               font-size: 0.8em;
               margin: 0;
             }

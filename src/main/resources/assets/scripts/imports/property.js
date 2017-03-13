@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Layouter", "base.core.Commons", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Layouter, Commons)
+base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar)
 {
     var Property = this;
 
@@ -61,7 +61,7 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
             var addInputForm = function ()
             {
                 var link = element.parent(LINK_SELECTOR);
-                var linkInputAction = _this.addValueAttribute(Sidebar, link, null, "Paste or type a link", "href", false, true, true);
+                var linkInputAction = _this.addValueAttribute(Sidebar, link, null, BlocksMessages.createLinkPlaceholder, "href", false, true, true);
                 retVal.append(linkInputAction);
                 retVal.addClass('active');
             };
@@ -73,7 +73,7 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
             };
 
             var startState = false;
-            var toggleButton = this.createToggleButton("Create link?",
+            var toggleButton = this.createToggleButton(BlocksMessages.createLinkLabel,
                 function initStateCallback()
                 {
                     var retVal = element.parent(LINK_SELECTOR).length > 0;

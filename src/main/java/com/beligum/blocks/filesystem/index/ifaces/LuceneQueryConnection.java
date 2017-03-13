@@ -22,7 +22,7 @@ public interface LuceneQueryConnection<T extends PageIndexEntry> extends QueryCo
     /**
      * Search for the low-level lucene query, returning the maxResults best results
      */
-    IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException;
+    IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException;
 
     /**
      * Convenience method for the one above

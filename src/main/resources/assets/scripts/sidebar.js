@@ -2,7 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.imports.Widget", function (Broadcaster, Constants, DOM, Layouter, Finder, Notification, Commons, Hover, Widget)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages)
 {
     var SideBar = this;
     var configPanels = {};
@@ -155,7 +155,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             //don't add an empty panel
             if (addedOptions) {
-                this.appendWindowToSidebar(Constants.SIDEBAR_CONTEXT_ID, windowID);
+                this.appendWindowToSidebar(BlocksConstants.SIDEBAR_CONTEXT_ID, windowID);
                 title = windowTitle;
             }
         }
@@ -175,11 +175,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         activeBlocks = [];
 
         //reset the sidebar and prepare for adding
-        var sidebar = $("." + Constants.PAGE_SIDEBAR_CLASS);
-        sidebar.removeClass(Constants.OPACITY_CLASS);
-        sidebar.addClass(Constants.PREVENT_BLUR_CLASS);
+        var sidebar = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
+        sidebar.removeClass(BlocksConstants.OPACITY_CLASS);
+        sidebar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
 
-        var sidebarContext = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        var sidebarContext = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
         sidebarContext.empty();
     };
 
@@ -198,15 +198,15 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         var windowWidth = $(window).width();
 
-        var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
-        sidebarElement.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
+        var sidebarElement = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
+        sidebarElement.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
         sidebarElement.css("width", (width) + "px");
         //one() = on() but only once
         sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
         {
-            if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
-                sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
-                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
+            if ($(event.target).hasClass(BlocksConstants.PAGE_SIDEBAR_CLASS)) {
+                sidebarElement.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
+                $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
 
                 if (callback) {
                     callback(event);
@@ -218,8 +218,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.addRemoveBlockButton = function (windowID, property)
     {
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
-        var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
-        var removeAction = $("<li><label>Remove block</label></li>");
+        var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
+        var removeAction = $("<li><label>"+BlocksMessages.deleteBlockLabel+"</label></li>");
         var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
         blockActions.append(removeAction);
         removeAction.append(removeButton);
@@ -231,7 +231,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //text.addClass("hidden");
 
             //resetOld();
-            $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
+            $("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
             Layouter.removeBlock(property);
         });
 
@@ -296,11 +296,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         var div = this.getWindowForId(id);
 
-        if (type == Constants.SIDEBAR_CONTEXT_ID) {
-            $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
+        if (type == BlocksConstants.SIDEBAR_CONTEXT_ID) {
+            $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID).append(div);
         }
-        else if (type == Constants.SIDEBAR_FILES_ID) {
-            $("#" + Constants.SIDEBAR_FILES_ID).append(div);
+        else if (type == BlocksConstants.SIDEBAR_FILES_ID) {
+            $("#" + BlocksConstants.SIDEBAR_FILES_ID).append(div);
         }
 
         return div;
@@ -309,22 +309,22 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     //TODO factor this away because the finder is no dependency of this project
     this.loadFinder = function (options)
     {
-        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
-        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
-        contextTab.addClass(Constants.LOADING_CLASS);
-        finderTab.removeClass(Constants.LOADING_CLASS);
+        var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+        contextTab.addClass(BlocksConstants.LOADING_CLASS);
+        finderTab.removeClass(BlocksConstants.LOADING_CLASS);
         //we'll start off with an empty container and let createWindow() fill it
         finderTab.empty();
 
         //'switch' to the finder tab
-        $("#" + Constants.SIDEBAR_FILES_TAB_ID).tab('show');
+        $("#" + BlocksConstants.SIDEBAR_FILES_TAB_ID).tab('show');
 
         //now create and add a new frame
-        var windowID = SideBar.createWindow(null, "Files on server");
-        SideBar.appendWindowToSidebar(Constants.SIDEBAR_FILES_ID, windowID);
+        var windowID = SideBar.createWindow(null, BlocksMessages.finderTabTitle);
+        SideBar.appendWindowToSidebar(BlocksConstants.SIDEBAR_FILES_ID, windowID);
         //let's us do perform some css tweaks
         var frame = SideBar.getWindowForId(windowID);
-        frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);
+        frame.addClass(BlocksConstants.SIDEBAR_FINDER_PANEL_CLASS);
 
         //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
         var finder = frame.find(".panel-body");
@@ -333,26 +333,26 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             if (status == "error") {
                 var msg = "Error while loading the finder; ";
                 Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
-                finder.removeClass(Constants.LOADING_CLASS);
+                finder.removeClass(BlocksConstants.LOADING_CLASS);
             }
             else {
                 Finder.init(options);
                 //don't show the warning when clicking something in the finder
-                finder.attr(Constants.CLICK_ROLE_ATTR, Constants.FORCE_CLICK_ATTR_VALUE);
-                finder.removeClass(Constants.LOADING_CLASS);
+                finder.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+                finder.removeClass(BlocksConstants.LOADING_CLASS);
             }
         });
     };
     this.unloadFinder = function ()
     {
         //'switch' back to the context tab
-        $("#" + Constants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
+        $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
 
-        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
+        var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
         if (!finderTab.is(':empty')) {
-            var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
-            contextTab.removeClass(Constants.LOADING_CLASS);
-            finderTab.addClass(Constants.LOADING_CLASS);
+            var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+            contextTab.removeClass(BlocksConstants.LOADING_CLASS);
+            finderTab.addClass(BlocksConstants.LOADING_CLASS);
             finderTab.html('');
         }
     };
@@ -361,13 +361,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var highlight = function (element)
     {
         //don't highlight the entire page
-        if (!element.hasClass(Constants.PAGE_CONTENT_CLASS)) {
-            element.addClass(Constants.HIGHLIGHT_CLASS);
+        if (!element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
+            element.addClass(BlocksConstants.HIGHLIGHT_CLASS);
         }
     };
     var unhighlight = function (element)
     {
-        element.removeClass(Constants.HIGHLIGHT_CLASS);
+        element.removeClass(BlocksConstants.HIGHLIGHT_CLASS);
     };
 
 }]);

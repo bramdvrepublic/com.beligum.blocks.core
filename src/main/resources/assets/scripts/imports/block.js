@@ -36,7 +36,7 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
 
             var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
 
-            var removeAction = $("<li><label>Remove block</label></li>").appendTo(blockActions);
+            var removeAction = $("<li><label>"+BlocksMessages.deleteBlockLabel+"</label></li>").appendTo(blockActions);
             var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
             removeButton.click(function ()
             {
