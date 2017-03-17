@@ -54,7 +54,7 @@ public class RdfEndpoint
     @RequiresRoles(ADMIN_ROLE_NAME)
     public Response getClasses() throws IOException
     {
-        return Response.ok(RdfFactory.getClasses()).build();
+        return Response.ok(RdfFactory.getLocalPublicClasses()).build();
     }
 
     @GET
@@ -77,9 +77,9 @@ public class RdfEndpoint
             }
         }
 
-        //if nothing happened, we just return all properties known to this classpath
+        //if nothing happened, we just return the intersecting properties of all public classes
         if (retVal == null) {
-            retVal = RdfFactory.getProperties();
+            retVal = RdfFactory.getLocalPublicClassProperties();
         }
 
         return Response.ok(retVal).build();

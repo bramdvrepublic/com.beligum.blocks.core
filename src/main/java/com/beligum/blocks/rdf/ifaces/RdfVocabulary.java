@@ -43,11 +43,25 @@ public interface RdfVocabulary
     Map<URI, RdfResource> getAllTypes();
 
     /**
+     * Returns all classes in this vocabulary
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Map<URI, RdfClass> getAllClasses();
+
+    /**
      * Returns all classes in this vocabulary that are selectable from the client-side page-type-dropdown
      */
     //avoids infinite recursion
     @JsonIgnore
     Map<URI, RdfClass> getPublicClasses();
+
+    /**
+     * Returns all properties in this vocabulary
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Map<URI, RdfDataType> getAllDataTypes();
 
     /**
      * Returns all properties in this vocabulary that are accessible from the client-side UI
@@ -57,11 +71,25 @@ public interface RdfVocabulary
     Map<URI, RdfDataType> getPublicDataTypes();
 
     /**
+     * Returns all properties in this vocabulary
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Map<URI, RdfProperty> getAllProperties();
+
+    /**
      * Returns all properties in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
     Map<URI, RdfProperty> getPublicProperties();
+
+    /**
+     * Returns all literals in this vocabulary
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Set<RdfLiteral> getAllLiterals();
 
     /**
      * Returns all literals in this vocabulary that are accessible from the client-side UI

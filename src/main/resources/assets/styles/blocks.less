@@ -34,6 +34,10 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/type.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
+// Mixins
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/text-overflow.less";
+
+@import (inline, css) "/assets/webjars/perfect-scrollbar/0.6.16/css/perfect-scrollbar.css";
 
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
@@ -169,16 +173,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
   &.@{BTN_SUCCESS_CLASS} {
     & > .fa {
       &:extend(.fa-check-circle all);
-    }
-  }
-}
-
-.list-group {
-  //add some nice (ugly) striping
-  & > .list-group-item:nth-child(odd) {
-    //background-color: lighten(@btn-primary-bg, 50%);
-    &:hover {
-      //background-color: lighten(@btn-primary-bg, 45%);
     }
   }
 }
@@ -320,6 +314,11 @@ body.@{BODY_EDIT_MODE_CLASS} {
   border-right: 1px solid darken(@controlBgColor, 15%);
 }
 
+.@{UNLINK_CLASS} {
+  text-decoration: none;
+  color: @text-color;
+}
+
 // Classes for the body that force the cursor in a certain style
 body.@{FORCE_DRAG_CURSOR_CLASS}, body.@{FORCE_DRAG_CURSOR_CLASS} * {
   cursor: grabbing !important;
@@ -417,11 +416,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     .transition(0.2s, ease-in, width);
   }
 
-  a.@{UNLINK_CLASS} {
-    text-decoration: none;
-    color: @text-color;
-  }
-
   .@{PAGE_SIDEBAR_RESIZE_CLASS} {
     position: absolute;
     left: 0;
@@ -490,7 +484,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
   .tab-pane {
     @sidebarPanelMargin: 10px;
-    .panel {
+    > .panel {
       margin: @sidebarPanelMargin;
 
       label {
@@ -519,6 +513,36 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         margin-bottom: 15px;
       }
 
+      //we invented this class as a means to add sub-panels
+      .group {
+        position: relative;
+        border: 1px solid @table-border-color;
+        margin-bottom: @line-height-computed;
+        padding: @panel-body-padding;
+
+        > .title {
+          position: absolute;
+          background-color: @panel-bg;
+          top: -0.80em;
+          left: 0.75em;
+          padding: 0 0.25em;
+          font-variant: small-caps;
+          color: darken(@table-border-color, 25%);
+        }
+
+        > .form-group:last-child {
+          margin-bottom: 0;
+        }
+        //little trick if the last child is hidden:
+        //show it, but with a negative margin
+        > .form-group.hidden:last-child {
+          display: block !important;
+          height: 0px;
+          overflow: hidden;
+          margin-bottom: -15px;
+        }
+      }
+
       .form-group {
         .clearfix();
 
@@ -531,7 +555,8 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         //make all dropdowns behave more like <select>s
         .dropdown,
         .checkbox,
-        .@{RADIO_GROUP_CLASS} {
+        .@{RADIO_GROUP_CLASS},
+        .list-group {
           @textAlign: left;
           @formAlign: right;
           @caretAlign: right;
@@ -593,6 +618,88 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             }
           }
         }
+
+        //this is a list widget like the slides in the admin side of the carousel
+        .list-group {
+          //we expect the list to be quite large, so give it full width
+          width: 100%;
+
+          //make it scroll nicely
+          position: relative;//for perfect scrollbar
+          max-height: 300px;
+          overflow-y: auto;
+
+          //since we're in a form-group, we'll use that margin instead
+          margin-bottom: 0;
+
+          //we'll move the borders of the first and last item to the container
+          //so the overflow looks much nicer
+          border-top: 1px solid @list-group-border;
+          border-bottom: 1px solid @list-group-border;
+          .border-top-radius(@list-group-border-radius);
+          .border-bottom-radius(@list-group-border-radius);
+
+          .list-group-item {
+            .clearfix;
+            text-align: left;
+
+            //we'll put a subtle left shadow on all items to simulate a shadow on the entire list
+            @leftShadow: 6px;
+            .box-shadow(inset @leftShadow 0 @leftShadow -@leftShadow rgba(0,0,0,.125));
+
+            &:first-child {
+              border-top: none;
+            }
+            //this 'last' class is needed because the perfect scrollbar adds elements and
+            // the last-of-type selector is messed up
+            &.last {
+              margin-bottom: 0;
+              border-bottom: none;
+            }
+
+            //don't really know why, but real invisible
+            // seems to be buggy sometimes when DnD-sorting
+            &.invisible {
+              visibility: visible;
+              .opacity(0.3);
+            }
+
+            .handle,
+            .title,
+            .btn-group {
+              display: block;
+            }
+
+            .handle,
+            .title,
+            .btn-group a {
+              &:extend(.@{UNLINK_CLASS});
+            }
+
+            //the is the DnD handle
+            .handle {
+              .pull-left;
+              margin-right: 10px;
+            }
+
+            .title {
+              .text-overflow;
+            }
+
+            .btn-group {
+              .pull-right;
+              margin-left: 5px;
+
+              .btn {
+                &:focus,
+                &:active {
+                  .box-shadow(none);
+                }
+              }
+            }
+          }
+        }
+
         .slider.slider-horizontal {
           width: 100%;
 

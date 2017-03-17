@@ -12,16 +12,25 @@ public class Mappings implements RdfResourceFactory
     static {
         Classes.Person.setProperties(Sets.newHashSet(Terms.givenName,
                                                      Terms.familyName,
-                                                     Terms.name));
+                                                     Terms.name,
+                                                     Terms.image,
+                                                     Terms.title,
+                                                     Terms.sameAs));
 
         Classes.Organization.setProperties(Sets.newHashSet(Terms.name,
                                                            Terms.role,
                                                            Terms.streetAddress,
-                                                           Terms.city));
+                                                           Terms.city,
+                                                           Terms.image,
+                                                           Terms.title,
+                                                           Terms.sameAs));
 
         Classes.LogEntry.setProperties(Sets.newHashSet(Terms.createdAt,
-                                                     Terms.createdBy,
-                                                     Terms.name));
+                                                       Terms.createdBy,
+                                                       Terms.name,
+                                                       Terms.image,
+                                                       Terms.title,
+                                                       Terms.sameAs));
 
     }
 }

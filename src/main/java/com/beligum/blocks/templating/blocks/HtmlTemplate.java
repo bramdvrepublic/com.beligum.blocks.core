@@ -818,58 +818,63 @@ public abstract class HtmlTemplate
         String elementStr = element.toString();
         Resource resource = null;
 
-        //activate this if the resource needs to be fingerprinted dynamically
+        //activate this if the resource needs to be fingerprinted dynamically;
+        //eg. during (each) rendering of the template
         boolean enableDynamicFingerprinting = false;
 
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
             //this means we're dealing with an external resource
             if (attrValue != null) {
-                //validate the URI
-                resource = R.resourceManager().get(UriBuilder.fromUri(attrValue).build());
+                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedExternalScripts()) || (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedExternalStyles())) {
+                    //validate the URI
+                    resource = R.resourceManager().get(UriBuilder.fromUri(attrValue).build());
 
-                //this means the resource exists in our local system
-                if (resource != null) {
+                    //this means the resource exists in our local system
+                    if (resource != null) {
 
-                    //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now
-                    if (resource.isImmutable()) {
-                        //first, replace the attribute value
-                        String fingerprintedUri = resource.getFingerprintedUri().toString();
+                        //if the resource is immutable (won't change anymore), we might as well calculate it's fingerprint now
+                        if (resource.isImmutable()) {
+                            //first, replace the attribute value
+                            String fingerprintedUri = resource.getFingerprintedUri().toString();
 
-                        attrValue = fingerprintedUri;
+                            attrValue = fingerprintedUri;
 
-                        //also replace the attribute in the element itself
-                        Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
-                        OutputDocument outputDocument = new OutputDocument(element);
-                        outputDocument.replace(attrValueSeg, fingerprintedUri);
-                        elementStr = outputDocument.toString();
-                    }
-                    else {
-                        enableDynamicFingerprinting = true;
+                            //also replace the attribute in the element itself
+                            Segment attrValueSeg = element.getAttributes().get(attr).getValueSegment();
+                            OutputDocument outputDocument = new OutputDocument(element);
+                            outputDocument.replace(attrValueSeg, fingerprintedUri);
+                            elementStr = outputDocument.toString();
+                        }
+                        else {
+                            enableDynamicFingerprinting = true;
+                        }
                     }
                 }
             }
             //this means we're dealing with an inline resource; iterate all uri's to see if we can fingerprint them
             else {
-                //Tried to wrap all URIs in a #brud directive, but that didn't really work,
-                //so switched to "block-mode" where we'll parsed all URIs in this inline resource and keep
-                //some statistics to see if we can alter the resource code right now, or need to defer to dynamic fingerprinting
-                InlineUriDetector inlineDetector = new InlineUriDetector();
-                String fingerprintedResource = R.resourceManager().getFingerprinter().detectAllResourceUris(elementStr, inlineDetector);
+                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedInlineScripts()) || (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedInlineStyles())) {
+                    //Tried to wrap all URIs in a #brud directive, but that didn't really work,
+                    //so switched to "block-mode" where we'll parsed all URIs in this inline resource and keep
+                    //some statistics to see if we can alter the resource code right now, or need to defer to dynamic fingerprinting
+                    InlineUriDetector inlineDetector = new InlineUriDetector();
+                    String fingerprintedResource = R.resourceManager().getFingerprinter().detectAllResourceUris(elementStr, inlineDetector);
 
-                //no need to do anything if no URIs were detected
-                if (inlineDetector.hasUri) {
-                    //if all detected URIs were immutable, we can safely use the fingerprinted code
-                    // instead of the original and disable dynamic fingerprinting
-                    if (inlineDetector.allImmutable) {
-                        elementStr = fingerprintedResource;
-                    }
-                    //here, we have at least one non-immutable uri in the inline code,
-                    //so we can't replace the code, but need to activate dynamic fingerprinting instead
-                    else {
-                        //since we only fingerprint local URIs, we don't need to activate dynamic fingerprinting
-                        //if no local URIs were detected
-                        if (inlineDetector.hasInternal) {
-                            enableDynamicFingerprinting = true;
+                    //no need to do anything if no URIs were detected
+                    if (inlineDetector.hasUri) {
+                        //if all detected URIs were immutable, we can safely use the fingerprinted code
+                        // instead of the original and disable dynamic fingerprinting
+                        if (inlineDetector.allImmutable) {
+                            elementStr = fingerprintedResource;
+                        }
+                        //here, we have at least one non-immutable uri in the inline code,
+                        //so we can't replace the code, but need to activate dynamic fingerprinting instead
+                        else {
+                            //since we only fingerprint local URIs, we don't need to activate dynamic fingerprinting
+                            //if no local URIs were detected
+                            if (inlineDetector.hasInternal) {
+                                enableDynamicFingerprinting = true;
+                            }
                         }
                     }
                 }

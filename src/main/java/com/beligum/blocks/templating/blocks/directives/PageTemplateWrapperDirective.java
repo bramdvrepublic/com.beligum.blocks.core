@@ -267,9 +267,12 @@ public class PageTemplateWrapperDirective extends Directive
         //Note about the caching: Asset packs should be allowed to be cached on the client side, either for a long time or not so long.
         //                        We enable the caching of asset packs in production mode because it's handy not to cache it in dev mode.
         //                        Since the name of the asset pack is built from the members, we also allow eternal caching if those member-uris are fingerprinted.
-        Resource assetPack =
-                        JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true), currentAssetPack, mimeType, R.configuration().getProduction(),
-                                                         R.configuration().getResourceConfig().getEnableFingerprintedResources());
+        Resource assetPack = JoinRepository.registerAssetPack(StringFunctions.intToBase64(hash, true),
+                                                              currentAssetPack,
+                                                              mimeType,
+                                                              R.configuration().getProduction(),
+                                                              R.configuration().getResourceConfig().getEnableFingerprintedResources()
+        );
 
         boolean inlined = false;
         if (R.configuration().getResourceConfig().getEnableInlineResources()) {

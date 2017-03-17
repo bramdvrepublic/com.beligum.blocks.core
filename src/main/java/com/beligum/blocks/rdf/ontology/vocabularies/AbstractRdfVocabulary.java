@@ -21,9 +21,13 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     private final URI namespace;
     private final String prefix;
     private final Map<URI, RdfResource> allTypes;
+    private final Map<URI, RdfClass> allClasses;
     private final Map<URI, RdfClass> publicClasses;
+    private final Map<URI, RdfDataType> allDataTypes;
     private final Map<URI, RdfDataType> publicDataTypes;
+    private final Map<URI, RdfProperty> allProperties;
     private final Map<URI, RdfProperty> publicProperties;
+    private final Set<RdfLiteral> allLiterals;
     private final Set<RdfLiteral> publicLiterals;
 
     //-----CONSTRUCTORS-----
@@ -32,9 +36,13 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         this.namespace = namespace;
         this.prefix = prefix;
         this.allTypes = new HashMap<>();
+        this.allClasses = new HashMap<>();
         this.publicClasses = new HashMap<>();
+        this.allDataTypes = new HashMap<>();
         this.publicDataTypes = new HashMap<>();
+        this.allProperties = new HashMap<>();
         this.publicProperties = new HashMap<>();
+        this.allLiterals = new HashSet<>();
         this.publicLiterals = new HashSet<>();
 
         //add this vocabulary to the cached map of vocabularies
@@ -70,9 +78,19 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         return allTypes;
     }
     @Override
+    public Map<URI, RdfClass> getAllClasses()
+    {
+        return allClasses;
+    }
+    @Override
     public Map<URI, RdfClass> getPublicClasses()
     {
         return publicClasses;
+    }
+    @Override
+    public Map<URI, RdfDataType> getAllDataTypes()
+    {
+        return allDataTypes;
     }
     @Override
     public Map<URI, RdfDataType> getPublicDataTypes()
@@ -80,9 +98,19 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         return publicDataTypes;
     }
     @Override
+    public Map<URI, RdfProperty> getAllProperties()
+    {
+        return allProperties;
+    }
+    @Override
     public Map<URI, RdfProperty> getPublicProperties()
     {
         return publicProperties;
+    }
+    @Override
+    public Set<RdfLiteral> getAllLiterals()
+    {
+        return allLiterals;
     }
     @Override
     public Set<RdfLiteral> getPublicLiterals()
@@ -94,6 +122,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         this.allTypes.put(rdfClass.getCurieName(), rdfClass);
 
+        this.allClasses.put(rdfClass.getCurieName(), rdfClass);
         if (rdfClass.isPublic()) {
             this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
         }
@@ -103,6 +132,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         this.allTypes.put(rdfProperty.getCurieName(), rdfProperty);
 
+        this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
         if (rdfProperty.isPublic()) {
             this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
         }
@@ -112,6 +142,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         this.allTypes.put(rdfDataType.getCurieName(), rdfDataType);
 
+        this.allDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
         if (rdfDataType.isPublic()) {
             this.publicDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
         }
@@ -119,6 +150,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public void addLiteral(RdfLiteral rdfLiteral)
     {
+        this.allLiterals.add(rdfLiteral);
         if (rdfLiteral.isPublic()) {
             this.publicLiterals.add(rdfLiteral);
         }

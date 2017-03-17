@@ -703,13 +703,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return formGroup;
         },
-        // addUniqueClass: function (Sidebar, element, labelText, values, changeListener)
-        // {
-        //     var id = Commons.generateId();
-        //     var content = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
-        //     content.append($('<label for="' + id + '">' + labelText + '</label>'));
-        //     var dropdown = $('<div class="dropdown"/>').appendTo(content);
-        // }
 
         //-----PRIVATE METHODS-----
         //These are more or less real private methods, used in the add* functions above
@@ -1370,6 +1363,39 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
                 }
             });
-        }
+        },
+        createListGroup: function(labelText, sortable, reorderListener)
+        {
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"/>');
+            var id = Commons.generateId();
+            if (labelText) {
+                var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
+            }
+            var listGroup = $('<div id="' + id + '" class="list-group"/>').appendTo(formGroup);
+
+            if (sortable && Sortable) {
+                var opts = {
+                    //works nicer when the whole line is draggable, but works
+                    //handle: ".handle",
+                    animation: 250,
+                    //this will create an empty space where we will drop
+                    ghostClass: 'invisible',
+                    draggable: '.list-group-item',
+                    //don't let the perfect scrollbar items be sorted
+                    filter: '.ps-scrollbar-x-rail, ps-scrollbar-y-rail',
+                };
+                if (reorderListener) {
+                    opts.onUpdate = $.proxy(reorderListener, this);
+                }
+
+                Sortable.create(listGroup.get(0), opts);
+            }
+
+            if (jQuery().perfectScrollbar) {
+                listGroup.perfectScrollbar();
+            }
+
+            return formGroup;
+        },
     });
 }]);

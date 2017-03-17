@@ -83,7 +83,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
-            $(document).on("click.prevent_click_editing", "a, button", function (e)
+            //Note: we need to use mouseup instead of click because with click,
+            // we get in trouble when the original link is deleted as a result of clicking on it
+            // (like when clicking on a DOM delete button that removes itself)
+            $(document).on("mouseup.prevent_click_editing", "a, button", function (e)
             {
                 //this is needed (instead of $(this)) to detect the [contenteditable]
                 var control = $(e.target);

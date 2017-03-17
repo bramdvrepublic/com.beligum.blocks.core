@@ -80,6 +80,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                     "content",
                     "style"
     );
+    public static final Set<String> ALL_URL_ATTR = Sets.union(ALL_SIMPLE_URL_ATTR, ALL_COMPLEX_URL_ATTR);
 
     //-----VARIABLES-----
 
@@ -217,7 +218,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     private void processUris(Element element, OutputDocument retVal)
     {
         //for now, we only parse URIs for fingerprinting
-        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+        if (R.configuration().getResourceConfig().getEnableFingerprintedResources() && R.configuration().getResourceConfig().getEnableFingerprintedTemplates()) {
 
             //skip resource elements, the URI will be wrapped/parsed more extensively because of packing and inlining; see HtmlTemplate.buildResourceHtml()
             if (!HtmlTemplate.isResourceElement(element)) {
@@ -231,7 +232,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                             // but because I forgot simple attributes can contain templating code, it's not always that easy to just take the entire
                             // attribute and try to parse it to a URI. Now, we fallback to detectAllResourceUris() instead.
                             String name = att.getName().toLowerCase();
-                            if (ALL_SIMPLE_URL_ATTR.contains(name) || ALL_COMPLEX_URL_ATTR.contains(name)) {
+                            if (ALL_URL_ATTR.contains(name)) {
                                 retVal.replace(att, att.getName() + "=\"" + R.resourceManager().getFingerprinter().detectAllResourceUris(val, this) + "\"");
                             }
                         }

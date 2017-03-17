@@ -8,10 +8,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bram on 2/26/16.
@@ -21,9 +18,8 @@ public class RdfFactory
     //-----CONSTANTS-----
     private enum RdfMapCacheKey
     {
-        CLASS,
-        PROPERTY
-        ;
+        LOCAL_PUBLIC_CLASSES,
+        LOCAL_PUBLIC_CLASS_PROPERTIES,
     }
 
     //-----VARIABLES-----
@@ -56,7 +52,7 @@ public class RdfFactory
         RdfVocabulary retVal = null;
 
         URI vocabUri = getVocabularyPrefixes().get(prefix);
-        if (vocabUri!=null) {
+        if (vocabUri != null) {
             retVal = getVocabularies().get(vocabUri);
         }
 
@@ -74,7 +70,7 @@ public class RdfFactory
         RdfResource retVal = null;
 
         RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
-        if (vocab!=null) {
+        if (vocab != null) {
             //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
             //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
             retVal = vocab.getAllTypes().get(resourceTypeCurie);
@@ -90,19 +86,25 @@ public class RdfFactory
         RdfQueryEndpoint retVal = null;
 
         RdfClass rdfClass = (RdfClass) RdfFactory.getForResourceType(resourceTypeCurie);
-        if (rdfClass!=null) {
+        if (rdfClass != null) {
             retVal = rdfClass.getEndpoint();
         }
 
         return retVal;
     }
-    public static Set<RdfProperty> getProperties()
+    /**
+     * Returns all public classes in the local vocabulary
+     */
+    public static Set<RdfClass> getLocalPublicClasses()
     {
-        return getRdfMapCache(RdfMapCacheKey.PROPERTY, RdfProperty.class);
+        return getLocalRdfMapCache(RdfMapCacheKey.LOCAL_PUBLIC_CLASSES, RdfClass.class);
     }
-    public static Set<RdfClass> getClasses()
+    /**
+     * Returns all properties (so not only the public ones) across all public classes in the local vocabulary
+     */
+    public static Set<RdfProperty> getLocalPublicClassProperties()
     {
-        return getRdfMapCache(RdfMapCacheKey.CLASS, RdfClass.class);
+        return getLocalRdfMapCache(RdfMapCacheKey.LOCAL_PUBLIC_CLASS_PROPERTIES, RdfProperty.class);
     }
 
     //-----PROTECTED METHODS-----
@@ -111,27 +113,28 @@ public class RdfFactory
     /**
      * TODO: little bit dirty with all the casting...
      */
-    private static <T> Set<T> getRdfMapCache(RdfMapCacheKey type, Class < ? extends T > clazz)
+    private static <T> Set<T> getLocalRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_VOCABULARY_ENTRIES)) {
             Map<RdfMapCacheKey, Set> retVal = new HashMap<>();
-            retVal.put(RdfMapCacheKey.CLASS, new HashSet<RdfClass>());
-            retVal.put(RdfMapCacheKey.PROPERTY, new HashSet<RdfProperty>());
+            retVal.put(RdfMapCacheKey.LOCAL_PUBLIC_CLASSES, new HashSet<RdfClass>());
+            retVal.put(RdfMapCacheKey.LOCAL_PUBLIC_CLASS_PROPERTIES, new HashSet<RdfProperty>());
 
             //make sure we booted the static members at least once
             assertInitialized();
 
-            Map<URI, RdfVocabulary> vocabularies = getVocabularies();
-            for (Map.Entry<URI, RdfVocabulary> e : vocabularies.entrySet()) {
-                RdfVocabulary vocab = e.getValue();
-                retVal.get(RdfMapCacheKey.CLASS).addAll(vocab.getPublicClasses().values());
-                retVal.get(RdfMapCacheKey.PROPERTY).addAll(vocab.getPublicProperties().values());
+            RdfVocabulary vocab = RdfFactory.getVocabularyForPrefix(Settings.instance().getRdfOntologyPrefix());
+            retVal.get(RdfMapCacheKey.LOCAL_PUBLIC_CLASSES).addAll(vocab.getPublicClasses().values());
+            for (RdfClass rdfClass : vocab.getPublicClasses().values()) {
+                if (rdfClass.getProperties() != null) {
+                    retVal.get(RdfMapCacheKey.LOCAL_PUBLIC_CLASS_PROPERTIES).addAll(rdfClass.getProperties());
+                }
             }
 
             R.cacheManager().getApplicationCache().put(CacheKeys.RDF_VOCABULARY_ENTRIES, retVal);
         }
 
-        Object tempRetVal = ((Map)R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_ENTRIES)).get(type);
+        Object tempRetVal = ((Map) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_ENTRIES)).get(type);
 
         return (Set<T>) tempRetVal;
     }
@@ -161,7 +164,7 @@ public class RdfFactory
         URI retVal = null;
 
         RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
-        if (vocab!=null) {
+        if (vocab != null) {
             retVal = vocab.resolve(resourceTypeCurie.getPath());
         }
         else {

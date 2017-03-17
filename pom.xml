@@ -44,7 +44,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.4.2</version>
+            <version>0.4.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
@@ -115,6 +115,11 @@
             <groupId>org.webjars.bower</groupId>
             <artifactId>bootstrap-toggle</artifactId>
             <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>perfect-scrollbar</artifactId>
+            <version>0.6.4</version>
         </dependency>
 
         <!-- Note styling of typeahead-js is copied in manually because it seemed buggy; see /assets/styles/typeaheasjs/ -->
