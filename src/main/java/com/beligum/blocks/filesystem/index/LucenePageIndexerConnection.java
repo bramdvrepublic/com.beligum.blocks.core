@@ -180,7 +180,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
             // it's safe to delete those special characters and just add the asterisk
             //Update: no, had some weird issues when looking for eg. "tongs/scissors-shaped" -> worked better when replacing with a space instead of deleting them
-            String parsedQuery = this.removeEscapedChars(phrase, " ").trim();
+            String parsedQuery = removeEscapedChars(phrase, " ").trim();
             String queryStr = null;
             //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
             if (parsedQuery.contains(" ")) {
@@ -243,11 +243,9 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //        }
     }
 
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
+    //-----PUBLIC STATIC METHODS-----
     //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    private String removeEscapedChars(String s, String replacement)
+    public static String removeEscapedChars(String s, String replacement)
     {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < s.length(); i++) {
@@ -265,6 +263,10 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         }
         return sb.toString();
     }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
     private void printLuceneIndex() throws IOException
     {
         Directory dir = FSDirectory.open(getDocDir());

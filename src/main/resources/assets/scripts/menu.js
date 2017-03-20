@@ -225,7 +225,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     $(this).replaceWith(ignoredContent[idx]);
                 });
 
-                $(document).off("click.prevent_click_editing");
+                $(document).off("mouseup.prevent_click_editing");
                 body.append(menuStartButton);
                 body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 

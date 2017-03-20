@@ -33,6 +33,9 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
     private static final String BOOLEAN_TRUE_STRING = "T";
     private static final String BOOLEAN_FALSE_STRING = "F";
 
+    //This is the maximum length of a string value that will (also) be indexed as a constant value
+    private static final int MAX_CONSTANT_STRING_FIELD_SIZE = 1024;
+
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
@@ -109,15 +112,24 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      || property.getDataType().equals(XSD.BASE64_BINARY)) {
                 String val = objLiteral.stringValue();
                 indexer.indexStringField(fieldName, val);
+                //if the value is within certain bounds, also index it as a constant,
+                //so that we're able to search for it exactly.
+                if (val.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
+                    indexer.indexConstantField(fieldName, val);
+                }
                 retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(RDF.HTML)) {
                 String val = StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue());
                 indexer.indexStringField(fieldName, val);
+                if (val.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
+                    indexer.indexConstantField(fieldName, val);
+                }
                 retVal = new RdfIndexer.IndexResult(val);
             }
             else {
-                throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property type is unimplemented; "+property.getDataType());
+                throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject + "' because the property type is unimplemented; " +
+                                      property.getDataType());
             }
         }
         else if (value instanceof IRI || property.getDataType().equals(XSD.ANY_URI)) {
@@ -138,19 +150,21 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                         retVal = new RdfIndexer.IndexResult(val, valStr);
                     }
                     catch (Exception e) {
-                        throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because there was an error while parsing the information coming back from the resource endpoint for datatype "+property.getDataType()+";", e);
+                        throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
+                                              "' because there was an error while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
                     }
                 }
                 else {
                     //make sure we have a language or we won't be able to lookup the resource from the uri
                     URI resourceNeedingIndexation = uriValue;
                     Locale uriValueLang = R.i18n().getUrlLocale(resourceNeedingIndexation);
-                    if (uriValueLang==null) {
+                    if (uriValueLang == null) {
                         //it's a resource, so add it as a query parameter
                         resourceNeedingIndexation = UriBuilder.fromUri(resourceNeedingIndexation).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
                     }
 
-                    throw new NotIndexedException(subject, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject + "' because it's resource endpoint returned null");
+                    throw new NotIndexedException(subject, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
+                                                                                      "' because it's resource endpoint returned null");
                 }
             }
             else {
@@ -162,7 +176,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
         }
         else {
-            throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because of an unsupported RDF type; " +
+            throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject + "' because of an unsupported RDF type; " +
                                   value.getClass());
         }
 
@@ -173,7 +187,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
     {
         Object retVal = null;
 
-        if (value!=null) {
+        if (value != null) {
             if (property.getDataType().equals(XSD.BOOLEAN)) {
                 retVal = Boolean.parseBoolean(value) ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
             }
@@ -209,24 +223,36 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             else if (property.getDataType().equals(XSD.STRING)
                      || property.getDataType().equals(XSD.NORMALIZED_STRING)
                      || property.getDataType().equals(RDF.LANGSTRING)) {
-                retVal = retVal;
+                retVal = value;
             }
             else if (property.getDataType().equals(RDF.HTML)) {
-                retVal = retVal;
+                retVal = StringFunctions.htmlToPlaintextRFC3676(value);
+            }
+            else if (property.getDataType().equals(XSD.ANY_URI)) {
+                //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+                URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value));
+
+                RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
+                if (endpoint != null) {
+                    ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
+                    if (resourceValue != null) {
+                        //this is error prone, but the logging info is minimal, so we wrap it to have more information
+                        try {
+                            retVal = resourceValue.getResourceUri().toString();
+                        }
+                        catch (Exception e) {
+//                            throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
+//                                                  "' because there was an error while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
+                        }
+                    }
+                }
+                else {
+                    //not all URIs have an endpoint (eg an <img> tag)
+                    retVal = uriValue.toString();
+                }
             }
             else {
-                //TODO... maybe start with a try-parse of an URI and if that succeeds, lookup the Stirng value from the endpoint? Don't forget to sync with the method above though...
-                if (true) {
-                    throw new IOException("Unimplemented data type; " + property.getDataType());
-                }
-
-//                RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
-//                if (endpoint != null) {
-//
-//                }
-//                else {
-//                    throw new IOException("Unable to prepare RDF index property " + fieldName + " for value '" + value + "' because the property type is unimplemented; " + property.getDataType());
-//                }
+                throw new IOException("Unimplemented data type; " + property.getDataType());
             }
         }
 

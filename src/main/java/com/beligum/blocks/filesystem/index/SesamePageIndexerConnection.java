@@ -155,9 +155,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
         //we'll be deleting all the triples in the model of the page,
         //except the ones that are present in another language.
-        Model pageModel = page.readRdfModel();
-        Map<Locale, Page> translations = page.getTranslations();
-        for (Page p : translations.values()) {
+        Model pageModel = this.queryModel(page, false);
+        for (Page p : page.getTranslations().values()) {
             pageModel.removeAll(p.readRdfModel());
         }
 
@@ -168,6 +167,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertTransaction();
 
+        this.delete(page);
         this.connection.add(page.readRdfModel());
     }
     @Override
@@ -456,7 +456,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     /**
      * Note: untested (saved for future reference)
      */
-    private Model queryModel(Page page) throws IOException
+    private Model queryModel(Page page, boolean excludeTranslations) throws IOException
     {
         IRI publicPageIri = this.connection.getValueFactory().createIRI(page.getPublicAbsoluteAddress().toString());
         //note that RDF requires absolute urls
@@ -466,16 +466,21 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         }
         IRI resourceIri = this.connection.getValueFactory().createIRI(resourceUri.toString());
 
+        //find all statements that have the public URI as a subject
         Model model = QueryResults.asModel(this.connection.getStatements(publicPageIri, null, null));
+        //find all statements that have the internal resource URI as a subject
         model.addAll(QueryResults.asModel(this.connection.getStatements(resourceIri, null, null)));
 
-        Iterator<Statement> iter = model.iterator();
-        while (iter.hasNext()) {
-            Statement stmt = iter.next();
-            if (stmt.getObject() instanceof Literal) {
-                Literal literal = (Literal) stmt.getObject();
-                if (literal.getLanguage().isPresent() && !literal.getLanguage().get().equals(page.getLanguage().getLanguage())) {
-                    iter.remove();
+        //remove all literals in other languages
+        if (excludeTranslations) {
+            Iterator<Statement> iter = model.iterator();
+            while (iter.hasNext()) {
+                Statement stmt = iter.next();
+                if (stmt.getObject() instanceof Literal) {
+                    Literal literal = (Literal) stmt.getObject();
+                    if (literal.getLanguage().isPresent() && !literal.getLanguage().get().equals(page.getLanguage().getLanguage())) {
+                        iter.remove();
+                    }
                 }
             }
         }

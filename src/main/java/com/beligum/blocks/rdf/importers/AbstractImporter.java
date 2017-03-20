@@ -143,7 +143,7 @@ public abstract class AbstractImporter implements Importer
                             newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
                         }
                         else {
-                            throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype());
+                            throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype() + " - " + objectValue);
                         }
                     }
                 }

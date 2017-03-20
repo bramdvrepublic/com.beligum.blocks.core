@@ -228,7 +228,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 {
                     if (attribute) {
                         if (newValue) {
-                            element.attr(attribute, '')
+                            //Note: having a value seems to be necessary
+                            element.attr(attribute, 'true')
                         } else {
                             element.removeAttr(attribute)
                         }
