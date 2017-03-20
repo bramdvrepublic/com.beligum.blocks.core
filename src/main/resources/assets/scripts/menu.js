@@ -83,10 +83,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
-            //Note: we need to use mouseup instead of click because with click,
-            // we get in trouble when the original link is deleted as a result of clicking on it
-            // (like when clicking on a DOM delete button that removes itself)
-            $(document).on("mouseup.prevent_click_editing", "a, button", function (e)
+            // Note: after trying mousedown or mouseup to prevent vanishing links from triggering the modal,
+            // it's quite important this is effectively the click event, because it overloads a lot of necessary other clicks
+            // Use the pierce trough class to work around it
+            $(document).on("click.prevent_click_editing", "a, button", function (e)
             {
                 //this is needed (instead of $(this)) to detect the [contenteditable]
                 var control = $(e.target);
@@ -225,7 +225,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     $(this).replaceWith(ignoredContent[idx]);
                 });
 
-                $(document).off("mouseup.prevent_click_editing");
+                $(document).off("click.prevent_click_editing");
                 body.append(menuStartButton);
                 body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 

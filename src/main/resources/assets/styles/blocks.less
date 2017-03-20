@@ -514,7 +514,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
       }
 
       //we invented this class as a means to add sub-panels
-      .group {
+      .@{PANEL_GROUP_CLASS} {
         position: relative;
         border: 1px solid @table-border-color;
         margin-bottom: @line-height-computed;
@@ -715,25 +715,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           &:hover {
             background-color: transparent;
           }
-        }
-      }
-
-      .@{CREATE_LINK_WRAPPER_CLASS} {
-        &.active {
-          border: 1px solid lighten(@btn-default-border, 13%);
-          //background-color: @panel-default-heading-bg;
-          padding: 5px 5px 1px 5px;
-          margin-top: 20px;
-          margin-bottom: 15px;
-          margin-left: -5px;
-          margin-right: -5px;
-
-          .form-group:last-child {
-            margin-bottom: 5px;
-          }
-        }
-        &:last-child {
-          margin-bottom: 0;
         }
       }
 
