@@ -34,6 +34,7 @@
         <!-- Sync these two using https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
         <version.infinispan>8.1.1.Final</version.infinispan>
         <version.jbossjta>5.0.4.Final</version.jbossjta>
+        
     </properties>
 
     <scm>
