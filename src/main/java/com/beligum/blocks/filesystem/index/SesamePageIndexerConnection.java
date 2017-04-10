@@ -157,7 +157,10 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //except the ones that are present in another language.
         Model pageModel = this.queryModel(page, false);
         for (Page p : page.getTranslations().values()) {
-            pageModel.removeAll(p.readRdfModel());
+            Model model = p.readRdfModel();
+            if (model != null) {
+                pageModel.removeAll(model);
+            }
         }
 
         this.connection.remove(pageModel);
@@ -356,11 +359,11 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         luceneTime = System.currentTimeMillis();
         end = System.currentTimeMillis();
 
-//        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
-//        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
-//        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
-//        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
-//        Logger.info("\n");
+        //        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
+        //        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
+        //        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
+        //        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
+        //        Logger.info("\n");
 
         return retVal;
     }

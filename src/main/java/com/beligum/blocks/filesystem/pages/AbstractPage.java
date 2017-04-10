@@ -179,10 +179,14 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         Model retVal = null;
 
         //explicitly read the model from disk so we can use this stand alone
-        Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
-        try (InputStream is = this.getFileContext().open(this.getRdfExportFile())) {
-            //note that all RDF needs absolute addresses
-            retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
+        Path modelFile = this.getRdfExportFile();
+        //don't let it throw an exception if the file doesn't exist, just return null
+        if (this.getFileContext().util().exists(modelFile)) {
+            Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
+            try (InputStream is = this.getFileContext().open(modelFile)) {
+                //note that all RDF needs absolute addresses
+                retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
+            }
         }
 
         return retVal;
