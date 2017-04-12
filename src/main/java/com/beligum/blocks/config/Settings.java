@@ -28,7 +28,8 @@ public class Settings
     private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
     private static final String TRANSACTION_TIMEOUT_KEY = "blocks.core.transactions.timeout";
-    private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
+    //one minute; this is the same values as the default of bitronix.tm.timer.defaultTransactionTimeout
+    private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 60 * 1000;//1 minute
     private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder().build();
 
     private static final String CONTEXT_DEFAULT_PAGES_DIR = "pages";

@@ -3,6 +3,8 @@ package com.beligum.blocks.filesystem.index;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import org.openrdf.repository.RepositoryException;
@@ -40,7 +42,12 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect() throws IOException
     {
-        return new SesamePageIndexerConnection(this);
+        return this.connect(StorageFactory.getCurrentRequestTx());
+    }
+    @Override
+    public synchronized PageIndexConnection connect(TX tx) throws IOException
+    {
+        return new SesamePageIndexConnection(this, tx);
     }
     @Override
     public synchronized void shutdown() throws IOException

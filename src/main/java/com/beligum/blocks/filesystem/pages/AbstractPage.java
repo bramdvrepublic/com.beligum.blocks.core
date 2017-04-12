@@ -9,6 +9,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
+import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.utils.RdfTools;
@@ -34,7 +35,6 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     //-----CONSTANTS-----
     //Note: don't change this or the entire DB will be corrupt
     protected static final String DIR_PAGE_NAME = "index";
-    protected static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
     protected URI canonicalAddress;
@@ -63,38 +63,6 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //After some super-preparsing, we need to do our own page-related post-parsing
         this.init(this.getUri());
     }
-    //    protected AbstractPage(Path relativeLocalFile) throws IOException
-    //    {
-    //        String ext = Settings.instance().getPagesFileExtension();
-    //
-    //        String filename = relativeLocalFile.getName();
-    //        if (!filename.endsWith(ext)) {
-    //            throw new IOException("Can't create a page from a file that doesn't end with '"+ext+"'");
-    //        }
-    //        else {
-    //            this.relativeStoragePath = relativeLocalFile.toUri();
-    //
-    //            //strip the storage file extension and check if we're dealing with a folder
-    //            String urlFilename = filename.substring(0, filename.length()-ext.length());
-    //            if (urlFilename.equals(DIR_PAGE_NAME)) {
-    //                urlFilename = null;
-    //            }
-    //
-    //            //we strip off the name and re-build it if necessary
-    //            URI canonicalTemp = relativeLocalFile.toUri().resolve(".");
-    //            //means we're dealing with a file-url, not a folder-url
-    //            if (urlFilename!=null) {
-    //                canonicalTemp = canonicalTemp.resolve(urlFilename);
-    //            }
-    //
-    //            //strip off the language prefix (note that this retuns a path without a leading slash)
-    //            UriBuilder uriBuilder = UriBuilder.fromUri(canonicalTemp);
-    //            this.language = R.i18n().getUrlLocale(canonicalTemp, uriBuilder, null);
-    //
-    //            //make it 'relative' by re-adding the leading slash
-    //            this.canonicalAddress = ROOT.resolve(uriBuilder.build());
-    //        }
-    //    }
 
     //-----PUBLIC METHODS-----
     /**
@@ -137,7 +105,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     {
         if (!this.checkedAbsoluteAddress) {
             //Note: the relative-root removed the leading slash, allowing us to let siteDomain have a prefix path (which is unlikely, but still)
-            URI relativePath = ROOT.relativize(this.getCanonicalAddress());
+            URI relativePath = HdfsUtils.ROOT.relativize(this.getCanonicalAddress());
             boolean isResource = RdfTools.isResourceUrl(this.getCanonicalAddress());
             if (!isResource && this.getLanguage() != null) {
                 //note: no leading slash, same reason as above

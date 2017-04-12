@@ -148,6 +148,10 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             throw newXAException(XAException.XAER_RMERR, e);
         }
     }
+
+    /**
+     * Method that should be implemented by specific subclasses to begin a new transaction.
+     */
     protected abstract void begin() throws IOException;
 
     /**
@@ -179,7 +183,10 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             throw newXAException(XAException.XAER_RMERR, e);
         }
     }
-    //renamed to make it more clear what it does
+    /**
+     * Method that should be implemented by subclasses to start off the two-phase commit
+     * (renamed to make it more clear what it does)
+     */
     protected abstract void prepareCommit() throws IOException;
 
     /**
@@ -209,6 +216,10 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             throw newXAException(XAException.XAER_RMERR, e);
         }
     }
+
+    /**
+     * Method that should be implemented by subclasses to end the two-phase commit
+     */
     protected abstract void commit() throws IOException;
 
     /**
@@ -232,6 +243,10 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             clearXid();
         }
     }
+
+    /**
+     * Method that should be implemented by subclasses to rollback the two-phase commit
+     */
     protected abstract void rollback() throws IOException;
 
     /**

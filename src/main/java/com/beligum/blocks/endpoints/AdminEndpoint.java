@@ -23,14 +23,13 @@ import static gen.com.beligum.blocks.core.messages.blocks.core.Entries.templateR
 public class AdminEndpoint
 {
     private static final String RESET_TEMPLATES = "templates";
-    private static final String EVOLUTION_PAGESTORE = "pagestore";
 
     @Path("/")
     @GET
     public Response get(@Context HttpServletRequest httpRequest) throws IOException
     {
         if (!httpRequest.getRequestURI().endsWith("/")) {
-            //works because of the @Path("/") above
+            //This works because of the @Path("/") above
             return Response.seeOther(gen.com.beligum.blocks.endpoints.AdminEndpointRoutes.get().getUri()).build();
         }
         else {

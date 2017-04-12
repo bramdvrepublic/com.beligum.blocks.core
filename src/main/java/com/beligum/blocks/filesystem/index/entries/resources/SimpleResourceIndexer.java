@@ -56,7 +56,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
                     title = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.warn("Double " + titleIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + titleIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(textIri)) {
@@ -64,7 +64,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
                     text = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.warn("Double " + textIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + textIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(commentIri)) {
@@ -72,7 +72,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
                     comment = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.warn("Double " + commentIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + commentIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(imageIri)) {
@@ -80,7 +80,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
                     image = URI.create(stmt.getObject().stringValue());
                 }
                 else {
-                    Logger.warn("Double " + imageIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + imageIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
         }

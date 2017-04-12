@@ -1,7 +1,6 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.openrdf.query.TupleQuery;
@@ -13,7 +12,7 @@ import java.util.Map;
 /**
  * Created by bram on 4/7/16.
  */
-public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryConnection<T>
+public interface SparqlQueryConnection extends QueryConnection
 {
     //-----CONSTANTS-----
 
@@ -47,7 +46,7 @@ public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryCo
     /**
      * Build a low-level query object from the supplied SPARQL query
      */
-    TupleQuery query(String sparqlQuery);
+    TupleQuery query(String sparqlQuery) throws IOException;
 
     //-----PROTECTED METHODS-----
 

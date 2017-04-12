@@ -5,14 +5,12 @@ import bitronix.tm.resource.ResourceRegistrar;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.cache.Cache;
 import com.beligum.base.cache.CacheKey;
-import com.beligum.base.cache.EhCacheAdaptor;
-import com.beligum.base.cache.HashMapCache;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
-import com.beligum.blocks.filesystem.hdfs.RequestTX;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
@@ -33,8 +31,6 @@ import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
-import javax.transaction.Status;
-import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.net.URI;
@@ -46,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.beligum.base.server.R.cacheManager;
-import static com.beligum.blocks.caching.CacheKeys.TX_FAKE_REQUEST_CACHE;
 
 /**
  * Created by bram on 2/16/16.
@@ -69,7 +64,7 @@ public class StorageFactory
         FileContext fileContext = FileContext.getFileContext(configuration);
 
         if (fileContext.getDefaultFileSystem() instanceof XAttrFS) {
-            ((XAttrFS)fileContext.getDefaultFileSystem()).register(Settings.instance().getXAttrResolverFactory().create(fileContext));
+            ((XAttrFS) fileContext.getDefaultFileSystem()).register(Settings.instance().getXAttrResolverFactory().create(fileContext));
         }
 
         return fileContext;
@@ -77,7 +72,7 @@ public class StorageFactory
     public static PageIndexer getMainPageIndexer() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            Indexer indexer = new LucenePageIndexer();
+            PageIndexer indexer = new LucenePageIndexer();
             getIndexerRegistry().add(indexer);
             cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
         }
@@ -91,7 +86,7 @@ public class StorageFactory
     public static PageIndexer getTriplestoreIndexer() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            Indexer indexer = new SesamePageIndexer();
+            PageIndexer indexer = new SesamePageIndexer();
             getIndexerRegistry().add(indexer);
             cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
         }
@@ -117,7 +112,7 @@ public class StorageFactory
                 //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
 
                 //bitronix
-                //This doesn't work because Hibernate picks up Bitronix during starup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
+                //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
                 //workaround is to create a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
                 //or to set the JVM system properties.
                 //DONE: this is implemented now, see BlocksSystemPropertyFactory
@@ -140,7 +135,7 @@ public class StorageFactory
                 //DONE: this is implemented now, see BlocksSystemPropertyFactory
                 //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
 
-                //tweak the log level if we're using atomikos
+                //tweak the log level if we're using atomikos (old code)
                 if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
                     ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
                     if (atomikosLogger != null) {
@@ -166,123 +161,104 @@ public class StorageFactory
     public static CustomBitronixResourceProducer getBitronixResourceProducer() throws IOException
     {
         //make sure there's a transaction manager first..
-        TransactionManager tm = getTransactionManager();
+        getTransactionManager();
 
         return (CustomBitronixResourceProducer) ResourceRegistrar.get(SimpleXAResourceProducer.UNIQUE_NAME);
     }
-    public static RequestTX getCurrentRequestTx() throws IOException
+    public static TX getCurrentRequestTx() throws IOException
     {
-        Cache<CacheKey, Object> txCache = getCurrentTxCache();
+        TX retVal = null;
 
-        //Sync this with the release code below
-        synchronized (requestTxLock) {
-            if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
-                try {
-                    TransactionManager transactionManager = getTransactionManager();
-                    //start up a new transaction
-                    transactionManager.begin();
-                    //fetch the transaction attached to the current thread
-                    Transaction transaction = transactionManager.getTransaction();
-                    //wrap it in a request object
-                    RequestTX cacheEntry = new RequestTX(transaction);
+        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
+        if (txCache != null) {
+            //Sync this with the release code below
+            synchronized (requestTxLock) {
+                if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
+                    try {
+                        txCache.put(CacheKeys.REQUEST_TRANSACTION, new TX(getTransactionManager()));
+                    }
+                    catch (Exception e) {
+                        throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                    }
+                }
 
-                    txCache.put(CacheKeys.REQUEST_TRANSACTION, cacheEntry);
-                }
-                catch (Exception e) {
-                    throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
-                }
+                retVal = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
             }
-
-            return (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
         }
+
+        return retVal;
     }
     public static boolean hasCurrentRequestTx() throws IOException
     {
-        return getCurrentTxCache().containsKey(CacheKeys.REQUEST_TRANSACTION);
+        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
+        return txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
     }
-    /**
-     * Normally, this is called from RequestTransactionFilter, but sometimes
-     * we want to call multiple transactional request-operations during a single request (eg. during re-indexing).
-     * The transaction system complains when doing this, so calling this method after every 'request-operation', we simulate a real request,
-     * but it certainly is not the best approach...
-     */
+    public static TX createThreadTx(long timeoutMillis) throws IOException
+    {
+        TX retVal = null;
+
+        try {
+            retVal = new TX(getTransactionManager(), timeoutMillis);
+        }
+        catch (Exception e) {
+            throw new IOException("Exception caught while creating a thread transaction", e);
+        }
+
+        return retVal;
+    }
+
     public static void releaseCurrentRequestTx(boolean forceRollback) throws IOException
     {
-        Cache<CacheKey, Object> txCache = getCurrentTxCache();
+        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
-        //happens when the server hasn't started up yet
+        //happens when the server hasn't started up yet or we're not in a request context
         if (txCache != null) {
-            RequestTX tx = (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+            TX tx = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+
+            //don't release anything if no tx is active (is this worth an exception?)
             if (tx != null) {
                 try {
-                    if (forceRollback || tx.getStatus() != Status.STATUS_ACTIVE) {
-                        tx.rollback();
-                    }
-                    else {
-                        //this is the general case: try to commit and (try to) rollback on error
-                        try {
-                            tx.commit();
-                        }
-                        catch (Throwable e) {
-                            try {
-                                Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", e);
-                                tx.rollback();
-                            }
-                            catch (Throwable e1) {
-                                //don't wait for the next reboot before trying to revert to a clean state; try it now
-                                //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                                if (!StorageFactory.rebootPageStoreTransactionManager()) {
-                                    throw new IOException(
-                                                    "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
-                                                    e1);
-                                }
-                                else {
-                                    //we can't just swallow the exception; something's wrong and we should report it to the user
-                                    throw new IOException(
-                                                    "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
-                                                    e1);
-                                }
-                            }
-                        }
-                    }
+                    tx.close(forceRollback);
                 }
                 catch (Throwable e) {
-                    throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
+                    //don't wait for the next reboot before trying to revert to a clean state; try it now
+                    //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
+                    if (!StorageFactory.rebootPageStoreTransactionManager()) {
+                        throw new IOException("Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!", e);
+                    }
+                    else {
+                        //we can't just swallow the exception; something's wrong and we should report it to the user
+                        throw new IOException("I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;", e);
+                    }
                 }
                 finally {
-                    try {
-                        tx.close();
-                    }
-                    catch (Throwable e) {
-                        throw new IOException("Exception caught while closing a file system transaction; this is bad", e);
-                    }
-                    finally {
-                        //make sure we only do this once
-                        txCache.remove(CacheKeys.REQUEST_TRANSACTION);
-
-                        //detects if we're using a fake transaction cache and releases it if necessary
-                        releaseCurrentTxCache();
-                    }
+                    //make sure we only do this once
+                    txCache.remove(CacheKeys.REQUEST_TRANSACTION);
                 }
             }
         }
     }
     public static XASession getCurrentRequestXDiskTx() throws IOException
     {
-        RequestTX requestTx = getCurrentRequestTx();
-
-        //start up a new XDisk session if needed
-        if (requestTx.getXdiskSession() == null) {
-            try {
-                //boot a new xadisk, register it and save it in our wrapper
-                requestTx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
-            }
-            catch (Exception e) {
-                throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
-            }
+        if (!R.requestContext().isActive()) {
+            throw new IOException("We're not in an active request context, so I can't create a request-transaction scoped XDisk session");
         }
+        else {
+            TX requestTx = getCurrentRequestTx();
 
-        return requestTx.getXdiskSession();
+            //start up a new XDisk session if needed
+            if (requestTx.getXdiskSession() == null) {
+                try {
+                    //boot a new xadisk, register it and save it in our wrapper
+                    requestTx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                }
+            }
+
+            return requestTx.getXdiskSession();
+        }
     }
     public static XAFileSystem getPageStoreTransactionManager() throws IOException
     {
@@ -304,7 +280,7 @@ public class StorageFactory
                         cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
                     }
                     catch (InterruptedException e) {
-                        throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
+                        throw new IOException("Error occurred while booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
                     }
                 }
             }
@@ -366,10 +342,10 @@ public class StorageFactory
 
             //create the root folder if needed
             //TODO: commented out because we're not in a transaction here
-//            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
-//            if (!fileContext.util().exists(root)) {
-//                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
-//            }
+            //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
+            //            if (!fileContext.util().exists(root)) {
+            //                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
+            //            }
 
             cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
         }
@@ -415,62 +391,5 @@ public class StorageFactory
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    /**
-     * Since a request can span more than a request-period (eg. request booting an async long running atomic action),
-     * we decided to separate this from the request cache. This goes hand in hand with RequestTransactionFilter.executeManualTxCleanup()
-     * which enables us to manually end the currently running transaction.
-     */
-    private static Cache<CacheKey, Object> getCurrentTxCache() throws IOException
-    {
-        //sync this with releaseCurrentRequestTx()
-        Cache<CacheKey, Object> retVal = R.cacheManager().getRequestCache();
 
-        //this means we're not in a request context (most probably in an async method),
-        // so we'll boot up a fake request cache for this transaction
-        if (R.booted() && retVal == null) {
-            Cache allRequestsCache = getFakeRequestCache();
-
-            String currentCacheId = getFakeRequestId();
-            retVal = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
-            if (retVal == null) {
-                Logger.warn("Building a fake TX (request) cache for id " + currentCacheId + " to support a long-running asynchronous execution. The cache currently holds " + allRequestsCache.size() +
-                            " entries. Please use this sparingly, it's quite untested...");
-                //let's re-use the id as the name of the cache, hope that's ok...
-                allRequestsCache.put(currentCacheId, retVal = new HashMapCache<CacheKey, Object>(currentCacheId));
-            }
-        }
-
-        return retVal;
-    }
-    private static void releaseCurrentTxCache()
-    {
-        //detectAndReplace if we're using a fake request cache and remove it if necessary
-        Cache<CacheKey, Object> requestCache = R.cacheManager().getRequestCache();
-        if (requestCache == null) {
-            Cache allRequestsCache = getFakeRequestCache();
-            String currentCacheId = getFakeRequestId();
-            Cache<CacheKey, Object> fakeRequestCache = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
-            if (fakeRequestCache != null) {
-                allRequestsCache.remove(currentCacheId);
-            }
-        }
-    }
-    private static String getFakeRequestId()
-    {
-        return String.valueOf(Thread.currentThread().getId());
-    }
-    private static Cache getFakeRequestCache()
-    {
-        if (!R.cacheManager().cacheExists(TX_FAKE_REQUEST_CACHE.name())) {
-
-            //we create a cache where it's entries live for at most one day (both from creation time as from last accessed time),
-            //doesn't overflow to disk and keep at most 100 results
-            //Note: one day seems to be a long time, but that's the whose point of supporting long-running asynchronous methods, right?
-            long timeToLiveSeconds = 60 * 60 * 24;
-            long timeToIdleSeconds = timeToLiveSeconds;
-            R.cacheManager().registerCache(new EhCacheAdaptor(TX_FAKE_REQUEST_CACHE.name(), 100, false, false, timeToLiveSeconds, timeToIdleSeconds));
-        }
-
-        return R.cacheManager().getCache(TX_FAKE_REQUEST_CACHE.name());
-    }
 }

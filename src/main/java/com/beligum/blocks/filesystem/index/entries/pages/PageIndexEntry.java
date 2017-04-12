@@ -26,9 +26,25 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * The string representation of the most basic resource URI (eg. for a public page, this is the low-level interconnecting "about" URI, not the public SEO-friendly one)
+     */
     String getResource();
+
+    /**
+     * The string representation of the CURIE of the RdfClass type of the page
+     */
     String getTypeOf();
+
+    /**
+     * What get's returned by the Locale.getLanguage() method of the page's language locale.
+     */
     String getLanguage();
+
+    /**
+     * The string representation of the canonical address of this page (eg. the standardized form of the publicly visible address)
+     */
     String getCanonicalAddress();
 
     /**

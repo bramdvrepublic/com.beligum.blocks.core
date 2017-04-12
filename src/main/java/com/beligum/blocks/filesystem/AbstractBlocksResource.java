@@ -53,7 +53,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
      */
     protected AbstractBlocksResource(ResourceRequest request, FileContext fileContext)
     {
-        //Note: don't forget to set the local path in the subclass!
+        //Note: don't forget to set the local storage path in the subclass!
         this(request, fileContext, null);
     }
     protected AbstractBlocksResource(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext, Path localStoragePath)

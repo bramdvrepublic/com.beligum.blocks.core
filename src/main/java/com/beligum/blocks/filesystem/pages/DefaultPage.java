@@ -47,32 +47,14 @@ public abstract class DefaultPage extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected DefaultPage(ResourceRequest request, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPage(ResourceRequest request, FileContext fileContext) throws IOException
     {
         super(request, fileContext);
-
-        //this.init(fileSystemBaseUri, fileContext);
     }
-    protected DefaultPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext) throws IOException
     {
         super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
-
-        //this.init(fileSystemBaseUri, fileContext);
     }
-//    protected DefaultPageImpl(Path relativeLocalFile, URI fileSystemBaseUri, FileContext fileContext) throws IOException
-//    {
-//        super(relativeLocalFile);
-//
-//        this.init(fileSystemBaseUri, fileContext);
-//    }
-//    protected void init(URI fileSystemBaseUri, FileContext fileContext) throws IOException
-//    {
-//        //Note: the root-relative is to remove the leading slash
-//        URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.getLocalStoragePath()));
-//
-//        //here, we effectively attach a save-implementation to the disk location URI
-//        this.resourcePath = new HdfsResourcePath(fileContext, resourceUri);
-//    }
 
     //-----PUBLIC METHODS-----
     @Override

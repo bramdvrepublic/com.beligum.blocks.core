@@ -39,7 +39,7 @@ public class BlocksSystemPropertyFactory implements SystemPropertyFactory
         retVal.put("bitronix.tm.journal.disk.logPart2Filename", txRootPath.resolve("btm2.tlog").getPath());
 
         //Note that bitronix transaction timeout is in seconds, not millis
-        retVal.put("bitronix.tm.timer.defaultTransactionTimeout", String.valueOf(settings.getTransactionTimeoutMillis() / 1000));
+        retVal.put("bitronix.tm.timer.defaultTransactionTimeout", String.valueOf((int) (settings.getTransactionTimeoutMillis() / 1000.0)));
         //}
 
         return retVal;

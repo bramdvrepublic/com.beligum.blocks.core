@@ -17,6 +17,7 @@ import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.rdf.sources.PageSource;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
@@ -99,23 +100,21 @@ public class PageRepository extends AbstractResourceRepository
 
         return retVal;
     }
-    //    @Override
-    //    public PageIterator getAll(boolean readOnly, String relativeStartFolder, FullPathGlobFilter filter, int depth) throws IOException
-    //    {
-    //        URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
-    //        URI startFolder = rootPath;
-    //        if (!StringUtils.isEmpty(relativeStartFolder)) {
-    //            //make sure it doesn't remove leading paths
-    //            while (relativeStartFolder.startsWith("/")) {
-    //                relativeStartFolder = relativeStartFolder.substring(1);
-    //            }
-    //
-    //            startFolder = startFolder.resolve(relativeStartFolder);
-    //        }
-    //
-    //        FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
-    //        return new PageIterator(fileContext, new Path(rootPath), new Path(startFolder), readOnly, filter, depth);
-    //    }
+    @Override
+    public ResourceIterator getAll(boolean readOnly, URI startFolder, ResourceFilter filter, Integer maxDepth) throws IOException, UnsupportedOperationException
+    {
+        //this should be synced with the constructors of ReadOnlyPage and ReadWritePage
+        URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
+
+        URI startPath = rootPath;
+        if (startFolder != null) {
+            startPath = startPath.resolve(startFolder);
+        }
+
+        FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
+
+        return new PageIterator(this, fileContext, new Path(rootPath), new Path(startPath), readOnly, filter == null ? null : new FullPathGlobFilter(filter.getPathPattern()), maxDepth);
+    }
     @Override
     public Resource save(Source source, Person editor, SaveOption... options) throws IOException, UnsupportedOperationException, IllegalArgumentException
     {

@@ -1,10 +1,12 @@
 package com.beligum.blocks.filesystem.index;
 
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.*;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
@@ -40,7 +42,7 @@ import java.util.Set;
 /**
  * Created by bram on 2/22/16.
  */
-public class LucenePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection, LuceneQueryConnection
+public class LucenePageIndexConnection extends AbstractIndexConnection implements PageIndexConnection, LuceneQueryConnection
 {
     //-----CONSTANTS-----
     private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.Field.object.name());
@@ -53,19 +55,25 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     private static FSLockFactory luceneLockFactory = FSLockFactory.getDefault();
 
     private LucenePageIndexer pageIndexer;
+    private TX transaction;
     private boolean createdWriter;
+    private boolean active;
 
     //-----CONSTRUCTORS-----
-    public LucenePageIndexerConnection(LucenePageIndexer pageIndexer) throws IOException
+    public LucenePageIndexConnection(LucenePageIndexer pageIndexer, TX transaction) throws IOException
     {
         this.pageIndexer = pageIndexer;
+        this.transaction = transaction;
         this.createdWriter = false;
+        this.active = true;
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
+        this.assertActive();
+
         //since we treat all URIs as relative, we only take the path into account
         TermQuery query = new TermQuery(AbstractPageIndexEntry.toLuceneId(StringFunctions.getRightOfDomain(key)));
         TopDocs topdocs = getLuceneIndexSearcher().search(query, 1);
@@ -78,8 +86,12 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         }
     }
     @Override
-    public void delete(Page page) throws IOException
+    public void delete(Resource resource) throws IOException
     {
+        this.assertActive();
+
+        Page page = resource.unwrap(Page.class);
+
         //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
         this.getLuceneIndexWriter().deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
 
@@ -87,8 +99,12 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //this.printLuceneIndex();
     }
     @Override
-    public void update(Page page) throws IOException
+    public void update(Resource resource) throws IOException
     {
+        this.assertActive();
+
+        Page page = resource.unwrap(Page.class);
+
         DeepPageIndexEntry indexExtry = new DeepPageIndexEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
@@ -101,11 +117,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void deleteAll() throws IOException
     {
+        this.assertActive();
+
         this.getLuceneIndexWriter().deleteAll();
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException
     {
+        this.assertActive();
+
         List<IndexEntry> retVal = new ArrayList<>();
 
         long searchStart = System.currentTimeMillis();
@@ -148,11 +168,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
     {
+        this.assertActive();
+
         return this.search(luceneQuery, null, false, maxResults, 0);
     }
     @Override
     public Query buildWildcardQuery(String fieldName, String phrase, boolean complex) throws IOException
     {
+        this.assertActive();
+
         Query retVal = null;
 
         if (StringUtils.isEmpty(fieldName)) {
@@ -201,6 +225,42 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         return retVal;
     }
     @Override
+    public void close() throws IOException
+    {
+        //don't do this anymore: we switched from a new writer per transaction to a single writer, so don't close it
+        //        if (this.createdWriter) {
+        //            this.getLuceneIndexWriter().close();
+        //        }
+
+        this.pageIndexer = null;
+        this.transaction = null;
+        this.createdWriter = false;
+        this.active = false;
+    }
+
+    //-----PUBLIC STATIC METHODS-----
+    //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
+    public static String removeEscapedChars(String s, String replacement)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // These characters are part of the query syntax and must be escaped
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+                || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+                || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
+                //sb.append('\\');
+                sb.append(replacement);
+            }
+            else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    //-----PROTECTED METHODS-----
+    @Override
     protected void begin() throws IOException
     {
         //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
@@ -234,39 +294,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         return this.pageIndexer;
     }
-    @Override
-    public void close() throws IOException
-    {
-        //don't do this anymore: we switched from a new writer per transaction to a single writer, so don't close it
-        //        if (this.createdWriter) {
-        //            this.getLuceneIndexWriter().close();
-        //        }
-    }
-
-    //-----PUBLIC STATIC METHODS-----
-    //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    public static String removeEscapedChars(String s, String replacement)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            // These characters are part of the query syntax and must be escaped
-            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-                || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-                || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
-                //sb.append('\\');
-                sb.append(replacement);
-            }
-            else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private synchronized void assertActive() throws IOException
+    {
+        if (!this.active) {
+            throw new IOException("Can't proceed, an active Lucene index connection was asserted");
+        }
+    }
     private void printLuceneIndex() throws IOException
     {
         Directory dir = FSDirectory.open(getDocDir());
@@ -311,7 +346,19 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //register the writer on the first time we need it in this connection
         if (!this.createdWriter) {
             //attach this connection to the transaction manager
-            StorageFactory.getCurrentRequestTx().registerResource(this);
+            this.transaction.registerResource(this, new TX.Listener()
+            {
+                @Override
+                public void transactionEnded(int status)
+                {
+                    try {
+                        close();
+                    }
+                    catch (IOException e) {
+                        Logger.error("Error while closing a Lucene indexer connection after TX end", e);
+                    }
+                }
+            });
             this.createdWriter = true;
         }
 
@@ -326,7 +373,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                 Files.createDirectories(retVal);
             }
             if (!Files.isWritable(retVal)) {
-                throw new IOException("Lucene index directory is not writable, please check the path; " + retVal);
+                throw new IOException("Lucene index directory is not writable, please check the permissions of: " + retVal);
             }
 
             try (IndexWriter indexWriter = buildNewLuceneIndexWriter(retVal)) {

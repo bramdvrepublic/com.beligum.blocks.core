@@ -1,30 +1,18 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
 
 import java.io.IOException;
 import java.net.URI;
 
 /**
- * Created by bram on 2/21/16.
+ * Created by bram on 12/04/17.
  */
-public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConnection<T>
+public interface PageIndexConnection extends IndexConnection
 {
-    //-----CONSTANTS-----
-
-    //-----VARIABLES-----
-
-    //-----CONSTRUCTORS-----
-
-    //-----PUBLIC METHODS-----
-    T get(URI key) throws IOException;
-    void delete(Page page) throws IOException;
-    void update(Page page) throws IOException;
-    void deleteAll() throws IOException;
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-
+    /**
+     * This is the overridden general get() method from the super interface to be able to be more specific in it's return type.
+     */
+    @Override
+    PageIndexEntry get(URI key) throws IOException;
 }

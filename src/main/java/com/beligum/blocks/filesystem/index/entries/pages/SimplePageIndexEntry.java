@@ -14,6 +14,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.openrdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -32,6 +33,9 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private String typeOf;
     private String language;
     private String canonicalAddress;
+
+    //this will get cached to be re-used by possible subclasses
+    protected transient Model rdfModel;
 
     //-----CONSTRUCTORS-----
     //for serialization
@@ -82,14 +86,23 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
             this.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
             this.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
 
-            //note: the getResourceIndexer() never returns null (has a SimpleResourceIndexer as fallback)
-            ResourceIndexer.IndexedResource indexEntry = typeOf.getResourceIndexer().index(page.readRdfModel());
-            //overwrite the title if the indexer found a better match (note that the indexer can generate any kind of title it wants, not just the page <title>)
-            if (StringUtils.isBlank(this.getTitle()) && !StringUtils.isBlank(indexEntry.getTitle())) {
-                this.setTitle(indexEntry.getTitle());
+            this.rdfModel = page.readRdfModel();
+
+            //if the RDF proxy file has vanished for whatever reason, we should be prepared
+            if (this.rdfModel == null) {
+                throw new IOException("Unable to read RDF model of page while indexing, this is bad and you should fix this (eg. by saving it again, re-generating the proxy files); " +
+                                      page.getPublicAbsoluteAddress());
             }
-            this.setDescription(indexEntry.getDescription());
-            this.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
+            else {
+                //note: the getResourceIndexer() never returns null (has a SimpleResourceIndexer as fallback)
+                ResourceIndexer.IndexedResource indexEntry = typeOf.getResourceIndexer().index(this.rdfModel);
+                //overwrite the title if the indexer found a better match (note that the indexer can generate any kind of title it wants, not just the page <title>)
+                if (StringUtils.isBlank(this.getTitle()) && !StringUtils.isBlank(indexEntry.getTitle())) {
+                    this.setTitle(indexEntry.getTitle());
+                }
+                this.setDescription(indexEntry.getDescription());
+                this.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
+            }
         }
     }
 

@@ -6,10 +6,13 @@ import com.beligum.blocks.config.ReleaseFilter;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.index.ifaces.IndexConnection;
+import org.openrdf.query.algebra.If;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
+import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.io.IOException;
 import java.util.HashSet;
@@ -19,26 +22,51 @@ import static javax.transaction.xa.XAResource.TMFAIL;
 import static javax.transaction.xa.XAResource.TMSUCCESS;
 
 /**
+ * This is actually a wrapper around a central JTA transaction, but with some additional functionality
+ * to make our life easier.
+ * <p>
  * Found some interesting information in this PDF:
  * (via https://wiki.kuali.org/pages/viewpage.action?pageId=18121702)
  * https://wiki.kuali.org/download/attachments/18121702/AtomikosTransactionsGuide.pdf?api=v2
  * <p>
  * Created by bram on 2/1/16.
  */
-public class RequestTX
+public class TX
 {
     //-----CONSTANTS-----
+    public interface Listener
+    {
+        void transactionEnded(int status);
+    }
 
     //-----VARIABLES-----
-    private Transaction transaction;
+    private TransactionManager transactionManager;
+    private Transaction jtaTransaction;
     private Set<XAResource> registeredResources;
     private XASession xdiskSession;
 
     //-----CONSTRUCTORS-----
-    public RequestTX(Transaction transaction) throws Exception
+    public TX(TransactionManager transactionManager) throws Exception
+    {
+        this(transactionManager, 0);
+    }
+    public TX(TransactionManager transactionManager, long timeoutMillis) throws Exception
     {
         try {
-            this.transaction = transaction;
+            //keep a reference to the manager
+            this.transactionManager = transactionManager;
+
+            //Modify the timeout value that is associated with transactions started by the current thread with the begin method.
+            this.transactionManager.setTransactionTimeout((int) (timeoutMillis / 1000.0));
+
+            //create a new transaction and associate it with the current thread.
+            //Note that this will throw an error if there's already a transaction attached to the current thread (no nesting supported)
+            this.transactionManager.begin();
+
+            //get the transaction object that represents the transaction context of the calling thread.
+            this.jtaTransaction = transactionManager.getTransaction();
+
+            //start out with an empty set of sub-transactions
             this.registeredResources = new HashSet<>();
         }
         catch (Exception e) {
@@ -47,19 +75,15 @@ public class RequestTX
     }
 
     //-----PUBLIC METHODS-----
-    public synchronized int getStatus() throws Exception
-    {
-        return this.transaction == null ? null : this.transaction.getStatus();
-    }
     /**
      * Attach an XAResource to the current TX session
      */
-    public synchronized void registerResource(XAResource xaResource) throws IOException
+    public synchronized void registerResource(XAResource xaResource, Listener listener) throws IOException
     {
         try {
             final CustomBitronixResourceProducer bitronixProducer = StorageFactory.getBitronixResourceProducer();
             bitronixProducer.registerResource(xaResource);
-            this.transaction.registerSynchronization(new Synchronization()
+            this.jtaTransaction.registerSynchronization(new Synchronization()
             {
                 @Override
                 public void beforeCompletion()
@@ -69,6 +93,12 @@ public class RequestTX
                 public void afterCompletion(int status)
                 {
                     bitronixProducer.unregisterResource(xaResource);
+
+                    If we reach this point, the transaction is closed, regardless of it's timeout, we should find a callback for that
+
+                    if (listener != null) {
+                        listener.transactionEnded(status);
+                    }
                 }
             });
 
@@ -77,7 +107,7 @@ public class RequestTX
             // is an interface for resources that understand two-phase commit. By enlisting an XAResource, the work that it
             // represents will undergo the same outcome as the transaction. If different resources are enlisted, then their outcome
             // will be consistent with the transaction's outcome, meaning that either all will commit or all with rollback.
-            this.transaction.enlistResource(xaResource);
+            this.jtaTransaction.enlistResource(xaResource);
 
             this.registeredResources.add(xaResource);
         }
@@ -98,21 +128,63 @@ public class RequestTX
     public synchronized void setAndRegisterXdiskSession(XASession xdiskSession) throws Exception
     {
         this.xdiskSession = xdiskSession;
-        this.registerResource(xdiskSession.getXAResource());
+        this.registerResource(xdiskSession.getXAResource(), null);
+    }
+    /**
+     * This is the main and single deconstructor, wrapping and handling all internal administration
+     */
+    public synchronized void close(boolean forceRollback) throws Exception
+    {
+        try {
+            if (forceRollback || this.getStatus() != Status.STATUS_ACTIVE) {
+                this.rollback();
+            }
+            else {
+                //this is the general case: try to commit and (try to) rollback on error
+                try {
+                    this.commit();
+                }
+                catch (Throwable e) {
+                    try {
+                        Logger.warn("Caught exception while committing transaction, trying to rollback instead", e);
+                        this.rollback();
+                    }
+                    catch (Throwable e1) {
+                        Logger.warn("Caught exception while rolling back a transaction after a failed commit; this is bad", e);
+                    }
+                }
+            }
+        }
+        finally {
+            try {
+                this.close();
+            }
+            catch (Throwable e) {
+                throw new IOException("Exception caught while closing a transaction; this is bad", e);
+            }
+        }
+    }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
+    private int getStatus() throws Exception
+    {
+        return this.jtaTransaction == null ? null : this.jtaTransaction.getStatus();
     }
     /**
      * Atomically commit all sub-transactions registered in this request TX
      *
      * @see ReleaseFilter
      */
-    public synchronized void commit() throws Exception
+    private void commit() throws Exception
     {
         //From the PDF mentioned above:
         // commit: same as TransactionManager.commit(). This method should not be called randomly: first, every XAResource
         // that was enlisted should also be properly delisted. Otherwise, XA-level protocol errors can occur.
         try {
             this.delistAllResources(TMSUCCESS);
-            this.transaction.commit();
+            this.jtaTransaction.commit();
         }
         catch (Exception e) {
             throw new IOException("Error occurred while committing main transaction", e);
@@ -123,14 +195,14 @@ public class RequestTX
      *
      * @see ReleaseFilter
      */
-    public synchronized void rollback() throws Exception
+    private void rollback() throws Exception
     {
         //From the PDF mentioned above:
         // rollback: same as TransactionManager.rollback(). As with commit, this method should not be called randomly:
         // first, every resource that was enlisted should also be delisted. Otherwise, XA-level protocol errors can occur
         try {
             this.delistAllResources(TMFAIL);
-            this.transaction.rollback();
+            this.jtaTransaction.rollback();
         }
         catch (Exception e) {
             throw new IOException("Error occurred while rolling back main transaction", e);
@@ -142,7 +214,7 @@ public class RequestTX
      *
      * @see ReleaseFilter
      */
-    public synchronized void close() throws Exception
+    private void close() throws Exception
     {
         IOException lastError = null;
 
@@ -161,16 +233,12 @@ public class RequestTX
         //really close it down
         this.registeredResources.clear();
         this.registeredResources = null;
-        this.transaction = null;
+        this.jtaTransaction = null;
 
         if (lastError != null) {
             throw lastError;
         }
     }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
     private void delistAllResources(int flag)
     {
         //From the PDF mentioned above:
@@ -187,10 +255,10 @@ public class RequestTX
         // update, then the application can not know if the update was done or not. In that case, it should delist the resource
         // with the TMFAIL flag, because committing the transaction would lead to unknown effects on the data; this
         // could lead to corrupt data
-        if (this.registeredResources != null && this.transaction != null) {
+        if (this.registeredResources != null && this.jtaTransaction != null) {
             for (XAResource r : this.registeredResources) {
                 try {
-                    this.transaction.delistResource(r, flag);
+                    this.jtaTransaction.delistResource(r, flag);
                 }
                 catch (Exception e) {
                     //let's swallow but log this as I think it's not that bad?

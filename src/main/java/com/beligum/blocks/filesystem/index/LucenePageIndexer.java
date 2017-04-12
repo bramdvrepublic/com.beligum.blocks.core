@@ -3,6 +3,8 @@ package com.beligum.blocks.filesystem.index;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import org.apache.lucene.analysis.Analyzer;
@@ -57,7 +59,12 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect() throws IOException
     {
-        return new LucenePageIndexerConnection(this);
+        return this.connect(StorageFactory.getCurrentRequestTx());
+    }
+    @Override
+    public synchronized PageIndexConnection connect(TX tx) throws IOException
+    {
+        return new LucenePageIndexConnection(this, tx);
     }
     @Override
     public synchronized void shutdown()

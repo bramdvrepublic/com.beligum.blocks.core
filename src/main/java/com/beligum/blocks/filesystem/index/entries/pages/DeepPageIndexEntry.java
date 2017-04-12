@@ -71,8 +71,9 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
         //no need to index double values, so let's use a set
         Set<String> allField = new LinkedHashSet<>();
-        Model rdfModel = page.readRdfModel();
-        Iterator<Statement> stmtIter = rdfModel.iterator();
+
+        //Note: we re-use the RDFmodel of the superclass so we don't read it twice
+        Iterator<Statement> stmtIter = this.rdfModel.iterator();
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
 
@@ -102,7 +103,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                     //see https://issues.apache.org/jira/browse/LUCENE-4583
                     //Makes sense to crop this to a reasonable value since sorting on thousand-characters-long sort values is't really a valid use case, right?
                     final int MAX_SORT_VALUE_LENGTH = 128;
-                    if (sortValue.length()>MAX_SORT_VALUE_LENGTH) {
+                    if (sortValue.length() > MAX_SORT_VALUE_LENGTH) {
                         sortValue = sortValue.substring(0, MAX_SORT_VALUE_LENGTH);
                     }
                     sortField.add(sortValue);
@@ -115,13 +116,14 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         // we should index these fields (especially _all) with a different analyzer...
         Iterator<IndexableField> fieldIter = this.luceneDoc.iterator();
         //found this here: SortedDocValuesWriter.addValue()
-        final int MAX_FIELD_SIZE = BYTE_BLOCK_SIZE-2;
+        final int MAX_FIELD_SIZE = BYTE_BLOCK_SIZE - 2;
         while (fieldIter.hasNext()) {
             IndexableField f = fieldIter.next();
             String stringVal = f.stringValue();
             //non-string values are probably not too large?
-            if (stringVal!=null && stringVal.length()>MAX_FIELD_SIZE) {
-                Logger.warn("Removing field '"+f.name()+"' from the lucene document we're indexing because it's too large. Value is "+stringVal.length()+" and starts with '"+stringVal.substring(0, 20)+"...' (max "+MAX_FIELD_SIZE+" bytes allowed). Note that this means the content of this value won't be searchable (!)");
+            if (stringVal != null && stringVal.length() > MAX_FIELD_SIZE) {
+                Logger.warn("Removing field '" + f.name() + "' from the lucene document we're indexing because it's too large. Value is " + stringVal.length() + " and starts with '" +
+                            stringVal.substring(0, 20) + "...' (max " + MAX_FIELD_SIZE + " bytes allowed). Note that this means the content of this value won't be searchable (!)");
                 fieldIter.remove();
             }
         }
@@ -147,10 +149,10 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         }
 
         //this will allow us to do a search-all query
-//        if (allField != null && !allField.isEmpty()) {
-//            String allValue = Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(allField);
-//            this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, allValue);
-//        }
+        //        if (allField != null && !allField.isEmpty()) {
+        //            String allValue = Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(allField);
+        //            this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, allValue);
+        //        }
     }
 
     //-----STATIC METHODS-----

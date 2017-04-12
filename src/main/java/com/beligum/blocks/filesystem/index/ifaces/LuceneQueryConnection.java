@@ -1,7 +1,6 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.apache.lucene.search.Query;
 
@@ -10,7 +9,7 @@ import java.io.IOException;
 /**
  * Created by bram on 4/7/16.
  */
-public interface LuceneQueryConnection<T extends PageIndexEntry> extends QueryConnection<T>
+public interface LuceneQueryConnection extends QueryConnection
 {
     //-----CONSTANTS-----
 

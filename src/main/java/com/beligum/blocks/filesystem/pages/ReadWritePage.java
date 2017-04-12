@@ -1,10 +1,10 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.models.Person;
+import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.HdfsZipUtils;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
@@ -20,8 +20,10 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.openrdf.model.Model;
 
 import java.io.*;
+import java.net.URI;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Locale;
 
 /**
  * Created by bram on 5/2/16.
@@ -35,7 +37,11 @@ public class ReadWritePage extends DefaultPage
     //-----CONSTRUCTORS-----
     protected ReadWritePage(ResourceRepository repository, Source source) throws IOException
     {
-        super(repository, source.getUri(), source.getLanguage(), source.getMimeType(), false, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
+        super(repository, source.getUri(), source.getLanguage(), source.getMimeType(), false, StorageFactory.getPageStoreFileSystem());
+    }
+    protected ReadWritePage(ResourceRepository repository, URI uri, Locale language, MimeType mimeType, boolean allowEternalCaching, FileContext fileContext) throws IOException
+    {
+        super(repository, uri, language, mimeType, allowEternalCaching, fileContext);
     }
 
     //-----PUBLIC METHODS-----

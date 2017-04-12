@@ -1,9 +1,11 @@
 package com.beligum.blocks.filesystem.index;
 
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
@@ -42,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by bram on 2/21/16.
  */
-public class SesamePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection, SparqlQueryConnection
+public class SesamePageIndexConnection extends AbstractIndexConnection implements PageIndexConnection, SparqlQueryConnection
 {
     //-----CONSTANTS-----
     public static final String SPARQL_SUBJECT_BINDING_NAME = "s";
@@ -61,15 +63,19 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private SesamePageIndexer pageIndexer;
+    private TX transaction;
+    private boolean registeredTransaction;
     private SailRepositoryConnection connection;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
-    private boolean registeredTransaction;
+    private boolean active;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexerConnection(SesamePageIndexer pageIndexer) throws IOException
+    public SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction) throws IOException
     {
         this.pageIndexer = pageIndexer;
+        this.transaction = transaction;
+        this.registeredTransaction = false;
 
         try {
             this.connection = pageIndexer.getRDFRepository().getConnection();
@@ -88,13 +94,15 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             this.fetchPageExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         }
 
-        this.registeredTransaction = false;
+        this.active = true;
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
+        this.assertActive();
+
         SparqlIndexEntry retVal = null;
 
         URI subject = key;
@@ -149,9 +157,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         return retVal;
     }
     @Override
-    public void delete(Page page) throws IOException
+    public void delete(Resource resource) throws IOException
     {
+        this.assertActive();
         this.assertTransaction();
+
+        Page page = resource.unwrap(Page.class);
 
         //we'll be deleting all the triples in the model of the page,
         //except the ones that are present in another language.
@@ -166,9 +177,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.connection.remove(pageModel);
     }
     @Override
-    public void update(Page page) throws IOException
+    public void update(Resource resource) throws IOException
     {
+        this.assertActive();
         this.assertTransaction();
+
+        Page page = resource.unwrap(Page.class);
 
         this.delete(page);
         this.connection.add(page.readRdfModel());
@@ -176,6 +190,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void deleteAll() throws IOException
     {
+        this.assertActive();
         this.assertTransaction();
 
         this.connection.clear();
@@ -183,6 +198,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public IndexSearchResult search(RdfClass type, String luceneQuery, Map fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
     {
+        this.assertActive();
+
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
         StringBuilder queryBuilder = new StringBuilder();
@@ -252,6 +269,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public IndexSearchResult search(String sparqlQuery, Locale language) throws IOException
     {
+        this.assertActive();
+
         long searchStart = System.currentTimeMillis();
         long sparqlTime = 0;
         long parseTime = 0;
@@ -368,10 +387,31 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         return retVal;
     }
     @Override
-    public TupleQuery query(String sparqlQuery)
+    public TupleQuery query(String sparqlQuery) throws IOException
     {
+        this.assertActive();
+
         return this.connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
     }
+    @Override
+    public void close() throws IOException
+    {
+        if (this.fetchPageExecutor != null) {
+            //graceful wait-time is implemented in the search
+            this.fetchPageExecutor.shutdownNow();
+            this.fetchPageExecutor = null;
+        }
+
+        if (this.connection != null) {
+            this.connection.close();
+            this.connection = null;
+        }
+
+        this.registeredTransaction = false;
+        this.transaction = null;
+    }
+
+    //-----PROTECTED METHODS-----
     @Override
     protected void begin() throws IOException
     {
@@ -407,30 +447,32 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         return this.pageIndexer;
     }
-    @Override
-    public void close() throws IOException
-    {
-        if (this.fetchPageExecutor != null) {
-            //graceful wait-time is implemented in the search
-            this.fetchPageExecutor.shutdownNow();
-            this.fetchPageExecutor = null;
-        }
-
-        if (this.connection != null) {
-            this.connection.close();
-            this.connection = null;
-        }
-    }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void assertTransaction() throws IOException
+    private synchronized void assertActive() throws IOException
+    {
+        if (!this.active) {
+            throw new IOException("Can't proceed, an active Sesame index connection was asserted");
+        }
+    }
+    private synchronized void assertTransaction() throws IOException
     {
         //only need to do it once (at the beginnign of a method using a tx)
         if (!this.registeredTransaction) {
             //attach this connection to the transaction manager
-            StorageFactory.getCurrentRequestTx().registerResource(this);
+            this.transaction.registerResource(this, new TX.Listener()
+            {
+                @Override
+                public void transactionEnded(int status)
+                {
+                    try {
+                        close();
+                    }
+                    catch (IOException e) {
+                        Logger.error("Error while closing a Sesame indexer connection after TX end", e);
+                    }
+                }
+            });
             this.registeredTransaction = true;
         }
     }
