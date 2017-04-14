@@ -37,7 +37,7 @@ public class ReadOnlyPage extends DefaultPage
     @Override
     public ResourceInputStream newInputStream() throws IOException
     {
-        return new ResourceInputStream(this.fileContext.open(this.getNormalizedPageProxyPath()), this.fileContext.getFileStatus(this.getNormalizedPageProxyPath()).getLen());
+        return new ResourceInputStream(this.fileContext.open(this.getNormalizedHtmlFile()), this.fileContext.getFileStatus(this.getNormalizedHtmlFile()).getLen());
     }
     @Override
     public boolean isReadOnly()

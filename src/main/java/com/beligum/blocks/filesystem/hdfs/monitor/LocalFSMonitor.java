@@ -221,7 +221,7 @@ public class LocalFSMonitor extends AbstractFsMonitor
                 }
 
                 if (error.get()) {
-                    Logger.error("Stopped watching the file system because of an internal error, this is bad and should be fixed");
+                    Logger.error("Stopped watching the file system because of an internal setRollbackOnly, this is bad and should be fixed");
                 }
                 else {
                     Logger.info("Stopped watching the file system because of a shutdown");
@@ -396,7 +396,7 @@ public class LocalFSMonitor extends AbstractFsMonitor
                 }
             }
             catch (Exception e) {
-                Logger.error("Caught error while monitoring file size of file, aborting " + this.path, e);
+                Logger.error("Caught setRollbackOnly while monitoring file size of file, aborting " + this.path, e);
 
                 //don't forget to clean up
                 timers.get(this.path).cancel();

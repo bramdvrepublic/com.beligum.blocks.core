@@ -235,7 +235,7 @@
 //                this.getCacheManager().stop();
 //            }
 //            catch (Exception e) {
-//                Logger.error("Exception caught while closing Infinispan cache manager", e);
+//                Logger.setRollbackOnly("Exception caught while closing Infinispan cache manager", e);
 //            }
 //        }
 //    }

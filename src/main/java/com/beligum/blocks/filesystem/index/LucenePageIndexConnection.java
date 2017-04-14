@@ -1,11 +1,7 @@
 package com.beligum.blocks.filesystem.index;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.*;
@@ -17,24 +13,13 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FSLockFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -52,11 +37,9 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     public static final int MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
-    private static FSLockFactory luceneLockFactory = FSLockFactory.getDefault();
-
     private LucenePageIndexer pageIndexer;
     private TX transaction;
-    private boolean createdWriter;
+    private boolean registeredTransaction;
     private boolean active;
 
     //-----CONSTRUCTORS-----
@@ -64,7 +47,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     {
         this.pageIndexer = pageIndexer;
         this.transaction = transaction;
-        this.createdWriter = false;
+        this.registeredTransaction = false;
         this.active = true;
     }
 
@@ -76,24 +59,25 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         //since we treat all URIs as relative, we only take the path into account
         TermQuery query = new TermQuery(AbstractPageIndexEntry.toLuceneId(StringFunctions.getRightOfDomain(key)));
-        TopDocs topdocs = getLuceneIndexSearcher().search(query, 1);
+        TopDocs topdocs = this.pageIndexer.getIndexSearcher().search(query, 1);
 
         if (topdocs.scoreDocs.length == 0) {
             return null;
         }
         else {
-            return SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(topdocs.scoreDocs[0].doc));
+            return SimplePageIndexEntry.fromLuceneDoc(this.pageIndexer.getIndexSearcher().doc(topdocs.scoreDocs[0].doc));
         }
     }
     @Override
     public void delete(Resource resource) throws IOException
     {
         this.assertActive();
+        this.assertTransaction();
 
         Page page = resource.unwrap(Page.class);
 
         //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-        this.getLuceneIndexWriter().deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
+        this.pageIndexer.getIndexWriter().deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
 
         //for debug
         //this.printLuceneIndex();
@@ -102,6 +86,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     public void update(Resource resource) throws IOException
     {
         this.assertActive();
+        this.assertTransaction();
 
         Page page = resource.unwrap(Page.class);
 
@@ -109,7 +94,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
-        this.getLuceneIndexWriter().updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
+        this.pageIndexer.getIndexWriter().updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
 
         //for debug
         //this.printLuceneIndex();
@@ -118,8 +103,9 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     public void deleteAll() throws IOException
     {
         this.assertActive();
+        this.assertTransaction();
 
-        this.getLuceneIndexWriter().deleteAll();
+        this.pageIndexer.getIndexWriter().deleteAll();
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException
@@ -129,7 +115,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         List<IndexEntry> retVal = new ArrayList<>();
 
         long searchStart = System.currentTimeMillis();
-        IndexSearcher indexSearcher = getLuceneIndexSearcher();
+        IndexSearcher indexSearcher = this.pageIndexer.getIndexSearcher();
         TopDocsCollector mainCollector = null;
 
         //keep supplied values within reasonable bounds
@@ -160,7 +146,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         TopDocs hits = mainCollector.topDocs(validPageOffset * validPageSize, validPageSize);
         for (ScoreDoc scoreDoc : hits.scoreDocs) {
-            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
+            retVal.add(SimplePageIndexEntry.fromLuceneDoc(indexSearcher.doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
         }
 
         return new IndexSearchResult(retVal, mainCollector.getTotalHits(), validPageOffset, validPageSize, System.currentTimeMillis() - searchStart);
@@ -204,7 +190,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
             // it's safe to delete those special characters and just add the asterisk
             //Update: no, had some weird issues when looking for eg. "tongs/scissors-shaped" -> worked better when replacing with a space instead of deleting them
-            String parsedQuery = removeEscapedChars(phrase, " ").trim();
+            String parsedQuery = LucenePageIndexer.removeEscapedChars(phrase, " ").trim();
             String queryStr = null;
             //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
             if (parsedQuery.contains(" ")) {
@@ -225,7 +211,8 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         return retVal;
     }
     @Override
-    public void close() throws IOException
+    //Note: this needs to be synchronized for concurrency with the the assertActive() below
+    public synchronized void close() throws IOException
     {
         //don't do this anymore: we switched from a new writer per transaction to a single writer, so don't close it
         //        if (this.createdWriter) {
@@ -234,29 +221,8 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         this.pageIndexer = null;
         this.transaction = null;
-        this.createdWriter = false;
+        this.registeredTransaction = false;
         this.active = false;
-    }
-
-    //-----PUBLIC STATIC METHODS-----
-    //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    public static String removeEscapedChars(String s, String replacement)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            // These characters are part of the query syntax and must be escaped
-            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-                || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-                || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
-                //sb.append('\\');
-                sb.append(replacement);
-            }
-            else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
     }
 
     //-----PROTECTED METHODS-----
@@ -268,25 +234,25 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.createdWriter) {
-            this.getLuceneIndexWriter().prepareCommit();
+        if (this.registeredTransaction) {
+            this.pageIndexer.getIndexWriter().prepareCommit();
         }
     }
     @Override
     protected void commit() throws IOException
     {
-        if (this.createdWriter) {
-            this.getLuceneIndexWriter().commit();
+        if (this.registeredTransaction) {
+            this.pageIndexer.getIndexWriter().commit();
 
             //mark all readers and searchers to reload
-            this.indexChanged();
+            this.pageIndexer.indexChanged();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.createdWriter) {
-            this.getLuceneIndexWriter().rollback();
+        if (this.registeredTransaction) {
+            this.pageIndexer.getIndexWriter().rollback();
         }
     }
     @Override
@@ -302,110 +268,18 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             throw new IOException("Can't proceed, an active Lucene index connection was asserted");
         }
     }
-    private void printLuceneIndex() throws IOException
+    private synchronized void assertTransaction() throws IOException
     {
-        Directory dir = FSDirectory.open(getDocDir());
-
-        try (IndexReader reader = DirectoryReader.open(dir)) {
-            int numDocs = reader.numDocs();
-            for (int i = 0; i < numDocs; i++) {
-                Document d = reader.document(i);
-                System.out.println(i + ") " + d);
+        if (this.transaction == null) {
+            throw new IOException("Transaction asserted, but none was initialized, can't continue");
+        }
+        else {
+            //only need to do it once (at the beginning of a method using a tx)
+            if (!this.registeredTransaction) {
+                //attach this connection to the transaction manager
+                this.transaction.registerResource(this);
+                this.registeredTransaction = true;
             }
         }
-    }
-    private void indexChanged()
-    {
-        //will be re-initialized on next read/search
-        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
-    }
-    private synchronized IndexSearcher getLuceneIndexSearcher() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-
-            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(getDocDir()));
-            IndexSearcher indexSearcher = new IndexSearcher(indexReader);
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
-        }
-
-        return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
-    }
-    private synchronized IndexWriter getLuceneIndexWriter() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, buildNewLuceneIndexWriter(getDocDir()));
-        }
-
-        //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
-        IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
-        if (retVal == null || !retVal.isOpen()) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = buildNewLuceneIndexWriter(getDocDir()));
-        }
-
-        //register the writer on the first time we need it in this connection
-        if (!this.createdWriter) {
-            //attach this connection to the transaction manager
-            this.transaction.registerResource(this, new TX.Listener()
-            {
-                @Override
-                public void transactionEnded(int status)
-                {
-                    try {
-                        close();
-                    }
-                    catch (IOException e) {
-                        Logger.error("Error while closing a Lucene indexer connection after TX end", e);
-                    }
-                }
-            });
-            this.createdWriter = true;
-        }
-
-        return retVal;
-    }
-    private synchronized static Path getDocDir() throws IOException
-    {
-        final java.nio.file.Path retVal = Paths.get(Settings.instance().getPageMainIndexFolder());
-
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
-            if (!Files.exists(retVal)) {
-                Files.createDirectories(retVal);
-            }
-            if (!Files.isWritable(retVal)) {
-                throw new IOException("Lucene index directory is not writable, please check the permissions of: " + retVal);
-            }
-
-            try (IndexWriter indexWriter = buildNewLuceneIndexWriter(retVal)) {
-                //just open and close the writer once to create the necessary files,
-                // else we'll get a "no segments* file found" exception on first search
-            }
-
-            //we built it at least once, save that for later checking
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
-        }
-
-        return retVal;
-    }
-    /**
-     * From the Lucene JavaDoc:
-     * "IndexWriter instances are completely thread safe, meaning multiple threads can call any of its methods, concurrently."
-     * so I hope it's ok to keep this open.
-     * Note: switched to instance-generation because an open writer seemed to block access to the directory with a .lock file?
-     * <p/>
-     * Reading here, it seems to be an OK usecase:
-     * http://stackoverflow.com/questions/8878448/lucene-good-practice-and-thread-safety
-     *
-     * @return
-     * @throws IOException
-     */
-    private static IndexWriter buildNewLuceneIndexWriter(Path docDir) throws IOException
-    {
-        IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.DEFAULT_ANALYZER);
-
-        // Add new documents to an existing index:
-        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-        return new IndexWriter(FSDirectory.open(docDir, luceneLockFactory), iwc);
     }
 }

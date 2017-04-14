@@ -5,7 +5,7 @@ import java.net.URI;
 
 /**
  * Because some index values depend on others to be indexed first,
- * we need a way to signal (eg. the bulk re-indexer) that the error happened
+ * we need a way to signal (eg. the bulk re-indexer) that the setRollbackOnly happened
  * is because it needs to index another resource first.
  *
  * Created by bram on 8/29/16.

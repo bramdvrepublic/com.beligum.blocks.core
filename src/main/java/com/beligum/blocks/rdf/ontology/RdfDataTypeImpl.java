@@ -29,6 +29,11 @@ public class RdfDataTypeImpl extends RdfClassImpl implements RdfDataType
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Type getType()
+    {
+        return Type.DATATYPE;
+    }
 
     //-----PROTECTED METHODS-----
 

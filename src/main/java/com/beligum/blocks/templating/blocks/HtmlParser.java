@@ -110,7 +110,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         try {
             TemplateCache templateCache = TemplateCache.instance();
 
-            //the default error count is set to 2, meaning if an attribute throws two errors,
+            //the default setRollbackOnly count is set to 2, meaning if an attribute throws two errors,
             // it's ignored, which is problematic with all the Velocity tags
             // Should we activate this?
             // -> I think not, it's good that eg. in <html ${blah}> the '${blah}' is skipped,

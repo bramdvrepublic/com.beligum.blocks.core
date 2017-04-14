@@ -1,12 +1,13 @@
 package com.beligum.blocks.filesystem.hdfs;
 
+import bitronix.tm.BitronixTransaction;
+import bitronix.tm.internal.TransactionStatusChangeListener;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ReleaseFilter;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.index.ifaces.IndexConnection;
-import org.openrdf.query.algebra.If;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
 import javax.transaction.Status;
@@ -18,9 +19,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static javax.transaction.xa.XAResource.TMFAIL;
-import static javax.transaction.xa.XAResource.TMSUCCESS;
-
 /**
  * This is actually a wrapper around a central JTA transaction, but with some additional functionality
  * to make our life easier.
@@ -31,12 +29,14 @@ import static javax.transaction.xa.XAResource.TMSUCCESS;
  * <p>
  * Created by bram on 2/1/16.
  */
-public class TX
+public class TX implements AutoCloseable
 {
     //-----CONSTANTS-----
     public interface Listener
     {
-        void transactionEnded(int status);
+        void transactionTimedOut();
+
+        void transactionStatusChanged(int oldStatus, int newStatus);
     }
 
     //-----VARIABLES-----
@@ -48,9 +48,9 @@ public class TX
     //-----CONSTRUCTORS-----
     public TX(TransactionManager transactionManager) throws Exception
     {
-        this(transactionManager, 0);
+        this(transactionManager, null, 0);
     }
-    public TX(TransactionManager transactionManager, long timeoutMillis) throws Exception
+    public TX(TransactionManager transactionManager, Listener listener, long timeoutMillis) throws Exception
     {
         try {
             //keep a reference to the manager
@@ -60,25 +60,61 @@ public class TX
             this.transactionManager.setTransactionTimeout((int) (timeoutMillis / 1000.0));
 
             //create a new transaction and associate it with the current thread.
-            //Note that this will throw an error if there's already a transaction attached to the current thread (no nesting supported)
+            //Note that this will throw an setRollbackOnly if there's already a transaction attached to the current thread (no nesting supported)
             this.transactionManager.begin();
 
             //get the transaction object that represents the transaction context of the calling thread.
             this.jtaTransaction = transactionManager.getTransaction();
 
+            if (this.jtaTransaction instanceof BitronixTransaction) {
+                BitronixTransaction btxTx = (BitronixTransaction) this.jtaTransaction;
+
+//                if (listener != null) {
+                    btxTx.addTransactionStatusChangeListener(new TransactionStatusChangeListener()
+                    {
+                        @Override
+                        public void statusChanged(int oldStatus, int newStatus)
+                        {
+                            //Logger.debug("Transaction " + jtaTransaction.hashCode() + " changed status from " + Decoder.decodeStatus(oldStatus)+" to "+Decoder.decodeStatus(newStatus));
+
+                            if (listener != null) {
+                                listener.transactionStatusChanged(oldStatus, newStatus);
+
+                                //catch this specific case internally to make the callback API a little easier to work with
+                                if (oldStatus == Status.STATUS_ACTIVE && btxTx.timedOut()) {
+                                    listener.transactionTimedOut();
+                                }
+                            }
+                        }
+                    });
+//                }
+            }
+            else {
+                throw new IllegalStateException("Encountered an unimplemented transaction object; this shouldn't happen; " + this.jtaTransaction);
+            }
+
             //start out with an empty set of sub-transactions
             this.registeredResources = new HashSet<>();
         }
         catch (Exception e) {
-            throw new IOException("Error while starting transaction manager", e);
+            throw new IOException("Error while starting a new transaction", e);
         }
     }
 
     //-----PUBLIC METHODS-----
+    public synchronized boolean isActive() throws IOException
+    {
+        try {
+            return this.getStatus() == Status.STATUS_ACTIVE;
+        }
+        catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
     /**
      * Attach an XAResource to the current TX session
      */
-    public synchronized void registerResource(XAResource xaResource, Listener listener) throws IOException
+    public synchronized void registerResource(XAResource xaResource) throws IOException
     {
         try {
             final CustomBitronixResourceProducer bitronixProducer = StorageFactory.getBitronixResourceProducer();
@@ -89,16 +125,12 @@ public class TX
                 public void beforeCompletion()
                 {
                 }
+                //note: this is the callback for the very end of the transaction (when it gets closed),
+                // regardless of the TX timeout value
                 @Override
                 public void afterCompletion(int status)
                 {
                     bitronixProducer.unregisterResource(xaResource);
-
-                    If we reach this point, the transaction is closed, regardless of it's timeout, we should find a callback for that
-
-                    if (listener != null) {
-                        listener.transactionEnded(status);
-                    }
                 }
             });
 
@@ -128,7 +160,14 @@ public class TX
     public synchronized void setAndRegisterXdiskSession(XASession xdiskSession) throws Exception
     {
         this.xdiskSession = xdiskSession;
-        this.registerResource(xdiskSession.getXAResource(), null);
+        this.registerResource(xdiskSession.getXAResource());
+    }
+    /**
+     * Modify this transaction such that the only possible outcome of the transaction is to roll back the transaction.
+     */
+    public synchronized void setRollbackOnly() throws Exception
+    {
+        this.jtaTransaction.setRollbackOnly();
     }
     /**
      * This is the main and single deconstructor, wrapping and handling all internal administration
@@ -140,29 +179,34 @@ public class TX
                 this.rollback();
             }
             else {
-                //this is the general case: try to commit and (try to) rollback on error
+                //this is the general case: try to commit and (try to) rollback on setRollbackOnly
                 try {
                     this.commit();
                 }
                 catch (Throwable e) {
                     try {
-                        Logger.warn("Caught exception while committing transaction, trying to rollback instead", e);
+                        Logger.error("Caught exception while committing transaction, trying to rollback instead", e);
                         this.rollback();
                     }
                     catch (Throwable e1) {
-                        Logger.warn("Caught exception while rolling back a transaction after a failed commit; this is bad", e);
+                        Logger.error("Caught exception while rolling back a transaction after a failed commit; this is bad", e);
                     }
                 }
             }
         }
         finally {
             try {
-                this.close();
+                this.doClose();
             }
             catch (Throwable e) {
                 throw new IOException("Exception caught while closing a transaction; this is bad", e);
             }
         }
+    }
+    @Override
+    public void close() throws Exception
+    {
+        this.close(false);
     }
 
     //-----PROTECTED METHODS-----
@@ -170,7 +214,7 @@ public class TX
     //-----PRIVATE METHODS-----
     private int getStatus() throws Exception
     {
-        return this.jtaTransaction == null ? null : this.jtaTransaction.getStatus();
+        return this.jtaTransaction == null ? Status.STATUS_UNKNOWN : this.jtaTransaction.getStatus();
     }
     /**
      * Atomically commit all sub-transactions registered in this request TX
@@ -183,7 +227,8 @@ public class TX
         // commit: same as TransactionManager.commit(). This method should not be called randomly: first, every XAResource
         // that was enlisted should also be properly delisted. Otherwise, XA-level protocol errors can occur.
         try {
-            this.delistAllResources(TMSUCCESS);
+            //see rollback() for why this is commented out
+            //this.delistAllResources(TMSUCCESS);
             this.jtaTransaction.commit();
         }
         catch (Exception e) {
@@ -199,9 +244,11 @@ public class TX
     {
         //From the PDF mentioned above:
         // rollback: same as TransactionManager.rollback(). As with commit, this method should not be called randomly:
-        // first, every resource that was enlisted should also be delisted. Otherwise, XA-level protocol errors can occur
+        // first, every resource that was enlisted should also be delisted. Otherwise, XA-level protocol errors can occur.
         try {
-            this.delistAllResources(TMFAIL);
+            //Note: we don't do this anymore because of errors thrown (see BitronixTransaction.delistResource(); it first checks isWorking() and that is most probably true)
+            //Found some docs that this shouldn't be called manually in most cases, see http://stackoverflow.com/questions/7168605/when-should-transaction-delistresource-be-called
+            //this.delistAllResources(TMFAIL);
             this.jtaTransaction.rollback();
         }
         catch (Exception e) {
@@ -214,7 +261,7 @@ public class TX
      *
      * @see ReleaseFilter
      */
-    private void close() throws Exception
+    private void doClose() throws Exception
     {
         IOException lastError = null;
 

@@ -48,7 +48,7 @@ public class XADiskUtil
         }
         boolean wasDeleted = false;
         try {
-            //XADisk can't delete a non existing file (throws error)
+            //XADisk can't delete a non existing file (throws setRollbackOnly)
             if (tx.fileExists(f)) {
                 tx.deleteFile(f);
                 wasDeleted = true;

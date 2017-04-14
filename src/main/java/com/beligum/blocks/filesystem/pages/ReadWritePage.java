@@ -65,14 +65,18 @@ public class ReadWritePage extends DefaultPage
                                                             Options.CreateOpts.createParent())) {
             IOUtils.copy(is, os);
         }
-
+    }
+    public void updateNormalizedProxy(PageSource source) throws IOException
+    {
         //save the normalized page html
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.getFileContext().create(this.getNormalizedPageProxyPath(),
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.getFileContext().create(this.getNormalizedHtmlFile(),
                                                                                                     EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
                                                                                                     Options.CreateOpts.createParent())))) {
             writer.write(source.getNormalizedHtml());
         }
-
+    }
+    public void updateRdfProxy(PageSource source) throws IOException
+    {
         //parse, generate and save the RDF model from the RDFa in the HTML page
         try (InputStream is = source.newInputStream()) {
             Model rdfModel = this.createImporter(Format.RDFA).importDocument(this.getPublicAbsoluteAddress(), is);
@@ -80,16 +84,13 @@ public class ReadWritePage extends DefaultPage
                 this.createExporter(this.getRdfExportFileFormat()).exportModel(rdfModel, os);
             }
         }
-
-        //if all went well, we can update the hash file
-        this.writeHash(source.getHash());
     }
     public void delete() throws IOException
     {
-        //delete the original page html and leave the rest alone
+        //delete the original page html and leave the rest (the dot folder) alone
         this.getFileContext().delete(this.getLocalStoragePath(), false);
 
-        //list everything under meta folder and delete it, except for the HISTORY folder
+        //list everything under the dot folder and delete it, except for the HISTORY folder
         RemoteIterator<FileStatus> metaEntries = this.getFileContext().listStatus(this.getDotFolder());
         while (metaEntries.hasNext()) {
             FileStatus child = metaEntries.next();

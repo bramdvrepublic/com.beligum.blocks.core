@@ -39,14 +39,14 @@ public enum CacheKeys implements CacheKey
     NEW_PAGE_TEMPLATE_NAME,
     //flash cache key that holds the temporarily selected new page URL to copy from
     NEW_PAGE_COPY_URL,
-    //Application cache key that hold the flag that indicates the basic lucene structures exist
-    LUCENE_INDEX_BOOTED,
     //Application cache key that hold the lucene index writer
     LUCENE_INDEX_WRITER,
     //Application cache key that hold the lucene index searcher
     LUCENE_INDEX_SEARCHER,
     //Application cache key that keeps a reference to the active indexers
     REGISTERED_INDEXERS,
+    //Application cache key that keeps a cache of all active thread-bound transactions
+    THREAD_TX_REGISTRY,
     //Application cache key that keeps a map to the instantiated vocabularies
     RDF_VOCABULARIES,
     //Application cache key that maps vocabulary prefixes to full length vocabulary namespace URIs

@@ -70,6 +70,11 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
 
     //-----PUBLIC METHODS-----
     @Override
+    public Type getType()
+    {
+        return Type.PROPERTY;
+    }
+    @Override
     public RdfClass getDataType()
     {
         return dataType;

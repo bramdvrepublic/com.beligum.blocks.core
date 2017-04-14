@@ -27,6 +27,19 @@ import java.util.Set;
 //@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
 public interface RdfClass extends RdfResource
 {
+    enum Type
+    {
+        CLASS,
+        PROPERTY,
+        DATATYPE,
+    }
+
+    /**
+     * Since both RdfProperty and RdfDataType are both subclasses of RdfClass,
+     * this will allow us to detect pure classes (that are not a property or datatype).
+     */
+    Type getType();
+
     /**
      * The short, capitalized and camel-cased name that needs to be appended to the vocab to get the full describing URI for this class.
      * Eg. WaterWell

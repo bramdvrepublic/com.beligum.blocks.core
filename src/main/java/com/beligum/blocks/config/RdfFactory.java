@@ -160,7 +160,7 @@ public class RdfFactory
     }
     private static URI curieToFull(URI resourceTypeCurie)
     {
-        //if we find nothing, we return null, which kind of makes sense to indicate an error
+        //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
         URI retVal = null;
 
         RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());

@@ -28,6 +28,12 @@ public interface Indexer
     IndexConnection connect(TX tx) throws IOException;
 
     /**
+     * Sometimes (eg. after a serious setRollbackOnly) it may help to reboot the indexer (and have the transaction log do it's work).
+     * This should basically do a shutdown() and re-initialize().
+     */
+    void reboot() throws IOException;
+
+    /**
      * Permanently shutdown this indexer (on application shutdown)
      */
     void shutdown() throws IOException;

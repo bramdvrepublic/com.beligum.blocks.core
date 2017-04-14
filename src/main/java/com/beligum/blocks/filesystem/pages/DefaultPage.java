@@ -89,7 +89,7 @@ public abstract class DefaultPage extends AbstractPage
         return new EBUCoreHdfsMetadataWriter(this.getFileContext());
     }
     @Override
-    public Path getNormalizedPageProxyPath()
+    public Path getNormalizedHtmlFile()
     {
         return new Path(this.getProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
     }

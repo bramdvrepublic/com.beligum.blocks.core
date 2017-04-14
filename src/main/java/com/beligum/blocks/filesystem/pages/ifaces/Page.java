@@ -82,7 +82,7 @@ public interface Page extends BlocksResource
      * Returns the path where the normalized html of this page is stored locally.
      * @return
      */
-    Path getNormalizedPageProxyPath();
+    Path getNormalizedHtmlFile();
 
     /**
      * Returns the local location where the output of the Exporter should be stored.

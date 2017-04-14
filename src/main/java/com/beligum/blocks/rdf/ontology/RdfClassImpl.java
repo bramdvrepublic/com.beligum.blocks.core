@@ -82,12 +82,17 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         }
 
         //only add ourself to the selected vocabulary if we are a pure class
-        if (this.vocabulary != null && this.getClass().equals(RdfClassImpl.class)) {
+        if (this.vocabulary != null && this.getType().equals(Type.CLASS)) {
             this.vocabulary.addClass(this);
         }
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Type getType()
+    {
+        return Type.CLASS;
+    }
     @Override
     public String getName()
     {

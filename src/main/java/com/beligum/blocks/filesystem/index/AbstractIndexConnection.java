@@ -53,7 +53,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * Get the current transaction timeout value for this resource.
      *
      * @return The current timeout value, in seconds.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public int getTransactionTimeout() throws XAException
@@ -74,7 +74,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      *
      * @param seconds The timeout value, in seconds.
      * @return True if the timeout value could be set, otherwise false.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public boolean setTransactionTimeout(int seconds) throws XAException
@@ -92,7 +92,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * if the {@link #start(Xid, int) start} method should be given the
      * {@link #TMJOIN} flag.
      *
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public boolean isSameRM(XAResource xaResource) throws XAException
@@ -111,7 +111,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * <p/>
      * If the flags argument is {@link #TMNOFLAGS}, the transaction must not
      * previously have been seen by this resource manager, or an
-     * {@link XAException} with error code XAER_DUPID will be thrown.
+     * {@link XAException} with setRollbackOnly code XAER_DUPID will be thrown.
      * <p/>
      * If the flags argument is {@link #TMJOIN}, the resource will join a
      * transaction previously seen by tis resource manager.
@@ -122,7 +122,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      *
      * @param xid   The id of the transaction to associate with.
      * @param flags Must be either {@link #TMNOFLAGS}, {@link #TMJOIN} or {@link #TMRESUME}.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public void start(Xid xid, int flags) throws XAException
@@ -165,7 +165,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      *
      * @param xid The id of the transaction to prepare to commit work for.
      * @return Either {@link #XA_OK} or {@link #XA_RDONLY}.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public int prepare(Xid xid) throws XAException
@@ -200,7 +200,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * @param xid      The id of the transaction to commit work for.
      * @param onePhase If true, the transaction manager is using one-phase
      *                 optimization.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public void commit(Xid xid, boolean onePhase) throws XAException
@@ -226,7 +226,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * Roll back the work done on this resource in the given transaction.
      *
      * @param xid The id of the transaction to commit work for.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public void rollback(Xid xid) throws XAException
@@ -254,7 +254,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      *
      * @param xid The id of the transaction that was ended with a heuristic
      *            decision.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public void forget(Xid xid) throws XAException
@@ -280,7 +280,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * @param xid   The id of the transaction to disassociate from.
      * @param flags Must be either {@link #TMSUCCESS}, {@link #TMFAIL}
      *              or {@link #TMSUSPEND}.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public void end(Xid xid, int flags) throws XAException
@@ -320,7 +320,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * @param flag Must be either {@link #TMNOFLAGS}, {@link #TMSTARTRSCAN},
      *             {@link #TMENDRSCAN} or <code>TMSTARTRSCAN|TMENDRSCAN</code>.
      * @return An array of zero or more transaction ids.
-     * @throws XAException If an error occurred.
+     * @throws XAException If an setRollbackOnly occurred.
      */
     @Override
     public Xid[] recover(int flag) throws XAException

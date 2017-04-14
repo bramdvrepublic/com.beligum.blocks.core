@@ -190,7 +190,7 @@ public class HdfsUtils
                 }
             }
             else {
-                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an error; "+uri);
+                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an setRollbackOnly; "+uri);
             }
         }
 

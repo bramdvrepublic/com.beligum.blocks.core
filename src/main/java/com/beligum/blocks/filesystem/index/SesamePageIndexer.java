@@ -3,13 +3,11 @@ package com.beligum.blocks.filesystem.index;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
-import org.openrdf.sail.lucene.LuceneSail;
 import org.openrdf.sail.nativerdf.NativeStore;
 
 import java.io.IOException;
@@ -36,18 +34,30 @@ public class SesamePageIndexer implements PageIndexer
     public SesamePageIndexer()
     {
         this.repositoryLock = new Object();
+
+        this.reinit();
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public synchronized PageIndexConnection connect() throws IOException
     {
-        return this.connect(StorageFactory.getCurrentRequestTx());
+        return this.connect(null);
     }
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
         return new SesamePageIndexConnection(this, tx);
+    }
+    @Override
+    public synchronized void reboot() throws IOException
+    {
+        try {
+            this.shutdown();
+        }
+        finally {
+            this.reinit();
+        }
     }
     @Override
     public synchronized void shutdown() throws IOException
@@ -58,6 +68,9 @@ public class SesamePageIndexer implements PageIndexer
             }
             catch (RepositoryException e) {
                 throw new IOException("Error while shutting down sesame page indexer", e);
+            }
+            finally {
+                R.cacheManager().getApplicationCache().remove(CacheKeys.TRIPLESTORE_ENGINE);
             }
         }
     }
@@ -79,19 +92,20 @@ public class SesamePageIndexer implements PageIndexer
                     }
                     NativeStore dataRepo = new NativeStore(dataDir.toFile());
 
-                    //create the repository for the lucene index
-                    LuceneSail indexRepo = new LuceneSail();
-                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
-                    if (!Files.exists(indexDir)) {
-                        Files.createDirectories(indexDir);
-                    }
-                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, indexDir.toFile().getAbsolutePath());
+//                    Works, but disabled because we implemented our own (and because we frequently had "AlreadyClosedException, Lucene Index is now corrupt")
+//                    //create the repository for the lucene index
+//                    LuceneSail indexRepo = new LuceneSail();
+//                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
+//                    if (!Files.exists(indexDir)) {
+//                        Files.createDirectories(indexDir);
+//                    }
+//                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, indexDir.toFile().getAbsolutePath());
+//                    //link both together
+//                    indexRepo.setBaseSail(dataRepo);
+//                    build and init the main, wrapped repository
+//                    SailRepository mainRepo = new SailRepository(indexRepo);
 
-                    //link both together
-                    indexRepo.setBaseSail(dataRepo);
-
-                    //build and init the main, wrapped repository
-                    SailRepository mainRepo = new SailRepository(indexRepo);
+                    SailRepository mainRepo = new SailRepository(dataRepo);
                     mainRepo.initialize();
 
                     R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, mainRepo);
@@ -108,4 +122,8 @@ public class SesamePageIndexer implements PageIndexer
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private void reinit()
+    {
+        R.cacheManager().getApplicationCache().remove(CacheKeys.TRIPLESTORE_ENGINE);
+    }
 }

@@ -56,6 +56,14 @@ public class StorageFactory
     private static final Object txManagerLock = new Object();
     private static final Object requestTxLock = new Object();
 
+    /**
+     * An inherited thread local is needed if we want to support executor services launched from
+     * an asynchronous thread, so all child-threads spawned from the main async thread will
+     * share the same transaction.
+     * Note: I assume the access to the contents of this variable is thread safe, right?
+     */
+    private static final ThreadLocal currentThreadTx = new InheritableThreadLocal();
+
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
@@ -81,6 +89,7 @@ public class StorageFactory
     }
     public static LuceneQueryConnection getMainPageQueryConnection() throws IOException
     {
+        //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return (LuceneQueryConnection) getMainPageIndexer().connect();
     }
     public static PageIndexer getTriplestoreIndexer() throws IOException
@@ -95,6 +104,7 @@ public class StorageFactory
     }
     public static SparqlQueryConnection getTriplestoreQueryConnection() throws IOException
     {
+        //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return (SparqlQueryConnection) getTriplestoreIndexer().connect();
     }
     public static TransactionManager getTransactionManager() throws IOException
@@ -170,6 +180,7 @@ public class StorageFactory
         TX retVal = null;
 
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
+
         if (txCache != null) {
             //Sync this with the release code below
             synchronized (requestTxLock) {
@@ -191,22 +202,11 @@ public class StorageFactory
     public static boolean hasCurrentRequestTx() throws IOException
     {
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
-        return txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
-    }
-    public static TX createThreadTx(long timeoutMillis) throws IOException
-    {
-        TX retVal = null;
 
-        try {
-            retVal = new TX(getTransactionManager(), timeoutMillis);
+        synchronized (requestTxLock) {
+            return txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
         }
-        catch (Exception e) {
-            throw new IOException("Exception caught while creating a thread transaction", e);
-        }
-
-        return retVal;
     }
-
     public static void releaseCurrentRequestTx(boolean forceRollback) throws IOException
     {
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
@@ -215,49 +215,97 @@ public class StorageFactory
         if (txCache != null) {
             TX tx = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
 
-            //don't release anything if no tx is active (is this worth an exception?)
+            //don't release anything if no tx is active
             if (tx != null) {
-                try {
-                    tx.close(forceRollback);
-                }
-                catch (Throwable e) {
-                    //don't wait for the next reboot before trying to revert to a clean state; try it now
-                    //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                    if (!StorageFactory.rebootPageStoreTransactionManager()) {
-                        throw new IOException("Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!", e);
+                synchronized (requestTxLock) {
+                    try {
+                        tx.close(forceRollback);
                     }
-                    else {
-                        //we can't just swallow the exception; something's wrong and we should report it to the user
-                        throw new IOException("I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;", e);
+                    catch (Throwable e) {
+                        //don't wait for the next reboot before trying to revert to a clean state; try it now
+                        //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
+                        if (!StorageFactory.rebootPageStoreTransactionManager()) {
+                            throw new IOException(
+                                            "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
+                                            e);
+                        }
+                        else {
+                            //we can't just swallow the exception; something's wrong and we should report it to the user
+                            throw new IOException(
+                                            "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
+                                            e);
+                        }
                     }
-                }
-                finally {
-                    //make sure we only do this once
-                    txCache.remove(CacheKeys.REQUEST_TRANSACTION);
+                    finally {
+                        //make sure we only do this once
+                        txCache.remove(CacheKeys.REQUEST_TRANSACTION);
+                    }
                 }
             }
         }
     }
-    public static XASession getCurrentRequestXDiskTx() throws IOException
+    /**
+     * Retrieves or creates a manual transaction, attached to the calling thread that needs to be closed manually.
+     */
+    public static TX getCurrentThreadTx(TX.Listener listener, long timeoutMillis) throws IOException
     {
-        if (!R.requestContext().isActive()) {
-            throw new IOException("We're not in an active request context, so I can't create a request-transaction scoped XDisk session");
+        TX retVal = (TX) currentThreadTx.get();
+
+        if (retVal == null) {
+            try {
+                currentThreadTx.set(retVal = new TX(getTransactionManager(), listener, timeoutMillis));
+            }
+            catch (Exception e) {
+                throw new IOException("Exception caught while booting up a thread transaction", e);
+            }
+        }
+
+        return retVal;
+    }
+    public static TX getCurrentThreadTx() throws IOException
+    {
+        return getCurrentThreadTx(null, 0);
+    }
+    public static boolean hasCurrentThreadTx() throws IOException
+    {
+        return currentThreadTx.get() != null;
+    }
+    public static void releaseCurrentThreadTx(boolean forceRollback) throws IOException
+    {
+        TX tx = (TX) currentThreadTx.get();
+        if (tx != null) {
+            try {
+                tx.close(forceRollback);
+            }
+            catch (Throwable e) {
+                //we can't just swallow the exception; something's wrong and we should report it to the user
+                throw new IOException("I was unable to close a thread transaction. I'm adding the exception below;", e);
+            }
+            finally {
+                currentThreadTx.remove();
+            }
+        }
+    }
+    public static XASession getCurrentXDiskTx() throws IOException
+    {
+        TX tx = R.requestContext().isActive() ? getCurrentRequestTx() : getCurrentThreadTx();
+
+        if (tx == null) {
+            throw new IOException("We're not in an active transaction context, so I can't create an XDisk session inside the current transaction scope");
         }
         else {
-            TX requestTx = getCurrentRequestTx();
-
             //start up a new XDisk session if needed
-            if (requestTx.getXdiskSession() == null) {
+            if (tx.getXdiskSession() == null) {
                 try {
                     //boot a new xadisk, register it and save it in our wrapper
-                    requestTx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
+                    tx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
                 }
                 catch (Exception e) {
                     throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
                 }
             }
 
-            return requestTx.getXdiskSession();
+            return tx.getXdiskSession();
         }
     }
     public static XAFileSystem getPageStoreTransactionManager() throws IOException

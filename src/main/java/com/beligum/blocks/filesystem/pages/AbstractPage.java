@@ -71,7 +71,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     @Override
     public boolean exists() throws IOException
     {
-        return this.fileContext.util().exists(this.getNormalizedPageProxyPath());
+        return this.fileContext.util().exists(this.getNormalizedHtmlFile());
     }
     /**
      * This is mainly for debugging, but is probably what we want
@@ -79,7 +79,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     @Override
     public long getLastModifiedTime() throws IOException
     {
-        return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.getNormalizedPageProxyPath()).getModificationTime()),
+        return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.getNormalizedHtmlFile()).getModificationTime()),
                         this.calcChildrenLastModificationTime());
     }
     /**

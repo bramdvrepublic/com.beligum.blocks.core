@@ -74,7 +74,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     @Override
     public FSDataInputStream open(Path p, int bufferSize) throws IOException
     {
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         File f = pathToFile(p);
 
         try {
@@ -86,7 +86,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             throw new IOException(e);
         }
 
-        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(this.getRequestScopedTransaction(), p), bufferSize));
+        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(this.getTransaction(), p), bufferSize));
     }
     @Override
     public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException
@@ -96,7 +96,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     @Override
     public FSDataOutputStream append(Path p, int bufferSize, Progressable progress) throws IOException
     {
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         File f = pathToFile(p);
 
         try {
@@ -119,7 +119,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         boolean retVal = false;
 
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
 
         // Attempt rename using Java API.
         File srcFile = pathToFile(src);
@@ -162,7 +162,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         boolean retVal = false;
 
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         File f = pathToFile(p);
 
         try {
@@ -190,7 +190,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     @Override
     public FileStatus[] listStatus(Path p) throws FileNotFoundException, IOException
     {
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         File f = pathToFile(p);
         FileStatus[] results;
 
@@ -268,7 +268,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         if (p == null) {
             throw new IllegalArgumentException("mkdirs path arg is null");
         }
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         Path parent = p.getParent();
         File f = pathToFile(p);
         File parent2f = null;
@@ -301,7 +301,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     @Override
     public FileStatus getFileStatus(Path f) throws IOException
     {
-        return getFileLinkStatusInternal(this.getRequestScopedTransaction(), f, true);
+        return getFileLinkStatusInternal(this.getTransaction(), f, true);
     }
 
     //-----PROTECTED METHODS-----
@@ -333,12 +333,12 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         }
     }
     /**
-     * Note: overwrite means: if a file with this name already exists, then if true, the file will be overwritten, and if false an error will be thrown.
+     * Note: overwrite means: if a file with this name already exists, then if true, the file will be overwritten, and if false an setRollbackOnly will be thrown.
      */
     private FSDataOutputStream create(Path p, boolean overwrite, boolean createParent, int bufferSize, short replication, long blockSize, Progressable progress, FsPermission permission)
                     throws IOException
     {
-        XASession tx = this.getRequestScopedTransaction();
+        XASession tx = this.getTransaction();
         File f = pathToFile(p);
 
         try {
@@ -361,7 +361,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     }
     protected OutputStream createOutputStreamWithMode(Path f, boolean append, FsPermission permission) throws IOException
     {
-        return new LocalFSFileOutputStream(this.getRequestScopedTransaction(), f, append, permission);
+        return new LocalFSFileOutputStream(this.getTransaction(), f, append, permission);
     }
     protected boolean mkOneDirWithMode(XASession tx, File f, FsPermission permission) throws IOException
     {
@@ -396,7 +396,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             //                catch (IOException e) {
             //                    if (LOG.isDebugEnabled()) {
             //                        LOG.debug(String.format(
-            //                                        "NativeIO.createDirectoryWithMode error, path = %s, mode = %o",
+            //                                        "NativeIO.createDirectoryWithMode setRollbackOnly, path = %s, mode = %o",
             //                                        p2f, permission.toShort()), e);
             //                    }
             //                    return false;
@@ -452,7 +452,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 long length = isDir ? 0 : tx.getFileLength(f);
                 int blockReplication = 1;
                 long blockSize = this.getDefaultBlockSize(p);
-                // same error for dirs as folders, don't really know what to do
+                // same setRollbackOnly for dirs as folders, don't really know what to do
                 long modificationTime = isDir ? 0 : tx.getFileLastModified(f);
                 long accessTime = 0;
                 FsPermission permission = null;
@@ -480,9 +480,9 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             //            }
         }
     }
-    private XASession getRequestScopedTransaction() throws IOException
+    private XASession getTransaction() throws IOException
     {
-        return StorageFactory.getCurrentRequestXDiskTx();
+        return StorageFactory.getCurrentXDiskTx();
     }
     /**
      * Special wrapper around XDisk Session.fileExists() method to solve issue XADISK-120
@@ -610,7 +610,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 return value;
             }
             catch (IOException e) {                 // unexpected exception
-                throw new Error(e);                   // assume native fs error
+                throw new Error(e);                   // assume native fs setRollbackOnly
             }
         }
 
@@ -631,7 +631,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 return value;
             }
             catch (IOException e) {                 // unexpected exception
-                throw new Error(e);                   // assume native fs error
+                throw new Error(e);                   // assume native fs setRollbackOnly
             }
         }
 
@@ -755,7 +755,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 }
             }
             catch (IOException e) {                // unexpected exception
-                throw new Error(e);                  // assume native fs error
+                throw new Error(e);                  // assume native fs setRollbackOnly
             }
         }
 
@@ -771,7 +771,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 }
             }
             catch (IOException e) {              // unexpected exception
-                throw new Error(e);                // assume native fs error
+                throw new Error(e);                // assume native fs setRollbackOnly
             }
         }
     }

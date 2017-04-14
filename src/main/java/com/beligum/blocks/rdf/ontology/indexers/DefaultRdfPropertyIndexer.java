@@ -140,7 +140,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             if (endpoint != null) {
                 ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
                 if (resourceValue != null) {
-                    //this is error prone, but the logging info is minimal, so we wrap it to have more information
+                    //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                     try {
                         String val = resourceValue.getResourceUri().toString();
                         indexer.indexConstantField(fieldName, val);
@@ -151,7 +151,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     }
                     catch (Exception e) {
                         throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
-                                              "' because there was an error while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
+                                              "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
                     }
                 }
                 else {
@@ -236,13 +236,13 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 if (endpoint != null) {
                     ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
                     if (resourceValue != null) {
-                        //this is error prone, but the logging info is minimal, so we wrap it to have more information
+                        //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                         try {
                             retVal = resourceValue.getResourceUri().toString();
                         }
                         catch (Exception e) {
 //                            throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
-//                                                  "' because there was an error while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
+//                                                  "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
                         }
                     }
                 }

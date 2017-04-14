@@ -20,6 +20,7 @@ import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +39,18 @@ public class PageRepository extends AbstractResourceRepository
          * Delete the page passed to the delete() method, plus all the attached translations
          */
         DELETE_ALL_TRANSLATIONS
+    }
+
+    public static class PageIndexConnectionOption implements ResourceRepository.IndexOption
+    {
+        private PageIndexConnection mainPageConnection;
+        private PageIndexConnection triplestoreConnection;
+
+        public PageIndexConnectionOption(PageIndexConnection mainPageConnection, PageIndexConnection triplestoreConnection)
+        {
+            this.mainPageConnection = mainPageConnection;
+            this.triplestoreConnection = triplestoreConnection;
+        }
     }
 
     public static final String PUBLIC_PATH_PREFIX = "/";
@@ -83,7 +96,7 @@ public class PageRepository extends AbstractResourceRepository
             //Here, we decide on the normalized html path to see if the page exists or not
             // (note that we actually could check on the original and re-generate the normalized if necessary, but we decided to take the safe road)
             //Also note that our interface demands us to return null if the resourceRequest can't be resolved, so this check is necessary!
-            if (page.getFileContext().util().exists(page.getNormalizedPageProxyPath())) {
+            if (page.getFileContext().util().exists(page.getNormalizedHtmlFile())) {
                 retVal = page;
             }
         }
@@ -161,11 +174,20 @@ public class PageRepository extends AbstractResourceRepository
                 //save the original page html
                 newPage.write(pageSource);
 
+                //generated and write the normalized proxy html
+                newPage.updateNormalizedProxy(pageSource);
+
+                //extract the RDF and save it
+                newPage.updateRdfProxy(pageSource);
+
+                //if all went well, we can update the hash file
+                newPage.writeHash(source.getHash());
+
                 //write out a log entry that the page was altered
                 newPage.writeLogEntry(editor, oldPage != null ? PageLogEntry.Action.UPDATE : PageLogEntry.Action.CREATE);
 
                 //save the page metadata (read it in if it exists)
-                //Note: disabled and more or less replaced by the writeLogEntry() above because it was too error prone on crashes
+                //Note: disabled and more or less replaced by the writeLogEntry() above because it was too setRollbackOnly prone on crashes
                 //newPage.writeMetadata(editor);
 
                 //reindex the page
@@ -203,8 +225,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //we need to reuse the connection or we'll run into trouble when deleting multiple translations
-        PageIndexConnection mainPageIndexer = StorageFactory.getMainPageIndexer().connect();
-        PageIndexConnection triplestoreIndexer = StorageFactory.getTriplestoreIndexer().connect();
+        PageIndexConnection mainPageIndexer = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx());
+        PageIndexConnection triplestoreIndexer = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx());
 
         //first, delete the translations, then delete the first one
         if (deleteAllTranslations) {
@@ -216,6 +238,91 @@ public class PageRepository extends AbstractResourceRepository
 
         //delete this page
         retVal = this.deleteSinglePage(page, editor, mainPageIndexer, triplestoreIndexer);
+
+        return retVal;
+    }
+    @Override
+    public Resource reindex(Resource resource, Person editor, IndexOption... options) throws IOException, UnsupportedOperationException, IllegalArgumentException
+    {
+        Resource retVal = null;
+
+        //this allows us to pass a long-running (asynchronous, shared) transaction to boost performance
+        PageIndexConnection mainPageConnection = null;
+        PageIndexConnection triplestoreConnection = null;
+        if (options.length > 0) {
+            for (IndexOption option : options) {
+                if (option instanceof PageIndexConnectionOption) {
+                    PageIndexConnectionOption o = (PageIndexConnectionOption) option;
+                    mainPageConnection = o.mainPageConnection;
+                    triplestoreConnection = o.triplestoreConnection;
+                }
+                else {
+                    throw new IllegalArgumentException("Unsupported option passed; " + option);
+                }
+            }
+        }
+
+        //fallback to regular request-scoped transactions if nothing special was passed
+        if (mainPageConnection == null) {
+            mainPageConnection = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx());
+        }
+        if (triplestoreConnection == null) {
+            triplestoreConnection = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx());
+        }
+
+        Page page = resource.unwrap(Page.class);
+        if (page == null) {
+            throw new IOException("Unable to reindex this resource, it's not a valid Page; " + resource);
+        }
+
+        //before we reindex the page, we'll do a few little tests to fix possible errors:
+        // - check if the original is there (can't continue without)
+        // - check if the normalized version is present and re-generate it if it's missing
+        // - check if the RDF model is present and re-generate it if it's missing
+        boolean originalMissing = !page.getFileContext().util().exists(page.getLocalStoragePath());
+        if (originalMissing) {
+            throw new IOException("Original HTML file for this page is missing, can't reindex; " + page.getPublicAbsoluteAddress());
+        }
+
+        boolean normalizedMissing = !page.getFileContext().util().exists(page.getNormalizedHtmlFile());
+        boolean rdfMissing = !page.getFileContext().util().exists(page.getRdfExportFile());
+
+        //Note that we only need to have a write context if one of the above files is missing
+        if (normalizedMissing || rdfMissing) {
+            ReadWritePage rwPage = new ReadWritePage(this, page);
+            try (LockFile lock = rwPage.acquireLock()) {
+
+                //Note: we can't use the NewPageSource(page) constructor because it reads the normalized html, not the raw original
+                NewPageSource pageSource = null;
+                try (InputStream originalHtml = page.getFileContext().open(page.getLocalStoragePath())) {
+                    pageSource = new NewPageSource(page.getUri(), originalHtml);
+                }
+
+                if (normalizedMissing) {
+                    rwPage.updateNormalizedProxy(pageSource);
+                }
+
+                if (rdfMissing) {
+                    rwPage.updateRdfProxy(pageSource);
+                }
+
+                //it makes sense to expire the cache because eg. the Page.exists() is based on the availability
+                // of the normalized file and this might have changed.
+                this.expire(rwPage);
+
+                //signal the caller we messed around in the FS
+                retVal = rwPage;
+            }
+        }
+
+        //This is actually what he're here for: update both indexes
+        //            mainPageConnection.update(resource);
+        //            triplestoreConnection.update(resource);
+
+        //by returning a RO-page or a RW-page, we can more or less signal the caller what changed (only the index or the index + fixes to the FS)
+        if (retVal == null) {
+            retVal = page;
+        }
 
         return retVal;
     }
@@ -261,7 +368,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void index(Page page) throws IOException
     {
-        this.index(page, StorageFactory.getMainPageIndexer().connect(), StorageFactory.getTriplestoreIndexer().connect());
+        this.index(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()));
     }
     private void index(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
@@ -271,7 +378,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void unindex(Page page) throws IOException
     {
-        this.unindex(page, StorageFactory.getMainPageIndexer().connect(), StorageFactory.getTriplestoreIndexer().connect());
+        this.unindex(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()));
     }
     private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {

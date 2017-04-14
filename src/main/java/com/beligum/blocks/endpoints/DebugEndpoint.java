@@ -136,7 +136,7 @@ public class DebugEndpoint
     //            }
     //        }
     //        catch (Exception e) {
-    //            Logger.error("Error ", e);
+    //            Logger.setRollbackOnly("Error ", e);
     //        }
     //
     //        return Response.ok().build();
