@@ -206,11 +206,11 @@
 //    }
 //
 //    @Override
-//    public FSDataOutputStream create(final Path f, final FsPermission permission,
+//    public FSDataOutputStream instance(final Path f, final FsPermission permission,
 //                                     final boolean overwrite, final int bufferSize, final short replication,
 //                                     final long blockSize, final Progressable progress) throws IOException
 //    {
-//        return super.create(fullPath(f), permission, overwrite, bufferSize,
+//        return super.instance(fullPath(f), permission, overwrite, bufferSize,
 //                            replication, blockSize, progress);
 //    }
 //

@@ -115,7 +115,7 @@ public class ApplicationEndpoint
             retValBuilder = Response.seeOther(externalRedirectUri);
         }
         else {
-            // Since we allow the user to create pretty url's, it's mime type will not always be clear, so pass it on explicitly
+            // Since we allow the user to instance pretty url's, it's mime type will not always be clear, so pass it on explicitly
             //Note: this will return null if the resource wasn't found
             Page page = R.resourceManager().get(requestedUri, Page.class);
 
@@ -140,10 +140,10 @@ public class ApplicationEndpoint
             // - OPTION 1: the page doesn't exist, but we can find another page with the URL as alias -> redirect to the correct URL of that page
             // - OPTION 2: the page doesn't exist, but we can find a similar page in another language -> extract the resource-uri from that page and reverse-lookup the public URI in the requested language
             // - OPTION 3: the page doesn't exist & the user has no rights -> 404
-            // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> try to detectAndReplace a decent language and redirect to a language-prefixed url (recursive call with roundtrip)
-            // - OPTION 5: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
-            // - OPTION 6: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is unsafe -> redirect to safe variant
-            // - OPTION 7: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is safe -> show new page selection list
+            // - OPTION 4: the page doesn't exist & the user has instance rights & no language present -> try to detectAndReplace a decent language and redirect to a language-prefixed url (recursive call with roundtrip)
+            // - OPTION 5: the page doesn't exist & the user has instance rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
+            // - OPTION 6: the page doesn't exist & the user has instance rights & language is present & nothing in flash cache & page slug is unsafe -> redirect to safe variant
+            // - OPTION 7: the page doesn't exist & the user has instance rights & language is present & nothing in flash cache & page slug is safe -> show new page selection list
             else {
 
                 //OPTION 1: before we give up and say the page doesn't exist, search for it's aliases first
@@ -162,8 +162,8 @@ public class ApplicationEndpoint
 
                 //this detects if the above search matched on the resource uri (and not the sameAs) when we're editing pages
                 //it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
-                //and we want to create it's translation, it would redirect back to the english page instead of allowing us to
-                //create the translated page
+                //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
+                //instance the translated page
                 if (selectedEntry != null && SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                     if (selectedEntry.getResource().equals(searchUri)) {
                         selectedEntry = null;
@@ -209,7 +209,7 @@ public class ApplicationEndpoint
                         }
                     }
 
-                    //OPTION 3: if we have permission to create a new page, do it, otherwise, the page doesn't exist
+                    //OPTION 3: if we have permission to instance a new page, do it, otherwise, the page doesn't exist
                     if (retValBuilder == null) {
 
                         //if we reach this stage, we're 'deep enough' in the processing algo to assume there's a language present in the requested URI
@@ -264,7 +264,7 @@ public class ApplicationEndpoint
                         //this means we haven't redirected away to an address with a language
                         if (retValBuilder == null) {
                             if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                                throw new NotFoundException("Can't find this page and you have no rights to create it; " + path);
+                                throw new NotFoundException("Can't find this page and you have no rights to instance it; " + path);
                             }
                             else {
                                 //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
@@ -308,7 +308,7 @@ public class ApplicationEndpoint
                                         retValBuilder = Response.ok(newPageInstance);
                                     }
                                     else {
-                                        throw new InternalServerErrorException("Requested to create a new page (" + requestedUri + ") with an invalid page template name; " + newPageTemplateName);
+                                        throw new InternalServerErrorException("Requested to instance a new page (" + requestedUri + ") with an invalid page template name; " + newPageTemplateName);
                                     }
                                 }
                                 else if (!StringUtils.isEmpty(newPageCopyUrl)) {
@@ -350,13 +350,13 @@ public class ApplicationEndpoint
                                         retValBuilder = Response.ok(template);
                                     }
                                     else {
-                                        throw new InternalServerErrorException("Requested to create a new page (" + requestedUri + ") with an unknown page to copy from; " + newPageCopyUrl);
+                                        throw new InternalServerErrorException("Requested to instance a new page (" + requestedUri + ") with an unknown page to copy from; " + newPageCopyUrl);
                                     }
                                 }
-                                //here, the page doesn't exist, but we can create it
+                                //here, the page doesn't exist, but we can instance it
                                 else {
 
-                                    //We allow the user to create any kind of URL since it can be typed in the browser
+                                    //We allow the user to instance any kind of URL since it can be typed in the browser
                                     //However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
                                     //address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
                                     String safePage = this.safePagePath(path);
@@ -365,7 +365,7 @@ public class ApplicationEndpoint
                                     if (!path.equals(safePage)) {
                                         retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath(safePage).build());
                                     }
-                                    //OPTION 7: show the create-new page list
+                                    //OPTION 7: show the instance-new page list
                                     else {
                                         //we'll use the admin-interface language to render this page, not the language of the content
                                         R.i18n().setManualLocale(R.i18n().getBrowserLocale());

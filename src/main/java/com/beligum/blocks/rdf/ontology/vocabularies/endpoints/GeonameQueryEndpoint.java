@@ -238,7 +238,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     private Cache getGeonameCache()
     {
         if (!R.cacheManager().cacheExists(GEONAMES_CACHED_RESULTS.name())) {
-            //we create a cache where it's entries live for one hour (both from creation time as from last accessed time),
+            //we instance a cache where it's entries live for one hour (both from creation time as from last accessed time),
             //doesn't overflow to disk and keep at most 100 results
             R.cacheManager().registerCache(new EhCacheAdaptor(GEONAMES_CACHED_RESULTS.name(), 100, false, false, 60 * 60, 60 * 60));
         }

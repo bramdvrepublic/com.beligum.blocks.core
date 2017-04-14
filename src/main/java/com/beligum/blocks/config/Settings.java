@@ -139,7 +139,7 @@ public class Settings
     }
     public boolean getDeleteLocksOnStartup()
     {
-        if (this.cachedDeleteLocksOnStartup==null) {
+        if (this.cachedDeleteLocksOnStartup == null) {
             this.cachedDeleteLocksOnStartup = R.configuration().getBoolean("blocks.core.resources.delete-locks-on-startup", true);
         }
 
@@ -191,7 +191,8 @@ public class Settings
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
                 //make sure we have a schema
                 this.cachedPagesStorePath = URI.create(StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://" + this.cachedPagesStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://' prefix to use the local transactional file system; " +
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() +
+                            "://' prefix to use the local transactional file system; " +
                             this.cachedPagesStorePath.toString());
             }
         }
@@ -363,7 +364,7 @@ public class Settings
     }
     public String getGeonamesUsername()
     {
-        if (this.cachedGeonamesUsername==null) {
+        if (this.cachedGeonamesUsername == null) {
             this.cachedGeonamesUsername = R.configuration().getString("blocks.core.geonames.username", null);
             if (this.cachedGeonamesUsername == null) {
                 Logger.warn("No geonames username specified, using default username '" + DEFAULT_GEONAMES_USERNAME + "', but this is not optimal...");

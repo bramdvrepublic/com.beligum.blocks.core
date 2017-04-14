@@ -201,7 +201,7 @@ public class LucenePageIndexer implements PageIndexer
         }
 
         try (IndexWriter indexWriter = buildNewLuceneIndexWriter(indexFolder)) {
-            //just open and close the writer once to create the necessary files,
+            //just open and close the writer once to instance the necessary files,
             // else we'll get a "no segments* file found" exception on first search
         }
     }

@@ -85,7 +85,7 @@ public class SesamePageIndexer implements PageIndexer
                         Files.createDirectories(tsDir);
                     }
 
-                    //create the repository for the linked data
+                    //instance the repository for the linked data
                     final java.nio.file.Path dataDir = tsDir.resolve(DATA_SUBDIR);
                     if (!Files.exists(dataDir)) {
                         Files.createDirectories(dataDir);
@@ -93,7 +93,7 @@ public class SesamePageIndexer implements PageIndexer
                     NativeStore dataRepo = new NativeStore(dataDir.toFile());
 
 //                    Works, but disabled because we implemented our own (and because we frequently had "AlreadyClosedException, Lucene Index is now corrupt")
-//                    //create the repository for the lucene index
+//                    //instance the repository for the lucene index
 //                    LuceneSail indexRepo = new LuceneSail();
 //                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
 //                    if (!Files.exists(indexDir)) {

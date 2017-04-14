@@ -78,8 +78,8 @@ public class DebugEndpoint
     //        Analyzer analyzer = new StandardAnalyzer();
     //        IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
     //
-    //        final boolean create = false;
-    //        if (create) {
+    //        final boolean instance = false;
+    //        if (instance) {
     //            // Create a new index in the directory, removing any
     //            // previously indexed documents:
     //            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);

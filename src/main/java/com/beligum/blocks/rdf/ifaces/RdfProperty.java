@@ -19,7 +19,7 @@ public interface RdfProperty extends RdfClass
 {
     /**
      * The full datatype (can also be XSD) of this property. This is used by the client side code, together with the WidgetType (see below),
-     * to create an appropriate input method and validation for entering a value for this property.
+     * to instance an appropriate input method and validation for entering a value for this property.
      * Eg. http://www.w3.org/2001/XMLSchema#integer
      */
     RdfClass getDataType();

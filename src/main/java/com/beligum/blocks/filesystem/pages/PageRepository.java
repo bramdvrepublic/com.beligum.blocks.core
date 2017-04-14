@@ -150,7 +150,7 @@ public class PageRepository extends AbstractResourceRepository
             throw new IllegalArgumentException("Unsupported option passed; " + ArrayUtils.toString(options));
         }
 
-        //create a new read-write page instance from the data (mainly the URI and MimeType) in the supplied resource
+        //instance a new read-write page instance from the data (mainly the URI and MimeType) in the supplied resource
         ReadWritePage newPage = new ReadWritePage(this, pageSource);
 
         //will synchronize the metadata directory by creating/releasing a lock file
@@ -341,7 +341,7 @@ public class PageRepository extends AbstractResourceRepository
 
             try (LockFile lock = rwPage.acquireLock()) {
 
-                //save the page metadata BEFORE we create the history entry (to make sure we save who deleted it)
+                //save the page metadata BEFORE we instance the history entry (to make sure we save who deleted it)
                 //Note: commented out to be in sync with save(), hope that's ok
                 //page.writeMetadata(editor);
 

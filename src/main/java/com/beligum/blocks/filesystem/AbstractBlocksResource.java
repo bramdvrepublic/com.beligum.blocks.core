@@ -209,7 +209,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
         }
     }
     /**
-     * Pretty simple locking mechanism, probably full of holes, but a first try to create something simple to set up (eg. no Zookeeper)
+     * Pretty simple locking mechanism, probably full of holes, but a first try to instance something simple to set up (eg. no Zookeeper)
      * Note: this should work pretty ok, because creation/deletion of files MUST be atomic in HDFS;
      * see https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/filesystem/introduction.html
      *
@@ -259,7 +259,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
 
         //note: not possible another process 'gets between' the loop above and this, because this will throw an exception if the file already exists.
         if (!HdfsUtils.createNewFile(this.fileContext, lock, true)) {
-            throw new IOException("Unable to create lock file because of an setRollbackOnly or because (in the mean time) it already existed; " + lock);
+            throw new IOException("Unable to instance lock file because of an setRollbackOnly or because (in the mean time) it already existed; " + lock);
         }
 
         return new LockFile(this, lock);

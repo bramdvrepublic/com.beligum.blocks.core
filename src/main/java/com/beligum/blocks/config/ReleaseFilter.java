@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 @Provider
 // Note that we want this to be executed as late as possible, hence the very low value.
-// If this somehow wouldn't be sufficient (still too early), the only alternative would be to create a plugin system in the JAXRSApplicationEventListener class
+// If this somehow wouldn't be sufficient (still too early), the only alternative would be to instance a plugin system in the JAXRSApplicationEventListener class
 @Priority(100)
 public class ReleaseFilter implements ContainerResponseFilter
 {

@@ -59,7 +59,7 @@ public class TX implements AutoCloseable
             //Modify the timeout value that is associated with transactions started by the current thread with the begin method.
             this.transactionManager.setTransactionTimeout((int) (timeoutMillis / 1000.0));
 
-            //create a new transaction and associate it with the current thread.
+            //instance a new transaction and associate it with the current thread.
             //Note that this will throw an setRollbackOnly if there's already a transaction attached to the current thread (no nesting supported)
             this.transactionManager.begin();
 

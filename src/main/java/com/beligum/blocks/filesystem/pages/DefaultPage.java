@@ -79,6 +79,11 @@ public abstract class DefaultPage extends AbstractPage
         return new HtmlAnalyzer(this);
     }
     @Override
+    public HtmlAnalyzer createAnalyzer(boolean readOriginal) throws IOException
+    {
+        return new HtmlAnalyzer(this, readOriginal);
+    }
+    @Override
     public LogWriter createLogWriter() throws IOException
     {
         return new RdfLogWriter(this);

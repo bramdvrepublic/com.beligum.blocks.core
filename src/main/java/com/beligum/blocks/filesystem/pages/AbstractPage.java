@@ -221,7 +221,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //if the uri is absolute (starts with http://...), check if the domain (authority = domain + port) matches,
         // otherwise (eg. when the URI is relative (eg. /resource/...) the authority will be null (and that's ok)
         if (normalizedUri.getAuthority() != null && !normalizedUri.getAuthority().equals(R.configuration().getSiteDomain().getAuthority())) {
-            throw new SecurityException("Trying to create a page path from outside the domain (" + R.configuration().getSiteDomain() + "), can't proceed; " + normalizedUri);
+            throw new SecurityException("Trying to instance a page path from outside the domain (" + R.configuration().getSiteDomain() + "), can't proceed; " + normalizedUri);
         }
 
         //Now, build the relative, normalized storage path of this page (where this page will be stored relative to the chroot)
@@ -239,7 +239,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
             pageName = DIR_PAGE_NAME;
         }
         else if (pageName.equals(DIR_PAGE_NAME)) {
-            throw new IOException("You can't create a file with the same name of the directory filename store. Choose any other name, but not this one; " + pageName);
+            throw new IOException("You can't instance a file with the same name of the directory filename store. Choose any other name, but not this one; " + pageName);
         }
 
         String ext = Settings.instance().getPagesFileExtension();

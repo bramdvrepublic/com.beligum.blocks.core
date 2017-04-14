@@ -74,7 +74,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         String typeOfCurie = htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value;
         RdfClass typeOf = typeOfCurie == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOfCurie));
         if (typeOf == null) {
-            throw new IOException("Trying to create an index entry from a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
+            throw new IOException("Trying to instance an index entry from a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
         }
         else {
             //First, set the general properties, then add more using specific indexers and see if we need to override some general ones

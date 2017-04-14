@@ -1,6 +1,7 @@
 package com.beligum.blocks.templating.blocks.analyzer;
 
 import com.beligum.base.server.R;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -36,7 +37,9 @@ public class HtmlAnalyzer
     }
 
     //-----VARIABLES-----
+    private com.beligum.base.resources.ifaces.Source pageSource;
     private Source htmlDocument;
+    private Element rootElement;
     private String normalizedHtml;
     private AttributeRef htmlAbout;
     private AttributeRef htmlTypeof;
@@ -44,72 +47,128 @@ public class HtmlAnalyzer
     private AttributeRef htmlPrefixes;
     private Locale htmlLocale;
     private String title;
+    private boolean analyzedShallow;
+    private boolean analyzedDeep;
 
     //-----CONSTRUCTORS-----
+    /**
+     * This constructor will only hunt for the root element and save a reference.
+     * The real work is loaded lazily and is split up phases: deep and shallow.
+     * Shallow analysis only parses the attributes on the root (html or template tag) element,
+     * while deep analysis parses the entire html body (and is much more computing intensive)
+     */
     public HtmlAnalyzer(com.beligum.base.resources.ifaces.Source pageSource) throws IOException
     {
-        this.title = null;
+        this.pageSource = pageSource;
 
-        this.analyze(pageSource);
+        try (InputStream is = pageSource.newInputStream()) {
+            this.htmlDocument = new Source(is);
+        }
+
+        this.init();
+    }
+    public HtmlAnalyzer(Page page, boolean readOriginal) throws IOException
+    {
+        this.pageSource = page;
+
+        if (readOriginal) {
+            try (InputStream is = page.getFileContext().open(page.getLocalStoragePath())) {
+                this.htmlDocument = new Source(is);
+            }
+        }
+        else {
+            try (InputStream is = page.newInputStream()) {
+                this.htmlDocument = new Source(is);
+            }
+        }
+
+        this.init();
     }
 
     //-----PUBLIC METHODS-----
-    public String getNormalizedHtml()
+    public AttributeRef getHtmlAbout() throws IOException
     {
-        return normalizedHtml;
-    }
-    public AttributeRef getHtmlAbout()
-    {
+        this.assertAnalyzedShallow();
+
         return htmlAbout;
     }
-    public AttributeRef getHtmlTypeof()
+    public AttributeRef getHtmlTypeof() throws IOException
     {
+        this.assertAnalyzedShallow();
+
         return htmlTypeof;
     }
-    public AttributeRef getHtmlVocab()
+    public AttributeRef getHtmlVocab() throws IOException
     {
+        this.assertAnalyzedShallow();
+
         return htmlVocab;
     }
-    public AttributeRef getHtmlPrefixes()
+    public AttributeRef getHtmlPrefixes() throws IOException
     {
+        this.assertAnalyzedShallow();
+
         return htmlPrefixes;
     }
-    public Locale getHtmlLanguage()
+    public Locale getHtmlLanguage() throws IOException
     {
+        this.assertAnalyzedShallow();
+
         return htmlLocale;
     }
-    public String getTitle()
+    public String getNormalizedHtml() throws IOException
     {
+        this.assertAnalyzedDeep();
+
+        return normalizedHtml;
+    }
+    public String getTitle() throws IOException
+    {
+        this.assertAnalyzedDeep();
+
         return title;
     }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    /**
-     * Parses the incoming html string and stores all relevant structures in class variables,
-     * to be retrieved later on by the getters below.
-     */
-    private void analyze(com.beligum.base.resources.ifaces.Source pageSource) throws IOException
+    private void init() throws IOException
     {
-        try (InputStream is = pageSource.newInputStream()) {
-            this.htmlDocument = new Source(is);
-        }
-
-        Element rootElement = this.htmlDocument.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
-        if (rootElement == null) {
+        this.rootElement = this.htmlDocument.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
+        if (this.rootElement == null) {
             //this will make sure we also support normalized pages (which is needed because the default inputstream of a page is the normalized source)
             Element firstElement = this.htmlDocument.getFirstElement();
             HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(firstElement.getName());
             if (pageTemplate!=null && pageTemplate instanceof PageTemplate) {
-                rootElement = firstElement;
+                this.rootElement = firstElement;
             }
 
-            if (rootElement == null) {
+            if (this.rootElement == null) {
                 throw new IOException("Encountered an attempt to save html without a <" + HtmlParser.HTML_ROOT_ELEM + "> template; this shouldn't happen; " + pageSource);
             }
         }
 
+        this.analyzedShallow = false;
+        this.analyzedDeep = false;
+    }
+    private void assertAnalyzedShallow() throws IOException
+    {
+        if (!this.analyzedShallow) {
+            this.analyzeShallow();
+        }
+    }
+    private void assertAnalyzedDeep() throws IOException
+    {
+        if (!this.analyzedDeep) {
+            this.analyzeDeep();
+        }
+    }
+    /**
+     * Parses the incoming html string and stores all relevant structures in class variables,
+     * to be retrieved later on by the getters below.
+     */
+    private void analyzeShallow() throws IOException
+    {
         //extract the base resource id
         Attributes htmlAttributes = rootElement.getAttributes();
         String tempAttrValue;
@@ -158,6 +217,14 @@ public class HtmlAnalyzer
             this.htmlLocale = Locale.ROOT;
         }
 
+        this.analyzedShallow = true;
+    }
+    /**
+     * Parses the incoming html string and stores all relevant structures in class variables,
+     * to be retrieved later on by the getters below.
+     */
+    private void analyzeDeep() throws IOException
+    {
         HtmlNormalizer normalizer = new HtmlNormalizer(pageSource);
         CharSequence unformattedNormalizedHtml = normalizer.process(rootElement);
 
@@ -170,6 +237,8 @@ public class HtmlAnalyzer
 
         //save some additional variables that were detected during normalizing
         this.title = normalizer.getTitle();
+
+        this.analyzedDeep = true;
     }
 
     //-----INNER CLASSES-----

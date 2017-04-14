@@ -63,7 +63,7 @@
 //        URI pageAddress = page.buildAbsoluteAddress();
 //        PageIndexEntry entry = new PageIndexEntry();
 //        entry.setId(pageAddress);
-//        entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : URI.create(htmlAnalyzer.getHtmlResource().value));
+//        entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : URI.instance(htmlAnalyzer.getHtmlResource().value));
 //        entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
 //        entry.setParent(this.getParentUri(pageAddress, fc));
 //        entry.setTitle(htmlAnalyzer.getTitle());

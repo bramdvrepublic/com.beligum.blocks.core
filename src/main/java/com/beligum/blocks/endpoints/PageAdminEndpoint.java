@@ -10,7 +10,6 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.RdfClassIndexer;
 import com.beligum.blocks.config.RdfClassNode;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
@@ -30,6 +29,8 @@ import com.github.dexecutor.core.DefaultDexecutor;
 import com.github.dexecutor.core.DexecutorConfig;
 import com.github.dexecutor.core.ExecutionConfig;
 import com.github.dexecutor.core.support.ThreadPoolUtil;
+import com.github.dexecutor.core.task.Task;
+import com.github.dexecutor.core.task.TaskProvider;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -185,13 +186,13 @@ public class PageAdminEndpoint
         R.i18n().setManualLocale(lang);
 
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
-        // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
+        // so make sure you don't use that key to instance this resource or you'll re-instance the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
         Template block = R.resourceManager().newTemplate(new StringSource(URI.create(htmlTemplate.getTemplateName()),
                                                                           htmlTemplate.createNewHtmlInstance(false),
                                                                           MimeTypes.HTML,
                                                                           //since this is the value of the template context lang,
-                                                                          //it makes sense to create the string in the same lang
+                                                                          //it makes sense to instance the string in the same lang
                                                                           lang));
 
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
@@ -398,7 +399,7 @@ public class PageAdminEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static class ReindexThread extends Thread implements TX.Listener
+    private static class ReindexThread extends Thread implements TX.Listener, TaskProvider<RdfClassNode, RdfClassNode>
     {
         private final Integer start;
         private final Integer size;
@@ -407,15 +408,13 @@ public class PageAdminEndpoint
         private final int depth;
         private long startStamp;
         private boolean cancel;
-        private int pageCounter;
 
-        private ResourceRepository pageRepository;
-        private ResourceIterator pageIterator;
         private TX transaction;
+        private ResourceRepository pageRepository;
         private PageIndexConnection mainPageConn;
         private PageIndexConnection triplestoreConn;
         private ResourceRepository.IndexOption indexConnectionsOption;
-        private ExecutorService taskExecutor;
+        private ExecutorService executorService;
 
         public ReindexThread(final Integer start, final Integer size, final List<String> folders, final String filter, final int depth)
         {
@@ -427,7 +426,6 @@ public class PageAdminEndpoint
             this.startStamp = System.currentTimeMillis();
             //reset a possibly active global cancellation
             this.cancel = false;
-            this.pageCounter = 0;
         }
 
         @Override
@@ -437,10 +435,8 @@ public class PageAdminEndpoint
 
                 currentIndexAllThread = this;
 
-                //create a transaction that's connected to this thread
+                //instance a transaction that's connected to this thread
                 this.transaction = StorageFactory.getCurrentThreadTx(this, Sync.ONE_DAY);
-
-                this.pageCounter = 0;
 
                 //Note: this is not very kosher, but it works
                 this.pageRepository = new PageRepository();
@@ -450,91 +446,70 @@ public class PageAdminEndpoint
                 this.triplestoreConn = StorageFactory.getTriplestoreIndexer().connect(this.transaction);
                 this.indexConnectionsOption = new PageRepository.PageIndexConnectionOption(this.mainPageConn, this.triplestoreConn);
 
-                this.taskExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
+                // Dexecutor is a small framework for (asynchronously) executing tasks that depend on each other (and detect cycles).
+                // Here, we use it to create a dependency graph of RDF classes that depend on each other and process the
+                // 'deepest' dependencies first, because earlier (more shallow) classes will need their dependencies to
+                // be present when they get indexed.
+                this.executorService = Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
 
-                ExecutorService executorService = Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
-                try {
-                    DexecutorConfig<RdfClassNode, RdfClassNode> config = new DexecutorConfig<>(executorService, new RdfClassIndexer());
-                    DefaultDexecutor<RdfClassNode, RdfClassNode> executor = new DefaultDexecutor<>(config);
+                DexecutorConfig<RdfClassNode, RdfClassNode> config = new DexecutorConfig<>(this.executorService, this);
+                DefaultDexecutor<RdfClassNode, RdfClassNode> executor = new DefaultDexecutor<>(config);
 
-                    //This is a set of all classes that are publicly accessible. Note that this is not the same as all the classes
-                    // known to the system (eg. the (internal) City won't end up here because it's 'inherited' from an external ontology).
-                    //It's the list of classes an end-user can select as the 'type' of a page, meaning no other classes can end up being saved
-                    // on disk, so if we iterate files, all encountered classes should be in this set.
-                    //We'll sort them based on internal dependency and first index the ones that won't depend
-                    // on others down the line.
-                    Map<RdfClass, RdfClassNode> mappings = new HashMap<>();
-                    for (RdfClass rdfClass : RdfFactory.getLocalPublicClasses()) {
-                        RdfClassNode node = mappings.get(rdfClass);
-                        if (node == null) {
-                            mappings.put(rdfClass, node = new RdfClassNode(rdfClass));
-                        }
-                        Set<RdfProperty> props = rdfClass.getProperties();
+                //This is a set of all classes that are publicly accessible. Note that this is not the same as all the classes
+                // known to the system (eg. the (internal) City won't end up here because it's 'inherited' from an external ontology).
+                //It's the list of classes an end-user can select as the 'type' of a page, meaning no other classes can end up being saved
+                // on disk, so if we iterate files, all encountered classes should be in this set.
+                //We'll sort them based on internal dependency and first index the ones that won't depend
+                // on others down the line.
+                for (RdfClass rdfClass : RdfFactory.getLocalPublicClasses()) {
+                    RdfClassNode node = RdfClassNode.instance(rdfClass);
+                    Set<RdfProperty> props = rdfClass.getProperties();
 
-                        boolean addedDep = false;
-                        if (props != null) {
-                            for (RdfProperty p : props) {
-                                if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
-                                    RdfClassNode dep = mappings.get(p.getDataType());
-                                    if (dep == null) {
-                                        mappings.put(p.getDataType(), dep = new RdfClassNode(p.getDataType()));
-                                    }
+                    boolean addedDep = false;
+                    if (props != null) {
+                        for (RdfProperty p : props) {
+                            if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
+                                RdfClassNode dep = RdfClassNode.instance(p.getDataType());
 
-                                    //link the two together
-                                    node.addDependency(dep);
+                                //link the two together
+                                node.addDependency(dep);
 
-                                    //the indexing of p.getDataType() should finish before the indexing of rdfClass
-                                    executor.addDependency(dep, node);
-                                    addedDep = true;
-                                }
+                                //this basically means: the indexing of p.getDataType() should finish before the indexing of rdfClass
+                                executor.addDependency(dep, node);
+
+                                addedDep = true;
                             }
                         }
-
-                        //if the class has no dependency on other classes, make sure it gets indexed
-                        if (!addedDep) {
-                            executor.addIndependent(new RdfClassNode(rdfClass));
-                        }
                     }
 
-                    //for debugging: prints out the executor graph
-                    //                    StringBuilder builder = new StringBuilder();
-                    //                    executor.print(new LevelOrderTraversar<>(), new StringTraversarAction<>(builder));
-                    //                    Logger.info(builder.toString());
-
-                    //signal the execution should end if an exception is thrown in one of the tasks
-                    executor.execute(ExecutionConfig.TERMINATING);
-                }
-                finally {
-                    try {
-                        executorService.shutdown();
-                        executorService.awaitTermination(1, TimeUnit.HOURS);
-                    }
-                    catch (InterruptedException e) {
-                        Logger.error("Error while shutting down dependency executor service", e);
+                    //if the class has no dependency on other classes, make sure it gets indexed
+                    if (!addedDep) {
+                        executor.addIndependent(node);
                     }
                 }
 
-                Logger.info("TEST");
+                //for debugging: prints out the executor graph
+                //                    StringBuilder builder = new StringBuilder();
+                //                    executor.print(new LevelOrderTraversar<>(), new StringTraversarAction<>(builder));
+                //                    Logger.info(builder.toString());
 
-                //this will launch the main worker threads
-                //this.execute();
+                //signal the execution should end if an exception is thrown in one of the tasks
+                executor.execute(ExecutionConfig.TERMINATING);
             }
             catch (Exception e) {
                 Logger.error("Caught exception while executing the reindexation of all pages of this website", e);
             }
             finally {
-                //good place to (asynchronously) wipe the static variable
-                currentIndexAllThread = null;
 
                 try {
-                    this.taskExecutor.shutdown();
-                    this.taskExecutor.awaitTermination(1, TimeUnit.HOURS);
+                    this.executorService.shutdown();
+                    this.executorService.awaitTermination(1, TimeUnit.HOURS);
                 }
                 catch (Exception e) {
                     Logger.error("Error while shutting down long-running transaction of page reindexation", e);
                 }
                 finally {
-                    this.taskExecutor = null;
+                    this.executorService = null;
                 }
 
                 try {
@@ -547,9 +522,100 @@ public class PageAdminEndpoint
                     this.transaction = null;
                 }
 
-                Logger.info("Reindexing " + (cancel ? "cancelled" : "completed") + "; processed " + pageCounter + " pages in " +
+                Logger.info("Reindexing " + (cancel ? "cancelled" : "completed") + " in " +
                             DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
+
+                currentIndexAllThread = null;
             }
+        }
+        @Override
+        public Task<RdfClassNode, RdfClassNode> provideTask(RdfClassNode node)
+        {
+            return new Task<RdfClassNode, RdfClassNode>()
+            {
+                private final RdfClass rdfClass = node.getRdfClass();
+                private int pageCounter = 0;
+
+                public RdfClassNode execute()
+                {
+                    Logger.info("Iterating the file system to see if we need to reindex " + rdfClass);
+
+                    boolean keepRunning = true;
+                    ExecutorService taskExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
+
+                    try {
+                        for (String folder : folders) {
+
+                            ResourceFilter pathFilter = null;
+                            if (!StringUtils.isEmpty(filter)) {
+                                pathFilter = new DefaultResourceFilter(filter);
+                            }
+                            ResourceIterator pageIterator = pageRepository.getAll(true, URI.create(folder), pathFilter, depth);
+
+                            //note: read-only because we won't be changing the page, only the index
+                            while (pageIterator.hasNext() && keepRunning && !cancel) {
+                                if (++pageCounter >= start) {
+
+                                    final Page page = pageIterator.next().unwrap(Page.class);
+
+                                    taskExecutor.submit(new Callable<Void>()
+                                    {
+                                        //synchronize the counter
+                                        private final int finalPageCounter = pageCounter;
+
+                                        @Override
+                                        public Void call() throws Exception
+                                        {
+                                            if (!cancel) {
+                                                //note that this will read and analyze the html from disk, but it's slightly optimized to only read the necessary first line,
+                                                //so it should be relatively fast.
+                                                //Watch out: the analyzer will read the normalized file, but we assume it might be broken until we reindexed the page,
+                                                //           so we force an analysis of the original html.
+                                                if (URI.create(page.createAnalyzer(true).getHtmlTypeof().value).equals(rdfClass.getCurieName())) {
+                                                    try {
+                                                        Logger.info("Reindexing " + rdfClass + " " + page.getPublicAbsoluteAddress() + " (" + finalPageCounter + ")");
+                                                        pageRepository.reindex(page, null, indexConnectionsOption);
+                                                    }
+                                                    catch (Throwable e) {
+                                                        Logger.error("Error while reindexing page " + page.getPublicAbsoluteAddress(), e);
+                                                        transaction.setRollbackOnly();
+                                                        cancel = true;
+                                                    }
+                                                }
+                                            }
+
+                                            return null;
+                                        }
+                                    });
+                                }
+
+                                keepRunning = !(size != -1 && pageCounter >= size);
+                                if (!keepRunning) {
+                                    Logger.info("Stopped reindexing because the maximal total size of " + size + " was reached");
+                                }
+                            }
+
+                            if (!keepRunning || cancel) {
+                                break;
+                            }
+                        }
+                    }
+                    catch (Throwable e) {
+                        Logger.error("Error while executing reindexing task for class " + rdfClass, e);
+                    }
+                    finally {
+                        try {
+                            taskExecutor.shutdown();
+                            taskExecutor.awaitTermination(1, TimeUnit.HOURS);
+                        }
+                        catch (InterruptedException e) {
+                            Logger.error("Error while shutting down dependency executor service", e);
+                        }
+                    }
+
+                    return node;
+                }
+            };
         }
         @Override
         public void transactionTimedOut()
@@ -580,73 +646,13 @@ public class PageAdminEndpoint
         {
             this.cancel = true;
 
-            //might be stuck in a deep filter loop, this allows us to cancel immediately
-            if (this.pageIterator != null) {
-                this.pageIterator.cancel();
-            }
-
-            if (this.taskExecutor != null) {
-                this.taskExecutor.shutdownNow();
+            if (this.executorService != null) {
+                this.executorService.shutdownNow();
                 try {
-                    this.taskExecutor.awaitTermination(1, TimeUnit.MINUTES);
+                    this.executorService.awaitTermination(1, TimeUnit.MINUTES);
                 }
                 catch (Exception e) {
                     Logger.error("Error while shutting down task executor", e);
-                }
-            }
-        }
-        private void execute() throws IOException
-        {
-            boolean keepRunning = true;
-
-            for (String folder : this.folders) {
-                Logger.info("Entering next folder " + folder);
-
-                ResourceFilter pathFilter = null;
-                if (!StringUtils.isEmpty(filter)) {
-                    pathFilter = new DefaultResourceFilter(filter);
-                }
-                this.pageIterator = pageRepository.getAll(true, URI.create(folder), pathFilter, depth);
-
-                //note: read-only because we won't be changing the page, only the index
-                while (pageIterator.hasNext() && keepRunning && !cancel) {
-                    pageCounter++;
-                    if (pageCounter >= start) {
-
-                        final Page page = pageIterator.next().unwrap(Page.class);
-                        this.taskExecutor.submit(new Callable<Void>()
-                        {
-                            //synchronize the counter
-                            private final int finalPageCounter = pageCounter;
-
-                            @Override
-                            public Void call() throws Exception
-                            {
-                                if (!cancel) {
-                                    try {
-                                        Logger.info("Reindexing " + page.getPublicAbsoluteAddress() + " (" + finalPageCounter + ")");
-                                        pageRepository.reindex(page, null, indexConnectionsOption);
-                                    }
-                                    catch (Throwable e) {
-                                        Logger.error("Error while reindexing page " + page.getPublicAbsoluteAddress(), e);
-                                        transaction.setRollbackOnly();
-                                        cancel = true;
-                                    }
-                                }
-
-                                return null;
-                            }
-                        });
-                    }
-
-                    keepRunning = !(size != -1 && pageCounter >= size);
-                    if (!keepRunning) {
-                        Logger.info("Stopped reindexing because the maximal total size of " + size + " was reached");
-                    }
-                }
-
-                if (!keepRunning || cancel) {
-                    break;
                 }
             }
         }

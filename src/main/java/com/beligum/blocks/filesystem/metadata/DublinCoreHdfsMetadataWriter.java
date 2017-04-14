@@ -44,7 +44,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     {
         super.open(blocksResource);
 
-        //read in the existing metadata if it exists, or create a new instance if it doesn't
+        //read in the existing metadata if it exists, or instance a new instance if it doesn't
         if (fileSystem.util().exists(this.baseMetadataFile)) {
             try (Reader reader = new BufferedReader(new InputStreamReader(fileSystem.open(this.baseMetadataFile)))) {
                 this.root = JAXB.unmarshal(reader, ElementContainer.class);

@@ -126,7 +126,7 @@ public class HdfsUtils
         } while (context.util().exists(f));
 
         if (!createNewFile(context, f, true)) {
-            throw new IOException("Unable to create temporary file");
+            throw new IOException("Unable to instance temporary file");
         }
 
         return f;
@@ -253,7 +253,7 @@ public class HdfsUtils
         Path f = new Path(dir, name);
         //commented out the validity check; I assume the Path creation will fail of not valid?
         if (!name.equals(f.getName())/* || f.isInvalid()*/) {
-            throw new IOException("Unable to create temporary file, " + f);
+            throw new IOException("Unable to instance temporary file, " + f);
         }
         return f;
     }

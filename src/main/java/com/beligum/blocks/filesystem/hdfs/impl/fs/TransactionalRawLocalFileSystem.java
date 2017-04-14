@@ -353,7 +353,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         if (createParent) {
             Path parent = p.getParent();
             if (parent != null && !mkdirs(parent)) {
-                throw new IOException("Mkdirs failed to create " + parent.toString());
+                throw new IOException("Mkdirs failed to instance " + parent.toString());
             }
         }
 
@@ -657,7 +657,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     }
 
     /*********************************************************
-     * For create()'s FSOutputStream.
+     * For instance()'s FSOutputStream.
      *********************************************************/
     class LocalFSFileOutputStream extends OutputStream
     {

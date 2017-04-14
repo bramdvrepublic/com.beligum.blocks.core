@@ -123,7 +123,7 @@ public class StorageFactory
 
                 //bitronix
                 //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
-                //workaround is to create a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
+                //workaround is to instance a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
                 //or to set the JVM system properties.
                 //DONE: this is implemented now, see BlocksSystemPropertyFactory
                 //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
@@ -291,7 +291,7 @@ public class StorageFactory
         TX tx = R.requestContext().isActive() ? getCurrentRequestTx() : getCurrentThreadTx();
 
         if (tx == null) {
-            throw new IOException("We're not in an active transaction context, so I can't create an XDisk session inside the current transaction scope");
+            throw new IOException("We're not in an active transaction context, so I can't instance an XDisk session inside the current transaction scope");
         }
         else {
             //start up a new XDisk session if needed
@@ -388,7 +388,7 @@ public class StorageFactory
             //boot the XADisk instance too (probably still null here, good place to doIsValid them together)
             getPageStoreTransactionManager();
 
-            //create the root folder if needed
+            //instance the root folder if needed
             //TODO: commented out because we're not in a transaction here
             //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
             //            if (!fileContext.util().exists(root)) {

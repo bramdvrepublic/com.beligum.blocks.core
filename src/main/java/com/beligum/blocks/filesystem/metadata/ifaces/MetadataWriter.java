@@ -12,7 +12,7 @@ import java.io.IOException;
 public interface MetadataWriter<T> extends AutoCloseable
 {
     /**
-     * Read the medatadata file; create it if it doesn't exist or read in the existing metadata if it does.
+     * Read the medatadata file; instance it if it doesn't exist or read in the existing metadata if it does.
      *
      * @param blocksResource
      * @throws IOException

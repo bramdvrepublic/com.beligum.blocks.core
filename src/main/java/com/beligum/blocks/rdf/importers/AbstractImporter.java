@@ -64,7 +64,7 @@ public abstract class AbstractImporter implements Importer
         String documentBaseUriStr = documentBaseUri.toString();
         Iterator<Statement> iter = model.iterator();
         //Note that the model has a "predictable iteration order", and since we get a ConcurrentModException while altering the model itself,
-        // we choose to create a new one, and add the valid filtered nodes in order to this new one
+        // we choose to instance a new one, and add the valid filtered nodes in order to this new one
         Model filteredModel = new LinkedHashModel();
         while (iter.hasNext()) {
             Statement stmt = iter.next();

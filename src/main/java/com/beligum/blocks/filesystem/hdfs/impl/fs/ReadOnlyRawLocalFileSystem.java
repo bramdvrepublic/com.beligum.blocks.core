@@ -43,7 +43,7 @@ public class ReadOnlyRawLocalFileSystem extends RawLocalFileSystem
     @Override
     public FSDataOutputStream create(Path f, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException
     {
-        return this.throwReadOnly("create");
+        return this.throwReadOnly("instance");
     }
     @Override
     @Deprecated
@@ -54,7 +54,7 @@ public class ReadOnlyRawLocalFileSystem extends RawLocalFileSystem
     @Override
     public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException
     {
-        return this.throwReadOnly("create");
+        return this.throwReadOnly("instance");
     }
     @Override
     public FSDataOutputStream createNonRecursive(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException

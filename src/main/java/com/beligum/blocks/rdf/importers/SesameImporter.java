@@ -49,7 +49,7 @@ public class SesameImporter extends AbstractImporter
     private Model parseInputStream(URI baseURI, InputStream is) throws IOException, RDFParseException, RDFHandlerException
     {
         // we needed to re-implement the SesameRDFaParser to make it work with Sesame 4;
-        // so make an exception if we're using RDFa (so we don't have to create a service loader)
+        // so make an exception if we're using RDFa (so we don't have to instance a service loader)
         RDFParser parser = null;
         if (this.inputFormat == Format.RDFA) {
             parser = new SesameRDFaParser();

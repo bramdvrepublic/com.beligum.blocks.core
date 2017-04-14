@@ -65,6 +65,11 @@ public interface Page extends BlocksResource
     HtmlAnalyzer createAnalyzer() throws IOException;
 
     /**
+     * Same as above, but forces to read the original file instead of the default newInputStream() (which reads the normalized stream for ReadOnlyPages)
+     */
+    HtmlAnalyzer createAnalyzer(boolean readOriginal) throws IOException;
+
+    /**
      * Create the log writer for this page to write to the "LOG" file in the meta dot folder.
      * @return
      * @throws IOException

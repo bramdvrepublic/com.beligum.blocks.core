@@ -117,11 +117,11 @@ public class ReadWritePage extends DefaultPage
         Path newHistoryEntryFolder = new Path(this.getHistoryFolder(), BlocksResource.FOLDER_TIMESTAMP_FORMAT.format(Instant.ofEpochMilli(this.creationStamp)));
 
         //copy the meta folder to the temp history entry folder:
-        // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it directly to it's final destination
+        // first, we'll instance a snapshot of the meta folder to a sibling folder. We can't copy it directly to it's final destination
         // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
         Path snapshotMetaFolder = new Path(this.getDotFolder().getParent(), this.getDotFolder().getName() + BlocksResource.TEMP_SNAPSHOT_SUFFIX);
         if (!this.getFileContext().util().copy(oldPage.getDotFolder(), snapshotMetaFolder)) {
-            throw new IOException("Error while adding a history entry to " + oldPage + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
+            throw new IOException("Error while adding a history entry to " + oldPage + ": couldn't instance a snapshot of the meta folder; " + snapshotMetaFolder);
         }
 
         //we're not copying the history folder into the snapshot folder; that would be recursion, so delete it

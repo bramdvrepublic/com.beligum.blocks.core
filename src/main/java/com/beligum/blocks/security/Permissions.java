@@ -47,7 +47,7 @@ public class Permissions implements PermissionsConfigurator
     /**
      * Note: only use this if you can't use the above enum (eg. only in @RequiresPermissions annotations)
      */
-    public static final String PAGE_CREATE_PERMISSION_STRING = "page:create";
+    public static final String PAGE_CREATE_PERMISSION_STRING = "page:instance";
     /**
      * Note: only use this if you can't use the above enum (eg. only in @RequiresPermissions annotations)
      */

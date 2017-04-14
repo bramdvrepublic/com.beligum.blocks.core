@@ -127,7 +127,7 @@ public class NewPageSource extends PageSource
 
             // If nothing was found, this is a true new page and thus we generate a new resource id (if we need to).
             // Note that we discard any possible supplied typeOf values in this case; we force it to be a page
-            // --> not any more: it makes sense to create a new page, select it's typeof and then save it (for the first time)
+            // --> not any more: it makes sense to instance a new page, select it's typeof and then save it (for the first time)
             if (newResource == null) {
                 //since the vocab is set to the same value as the vocab of the Page class, we can safely use the short version
                 //Not any more: we're trying to always use the curie name as 'value' in dropdowns etc, so to make the type dropdown
@@ -140,7 +140,7 @@ public class NewPageSource extends PageSource
                 }
 
                 //if the address of this page is already a resource url, we don't have to generate a new one, but just make it relative
-                // if not, we create a new resource URL, based on the typeof attribute
+                // if not, we instance a new resource URL, based on the typeof attribute
                 if (RdfTools.isResourceUrl(this.getUri())) {
                     //Note that this will chop off any query parameters (especially the lang param) too, which is expected behavior,
                     // because the resource should be the relative 'base' URI, without any languages, otherwise we'll have double results when using the SPARQL endpoint
@@ -150,7 +150,7 @@ public class NewPageSource extends PageSource
                     newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
                 }
             }
-            //this happens when we create a new page (or resource) but the resource already exists (in another language)
+            //this happens when we instance a new page (or resource) but the resource already exists (in another language)
             else {
                 //this will happen if typeofAttr is not empty (thus was supplied during first save), so the
                 if (newTypeOf == null && !typeofAttr.isEmpty()) {

@@ -612,7 +612,7 @@ public abstract class HtmlTemplate
         return this.buildScopeResourceIterator(this.getExternalStyleElements());
     }
     /**
-     * Will create a new html tag; eg for <template class="classname"></template>,
+     * Will instance a new html tag; eg for <template class="classname"></template>,
      * this will return <tag-name class="classname"></tag-name>
      * Depending on the flag, it will include all inner (default) html or not
      */
@@ -909,7 +909,7 @@ public abstract class HtmlTemplate
     private Element renderResourceElement(Element element) throws IOException
     {
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
-        // so make sure you don't use this URI to create template or you'll end up overwriting the cache with this temporary StringSource
+        // so make sure you don't use this URI to instance template or you'll end up overwriting the cache with this temporary StringSource
         Template template = R.resourceManager().newTemplate(new StringSource(element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
 
         //there should always be a first element since we started out with an element, right?

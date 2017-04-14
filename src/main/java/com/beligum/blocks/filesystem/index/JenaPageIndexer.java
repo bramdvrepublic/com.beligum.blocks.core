@@ -114,7 +114,7 @@
 //        FileContext fc = page.getResourcePath().getFileContext();
 //        //note: we can't re-use the Sesame-based page importer here, because sesame expects the stored N-Triples
 //        // to be ASCII, while Jena (our default exporter) exports them as UTF-8,
-//        // so let's manually create a specific Jena importer here.
+//        // so let's manually instance a specific Jena importer here.
 //        //Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
 //        Importer rdfImporter = new JenaImporter(page.getRdfExportFileFormat());
 //        Model model = null;
@@ -129,7 +129,7 @@
 //
 //        //just testing...
 //        String qs1 = "SELECT * {?s ?p ?o} LIMIT 10" ;
-//        try(QueryExecution qExec = QueryExecutionFactory.create(qs1, dataset)) {
+//        try(QueryExecution qExec = QueryExecutionFactory.instance(qs1, dataset)) {
 //            ResultSet rs = qExec.execSelect() ;
 //            ResultSetFormatter.out(rs) ;
 //        }
@@ -148,7 +148,7 @@
 //    @Override
 //    public QueryExecution executeQuery(Query query) throws IOException
 //    {
-//        return QueryExecutionFactory.create(query, this.getRDFDataset());
+//        return QueryExecutionFactory.instance(query, this.getRDFDataset());
 //    }
 //    @Override
 //    public void beginTransaction() throws IOException

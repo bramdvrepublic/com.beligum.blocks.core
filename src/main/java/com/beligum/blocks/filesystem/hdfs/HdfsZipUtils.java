@@ -57,7 +57,7 @@ public class HdfsZipUtils
             //signals the tar constructor this is a dir
             entryPathStr += "/";
         }
-        // note that this will also create an entry for the top-level dir we're adding, but that's ok,
+        // note that this will also instance an entry for the top-level dir we're adding, but that's ok,
         // because otherwise that information would be lost
         taos.putArchiveEntry(pathToTarEntry(fs, path, status, entryPathStr));
 
