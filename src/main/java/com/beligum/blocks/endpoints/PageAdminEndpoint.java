@@ -1,44 +1,31 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.repositories.PersonRepository;
-import com.beligum.base.resources.DefaultResourceFilter;
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.ifaces.*;
+import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.RdfClassNode;
-import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.filesystem.index.reindex.ReindexThread;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
-import com.github.dexecutor.core.DefaultDexecutor;
-import com.github.dexecutor.core.DexecutorConfig;
-import com.github.dexecutor.core.ExecutionConfig;
-import com.github.dexecutor.core.support.ThreadPoolUtil;
-import com.github.dexecutor.core.task.Task;
-import com.github.dexecutor.core.task.TaskProvider;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
-import net.sf.ehcache.concurrent.Sync;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -51,10 +38,6 @@ import java.net.URISyntaxException;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
 import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
@@ -324,21 +307,13 @@ public class PageAdminEndpoint
     @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAll(@QueryParam("start") Integer start, @QueryParam("size") Integer size,
-                                          @QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
+    public synchronized Response indexAll(@QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
                                           @QueryParam("depth") Integer depth)
                     throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
         //validation
-        if (start == null || start < 0) {
-            start = 0;
-        }
-        if (size == null || size < 0) {
-            //signal the logic below to run till the end
-            size = -1;
-        }
         if (depth == null || depth < 0) {
             depth = -1;
         }
@@ -348,9 +323,22 @@ public class PageAdminEndpoint
 
         if (currentIndexAllThread == null) {
             //will register itself in the static variable
-            currentIndexAllThread = new ReindexThread(start, size, folder, filter, depth);
+            currentIndexAllThread = new ReindexThread(folder, filter, depth, new ReindexThread.Listener()
+            {
+                @Override
+                public void reindexingStarted()
+                {
+                }
+                @Override
+                public void reindexingEnded()
+                {
+                    currentIndexAllThread = null;
+                }
+            });
+
             currentIndexAllThread.start();
-            retVal = Response.ok("Launched new reindexation thread with start " + start + ", size " + size + ", folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
+
+            retVal = Response.ok("Launched new reindexation thread with folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
                                  ", depth " + depth);
         }
         else {
@@ -399,262 +387,5 @@ public class PageAdminEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static class ReindexThread extends Thread implements TX.Listener, TaskProvider<RdfClassNode, RdfClassNode>
-    {
-        private final Integer start;
-        private final Integer size;
-        private final List<String> folders;
-        private final String filter;
-        private final int depth;
-        private long startStamp;
-        private boolean cancel;
 
-        private TX transaction;
-        private ResourceRepository pageRepository;
-        private PageIndexConnection mainPageConn;
-        private PageIndexConnection triplestoreConn;
-        private ResourceRepository.IndexOption indexConnectionsOption;
-        private ExecutorService executorService;
-
-        public ReindexThread(final Integer start, final Integer size, final List<String> folders, final String filter, final int depth)
-        {
-            this.start = start;
-            this.size = size;
-            this.folders = folders;
-            this.filter = filter;
-            this.depth = depth;
-            this.startStamp = System.currentTimeMillis();
-            //reset a possibly active global cancellation
-            this.cancel = false;
-        }
-
-        @Override
-        public void run()
-        {
-            try {
-
-                currentIndexAllThread = this;
-
-                //instance a transaction that's connected to this thread
-                this.transaction = StorageFactory.getCurrentThreadTx(this, Sync.ONE_DAY);
-
-                //Note: this is not very kosher, but it works
-                this.pageRepository = new PageRepository();
-
-                //Note that this means we have one transaction for the entire duration of this thread
-                this.mainPageConn = StorageFactory.getMainPageIndexer().connect(this.transaction);
-                this.triplestoreConn = StorageFactory.getTriplestoreIndexer().connect(this.transaction);
-                this.indexConnectionsOption = new PageRepository.PageIndexConnectionOption(this.mainPageConn, this.triplestoreConn);
-
-                // Dexecutor is a small framework for (asynchronously) executing tasks that depend on each other (and detect cycles).
-                // Here, we use it to create a dependency graph of RDF classes that depend on each other and process the
-                // 'deepest' dependencies first, because earlier (more shallow) classes will need their dependencies to
-                // be present when they get indexed.
-                this.executorService = Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
-
-                DexecutorConfig<RdfClassNode, RdfClassNode> config = new DexecutorConfig<>(this.executorService, this);
-                DefaultDexecutor<RdfClassNode, RdfClassNode> executor = new DefaultDexecutor<>(config);
-
-                //This is a set of all classes that are publicly accessible. Note that this is not the same as all the classes
-                // known to the system (eg. the (internal) City won't end up here because it's 'inherited' from an external ontology).
-                //It's the list of classes an end-user can select as the 'type' of a page, meaning no other classes can end up being saved
-                // on disk, so if we iterate files, all encountered classes should be in this set.
-                //We'll sort them based on internal dependency and first index the ones that won't depend
-                // on others down the line.
-                for (RdfClass rdfClass : RdfFactory.getLocalPublicClasses()) {
-                    RdfClassNode node = RdfClassNode.instance(rdfClass);
-                    Set<RdfProperty> props = rdfClass.getProperties();
-
-                    boolean addedDep = false;
-                    if (props != null) {
-                        for (RdfProperty p : props) {
-                            if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
-                                RdfClassNode dep = RdfClassNode.instance(p.getDataType());
-
-                                //link the two together
-                                node.addDependency(dep);
-
-                                //this basically means: the indexing of p.getDataType() should finish before the indexing of rdfClass
-                                executor.addDependency(dep, node);
-
-                                addedDep = true;
-                            }
-                        }
-                    }
-
-                    //if the class has no dependency on other classes, make sure it gets indexed
-                    if (!addedDep) {
-                        executor.addIndependent(node);
-                    }
-                }
-
-                //for debugging: prints out the executor graph
-                //                    StringBuilder builder = new StringBuilder();
-                //                    executor.print(new LevelOrderTraversar<>(), new StringTraversarAction<>(builder));
-                //                    Logger.info(builder.toString());
-
-                //signal the execution should end if an exception is thrown in one of the tasks
-                executor.execute(ExecutionConfig.TERMINATING);
-            }
-            catch (Exception e) {
-                Logger.error("Caught exception while executing the reindexation of all pages of this website", e);
-            }
-            finally {
-
-                try {
-                    this.executorService.shutdown();
-                    this.executorService.awaitTermination(1, TimeUnit.HOURS);
-                }
-                catch (Exception e) {
-                    Logger.error("Error while shutting down long-running transaction of page reindexation", e);
-                }
-                finally {
-                    this.executorService = null;
-                }
-
-                try {
-                    StorageFactory.releaseCurrentThreadTx(false);
-                }
-                catch (Exception e) {
-                    Logger.error("Error while ending long-running transaction of page reindexation", e);
-                }
-                finally {
-                    this.transaction = null;
-                }
-
-                Logger.info("Reindexing " + (cancel ? "cancelled" : "completed") + " in " +
-                            DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
-
-                currentIndexAllThread = null;
-            }
-        }
-        @Override
-        public Task<RdfClassNode, RdfClassNode> provideTask(RdfClassNode node)
-        {
-            return new Task<RdfClassNode, RdfClassNode>()
-            {
-                private final RdfClass rdfClass = node.getRdfClass();
-                private int pageCounter = 0;
-
-                public RdfClassNode execute()
-                {
-                    Logger.info("Iterating the file system to see if we need to reindex " + rdfClass);
-
-                    boolean keepRunning = true;
-                    ExecutorService taskExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
-
-                    try {
-                        for (String folder : folders) {
-
-                            ResourceFilter pathFilter = null;
-                            if (!StringUtils.isEmpty(filter)) {
-                                pathFilter = new DefaultResourceFilter(filter);
-                            }
-                            ResourceIterator pageIterator = pageRepository.getAll(true, URI.create(folder), pathFilter, depth);
-
-                            //note: read-only because we won't be changing the page, only the index
-                            while (pageIterator.hasNext() && keepRunning && !cancel) {
-                                if (++pageCounter >= start) {
-
-                                    final Page page = pageIterator.next().unwrap(Page.class);
-
-                                    taskExecutor.submit(new Callable<Void>()
-                                    {
-                                        //synchronize the counter
-                                        private final int finalPageCounter = pageCounter;
-
-                                        @Override
-                                        public Void call() throws Exception
-                                        {
-                                            if (!cancel) {
-                                                //note that this will read and analyze the html from disk, but it's slightly optimized to only read the necessary first line,
-                                                //so it should be relatively fast.
-                                                //Watch out: the analyzer will read the normalized file, but we assume it might be broken until we reindexed the page,
-                                                //           so we force an analysis of the original html.
-                                                if (URI.create(page.createAnalyzer(true).getHtmlTypeof().value).equals(rdfClass.getCurieName())) {
-                                                    try {
-                                                        Logger.info("Reindexing " + rdfClass + " " + page.getPublicAbsoluteAddress() + " (" + finalPageCounter + ")");
-                                                        pageRepository.reindex(page, null, indexConnectionsOption);
-                                                    }
-                                                    catch (Throwable e) {
-                                                        Logger.error("Error while reindexing page " + page.getPublicAbsoluteAddress(), e);
-                                                        transaction.setRollbackOnly();
-                                                        cancel = true;
-                                                    }
-                                                }
-                                            }
-
-                                            return null;
-                                        }
-                                    });
-                                }
-
-                                keepRunning = !(size != -1 && pageCounter >= size);
-                                if (!keepRunning) {
-                                    Logger.info("Stopped reindexing because the maximal total size of " + size + " was reached");
-                                }
-                            }
-
-                            if (!keepRunning || cancel) {
-                                break;
-                            }
-                        }
-                    }
-                    catch (Throwable e) {
-                        Logger.error("Error while executing reindexing task for class " + rdfClass, e);
-                    }
-                    finally {
-                        try {
-                            taskExecutor.shutdown();
-                            taskExecutor.awaitTermination(1, TimeUnit.HOURS);
-                        }
-                        catch (InterruptedException e) {
-                            Logger.error("Error while shutting down dependency executor service", e);
-                        }
-                    }
-
-                    return node;
-                }
-            };
-        }
-        @Override
-        public void transactionTimedOut()
-        {
-            if (this.transaction != null) {
-                try {
-                    //doing this will cut short all future reindexation (no need to continue if all will fail at the end anyway)
-                    Logger.error("Closing reindexation transaction because of a timeout event");
-                    this.transaction.close(true);
-                }
-                catch (Exception e) {
-                    Logger.error("Error while closing transaction after a timeout event", e);
-                }
-            }
-        }
-        @Override
-        public void transactionStatusChanged(int oldStatus, int newStatus)
-        {
-            //We're not interested in every single status change
-            //Logger.info("TX change from " + Decoder.decodeStatus(oldStatus) + " to " + Decoder.decodeStatus(newStatus));
-        }
-
-        public long getStartStamp()
-        {
-            return startStamp;
-        }
-        public void cancel()
-        {
-            this.cancel = true;
-
-            if (this.executorService != null) {
-                this.executorService.shutdownNow();
-                try {
-                    this.executorService.awaitTermination(1, TimeUnit.MINUTES);
-                }
-                catch (Exception e) {
-                    Logger.error("Error while shutting down task executor", e);
-                }
-            }
-        }
-    }
 }

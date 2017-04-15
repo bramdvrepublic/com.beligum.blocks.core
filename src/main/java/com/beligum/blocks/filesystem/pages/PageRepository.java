@@ -242,7 +242,7 @@ public class PageRepository extends AbstractResourceRepository
         return retVal;
     }
     @Override
-    public Resource reindex(Resource resource, Person editor, IndexOption... options) throws IOException, UnsupportedOperationException, IllegalArgumentException
+    public Resource reindex(Resource resource, IndexOption... options) throws IOException, UnsupportedOperationException, IllegalArgumentException
     {
         Resource retVal = null;
 
