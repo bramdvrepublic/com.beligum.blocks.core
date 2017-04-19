@@ -5,7 +5,9 @@ import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.hdfs.HdfsZipUtils;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
 import com.beligum.blocks.filesystem.logger.PageLogEntry;
@@ -13,11 +15,17 @@ import com.beligum.blocks.filesystem.logger.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Format;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.openrdf.model.Model;
+import org.openrdf.model.*;
+import org.openrdf.model.impl.LinkedHashModel;
+import org.openrdf.model.impl.SimpleValueFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -78,11 +86,59 @@ public class ReadWritePage extends DefaultPage
     public void updateRdfProxy(PageSource source) throws IOException
     {
         //parse, generate and save the RDF model from the RDFa in the HTML page
+        Model rdfModel;
         try (InputStream is = source.newInputStream()) {
-            Model rdfModel = this.createImporter(Format.RDFA).importDocument(this.getPublicAbsoluteAddress(), is);
+            rdfModel = this.createImporter(Format.RDFA).importDocument(this.getPublicAbsoluteAddress(), is);
             try (OutputStream os = this.getFileContext().create(this.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                 this.createExporter(this.getRdfExportFileFormat()).exportModel(rdfModel, os);
             }
+        }
+
+        //this model will hold all copies of dependency triples on external ontologies
+        Model rdfDepsModel = new LinkedHashModel();
+        ValueFactory valueFactory = SimpleValueFactory.getInstance();
+        for (Statement stmt : rdfModel) {
+            Value value = stmt.getObject();
+            //detect if the value is an external resource
+            if (value instanceof IRI) {
+                URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
+                //this means the predicate is locally known
+                if (predicateCurie != null) {
+                    RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
+                    //should always be ok because of the check above
+                    if (predicate != null) {
+                        RdfClass dataType = predicate.getDataType();
+                        RdfQueryEndpoint endpoint = dataType.getEndpoint();
+                        //this means the predicate's datatype has an external endpoint, so it's a valid external resource
+                        if (endpoint != null && endpoint.isExternal()) {
+                            URI localResourceId = URI.create(value.stringValue());
+                            Model externalRdfModel = endpoint.getExternalRdfModel(dataType, localResourceId, source.getLanguage());
+                            //if we have a valid model, add it to the dependency list, together with a "equals" statement
+                            if (!externalRdfModel.isEmpty()) {
+                                URI externalResourceId = endpoint.getExternalResourceId(localResourceId, source.getLanguage());
+                                //this is more or less the glue between the external ontology and the local one
+                                rdfDepsModel.add(valueFactory.createIRI(localResourceId.toString()),
+                                                 //this approach is discussable (instead of using the OWL ontology directly),
+                                                 // but the general approach is to use the local ontology as much as possible,
+                                                 // so let's be consequent in our decisions...
+                                                 valueFactory.createIRI(Terms.sameAs.getFullName().toString()),
+                                                 valueFactory.createIRI(externalResourceId.toString()));
+
+                                rdfDepsModel.addAll(externalRdfModel);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //Note: it makes sense to always sync the deps file with the state of the model,
+        // so we'll erase everything and re-create the file.
+        //Note: if the deps model is empty, we still create an empty file to indicate this,
+        // so we can rely on it's presence to detect the need to redo it duing reindexing
+        Path rdfDepsFile = this.getRdfDependenciesExportFile();
+        try (OutputStream os = this.getFileContext().create(rdfDepsFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+            this.createExporter(this.getRdfExportFileFormat()).exportModel(rdfDepsModel, os);
         }
     }
     public void delete() throws IOException

@@ -96,6 +96,12 @@ public interface Page extends BlocksResource
     Path getRdfExportFile();
 
     /**
+     * Returns the local location where the output of the dependencies on external/foreign ontologies should be stored.
+     * @return
+     */
+    Path getRdfDependenciesExportFile();
+
+    /**
      * Returns the type in which the RDF export is saved
      * @return
      */
@@ -106,6 +112,12 @@ public interface Page extends BlocksResource
      * Note: nothing is cached, this is just a convenience method.
      */
     Model readRdfModel() throws IOException;
+
+    /**
+     * Reads the RDF dependencies model from disk to a memory graph.
+     * Note: nothing is cached, this is just a convenience method.
+     */
+    Model readRdfDependenciesModel() throws IOException;
 
     /**
      * Iterates the registered site languages and checks if we have translations stored of this page for each language

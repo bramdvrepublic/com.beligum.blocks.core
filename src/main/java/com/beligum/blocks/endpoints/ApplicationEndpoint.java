@@ -104,7 +104,7 @@ public class ApplicationEndpoint
                 if (rdfClass != null) {
                     RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
                     if (endpoint != null) {
-                        externalRedirectUri = endpoint.getExternalResourceRedirect(requestedUri, optimalLocale);
+                        externalRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
                     }
                 }
             }

@@ -43,6 +43,7 @@ public abstract class DefaultPage extends AbstractPage
     private static final MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
     private static final String PAGE_PROXY_RDF_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf.nt";
+    private static final String PAGE_PROXY_RDF_DEPS_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf-deps.nt";
 
     //-----VARIABLES-----
 
@@ -102,6 +103,11 @@ public abstract class DefaultPage extends AbstractPage
     public Path getRdfExportFile()
     {
         return new Path(this.getProxyFolder(PAGE_PROXY_RDF_TYPE), PAGE_PROXY_RDF_FILE_NAME);
+    }
+    @Override
+    public Path getRdfDependenciesExportFile()
+    {
+        return new Path(this.getProxyFolder(PAGE_PROXY_RDF_TYPE), PAGE_PROXY_RDF_DEPS_FILE_NAME);
     }
     @Override
     public Format getRdfExportFileFormat()

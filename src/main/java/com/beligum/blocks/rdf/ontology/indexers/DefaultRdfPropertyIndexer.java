@@ -7,6 +7,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.exceptions.NotIndexedException;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
@@ -136,9 +137,11 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
             URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 
-            RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
+            RdfClass dataType = property.getDataType();
+            RdfQueryEndpoint endpoint = dataType.getEndpoint();
+            // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
             if (endpoint != null) {
-                ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
+                ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language);
                 if (resourceValue != null) {
                     //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                     try {
@@ -167,8 +170,8 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                                                                                       "' because it's resource endpoint returned null");
                 }
             }
+            //not all URIs have an endpoint (eg an <img> tag)
             else {
-                //not all URIs have an endpoint (eg an <img> tag)
                 String val = uriValue.toString();
                 indexer.indexConstantField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
@@ -228,28 +231,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             else if (property.getDataType().equals(RDF.HTML)) {
                 retVal = StringFunctions.htmlToPlaintextRFC3676(value);
             }
-            else if (property.getDataType().equals(XSD.ANY_URI)) {
+            //Note: the pure class options if the IRI in the index() counterpart
+            else if (property.getDataType().equals(XSD.ANY_URI) || property.getDataType().getType().equals(RdfClass.Type.CLASS)) {
                 //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-                URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value));
-
-                RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
-                if (endpoint != null) {
-                    ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
-                    if (resourceValue != null) {
-                        //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
-                        try {
-                            retVal = resourceValue.getResourceUri().toString();
-                        }
-                        catch (Exception e) {
-//                            throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject +
-//                                                  "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
-                        }
-                    }
-                }
-                else {
-                    //not all URIs have an endpoint (eg an <img> tag)
-                    retVal = uriValue.toString();
-                }
+                retVal = RdfTools.relativizeToLocalDomain(URI.create(value)).toString();
             }
             else {
                 throw new IOException("Unimplemented data type; " + property.getDataType());

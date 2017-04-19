@@ -77,6 +77,8 @@ public class SesameImporter extends AbstractImporter
                 return RDFFormat.RDFA;
             case NTRIPLES:
                 return RDFFormat.NTRIPLES;
+            case RDF_XML:
+                return RDFFormat.RDFXML;
             default:
                 throw new IOException("Unsupported importer format detected; " + inputFormat);
         }

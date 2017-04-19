@@ -10,7 +10,11 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.importers.SesameImporter;
+import com.beligum.blocks.rdf.ontology.vocabularies.GN;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.AbstractGeoname;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.GeonameResourceInfo;
 import com.beligum.blocks.utils.RdfTools;
@@ -19,12 +23,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.client.ClientConfig;
+import org.openrdf.model.Model;
+import org.openrdf.model.Statement;
+import org.openrdf.model.impl.LinkedHashModel;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -41,6 +49,8 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
     private static final Pattern CITY_ZIP_COUNTRY_PATTERN = Pattern.compile("([^,]*),(\\d+),(.*)");
+    private static final RdfClass EXTERNAL_RDF_CLASS = GN.Feature;
+    private static final RdfProperty[] EXTERNAL_LABELS = new RdfProperty[] { GN.officialName, GN.name, GN.alternateName };
 
     //-----VARIABLES-----
     private String username;
@@ -54,6 +64,11 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         this.geonameType = geonameType;
     }
 
+    @Override
+    public boolean isExternal()
+    {
+        return true;
+    }
     //-----PUBLIC METHODS-----
     @Override
     //Note: check the inner cache class if you add variables
@@ -172,48 +187,135 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                 retVal = cachedResult;
             }
             else {
-                ClientConfig config = new ClientConfig();
-                Client httpClient = ClientBuilder.newClient(config);
-                UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/get")
-                                               .queryParam("username", this.username)
-                                               //we pass only the id, not the entire URI
-                                               .queryParam("geonameId", RdfTools.extractResourceId(resourceId))
-                                               //when we query, we query for a lot
-                                               .queryParam("style", "FULL")
-                                               .queryParam("type", "json");
+                Client httpClient = null;
+                try {
+                    httpClient = ClientBuilder.newClient(new ClientConfig());
 
-                if (language != null) {
-                    builder.queryParam("lang", language.getLanguage());
+                    String geonamesId = RdfTools.extractResourceId(resourceId);
+                    UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/get")
+                                                   .queryParam("username", this.username)
+                                                   //we pass only the id, not the entire URI
+                                                   .queryParam("geonameId", geonamesId)
+                                                   //when we query, we query for a lot
+                                                   .queryParam("style", "FULL")
+                                                   .queryParam("type", "json");
+
+                    if (language != null) {
+                        builder.queryParam("lang", language.getLanguage());
+                    }
+
+                    URI target = builder.build();
+                    Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
+                    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+
+                        InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
+                        ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResourceInfo.class).with(inject);
+
+                        //note: the Geonames '/get' endpoint is XML only!
+                        retVal = reader.readValue(response.readEntity(String.class));
+
+                        //API doesn't seem to return this -> set it manually
+                        retVal.setLanguage(language);
+                    }
+                    else {
+                        throw new IOException("Error status returned while searching for geonames id '" + resourceId + "'; " + response);
+                    }
+
+                    this.putCachedEntry(cacheKey, retVal);
                 }
-
-                URI target = builder.build();
-                Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
-                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-
-                    InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
-                    ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResourceInfo.class).with(inject);
-
-                    //note: the Geonames '/get' endpoint is XML only!
-                    retVal = reader.readValue(response.readEntity(String.class));
-
-                    //API doesn't seem to return this -> set it manually
-                    retVal.setLanguage(language);
+                finally {
+                    if (httpClient != null) {
+                        httpClient.close();
+                    }
                 }
-                else {
-                    throw new IOException("Error status returned while searching for geonames id '" + resourceId + "'; " + response);
-                }
-
-                this.putCachedEntry(cacheKey, retVal);
             }
         }
 
         return retVal;
     }
     @Override
-    public URI getExternalResourceRedirect(URI resourceId, Locale language)
+    public URI getExternalResourceId(URI resourceId, Locale language)
     {
-        //TODO what about the language?
+        //TODO do we need the language?
         return AbstractGeoname.toGeonamesUri(RdfTools.extractResourceId(resourceId));
+    }
+    @Override
+    public Model getExternalRdfModel(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    {
+        Model retVal = null;
+
+        if (resourceId != null && !resourceId.toString().isEmpty()) {
+
+            //use a cached result if it's there
+            CachedExternalModel cacheKey = new CachedExternalModel(resourceType, resourceId, language);
+            Model cachedResult = this.getCachedEntry(cacheKey);
+            if (cachedResult != null) {
+                retVal = cachedResult;
+            }
+            else {
+                Client httpClient = null;
+
+                try {
+                    httpClient = ClientBuilder.newClient(new ClientConfig());
+
+                    //Note: when opened in the browser, this will actually redirect to an "about.rdf" page,
+                    // but this is the main subject of our RDF we'll use in the SPARQL below too
+                    URI rdfUri = this.getExternalResourceId(resourceId, language);
+
+                    //this seems to be the only RDF format that's accepted
+                    Response response = httpClient.target(rdfUri).request("application/rdf+xml").get();
+                    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                        //this will hold subjects about the resource and it's relationship with the about page,
+                        //but we're only interested in the raw resource statements, so filter out the rest
+                        //because it makes more sense: we're asking for a specific resource,
+                        //so it's normal all statements have that resource as subject
+                        Model remoteModel = new SesameImporter(Format.RDF_XML).importDocument(rdfUri, new ByteArrayInputStream(response.readEntity(String.class).getBytes()));
+
+                        // For debug
+                        //                Exporter exporter = new SesameExporter(Format.NTRIPLES);
+                        //                ByteArrayOutputStream exportData = new ByteArrayOutputStream();
+                        //                exporter.exportModel(remoteModel, exportData);
+                        //                Logger.info(exportData);
+
+                        //if we get here, it means we have a model, empty or not
+                        retVal = new LinkedHashModel();
+
+                        String rdfUriStr = rdfUri.toString();
+                        for (Statement statement : remoteModel) {
+                            //Filter only those statements about the external resource id returned by getExternalResourceId()
+                            //Note that this works together with the getExternalResourceId() method,
+                            //so it's possible to query the triplestore using the return value of that method
+                            if (statement.getSubject().stringValue().equals(rdfUriStr)) {
+                                retVal.add(statement);
+                            }
+                        }
+                    }
+                    else {
+                        throw new IOException("Geonames RDF endpoint returned unexpected http code (" + response.getStatus() + ") when fetching dependency model for " + resourceId + "; " +
+                                              response.getStatusInfo().getReasonPhrase());
+                    }
+
+                    this.putCachedEntry(cacheKey, retVal);
+                }
+                finally {
+                    if (httpClient != null) {
+                        httpClient.close();
+                    }
+                }
+            }
+        }
+
+        return retVal;
+    }
+    @Override
+    public RdfClass getExternalClasses(RdfClass localResourceType)
+    {
+        return EXTERNAL_RDF_CLASS;
+    }
+    @Override
+    public RdfProperty[] getExternalLabels(RdfClass localResourceType)
+    {
+        return EXTERNAL_LABELS;
     }
 
     //-----PROTECTED METHODS-----
@@ -223,17 +325,25 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     {
         return (Collection<AutocompleteSuggestion>) this.getGeonameCache().get(query);
     }
-    private void putCachedEntry(CachedSearch query, Collection<AutocompleteSuggestion> results)
+    private void putCachedEntry(CachedSearch key, Collection<AutocompleteSuggestion> results)
     {
-        this.getGeonameCache().put(query, results);
+        this.getGeonameCache().put(key, results);
     }
     private GeonameResourceInfo getCachedEntry(CachedResource query)
     {
         return (GeonameResourceInfo) this.getGeonameCache().get(query);
     }
-    private void putCachedEntry(CachedResource query, GeonameResourceInfo results)
+    private void putCachedEntry(CachedResource key, GeonameResourceInfo results)
     {
-        this.getGeonameCache().put(query, results);
+        this.getGeonameCache().put(key, results);
+    }
+    private Model getCachedEntry(CachedExternalModel externalModel)
+    {
+        return (Model) this.getGeonameCache().get(externalModel);
+    }
+    private void putCachedEntry(CachedExternalModel key, Model model)
+    {
+        this.getGeonameCache().put(key, model);
     }
     private Cache getGeonameCache()
     {
@@ -251,14 +361,15 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
      * This method allows us to use queries like the one above, and use the Geonames postalCodeSearch endpoint to query the official name of that city.
      * Note that we have to do a two-step search because the postalCodeSearch doesn't seem to return the geoname ID...
      */
-    private Collection<AutocompleteSuggestion> deeperCitySearch(Client httpClient, RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options)
+    private Collection<AutocompleteSuggestion> deeperCitySearch(Client httpClient, RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults,
+                                                                SearchOption... options)
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         try {
             //this format allows us to specify an exact zip code, but if the known name doesn't match
             Matcher matcher = CITY_ZIP_COUNTRY_PATTERN.matcher(query);
-            if (matcher.matches() && matcher.groupCount()==3) {
+            if (matcher.matches() && matcher.groupCount() == 3) {
                 String city = matcher.group(1);
                 String zipCode = matcher.group(2);
                 String country = matcher.group(3);
@@ -285,8 +396,8 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                     countryCode = "HU";
                 }
 
-                if (countryCode!=null) {
-                    Logger.info("Didn't find any Geonames city result for '"+query+"', searching a bit deeper because we have a postal code.");
+                if (countryCode != null) {
+                    Logger.info("Didn't find any Geonames city result for '" + query + "', searching a bit deeper because we have a postal code.");
 
                     UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/postalCodeSearch")
                                                    .queryParam("username", this.username)
@@ -311,35 +422,35 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                             JsonNode pc = postalCodes.next();
                             JsonNode postalCodeNode = pc.get("postalCode");
                             JsonNode placeNameNode = pc.get("placeName");
-                            if (postalCodeNode!=null && placeNameNode!=null && postalCodeNode.textValue().equals(zipCode)) {
+                            if (postalCodeNode != null && placeNameNode != null && postalCodeNode.textValue().equals(zipCode)) {
                                 placeName = placeNameNode.textValue();
                             }
                         }
                     }
 
-                    if (placeName!=null) {
+                    if (placeName != null) {
                         //use the new, queried name to search again
                         //Note that this is a source for infinite recursion if this query doesn't yield any results, but it should, cause we just looked it up (but will be using a different endpoint during search())
                         //Update: encountered a lot of errors when including the zipCode again, omitting it and hoping for the best...
                         //String newQuery = placeName+","+zipCode+","+countryCode;
-                        String newQuery = placeName+","+countryCode;
+                        String newQuery = placeName + "," + countryCode;
                         retVal = this.search(resourceType, newQuery, queryType, language, maxResults, options);
                     }
                 }
                 else {
-                    Logger.warn("Unknown country '"+country+"'; can't translate it to a country code and can't use deeper search");
+                    Logger.warn("Unknown country '" + country + "'; can't translate it to a country code and can't use deeper search");
                 }
 
                 //as a last try, we omit the postal code and re-launch the search query one more time without postal code
                 if (retVal.isEmpty()) {
-                    String newQuery = city+","+country;
+                    String newQuery = city + "," + country;
                     retVal = this.search(resourceType, newQuery, queryType, language, maxResults, options);
                 }
             }
         }
         //don't let this additional search ruin the query, log and eat it
         catch (Exception e) {
-            Logger.error("Error happened while search a bit deeper for a city resource for '"+query+"'; ", e);
+            Logger.error("Error happened while search a bit deeper for a city resource for '" + query + "'; ", e);
         }
 
         return retVal;
@@ -370,23 +481,30 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         @Override
         public boolean equals(Object o)
         {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (!(o instanceof CachedSearch))
+            }
+            if (!(o instanceof CachedSearch)) {
                 return false;
+            }
 
             CachedSearch that = (CachedSearch) o;
 
-            if (geonameType != that.geonameType)
+            if (geonameType != that.geonameType) {
                 return false;
-            if (resourceType != null ? !resourceType.equals(that.resourceType) : that.resourceType != null)
+            }
+            if (resourceType != null ? !resourceType.equals(that.resourceType) : that.resourceType != null) {
                 return false;
-            if (query != null ? !query.equals(that.query) : that.query != null)
+            }
+            if (query != null ? !query.equals(that.query) : that.query != null) {
                 return false;
-            if (queryType != that.queryType)
+            }
+            if (queryType != that.queryType) {
                 return false;
-            if (language != null ? !language.equals(that.language) : that.language != null)
+            }
+            if (language != null ? !language.equals(that.language) : that.language != null) {
                 return false;
+            }
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
             return Arrays.equals(options, that.options);
 
@@ -420,17 +538,65 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         @Override
         public boolean equals(Object o)
         {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (!(o instanceof CachedResource))
+            }
+            if (!(o instanceof CachedResource)) {
                 return false;
+            }
 
             CachedResource that = (CachedResource) o;
 
-            if (resourceType != null ? !resourceType.equals(that.resourceType) : that.resourceType != null)
+            if (resourceType != null ? !resourceType.equals(that.resourceType) : that.resourceType != null) {
                 return false;
-            if (resourceId != null ? !resourceId.equals(that.resourceId) : that.resourceId != null)
+            }
+            if (resourceId != null ? !resourceId.equals(that.resourceId) : that.resourceId != null) {
                 return false;
+            }
+            return language != null ? language.equals(that.language) : that.language == null;
+
+        }
+        @Override
+        public int hashCode()
+        {
+            int result = resourceType != null ? resourceType.hashCode() : 0;
+            result = 31 * result + (resourceId != null ? resourceId.hashCode() : 0);
+            result = 31 * result + (language != null ? language.hashCode() : 0);
+            return result;
+        }
+    }
+
+    private static class CachedExternalModel
+    {
+        private RdfClass resourceType;
+        private URI resourceId;
+        private Locale language;
+
+        public CachedExternalModel(RdfClass resourceType, URI resourceId, Locale language)
+        {
+            this.resourceType = resourceType;
+            this.resourceId = resourceId;
+            this.language = language;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof CachedExternalModel)) {
+                return false;
+            }
+
+            CachedExternalModel that = (CachedExternalModel) o;
+
+            if (resourceType != null ? !resourceType.equals(that.resourceType) : that.resourceType != null) {
+                return false;
+            }
+            if (resourceId != null ? !resourceId.equals(that.resourceId) : that.resourceId != null) {
+                return false;
+            }
             return language != null ? language.equals(that.language) : that.language == null;
 
         }

@@ -11,6 +11,7 @@ public enum Format
     //-----CONSTANTS-----
     RDFA(MimeTypes.HTML),
     JSONLD(MimeTypes.JSONLD),
+    RDF_XML(MimeTypes.RDF_XML),
     NTRIPLES(MimeTypes.NTRIPLES)
     ;
 

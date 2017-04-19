@@ -164,6 +164,8 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         //we'll be deleting all the triples in the model of the page,
         //except the ones that are present in another language.
+        //Note that by relying on the entries of the triple store itself (instead of reading in the page model from disk)
+        // we ensure all occurrences of this page in the DB will be deleted, regardless of what is present in the proxy model
         Model pageModel = this.queryModel(page, false);
         for (Page p : page.getTranslations().values()) {
             Model model = p.readRdfModel();
@@ -171,6 +173,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                 pageModel.removeAll(model);
             }
         }
+
+        //TODO we should probably consider deleting the dependency triples if we're the last resource that uses them,
+        // but for now, this isn't a major issue since the links to it will be deleted by the code below
 
         this.connection.remove(pageModel);
     }
@@ -182,8 +187,41 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
+        //make sure the update of this page wipes all previous triples first
         this.delete(page);
-        this.connection.add(page.readRdfModel());
+
+        //add the base model to the triple store
+        Model rdfModel = page.readRdfModel();
+        this.connection.add(rdfModel);
+
+        //add the dependency model to the triple store
+        Model rdfDepModel = page.readRdfDependenciesModel();
+        if (rdfDepModel!=null) {
+            this.connection.add(rdfDepModel);
+        }
+
+        //Note: old code, can be used to detect the presence of a single subject IRI
+        //        StringBuilder queryBuilder = new StringBuilder();
+        //        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
+        //        queryBuilder.append("\n");
+        //        queryBuilder.append("SELECT")
+        //                    //.append(" ?").append(SPARQL_SUBJECT_BINDING_NAME)
+        //                    .append(" ?").append(SPARQL_PREDICATE_BINDING_NAME)
+        //                    .append(" ?").append(SPARQL_OBJECT_BINDING_NAME)
+        //                    .append(" WHERE {\n");
+        //        //filter on subject
+        //        queryBuilder.append("\t").append("<").append(rdfUri).append(">").append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" . \n");
+        //        //close the where statement
+        //        queryBuilder.append("}\n");
+        //
+        //        TupleQuery query = StorageFactory.getTriplestoreQueryConnection().query(queryBuilder.toString());
+        //        boolean exists;
+        //        try (TupleQueryResult queryResult = query.evaluate()) {
+        //            exists = queryResult.hasNext();
+        //        }
+        //
+        //        //this means there's no single subject with the selected URI in our local triplestore
+        //        if (!exists) {
     }
     @Override
     public void deleteAll() throws IOException

@@ -10,6 +10,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedPageResourceInfo;
 import com.beligum.blocks.utils.RdfTools;
@@ -17,6 +18,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
+import org.openrdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,6 +38,11 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
     }
 
+    @Override
+    public boolean isExternal()
+    {
+        return false;
+    }
     //-----PUBLIC METHODS-----
     @Override
     public Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
@@ -125,10 +132,28 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public URI getExternalResourceRedirect(URI resourceId, Locale language)
+    public URI getExternalResourceId(URI resourceId, Locale language)
     {
         //nothing special to redirect to; we'll render the resource out ourselves
         return null;
+    }
+    @Override
+    public Model getExternalRdfModel(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    {
+        //we're a local endpoint
+        return null;
+    }
+    @Override
+    public RdfClass getExternalClasses(RdfClass localResourceType)
+    {
+        //we're a local endpoint
+        return null;
+    }
+    @Override
+    public RdfProperty[] getExternalLabels(RdfClass localResourceType)
+    {
+        //we're a local endpoint
+        return new RdfProperty[0];
     }
 
     //-----PROTECTED METHODS-----

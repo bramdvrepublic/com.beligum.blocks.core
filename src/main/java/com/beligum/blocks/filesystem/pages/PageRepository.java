@@ -286,9 +286,10 @@ public class PageRepository extends AbstractResourceRepository
 
         boolean normalizedMissing = !page.getFileContext().util().exists(page.getNormalizedHtmlFile());
         boolean rdfMissing = !page.getFileContext().util().exists(page.getRdfExportFile());
+        boolean rdfDepsMissing = !page.getFileContext().util().exists(page.getRdfDependenciesExportFile());
 
         //Note that we only need to have a write context if one of the above files is missing
-        if (normalizedMissing || rdfMissing) {
+        if (normalizedMissing || rdfMissing || rdfDepsMissing) {
             ReadWritePage rwPage = new ReadWritePage(this, page);
             try (LockFile lock = rwPage.acquireLock()) {
 
@@ -302,7 +303,7 @@ public class PageRepository extends AbstractResourceRepository
                     rwPage.updateNormalizedProxy(pageSource);
                 }
 
-                if (rdfMissing) {
+                if (rdfMissing || rdfDepsMissing) {
                     rwPage.updateRdfProxy(pageSource);
                 }
 
@@ -316,8 +317,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //This is actually what he're here for: update both indexes
-        //            mainPageConnection.update(resource);
-        //            triplestoreConnection.update(resource);
+        mainPageConnection.update(resource);
+        triplestoreConnection.update(resource);
 
         //by returning a RO-page or a RW-page, we can more or less signal the caller what changed (only the index or the index + fixes to the FS)
         if (retVal == null) {

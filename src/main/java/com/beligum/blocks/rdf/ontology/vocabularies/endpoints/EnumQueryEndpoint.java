@@ -7,10 +7,12 @@ import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
+import org.openrdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,6 +55,11 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean isExternal()
+    {
+        return false;
+    }
     /**
      * Note that, for now, this method ignores queryType and options parameters
      */
@@ -85,10 +92,28 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
         throw new NotImplementedException();
     }
     @Override
-    public URI getExternalResourceRedirect(URI resourceId, Locale language)
+    public URI getExternalResourceId(URI resourceId, Locale language)
     {
         //nothing special to redirect to; we'll render the resource out ourselves
         return null;
+    }
+    @Override
+    public Model getExternalRdfModel(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    {
+        //we're a local endpoint
+        return null;
+    }
+    @Override
+    public RdfClass getExternalClasses(RdfClass localResourceType)
+    {
+        //we're a local endpoint
+        return null;
+    }
+    @Override
+    public RdfProperty[] getExternalLabels(RdfClass localResourceType)
+    {
+        //we're a local endpoint
+        return new RdfProperty[0];
     }
 
     //-----PROTECTED METHODS-----

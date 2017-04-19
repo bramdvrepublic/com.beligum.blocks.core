@@ -60,7 +60,9 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public URI resolve(String suffix)
     {
-        return namespace == null ? null : namespace.resolve(suffix);
+        //note: we can't use namespace.resolve(suffix) because it doesn't resolve anchor-based ontologies correctly
+        // (like "http://www.geonames.org/ontology#" + "name" yields "http://www.geonames.org/name" )
+        return namespace == null ? null : URI.create(namespace.toString() + suffix);
     }
     @Override
     public final String getPrefix()
@@ -70,7 +72,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public URI resolveCurie(String suffix)
     {
-        return URI.create(this.prefix+":"+suffix);
+        return URI.create(this.prefix + ":" + suffix);
     }
     @Override
     public Map<URI, RdfResource> getAllTypes()

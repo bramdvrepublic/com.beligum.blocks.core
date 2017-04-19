@@ -15,7 +15,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
-import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
 
 import java.io.IOException;
@@ -73,9 +72,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         Set<String> allField = new LinkedHashSet<>();
 
         //Note: we re-use the RDFmodel of the superclass so we don't read it twice
-        Iterator<Statement> stmtIter = this.rdfModel.iterator();
-        while (stmtIter.hasNext()) {
-            Statement stmt = stmtIter.next();
+        for (Statement stmt : this.rdfModel) {
 
             URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
             if (predicateCurie != null) {

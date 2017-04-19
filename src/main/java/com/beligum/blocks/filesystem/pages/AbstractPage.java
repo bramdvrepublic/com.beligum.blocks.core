@@ -144,20 +144,12 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     @Override
     public Model readRdfModel() throws IOException
     {
-        Model retVal = null;
-
-        //explicitly read the model from disk so we can use this stand alone
-        Path modelFile = this.getRdfExportFile();
-        //don't let it throw an exception if the file doesn't exist, just return null
-        if (this.getFileContext().util().exists(modelFile)) {
-            Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
-            try (InputStream is = this.getFileContext().open(modelFile)) {
-                //note that all RDF needs absolute addresses
-                retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
-            }
-        }
-
-        return retVal;
+        return this.readRdfFile(this.getRdfExportFile());
+    }
+    @Override
+    public Model readRdfDependenciesModel() throws IOException
+    {
+        return this.readRdfFile(this.getRdfDependenciesExportFile());
     }
     @Override
     public Map<Locale, Page> getTranslations() throws IOException
@@ -265,5 +257,21 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
 
         //this is the 'most naked' address of the page, without language params or storage filenames
         this.canonicalAddress = URI.create(relativeAddressPath);
+    }
+    private Model readRdfFile(Path modelFile) throws IOException
+    {
+        Model retVal = null;
+
+        //Note: explicitly read the model from disk so we can use this stand alone
+        //don't let it throw an exception if the file doesn't exist, just return null
+        if (this.getFileContext().util().exists(modelFile)) {
+            Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
+            try (InputStream is = this.getFileContext().open(modelFile)) {
+                //note that all RDF needs absolute addresses
+                retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
+            }
+        }
+
+        return retVal;
     }
 }
