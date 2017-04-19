@@ -452,6 +452,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void begin() throws IOException
     {
+        //note: we can't check on registeredTransaction because this gets called from the registerResource() method
         if (this.connection != null) {
             this.connection.begin();
         }
@@ -459,7 +460,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.connection != null) {
+        if (this.registeredTransaction) {
             //Note: see connection.commit() for the nitty-gritty of where I got this from
             this.connection.getSailConnection().flush();
             this.connection.getSailConnection().prepare();
@@ -468,14 +469,14 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void commit() throws IOException
     {
-        if (this.connection != null) {
+        if (this.registeredTransaction) {
             this.connection.getSailConnection().commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.connection != null) {
+        if (this.registeredTransaction) {
             this.connection.getSailConnection().rollback();
         }
     }
