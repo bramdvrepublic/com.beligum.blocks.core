@@ -13,11 +13,5 @@ public interface PageIndexer extends Indexer
      * This is the overridden general connect() method from the super interface to be able to be more specific in it's return type.
      */
     @Override
-    PageIndexConnection connect() throws IOException;
-
-    /**
-     * This is the overridden general connect() method from the super interface to be able to be more specific in it's return type.
-     */
-    @Override
     PageIndexConnection connect(TX tx) throws IOException;
 }

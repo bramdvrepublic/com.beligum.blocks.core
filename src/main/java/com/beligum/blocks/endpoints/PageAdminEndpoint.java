@@ -8,7 +8,6 @@ import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.index.reindex.ReindexThread;
@@ -274,37 +273,6 @@ public class PageAdminEndpoint
     }
 
     @GET
-    @javax.ws.rs.Path("/index/clear")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexClear() throws Exception
-    {
-        Response.ResponseBuilder retVal = null;
-
-        if (currentIndexAllThread == null) {
-            try {
-                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
-                StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
-            }
-            finally {
-                //simulate a transaction commit for each action or we'll end up with errors.
-                //Note: this means every single index call will be atomic, but the entire operation will not,
-                // so on errors, you'll end up with half-indexed pages and probably errors
-                //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
-                StorageFactory.releaseCurrentRequestTx(false);
-            }
-
-            Logger.info("Index cleared.");
-
-            retVal = Response.ok("Index cleared successfully.");
-        }
-        else {
-            Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
-        }
-
-        return retVal.build();
-    }
-
-    @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public synchronized Response indexAll(@QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
@@ -349,23 +317,54 @@ public class PageAdminEndpoint
         return retVal.build();
     }
 
-    @GET
-    @javax.ws.rs.Path("/index/all/cancel")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAllCancel() throws Exception
-    {
-        Response.ResponseBuilder retVal = null;
+    //    @GET
+    //    @javax.ws.rs.Path("/index/clear")
+    //    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    //    public synchronized Response indexClear() throws Exception
+    //    {
+    //        Response.ResponseBuilder retVal = null;
+    //
+    //        if (currentIndexAllThread == null) {
+    //            try {
+    //                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
+    //                StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
+    //            }
+    //            finally {
+    //                //simulate a transaction commit for each action or we'll end up with errors.
+    //                //Note: this means every single index call will be atomic, but the entire operation will not,
+    //                // so on errors, you'll end up with half-indexed pages and probably errors
+    //                //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
+    //                StorageFactory.releaseCurrentRequestTx(false);
+    //            }
+    //
+    //            Logger.info("Index cleared.");
+    //
+    //            retVal = Response.ok("Index cleared successfully.");
+    //        }
+    //        else {
+    //            Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+    //        }
+    //
+    //        return retVal.build();
+    //    }
 
-        if (currentIndexAllThread != null) {
-            currentIndexAllThread.cancel();
-            retVal = Response.ok("Reindex all process cancelled");
-        }
-        else {
-            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
-        }
-
-        return retVal.build();
-    }
+    //    @GET
+    //    @javax.ws.rs.Path("/index/all/cancel")
+    //    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    //    public synchronized Response indexAllCancel() throws Exception
+    //    {
+    //        Response.ResponseBuilder retVal = null;
+    //
+    //        if (currentIndexAllThread != null) {
+    //            currentIndexAllThread.cancel();
+    //            retVal = Response.ok("Reindex all process cancelled");
+    //        }
+    //        else {
+    //            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
+    //        }
+    //
+    //        return retVal.build();
+    //    }
 
     @GET
     @javax.ws.rs.Path("/index/all/status")

@@ -90,7 +90,7 @@ public class StorageFactory
     public static LuceneQueryConnection getMainPageQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
-        return (LuceneQueryConnection) getMainPageIndexer().connect();
+        return (LuceneQueryConnection) getMainPageIndexer().connect(null);
     }
     public static PageIndexer getTriplestoreIndexer() throws IOException
     {
@@ -105,7 +105,7 @@ public class StorageFactory
     public static SparqlQueryConnection getTriplestoreQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
-        return (SparqlQueryConnection) getTriplestoreIndexer().connect();
+        return (SparqlQueryConnection) getTriplestoreIndexer().connect(null);
     }
     public static TransactionManager getTransactionManager() throws IOException
     {

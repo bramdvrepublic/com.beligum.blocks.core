@@ -74,11 +74,6 @@ public class LucenePageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public synchronized PageIndexConnection connect() throws IOException
-    {
-        return this.connect(null);
-    }
-    @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
         return new LucenePageIndexConnection(this, tx);

@@ -40,11 +40,6 @@ public class SesamePageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public synchronized PageIndexConnection connect() throws IOException
-    {
-        return this.connect(null);
-    }
-    @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
         return new SesamePageIndexConnection(this, tx);
