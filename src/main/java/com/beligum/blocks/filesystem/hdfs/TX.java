@@ -34,9 +34,8 @@ public class TX implements AutoCloseable
     //-----CONSTANTS-----
     public interface Listener
     {
-        void transactionTimedOut();
-
-        void transactionStatusChanged(int oldStatus, int newStatus);
+        void transactionTimedOut(TX transaction);
+        void transactionStatusChanged(TX transaction, int oldStatus, int newStatus);
     }
 
     //-----VARIABLES-----
@@ -78,11 +77,11 @@ public class TX implements AutoCloseable
                             //Logger.debug("Transaction " + jtaTransaction.hashCode() + " changed status from " + Decoder.decodeStatus(oldStatus)+" to "+Decoder.decodeStatus(newStatus));
 
                             if (listener != null) {
-                                listener.transactionStatusChanged(oldStatus, newStatus);
+                                listener.transactionStatusChanged(TX.this, oldStatus, newStatus);
 
                                 //catch this specific case internally to make the callback API a little easier to work with
                                 if (oldStatus == Status.STATUS_ACTIVE && btxTx.timedOut()) {
-                                    listener.transactionTimedOut();
+                                    listener.transactionTimedOut(TX.this);
                                 }
                             }
                         }
@@ -227,9 +226,14 @@ public class TX implements AutoCloseable
         // commit: same as TransactionManager.commit(). This method should not be called randomly: first, every XAResource
         // that was enlisted should also be properly delisted. Otherwise, XA-level protocol errors can occur.
         try {
-            //see rollback() for why this is commented out
-            //this.delistAllResources(TMSUCCESS);
-            this.jtaTransaction.commit();
+            //Note: it's important *all* commits/rollback are serialized, because we ran into this problem illustrated here:
+            //https://issues.apache.org/jira/browse/JENA-1302
+            //By requiring a lock over the entire transaction manager, we force all of them to be atomic.
+            synchronized (this.transactionManager) {
+                //see rollback() for why this is commented out
+                //this.delistAllResources(TMSUCCESS);
+                this.jtaTransaction.commit();
+            }
         }
         catch (Exception e) {
             throw new IOException("Error occurred while committing main transaction", e);
@@ -246,10 +250,12 @@ public class TX implements AutoCloseable
         // rollback: same as TransactionManager.rollback(). As with commit, this method should not be called randomly:
         // first, every resource that was enlisted should also be delisted. Otherwise, XA-level protocol errors can occur.
         try {
-            //Note: we don't do this anymore because of errors thrown (see BitronixTransaction.delistResource(); it first checks isWorking() and that is most probably true)
-            //Found some docs that this shouldn't be called manually in most cases, see http://stackoverflow.com/questions/7168605/when-should-transaction-delistresource-be-called
-            //this.delistAllResources(TMFAIL);
-            this.jtaTransaction.rollback();
+            synchronized (this.transactionManager) {
+                //Note: we don't do this anymore because of errors thrown (see BitronixTransaction.delistResource(); it first checks isWorking() and that is most probably true)
+                //Found some docs that this shouldn't be called manually in most cases, see http://stackoverflow.com/questions/7168605/when-should-transaction-delistresource-be-called
+                //this.delistAllResources(TMFAIL);
+                this.jtaTransaction.rollback();
+            }
         }
         catch (Exception e) {
             throw new IOException("Error occurred while rolling back main transaction", e);

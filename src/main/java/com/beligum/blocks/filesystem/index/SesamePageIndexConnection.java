@@ -196,7 +196,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         //add the dependency model to the triple store
         Model rdfDepModel = page.readRdfDependenciesModel();
-        if (rdfDepModel!=null) {
+        if (rdfDepModel != null) {
             this.connection.add(rdfDepModel);
         }
 
@@ -231,78 +231,78 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         this.connection.clear();
     }
-//    Commented out because the Lucene Sail is disabled for now...
-//    @Override
-//    public IndexSearchResult search(RdfClass type, String luceneQuery, Map fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
-//    {
-//        this.assertActive();
-//
-//        //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
-//        //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
-//        StringBuilder queryBuilder = new StringBuilder();
-//        final String searchPrefix = "search";
-//        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
-//        queryBuilder.append("PREFIX ").append(searchPrefix).append(": <").append(LuceneSailSchema.NAMESPACE).append("> \n");
-//        queryBuilder.append("\n");
-//
-//        //links the resource to be found with the following query statements (required)
-//        queryBuilder.append("SELECT DISTINCT ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" WHERE {\n");
-//
-//        //TODO implement the type
-//        if (type != null) {
-//            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(type.getFullName().toString()).append("> . \n");
-//        }
-//
-//        //---Lucene---
-//        if (!StringUtils.isEmpty(luceneQuery)) {
-//            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(searchPrefix).append(":matches [\n")
-//                        //specifies the Lucene query (required)
-//                        .append("\t").append("\t").append(searchPrefix).append(":query \"").append(QueryParser.escape(luceneQuery)).append("*").append("\";\n")
-//                        //specifies the property to search. If omitted all properties are searched (optional)
-//                        //                    .append("\t").append("\t").append(searchPrefix).append(":property ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append("streetName").append(";\n")
-//                        //specifies a variable for the score (optional)
-//                        //                    .append("\t").append("\t").append(searchPrefix).append(":score ?score;\n")
-//                        //specifies a variable for a highlighted snippet (optional)
-//                        //.append("\t").append("\t").append(searchPrefix).append(":snippet ?snippet;\n")
-//                        .append("\t").append("] .\n");
-//        }
-//
-//        //---triple selection---
-//        queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" .\n");
-//
-//        //---Filters---
-//        if (fieldValues != null) {
-//            Set<Map.Entry<RdfProperty, String>> entries = fieldValues.entrySet();
-//            for (Map.Entry<RdfProperty, String> filter : entries) {
-//                queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(filter.getKey().getCurieName().toString()).append(" ")
-//                            .append(filter.getValue()).append(" .\n");
-//            }
-//        }
-//
-//        //---Save the sort field---
-//        if (sortField != null) {
-//            queryBuilder.append("\t").append("OPTIONAL{ ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" <").append(sortField.getFullName().toString()).append("> ")
-//                        .append("?sortField").append(" . }\n");
-//        }
-//
-//        //---Closes the inner SELECT---
-//        queryBuilder.append("}\n");
-//
-//        //---Sorting---
-//        if (sortField != null) {
-//            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?sortField").append(")").append("\n");
-//        }
-//        //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
-//        // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
-//        else {
-//            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(")").append("\n");
-//        }
-//
-//        //---Paging---
-//        queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
-//
-//        return this.search(queryBuilder.toString(), language);
-//    }
+    //    Commented out because the Lucene Sail is disabled for now...
+    //    @Override
+    //    public IndexSearchResult search(RdfClass type, String luceneQuery, Map fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
+    //    {
+    //        this.assertActive();
+    //
+    //        //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
+    //        //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
+    //        StringBuilder queryBuilder = new StringBuilder();
+    //        final String searchPrefix = "search";
+    //        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
+    //        queryBuilder.append("PREFIX ").append(searchPrefix).append(": <").append(LuceneSailSchema.NAMESPACE).append("> \n");
+    //        queryBuilder.append("\n");
+    //
+    //        //links the resource to be found with the following query statements (required)
+    //        queryBuilder.append("SELECT DISTINCT ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" WHERE {\n");
+    //
+    //        //TODO implement the type
+    //        if (type != null) {
+    //            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(type.getFullName().toString()).append("> . \n");
+    //        }
+    //
+    //        //---Lucene---
+    //        if (!StringUtils.isEmpty(luceneQuery)) {
+    //            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(searchPrefix).append(":matches [\n")
+    //                        //specifies the Lucene query (required)
+    //                        .append("\t").append("\t").append(searchPrefix).append(":query \"").append(QueryParser.escape(luceneQuery)).append("*").append("\";\n")
+    //                        //specifies the property to search. If omitted all properties are searched (optional)
+    //                        //                    .append("\t").append("\t").append(searchPrefix).append(":property ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append("streetName").append(";\n")
+    //                        //specifies a variable for the score (optional)
+    //                        //                    .append("\t").append("\t").append(searchPrefix).append(":score ?score;\n")
+    //                        //specifies a variable for a highlighted snippet (optional)
+    //                        //.append("\t").append("\t").append(searchPrefix).append(":snippet ?snippet;\n")
+    //                        .append("\t").append("] .\n");
+    //        }
+    //
+    //        //---triple selection---
+    //        queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" .\n");
+    //
+    //        //---Filters---
+    //        if (fieldValues != null) {
+    //            Set<Map.Entry<RdfProperty, String>> entries = fieldValues.entrySet();
+    //            for (Map.Entry<RdfProperty, String> filter : entries) {
+    //                queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(filter.getKey().getCurieName().toString()).append(" ")
+    //                            .append(filter.getValue()).append(" .\n");
+    //            }
+    //        }
+    //
+    //        //---Save the sort field---
+    //        if (sortField != null) {
+    //            queryBuilder.append("\t").append("OPTIONAL{ ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" <").append(sortField.getFullName().toString()).append("> ")
+    //                        .append("?sortField").append(" . }\n");
+    //        }
+    //
+    //        //---Closes the inner SELECT---
+    //        queryBuilder.append("}\n");
+    //
+    //        //---Sorting---
+    //        if (sortField != null) {
+    //            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?sortField").append(")").append("\n");
+    //        }
+    //        //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
+    //        // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
+    //        else {
+    //            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(")").append("\n");
+    //        }
+    //
+    //        //---Paging---
+    //        queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
+    //
+    //        return this.search(queryBuilder.toString(), language);
+    //    }
     @Override
     public IndexSearchResult search(String sparqlQuery, Locale language) throws IOException
     {
@@ -452,7 +452,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void begin() throws IOException
     {
-        //note: we can't check on registeredTransaction because this gets called from the registerResource() method
+        //note: we can't check on registeredTransaction because this gets called from the registerResource() method below
         if (this.connection != null) {
             this.connection.begin();
         }

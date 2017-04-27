@@ -19,6 +19,7 @@ public interface Indexer
 
     /**
      * This method starts up a new, transactional session, connected to the supplied transaction.
+     *
      * Note: it's ok to pass null as the transaction object to explicitly indicate the session shouldn't be transactional,
      * throwing an exception if any method that requires a transaction would be accessed during the session.
      */

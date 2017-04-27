@@ -10,7 +10,6 @@ import com.beligum.blocks.config.RdfClassNode;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -55,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Created by bram on 15/04/17.
  */
-public class ReindexThread extends Thread implements TX.Listener
+public class ReindexThread extends Thread
 {
     //-----CONSTANTS-----
     public interface Listener
@@ -73,6 +72,8 @@ public class ReindexThread extends Thread implements TX.Listener
     private static final String PAGE_COLUMN_URI_NAME = "absPageUri";
     private static final String PAGE_COLUMN_STAMP_NAME = "stamp";
 
+    private static final int MAX_TASKS_PER_TX = 100;
+
     //-----VARIABLES-----
     private final List<String> folders;
     private final String filter;
@@ -82,12 +83,7 @@ public class ReindexThread extends Thread implements TX.Listener
     private boolean cancelThread;
     private Path dbFile;
     private String dbConnectionUrl;
-
-    private TX transaction;
     private ResourceRepository pageRepository;
-    private PageIndexConnection mainPageConn;
-    private PageIndexConnection triplestoreConn;
-    private ResourceRepository.IndexOption indexConnectionsOption;
 
     //-----CONSTRUCTORS-----
     public ReindexThread(final List<String> folders, final String filter, final int depth, final Listener listener) throws IOException
@@ -118,35 +114,19 @@ public class ReindexThread extends Thread implements TX.Listener
                 this.listener.reindexingStarted();
             }
 
-            //instance a transaction that's connected to this thread
-            this.transaction = StorageFactory.getCurrentThreadTx(this, Sync.ONE_DAY);
-
-            //Note that this means we have one transaction for the entire duration of this thread
-            this.mainPageConn = StorageFactory.getMainPageIndexer().connect(this.transaction);
-            this.triplestoreConn = StorageFactory.getTriplestoreIndexer().connect(this.transaction);
-            //this is the generic option that will get passed to the reindex() method to re-use our general transaction
-            this.indexConnectionsOption = new PageRepository.PageIndexConnectionOption(this.mainPageConn, this.triplestoreConn);
-
             //Note: this is not very kosher, but it works
             this.pageRepository = new PageRepository();
 
             //iterate over all files and save their details to the temp database
             Logger.info("Iterating the file system to build a local database.");
-            this.buildDatabase();
+            long numPages = this.buildDatabase();
 
             //build and execute the dependency graph, based on the the different rdfClasses of the pages in the database
-            Logger.info("Using the generated database to reindex all pages on this website.");
+            Logger.info("Using the generated database to reindex all " + numPages + " pages on this website.");
             executorService = this.buildDependencyGraph();
         }
         catch (Throwable e) {
             Logger.error("Caught exception while executing the reindexation of all pages of this website", e);
-
-            try {
-                transaction.setRollbackOnly();
-            }
-            catch (Exception e1) {
-                Logger.error("Error while rolling back reindexation transaction", e);
-            }
 
             cancelThread = true;
         }
@@ -160,16 +140,6 @@ public class ReindexThread extends Thread implements TX.Listener
             }
             catch (Exception e) {
                 Logger.error("Error while shutting down long-running transaction of page reindexation", e);
-            }
-
-            try {
-                StorageFactory.releaseCurrentThreadTx(false);
-            }
-            catch (Exception e) {
-                Logger.error("Error while ending long-running transaction of page reindexation", e);
-            }
-            finally {
-                this.transaction = null;
             }
 
             try {
@@ -190,26 +160,6 @@ public class ReindexThread extends Thread implements TX.Listener
             }
         }
     }
-    @Override
-    public void transactionTimedOut()
-    {
-        if (this.transaction != null) {
-            try {
-                //doing this will cut short all future reindexation (no need to continue if all will fail at the end anyway)
-                Logger.error("Closing reindexation transaction because of a timeout event");
-                this.transaction.close(true);
-            }
-            catch (Exception e) {
-                Logger.error("Error while closing transaction after a timeout event", e);
-            }
-        }
-    }
-    @Override
-    public void transactionStatusChanged(int oldStatus, int newStatus)
-    {
-        //We're not interested in every single status change
-        //Logger.info("TX change from " + Decoder.decodeStatus(oldStatus) + " to " + Decoder.decodeStatus(newStatus));
-    }
 
     public long getStartStamp()
     {
@@ -225,11 +175,14 @@ public class ReindexThread extends Thread implements TX.Listener
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void buildDatabase()
+    private long buildDatabase()
     {
         boolean keepRunning = true;
         ExecutorService taskExecutor = Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
         Connection dbConnection = null;
+
+        //keep track of how many pages we encounter
+        long pageCounter = 0l;
 
         try {
             //we can't put the in the try-resources block because we need to wait till the executor finishes
@@ -245,9 +198,6 @@ public class ReindexThread extends Thread implements TX.Listener
                                    " " + PAGE_COLUMN_STAMP_NAME + " TIMESTAMP NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))" +
                                    ")");
             }
-
-            //keep track of how many pages we encounter
-            int pageCounter = 0;
 
             //iterate all configured folders and start up an iterator for every one
             for (String folder : this.folders) {
@@ -299,6 +249,8 @@ public class ReindexThread extends Thread implements TX.Listener
                 }
             }
         }
+
+        return pageCounter;
     }
     private ExecutorService buildDependencyGraph() throws SQLException
     {
@@ -380,10 +332,10 @@ public class ReindexThread extends Thread implements TX.Listener
         //-----VARIABLES-----
         private Connection dbConnection;
         private Page page;
-        private int pageCounter;
+        private long pageCounter;
 
         //-----CONSTRUCTORS-----
-        public InsertTask(Connection dbConnection, Page page, int pageCounter)
+        public InsertTask(Connection dbConnection, Page page, long pageCounter)
         {
             this.dbConnection = dbConnection;
             this.page = page;
@@ -404,7 +356,7 @@ public class ReindexThread extends Thread implements TX.Listener
                     //Watch out: the analyzer will read the normalized file, but we assume it might be broken or missing until we reindexed the page,
                     //           so we force an analysis of the original html.
                     statement.executeUpdate("INSERT INTO " + PAGE_TABLE_NAME + "(" + PAGE_COLUMN_URI_NAME + ", " + PAGE_COLUMN_TYPE_NAME + ")" +
-                                      " VALUES ('" + page.getPublicAbsoluteAddress() + "', '" + page.createAnalyzer(true).getHtmlTypeof().value + "');");
+                                            " VALUES ('" + page.getPublicAbsoluteAddress() + "', '" + page.createAnalyzer(true).getHtmlTypeof().value + "');");
                 }
                 catch (Throwable e) {
                     cancelThread = true;
@@ -447,7 +399,7 @@ public class ReindexThread extends Thread implements TX.Listener
      * This task is responsible for loading all the pages of a particular rdfClass from the DB,
      * and reindexing them all.
      */
-    private class ReindexRdfClassTask extends Task<RdfClassNode, Void>
+    private class ReindexRdfClassTask extends Task<RdfClassNode, Void> implements TX.Listener
     {
         //-----CONSTANTS-----
 
@@ -469,25 +421,52 @@ public class ReindexThread extends Thread implements TX.Listener
                 ExecutorService reindexExecutor = Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
 
                 Connection dbConnection = null;
+                TX transaction = null;
 
                 try {
+                    //instance a transaction that's connected to this thread
+                    transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
+
+                    //We'll group the two index connections, connected to the new transaction, together into one option
+                    // that will get passed to the reindex() method to re-use our general transaction
+                    //Note that the connections get released when the transaction is released (see below)
+                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getMainPageIndexer().connect(transaction),
+                                                                                                                         StorageFactory.getTriplestoreIndexer().connect(transaction));
+
                     dbConnection = DriverManager.getConnection(dbConnectionUrl);
 
                     try (Statement stmt = dbConnection.createStatement()) {
 
-                        ResultSet resultSet = stmt.executeQuery("SELECT "+PAGE_COLUMN_URI_NAME+" FROM " + PAGE_TABLE_NAME +
+                        ResultSet resultSet = stmt.executeQuery("SELECT " + PAGE_COLUMN_URI_NAME + " FROM " + PAGE_TABLE_NAME +
                                                                 " WHERE " + PAGE_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
+
+                        int i = 0;
                         while (resultSet.next()) {
+                            //                            //augment the counter and restart the transaction if needed
+                            //                            if (++i >= MAX_TASKS_PER_TX) {
+                            //                                this.endTransaction();
+                            //                                this.startTransaction();
+                            //                                i = 0;
+                            //                            }
+
                             if (cancelThread) {
                                 break;
                             }
 
-                            reindexExecutor.submit(new ReindexTask(URI.create(resultSet.getString(PAGE_COLUMN_URI_NAME))));
+                            reindexExecutor.submit(new ReindexTask(URI.create(resultSet.getString(PAGE_COLUMN_URI_NAME)), indexConnectionsOption));
                         }
                     }
                 }
-                catch (Exception e) {
-                    throw new UncheckedExecutionException("Error while reindexing rdfClass " + rdfClass, e);
+                catch (Throwable e) {
+                    try {
+                        transaction.setRollbackOnly();
+                    }
+                    catch (Exception e1) {
+                        Logger.error("Internal error while rolling back reindexation transaction for RDF class " + rdfClass + "; this shouldn't happen.", e);
+                    }
+                    finally {
+                        throw new UncheckedExecutionException("Error while reindexing rdfClass " + rdfClass, e);
+                    }
                 }
                 finally {
                     try {
@@ -508,10 +487,42 @@ public class ReindexThread extends Thread implements TX.Listener
                             Logger.error("Error while closing SQL connection for RDF class " + this.rdfClass, e);
                         }
                     }
+
+                    if (transaction != null) {
+                        try {
+                            transaction.close();
+                        }
+                        catch (Throwable e) {
+                            Logger.error("Error while closing long-running transaction of page reindexation for RDF class " + this.rdfClass, e);
+                        }
+                    }
+                    else {
+                        Logger.error("Can't close transaction because it's null for RDF class " + this.rdfClass);
+                    }
                 }
             }
 
             return null;
+        }
+        @Override
+        public void transactionTimedOut(TX transaction)
+        {
+            if (transaction != null) {
+                try {
+                    //doing this will cut short all future reindexation (no need to continue if all will fail at the end anyway)
+                    Logger.error("Closing reindexation transaction because of a timeout event");
+                    transaction.close(true);
+                }
+                catch (Exception e) {
+                    Logger.error("Error while closing transaction after a timeout event", e);
+                }
+            }
+        }
+        @Override
+        public void transactionStatusChanged(TX transaction, int oldStatus, int newStatus)
+        {
+            //We're not interested in every single status change
+            //Logger.info("TX change from " + Decoder.decodeStatus(oldStatus) + " to " + Decoder.decodeStatus(newStatus) + " for TX " + transaction.hashCode());
         }
 
         //-----PROTECTED METHODS-----
@@ -526,11 +537,13 @@ public class ReindexThread extends Thread implements TX.Listener
 
         //-----VARIABLES-----
         private final URI pageUri;
+        private final ResourceRepository.IndexOption indexConnectionsOption;
 
         //-----CONSTRUCTORS-----
-        public ReindexTask(URI pageUri)
+        public ReindexTask(URI pageUri, ResourceRepository.IndexOption indexConnectionsOption)
         {
             this.pageUri = pageUri;
+            this.indexConnectionsOption = indexConnectionsOption;
         }
 
         //-----PUBLIC METHODS-----
@@ -539,13 +552,13 @@ public class ReindexThread extends Thread implements TX.Listener
         {
             if (!cancelThread) {
                 try {
-                    Logger.info("Reindexing " + pageUri);
+                    //Logger.info("Reindexing " + pageUri);
 
                     //request the page directly, so we don't go through the resource cache
                     Page page = pageRepository.get(pageRepository.request(pageUri, null));
 
                     //effectively reindex the page
-                    pageRepository.reindex(page, indexConnectionsOption);
+                    pageRepository.reindex(page, this.indexConnectionsOption);
                 }
                 catch (Throwable e) {
                     Logger.error("Error while reindexing " + pageUri, e);

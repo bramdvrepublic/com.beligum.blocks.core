@@ -51,10 +51,16 @@ public class StorageFactory
     //-----CONSTANTS-----
     public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
     public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
+    public static final HdfsImplDef DEFAULT_PAGES_NOTX_FILESYSTEM = FileSystems.LOCAL_CHROOT;
 
     //-----VARIABLES-----
-    private static final Object txManagerLock = new Object();
+    private static final Object mainPageIndexerLock = new Object();
+    private static final Object triplestoreIndexerLock = new Object();
+    private static final Object transactionManagerLock = new Object();
+    private static final Object pageStoreTxManagerLock = new Object();
     private static final Object requestTxLock = new Object();
+    private static final Object pageStoreFsLock = new Object();
+    private static final Object pageViewFsLock = new Object();
 
     /**
      * An inherited thread local is needed if we want to support executor services launched from
@@ -62,7 +68,7 @@ public class StorageFactory
      * share the same transaction.
      * Note: I assume the access to the contents of this variable is thread safe, right?
      */
-    private static final ThreadLocal currentThreadTx = new InheritableThreadLocal();
+    private static final ThreadLocal<TX> currentThreadTx = new InheritableThreadLocal();
 
     //-----CONSTRUCTORS-----
 
@@ -79,10 +85,12 @@ public class StorageFactory
     }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            PageIndexer indexer = new LucenePageIndexer();
-            getIndexerRegistry().add(indexer);
-            cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
+        synchronized (mainPageIndexerLock) {
+            if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
+                PageIndexer indexer = new LucenePageIndexer();
+                getIndexerRegistry().add(indexer);
+                cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
+            }
         }
 
         return (PageIndexer) cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
@@ -94,10 +102,12 @@ public class StorageFactory
     }
     public static PageIndexer getTriplestoreIndexer() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            PageIndexer indexer = new SesamePageIndexer();
-            getIndexerRegistry().add(indexer);
-            cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
+        synchronized (triplestoreIndexerLock) {
+            if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
+                PageIndexer indexer = new SesamePageIndexer();
+                getIndexerRegistry().add(indexer);
+                cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
+            }
         }
 
         return (PageIndexer) cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
@@ -109,60 +119,62 @@ public class StorageFactory
     }
     public static TransactionManager getTransactionManager() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
-            try {
-                Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
-                if (extraProperties != null) {
-                    for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
-                        System.setProperty(entry.getKey(), entry.getValue());
-                    }
-                }
-
-                //atomikos
-                //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
-
-                //bitronix
-                //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
-                //workaround is to instance a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
-                //or to set the JVM system properties.
-                //DONE: this is implemented now, see BlocksSystemPropertyFactory
-                //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
-
-                TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
-
-                //Register our custom producer
-                //Note that the unregister method is called from SimpleXAResourceProducer.close(), hope that's ok
-                ResourceRegistrar.register(new SimpleXAResourceProducer());
-
-                //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
-                //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
-                //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
-                // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
-                //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
-                //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
-                //Fix above so we can reactivate the setting
-                //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
-                //DONE: this is implemented now, see BlocksSystemPropertyFactory
-                //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
-
-                //tweak the log level if we're using atomikos (old code)
-                if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
-                    ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
-                    if (atomikosLogger != null) {
-                        //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
-                        if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
-                            //atomikosLogger.setLevel(Level.WARN);
+        synchronized (transactionManagerLock) {
+            if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
+                try {
+                    Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
+                    if (extraProperties != null) {
+                        for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                            System.setProperty(entry.getKey(), entry.getValue());
                         }
                     }
-                    else {
-                        throw new IOException("Error while configuring Atomikos logger; couldn't find the logger");
-                    }
-                }
 
-                cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
-            }
-            catch (Exception e) {
-                throw new IOException("Exception caught while booting up the transaction manager", e);
+                    //atomikos
+                    //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
+
+                    //bitronix
+                    //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
+                    //workaround is to instance a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
+                    //or to set the JVM system properties.
+                    //DONE: this is implemented now, see BlocksSystemPropertyFactory
+                    //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+
+                    TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
+
+                    //Register our custom producer
+                    //Note that the unregister method is called from SimpleXAResourceProducer.close(), hope that's ok
+                    ResourceRegistrar.register(new SimpleXAResourceProducer());
+
+                    //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
+                    //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
+                    //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
+                    // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
+                    //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
+                    //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
+                    //Fix above so we can reactivate the setting
+                    //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
+                    //DONE: this is implemented now, see BlocksSystemPropertyFactory
+                    //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+
+                    //tweak the log level if we're using atomikos (old code)
+                    if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
+                        ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
+                        if (atomikosLogger != null) {
+                            //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
+                            if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
+                                //atomikosLogger.setLevel(Level.WARN);
+                            }
+                        }
+                        else {
+                            throw new IOException("Error while configuring Atomikos logger; couldn't find the logger");
+                        }
+                    }
+
+                    cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while booting up the transaction manager", e);
+                }
             }
         }
 
@@ -245,11 +257,11 @@ public class StorageFactory
         }
     }
     /**
-     * Retrieves or creates a manual transaction, attached to the calling thread that needs to be closed manually.
+     * Creates a manual transaction, attached to the calling thread that needs to be closed manually using releaseCurrentThreadTx().
      */
-    public static TX getCurrentThreadTx(TX.Listener listener, long timeoutMillis) throws IOException
+    public static TX createCurrentThreadTx(TX.Listener listener, long timeoutMillis) throws IOException
     {
-        TX retVal = (TX) currentThreadTx.get();
+        TX retVal = currentThreadTx.get();
 
         if (retVal == null) {
             try {
@@ -259,12 +271,19 @@ public class StorageFactory
                 throw new IOException("Exception caught while booting up a thread transaction", e);
             }
         }
+        else {
+            throw new IOException("Can't create thread transaction because there's an active one already; you should release that one first.");
+        }
 
         return retVal;
     }
+    public static TX createCurrentThreadTx() throws IOException
+    {
+        return createCurrentThreadTx(null, 0);
+    }
     public static TX getCurrentThreadTx() throws IOException
     {
-        return getCurrentThreadTx(null, 0);
+        return currentThreadTx.get();
     }
     public static boolean hasCurrentThreadTx() throws IOException
     {
@@ -272,10 +291,11 @@ public class StorageFactory
     }
     public static void releaseCurrentThreadTx(boolean forceRollback) throws IOException
     {
-        TX tx = (TX) currentThreadTx.get();
-        if (tx != null) {
+        TX transaction = currentThreadTx.get();
+
+        if (transaction != null) {
             try {
-                tx.close(forceRollback);
+                transaction.close(forceRollback);
             }
             catch (Throwable e) {
                 //we can't just swallow the exception; something's wrong and we should report it to the user
@@ -284,6 +304,9 @@ public class StorageFactory
             finally {
                 currentThreadTx.remove();
             }
+        }
+        else {
+            throw new IOException("Can't release the current thread transaction because there's none active");
         }
     }
     public static XASession getCurrentXDiskTx() throws IOException
@@ -294,7 +317,7 @@ public class StorageFactory
             throw new IOException("We're not in an active transaction context, so I can't instance an XDisk session inside the current transaction scope");
         }
         else {
-            //start up a new XDisk session if needed
+            //start up a new XDisk session if needed (synchronized method)
             if (tx.getXdiskSession() == null) {
                 try {
                     //boot a new xadisk, register it and save it in our wrapper
@@ -310,7 +333,7 @@ public class StorageFactory
     }
     public static XAFileSystem getPageStoreTransactionManager() throws IOException
     {
-        synchronized (txManagerLock) {
+        synchronized (pageStoreTxManagerLock) {
             if (!cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 URI dir = Settings.instance().getPagesStoreJournalDir();
                 if (dir != null) {
@@ -338,7 +361,7 @@ public class StorageFactory
     }
     public static boolean rebootPageStoreTransactionManager()
     {
-        synchronized (txManagerLock) {
+        synchronized (pageStoreTxManagerLock) {
             boolean retVal = false;
 
             if (cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
@@ -368,7 +391,7 @@ public class StorageFactory
             URI pageStorePath = Settings.instance().getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
-                pageStorePath = URI.create(DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "://" + pageStorePath.toString());
+                pageStorePath = URI.create(DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + ":" + pageStorePath.getSchemeSpecificPart());
                 Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "'://' prefix to use the local transactional file system; " +
                             pageStorePath.toString());
             }
@@ -382,20 +405,22 @@ public class StorageFactory
     }
     public static FileContext getPageStoreFileSystem() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
-            FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
+        synchronized (pageStoreFsLock) {
+            if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
+                FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
-            //boot the XADisk instance too (probably still null here, good place to doIsValid them together)
-            getPageStoreTransactionManager();
+                //boot the XADisk instance too (probably still null here, good place to doIsValid them together)
+                getPageStoreTransactionManager();
 
-            //instance the root folder if needed
-            //TODO: commented out because we're not in a transaction here
-            //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
-            //            if (!fileContext.util().exists(root)) {
-            //                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
-            //            }
+                //instance the root folder if needed
+                //TODO: commented out because we're not in a transaction here
+                //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
+                //            if (!fileContext.util().exists(root)) {
+                //                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
+                //            }
 
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
+                cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
+            }
         }
 
         return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS);
@@ -407,7 +432,7 @@ public class StorageFactory
             URI pageViewPath = Settings.instance().getPagesViewPath();
             if (StringUtils.isEmpty(pageViewPath.getScheme())) {
                 //make sure we have a schema
-                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "://" + pageViewPath.toString());
+                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + ":" + pageViewPath.getSchemeSpecificPart());
                 Logger.warn("The page view path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "'://' prefix to use the local file system; " +
                             pageViewPath.toString());
             }
@@ -421,13 +446,17 @@ public class StorageFactory
     }
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, StorageFactory.createFileContext(getPageViewFileSystemConfig()));
+        synchronized (pageViewFsLock) {
+            if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
+                cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, StorageFactory.createFileContext(getPageViewFileSystemConfig()));
+            }
         }
 
         return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS);
     }
-    public static Set<Indexer> getIndexerRegistry()
+
+    //-----PROTECTED METHODS-----
+    protected static synchronized Set<Indexer> getIndexerRegistry()
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.REGISTERED_INDEXERS)) {
             cacheManager().getApplicationCache().put(CacheKeys.REGISTERED_INDEXERS, new HashSet<>());
@@ -435,8 +464,6 @@ public class StorageFactory
 
         return (Set<Indexer>) cacheManager().getApplicationCache().get(CacheKeys.REGISTERED_INDEXERS);
     }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 

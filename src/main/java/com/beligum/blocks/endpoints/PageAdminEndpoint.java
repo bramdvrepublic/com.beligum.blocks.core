@@ -266,7 +266,7 @@ public class PageAdminEndpoint
             retVal = Response.ok("Index of item successfull; " + uri);
         }
         else {
-            Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            retVal = Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
         }
 
         return retVal.build();
@@ -342,7 +342,7 @@ public class PageAdminEndpoint
     //            retVal = Response.ok("Index cleared successfully.");
     //        }
     //        else {
-    //            Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+    //            retVal = Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
     //        }
     //
     //        return retVal.build();

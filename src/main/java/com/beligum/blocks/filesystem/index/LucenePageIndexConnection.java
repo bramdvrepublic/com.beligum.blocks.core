@@ -214,7 +214,8 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     //Note: this needs to be synchronized for concurrency with the the assertActive() below
     public synchronized void close() throws IOException
     {
-        //don't do this anymore: we switched from a new writer per transaction to a single writer, so don't close it
+        //don't do this anymore: we switched from a new writer per transaction to a single writer
+        // which instead flushes at the end of each transactions, so don't close it
         //        if (this.createdWriter) {
         //            this.getLuceneIndexWriter().close();
         //        }
@@ -229,7 +230,8 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void begin() throws IOException
     {
-        //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
+        //note: there's not such thing as a .begin();
+        // the begin is just where the last .commit() left off
     }
     @Override
     protected void prepareCommit() throws IOException

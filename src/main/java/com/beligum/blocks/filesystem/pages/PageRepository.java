@@ -55,15 +55,11 @@ public class PageRepository extends AbstractResourceRepository
 
     public static final String PUBLIC_PATH_PREFIX = "/";
 
-    //-----VARIABLES-----
-    private Settings settings;
-    private FileContext writeContext;
+    //-----VARIABLES------
 
     //-----CONSTRUCTORS-----
     public PageRepository() throws IOException
     {
-        this.settings = Settings.instance();
-        this.writeContext = StorageFactory.getPageStoreFileSystem();
     }
 
     //-----PUBLIC METHODS-----
@@ -290,6 +286,7 @@ public class PageRepository extends AbstractResourceRepository
 
         //Note that we only need to have a write context if one of the above files is missing
         if (normalizedMissing || rdfMissing || rdfDepsMissing) {
+            //create a write context
             ReadWritePage rwPage = new ReadWritePage(this, page);
             try (LockFile lock = rwPage.acquireLock()) {
 
