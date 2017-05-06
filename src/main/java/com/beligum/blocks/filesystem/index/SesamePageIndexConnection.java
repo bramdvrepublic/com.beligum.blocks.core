@@ -20,14 +20,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
-import org.openrdf.model.*;
-import org.openrdf.query.QueryLanguage;
-import org.openrdf.query.QueryResults;
-import org.openrdf.query.TupleQuery;
-import org.openrdf.query.TupleQueryResult;
-import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.sail.SailGraphQuery;
-import org.openrdf.repository.sail.SailRepositoryConnection;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.sail.SailGraphQuery;
+import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 
 import java.io.IOException;
 import java.net.URI;
@@ -155,7 +155,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         return retVal;
     }
     @Override
-    public void delete(Resource resource) throws IOException
+    public synchronized void delete(Resource resource) throws IOException
     {
         this.assertActive();
         this.assertTransaction();
@@ -180,7 +180,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         this.connection.remove(pageModel);
     }
     @Override
-    public void update(Resource resource) throws IOException
+    public synchronized void update(Resource resource) throws IOException
     {
         this.assertActive();
         this.assertTransaction();
@@ -224,12 +224,29 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         //        if (!exists) {
     }
     @Override
-    public void deleteAll() throws IOException
+    public synchronized void deleteAll() throws IOException
     {
         this.assertActive();
         this.assertTransaction();
 
         this.connection.clear();
+    }
+    @Override
+    public synchronized void close() throws IOException
+    {
+        if (this.fetchPageExecutor != null) {
+            //graceful wait-time is implemented in the search
+            this.fetchPageExecutor.shutdownNow();
+            this.fetchPageExecutor = null;
+        }
+
+        if (this.connection != null) {
+            this.connection.close();
+            this.connection = null;
+        }
+
+        this.registeredTransaction = false;
+        this.transaction = null;
     }
     //    Commented out because the Lucene Sail is disabled for now...
     //    @Override
@@ -429,23 +446,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         this.assertActive();
 
         return this.connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
-    }
-    @Override
-    public void close() throws IOException
-    {
-        if (this.fetchPageExecutor != null) {
-            //graceful wait-time is implemented in the search
-            this.fetchPageExecutor.shutdownNow();
-            this.fetchPageExecutor = null;
-        }
-
-        if (this.connection != null) {
-            this.connection.close();
-            this.connection = null;
-        }
-
-        this.registeredTransaction = false;
-        this.transaction = null;
     }
 
     //-----PROTECTED METHODS-----

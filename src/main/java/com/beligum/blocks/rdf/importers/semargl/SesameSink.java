@@ -1,9 +1,9 @@
 package com.beligum.blocks.rdf.importers.semargl;
 
-import org.openrdf.model.*;
-import org.openrdf.model.impl.ValueFactoryImpl;
-import org.openrdf.rio.RDFHandler;
-import org.openrdf.rio.RDFHandlerException;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.ValueFactoryImpl;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.semarglproject.rdf.ParseException;
 import org.semarglproject.sink.QuadSink;
 import org.semarglproject.vocab.RDF;

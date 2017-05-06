@@ -14,7 +14,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
 import java.net.URI;

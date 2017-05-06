@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.client.ClientConfig;
-import org.openrdf.model.Model;
-import org.openrdf.model.Statement;
-import org.openrdf.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -49,8 +49,10 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
     private static final Pattern CITY_ZIP_COUNTRY_PATTERN = Pattern.compile("([^,]*),(\\d+),(.*)");
-    private static final RdfClass EXTERNAL_RDF_CLASS = GN.Feature;
-    private static final RdfProperty[] EXTERNAL_LABELS = new RdfProperty[] { GN.officialName, GN.name, GN.alternateName };
+
+    //Note: don't make these static; it messes with the RdfFactory initialization
+    private final RdfProperty[] LABEL_PROPS;
+    private final RdfClass EXTERNAL_RDF_CLASS;
 
     //-----VARIABLES-----
     private String username;
@@ -60,6 +62,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //-----CONSTRUCTORS-----
     public GeonameQueryEndpoint(AbstractGeoname.Type geonameType)
     {
+        this.LABEL_PROPS = new RdfProperty[] { GN.officialName, GN.name, GN.alternateName };
+        this.EXTERNAL_RDF_CLASS = GN.Feature;
+
         this.username = Settings.instance().getGeonamesUsername();
         this.geonameType = geonameType;
     }
@@ -204,8 +209,8 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                         builder.queryParam("lang", language.getLanguage());
                     }
 
-                    URI target = builder.build();
-                    Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
+                    //Logger.info("Requesting "+builder.build());
+                    Response response = httpClient.target(builder.build()).request(MediaType.APPLICATION_JSON).get();
                     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
 
                         InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
@@ -232,6 +237,11 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         }
 
         return retVal;
+    }
+    @Override
+    public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
+    {
+        return LABEL_PROPS;
     }
     @Override
     public URI getExternalResourceId(URI resourceId, Locale language)
@@ -312,40 +322,35 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     {
         return EXTERNAL_RDF_CLASS;
     }
-    @Override
-    public RdfProperty[] getExternalLabels(RdfClass localResourceType)
-    {
-        return EXTERNAL_LABELS;
-    }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private Collection<AutocompleteSuggestion> getCachedEntry(CachedSearch query)
+    private synchronized Collection<AutocompleteSuggestion> getCachedEntry(CachedSearch query)
     {
         return (Collection<AutocompleteSuggestion>) this.getGeonameCache().get(query);
     }
-    private void putCachedEntry(CachedSearch key, Collection<AutocompleteSuggestion> results)
+    private synchronized void putCachedEntry(CachedSearch key, Collection<AutocompleteSuggestion> results)
     {
         this.getGeonameCache().put(key, results);
     }
-    private GeonameResourceInfo getCachedEntry(CachedResource query)
+    private synchronized GeonameResourceInfo getCachedEntry(CachedResource query)
     {
         return (GeonameResourceInfo) this.getGeonameCache().get(query);
     }
-    private void putCachedEntry(CachedResource key, GeonameResourceInfo results)
+    private synchronized void putCachedEntry(CachedResource key, GeonameResourceInfo results)
     {
         this.getGeonameCache().put(key, results);
     }
-    private Model getCachedEntry(CachedExternalModel externalModel)
+    private synchronized Model getCachedEntry(CachedExternalModel externalModel)
     {
         return (Model) this.getGeonameCache().get(externalModel);
     }
-    private void putCachedEntry(CachedExternalModel key, Model model)
+    private synchronized void putCachedEntry(CachedExternalModel key, Model model)
     {
         this.getGeonameCache().put(key, model);
     }
-    private Cache getGeonameCache()
+    private synchronized Cache getGeonameCache()
     {
         if (!R.cacheManager().cacheExists(GEONAMES_CACHED_RESULTS.name())) {
             //we instance a cache where it's entries live for one hour (both from creation time as from last accessed time),

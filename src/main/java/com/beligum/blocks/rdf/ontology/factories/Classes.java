@@ -145,5 +145,4 @@ public class Classes implements RdfResourceFactory
                       "" + AUTOCOMPLETE_MAX_RESULTS
                     }
     });
-
 }

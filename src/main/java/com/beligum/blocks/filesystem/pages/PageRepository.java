@@ -297,10 +297,17 @@ public class PageRepository extends AbstractResourceRepository
                 }
 
                 if (normalizedMissing) {
+                    Logger.info("Regenerating missing normalized html proxy file for " + page);
                     rwPage.updateNormalizedProxy(pageSource);
                 }
 
                 if (rdfMissing || rdfDepsMissing) {
+//                    if (rdfMissing) {
+//                        Logger.info("Regenerating missing RDF proxy file for " + page);
+//                    }
+//                    if (rdfDepsMissing) {
+//                        Logger.info("Regenerating missing RDF dependencies proxy file for " + page);
+//                    }
                     rwPage.updateRdfProxy(pageSource);
                 }
 
@@ -313,14 +320,16 @@ public class PageRepository extends AbstractResourceRepository
             }
         }
 
-        //This is actually what he're here for: update both indexes
-        mainPageConnection.update(resource);
-        triplestoreConnection.update(resource);
-
-        //by returning a RO-page or a RW-page, we can more or less signal the caller what changed (only the index or the index + fixes to the FS)
+        //By returning a RO-page or a RW-page, we can more or less signal the caller what changed (only the index or the index + fixes to the FS)
+        //Note: this is also necessary to let all the following reads be part of the transaction,
+        //so they pick up the possible changes (by using the same file context as the rwPage)
         if (retVal == null) {
             retVal = page;
         }
+
+        //This is actually what he're here for: update both indexes
+        mainPageConnection.update(retVal);
+        triplestoreConnection.update(retVal);
 
         return retVal;
     }

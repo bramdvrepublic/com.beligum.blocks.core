@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints.ifaces;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,6 +65,15 @@ public interface RdfQueryEndpoint
     ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException;
 
     /**
+     * Returns the RDF properties that are good candidates to find a human readable string representation of instances of the specified class.
+     * Note: don't make this list too long because it impacts the SPARQL queries quite a lot.
+     *
+     * @param localResourceType the RDF class in the local ontology to find a label for
+     * @return a list of good candidates (in priority order) of labels
+     */
+    RdfProperty[] getLabelCandidates(RdfClass localResourceType);
+
+    /**
      * Translates a local resource id to a remote one for the external ontology.
      * This external URI will also be used to redirect the public GET of the specified resource to an external URL
      * (eg. when we're dealing with resources from external ontologies).
@@ -96,12 +105,4 @@ public interface RdfQueryEndpoint
      */
     RdfClass getExternalClasses(RdfClass localResourceType);
 
-    /**
-     * Returns the RDF properties that are good candidates to find a human readable string representation of instances of the specified class.
-     * Note: don't make this list too long because it impacts the SPARQL queries quite a lot.
-     *
-     * @param localResourceType the RDF class in the local ontology to find a label for
-     * @return a list of good candidates (in priority order) of labels or null if this is not an external endpoint
-     */
-    RdfProperty[] getExternalLabels(RdfClass localResourceType);
 }

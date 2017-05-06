@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
 import java.io.OutputStream;

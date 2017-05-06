@@ -69,7 +69,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         }
     }
     @Override
-    public void delete(Resource resource) throws IOException
+    public synchronized void delete(Resource resource) throws IOException
     {
         this.assertActive();
         this.assertTransaction();
@@ -83,7 +83,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         //this.printLuceneIndex();
     }
     @Override
-    public void update(Resource resource) throws IOException
+    public synchronized void update(Resource resource) throws IOException
     {
         this.assertActive();
         this.assertTransaction();
@@ -100,12 +100,27 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         //this.printLuceneIndex();
     }
     @Override
-    public void deleteAll() throws IOException
+    public synchronized void deleteAll() throws IOException
     {
         this.assertActive();
         this.assertTransaction();
 
         this.pageIndexer.getIndexWriter().deleteAll();
+    }
+    @Override
+    //Note: this needs to be synchronized for concurrency with the the assertActive() below
+    public synchronized void close() throws IOException
+    {
+        //don't do this anymore: we switched from a new writer per transaction to a single writer
+        // which instead flushes at the end of each transactions, so don't close it
+        //        if (this.createdWriter) {
+        //            this.getLuceneIndexWriter().close();
+        //        }
+
+        this.pageIndexer = null;
+        this.transaction = null;
+        this.registeredTransaction = false;
+        this.active = false;
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException
@@ -209,21 +224,6 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         }
 
         return retVal;
-    }
-    @Override
-    //Note: this needs to be synchronized for concurrency with the the assertActive() below
-    public synchronized void close() throws IOException
-    {
-        //don't do this anymore: we switched from a new writer per transaction to a single writer
-        // which instead flushes at the end of each transactions, so don't close it
-        //        if (this.createdWriter) {
-        //            this.getLuceneIndexWriter().close();
-        //        }
-
-        this.pageIndexer = null;
-        this.transaction = null;
-        this.registeredTransaction = false;
-        this.active = false;
     }
 
     //-----PROTECTED METHODS-----

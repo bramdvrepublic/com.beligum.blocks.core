@@ -17,7 +17,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -265,8 +265,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //Note: explicitly read the model from disk so we can use this stand alone
         //don't let it throw an exception if the file doesn't exist, just return null
         if (this.getFileContext().util().exists(modelFile)) {
-            Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
             try (InputStream is = this.getFileContext().open(modelFile)) {
+                Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
                 //note that all RDF needs absolute addresses
                 retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
             }

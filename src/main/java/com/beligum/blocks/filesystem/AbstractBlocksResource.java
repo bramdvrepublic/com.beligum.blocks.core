@@ -205,7 +205,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
             }
         }
         else {
-            throw new IOException("Trying to update the hash value on a read-only blocks resource; "+this);
+            throw new IOException("Trying to update the hash value on a read-only blocks resource; " + this);
         }
     }
     /**
@@ -216,53 +216,74 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
      * @return the lock file
      */
     @Override
-    public LockFile acquireLock() throws IOException
+    public synchronized LockFile acquireLock() throws IOException
     {
-        long timer = 0;
-
-        Path lock = this.getLockFile();
+        Path lockFile = this.getLockFile();
 
         //this is some auto-cleanup code
-        if (this.fileContext.util().exists(lock)) {
-            long modTime = this.fileContext.getFileStatus(lock).getModificationTime();
+        if (this.fileContext.util().exists(lockFile)) {
+            long modTime = this.fileContext.getFileStatus(lockFile).getModificationTime();
             boolean delete = false;
 
             //lazy deletion: if lock files should be deleted at startup and the mod time is older than the startup, delete it
             if (Settings.instance().getDeleteLocksOnStartup() && R.startTime() >= modTime) {
-                Logger.info("Deleting old lock file; " + lock);
+                Logger.info("Deleting old lock file; " + lockFile);
                 delete = true;
             }
             //delete stale lock file older than one hour
             else if (System.currentTimeMillis() - modTime >= DEFAULT_LOCK_MAX_AGE) {
-                Logger.info("Deleting stale lock file; " + lock);
+                Logger.info("Deleting stale lock file; " + lockFile);
                 delete = true;
             }
 
             if (delete) {
-                this.fileContext.delete(lock, false);
+                if (!this.fileContext.delete(lockFile, false)) {
+                    throw new IOException("Unable to delete stale or old lock file; " + lockFile);
+                }
             }
         }
 
-        while (this.fileContext.util().exists(lock)) {
+        //It's hard to synchronize the checking and the creating of the lock file on FS level
+        // (with this.fileContext.util().exists()), because some other thread or process might
+        // come between the check and the creation, resulting in
+        // a org.apache.hadoop.fs.FileAlreadyExistsException when we try to create the lock file.
+        //Instead, we catch this specific exception instead of checking the existence of the file, see below.
+
+        long timer = 0;
+        boolean keepCreatingLock = true;
+        while (keepCreatingLock) {
+
             try {
-                Thread.sleep(DEFAULT_LOCK_BACK_OFF);
+                //Note: if the lock file already exists, this (sometimes) throws an FileAlreadyExistsException instead of returning false.
+                //Note: this method sometimes has an internal implementation timeout too (eg XDisk implementation) while creating the lock.
+                if (HdfsUtils.createNewFile(this.fileContext, lockFile, true)) {
+                    //if all went well, continue
+                    keepCreatingLock = false;
+                }
             }
-            catch (InterruptedException e) {
-                throw new IOException("Error happened while waiting on file lock; " + lock, e);
+            //sometimes, instead of returning false, this is thrown, but we can't let it bubble up,
+            // because it's exactly what we're checking here.
+            catch (org.apache.hadoop.fs.FileAlreadyExistsException e) {
+                Logger.debug("Lock file exists, backing off to try again later; " + lockFile);
             }
-            timer += DEFAULT_LOCK_BACK_OFF;
 
-            if (timer >= DEFAULT_LOCK_TIMEOUT) {
-                throw new IOException("Unable to get lock on file; timeout of (" + DEFAULT_LOCK_TIMEOUT + " ms exceeded); " + lock);
+            //if the above creation failed, we must activate the timer logic
+            if (keepCreatingLock) {
+                try {
+                    Thread.sleep(DEFAULT_LOCK_BACK_OFF);
+                }
+                catch (InterruptedException e) {
+                    throw new IOException("Error happened while waiting on file lock; " + lockFile, e);
+                }
+                timer += DEFAULT_LOCK_BACK_OFF;
+
+                if (timer >= DEFAULT_LOCK_TIMEOUT) {
+                    throw new IOException("Unable to get lock on file; timeout of (" + DEFAULT_LOCK_TIMEOUT + " ms exceeded); " + lockFile);
+                }
             }
         }
 
-        //note: not possible another process 'gets between' the loop above and this, because this will throw an exception if the file already exists.
-        if (!HdfsUtils.createNewFile(this.fileContext, lock, true)) {
-            throw new IOException("Unable to instance lock file because of an setRollbackOnly or because (in the mean time) it already existed; " + lock);
-        }
-
-        return new LockFile(this, lock);
+        return new LockFile(this, lockFile);
     }
     @Override
     public boolean isLocked() throws IOException

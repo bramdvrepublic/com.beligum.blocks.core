@@ -266,7 +266,9 @@ public class PageAdminEndpoint
             retVal = Response.ok("Index of item successfull; " + uri);
         }
         else {
-            retVal = Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            retVal =
+                            Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
+                                        ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
         }
 
         return retVal.build();
@@ -348,23 +350,23 @@ public class PageAdminEndpoint
     //        return retVal.build();
     //    }
 
-    //    @GET
-    //    @javax.ws.rs.Path("/index/all/cancel")
-    //    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    //    public synchronized Response indexAllCancel() throws Exception
-    //    {
-    //        Response.ResponseBuilder retVal = null;
-    //
-    //        if (currentIndexAllThread != null) {
-    //            currentIndexAllThread.cancel();
-    //            retVal = Response.ok("Reindex all process cancelled");
-    //        }
-    //        else {
-    //            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
-    //        }
-    //
-    //        return retVal.build();
-    //    }
+    @GET
+    @javax.ws.rs.Path("/index/all/cancel")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public synchronized Response indexAllCancel() throws Exception
+    {
+        Response.ResponseBuilder retVal = null;
+
+        if (currentIndexAllThread != null) {
+            currentIndexAllThread.cancel();
+            retVal = Response.ok("Reindex all process cancelled");
+        }
+        else {
+            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
+        }
+
+        return retVal.build();
+    }
 
     @GET
     @javax.ws.rs.Path("/index/all/status")

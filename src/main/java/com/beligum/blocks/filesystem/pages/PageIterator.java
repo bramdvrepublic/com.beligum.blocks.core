@@ -3,17 +3,14 @@ package com.beligum.blocks.filesystem.pages;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.ResourceIterator;
 import com.beligum.base.resources.ifaces.ResourceRepository;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import org.apache.hadoop.fs.*;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Locale;
 
 /**
  * Created by bram on 8/28/16.
@@ -133,17 +130,13 @@ public class PageIterator implements ResourceIterator
                 // but note that it still has a schema prefix (the HDFS impl), so we only use the path
                 if (this.filter == null || this.filter.accept(new Path(canonicalTemp.getPath()))) {
 
-                    //strip off the language prefix (note that this returns a path without a leading slash)
-                    UriBuilder uriBuilder = UriBuilder.fromUri(canonicalTemp);
-                    Locale language = R.i18n().getUrlLocale(canonicalTemp, uriBuilder, null);
-                    //make it 'relative' by re-adding the leading slash
-                    URI canonicalPath = HdfsUtils.ROOT.resolve(uriBuilder.build());
-
+                    //Note: a null-valued language means: detect it, which works because the structure on disk (with leading language folder)
+                    // is also supported by the public urls
                     if (this.readOnly) {
-                        retVal = new ReadOnlyPage(this.pageRepository, canonicalPath, language, MimeTypes.HTML, false, this.fileContext);
+                        retVal = new ReadOnlyPage(this.pageRepository, canonicalTemp, null, MimeTypes.HTML, false, this.fileContext);
                     }
                     else {
-                        retVal = new ReadWritePage(this.pageRepository, canonicalPath, language, MimeTypes.HTML, false, this.fileContext);
+                        retVal = new ReadWritePage(this.pageRepository, canonicalTemp, null, MimeTypes.HTML, false, this.fileContext);
                     }
                 }
                 else {

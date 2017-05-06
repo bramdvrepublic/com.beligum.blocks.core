@@ -23,9 +23,9 @@ import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.openrdf.model.*;
-import org.openrdf.model.impl.LinkedHashModel;
-import org.openrdf.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.*;
 import java.net.URI;

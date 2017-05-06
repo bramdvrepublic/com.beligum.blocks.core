@@ -6,7 +6,7 @@
 //import com.github.jsonldjava.core.JsonLdOptions;
 //import com.github.jsonldjava.core.JsonLdProcessor;
 //import com.github.jsonldjava.utils.JsonUtils;
-//import org.openrdf.model.Model;
+//import org.eclipse.rdf4j.model.Model;
 //
 //import java.io.ByteArrayOutputStream;
 //import java.io.IOException;

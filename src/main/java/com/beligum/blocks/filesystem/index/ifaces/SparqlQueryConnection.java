@@ -1,7 +1,7 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import org.openrdf.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQuery;
 
 import java.io.IOException;
 import java.util.Locale;

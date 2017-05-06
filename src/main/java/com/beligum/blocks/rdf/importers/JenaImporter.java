@@ -6,8 +6,8 @@
 //import org.apache.jena.rdf.model.ModelFactory;
 //import org.apache.jena.riot.Lang;
 //import org.apache.jena.riot.RDFDataMgr;
-//import org.openrdf.rio.RDFHandlerException;
-//import org.openrdf.rio.RDFParseException;
+//import org.eclipse.rdf4j.rio.RDFHandlerException;
+//import org.eclipse.rdf4j.rio.RDFParseException;
 //
 //import java.io.IOException;
 //import java.io.InputStream;

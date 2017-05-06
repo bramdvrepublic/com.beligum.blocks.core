@@ -1,6 +1,6 @@
 package com.beligum.blocks.filesystem.index.entries.resources;
 
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import java.net.URI;
 

@@ -11,12 +11,12 @@
 //import org.apache.any23.writer.ReportingTripleHandler;
 //import org.apache.any23.writer.RepositoryWriter;
 //import org.apache.any23.writer.TripleHandler;
-//import org.openrdf.model.Model;
-//import org.openrdf.query.QueryResults;
-//import org.openrdf.repository.Repository;
-//import org.openrdf.repository.RepositoryConnection;
-//import org.openrdf.repository.sail.SailRepository;
-//import org.openrdf.sail.memory.MemoryStore;
+//import org.eclipse.rdf4j.model.Model;
+//import org.eclipse.rdf4j.query.QueryResults;
+//import org.eclipse.rdf4j.repository.Repository;
+//import org.eclipse.rdf4j.repository.RepositoryConnection;
+//import org.eclipse.rdf4j.repository.sail.SailRepository;
+//import org.eclipse.rdf4j.sail.memory.MemoryStore;
 //
 //import java.io.IOException;
 //import java.io.InputStream;

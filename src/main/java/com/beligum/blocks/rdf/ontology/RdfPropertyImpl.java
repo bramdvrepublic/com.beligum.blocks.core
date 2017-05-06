@@ -9,7 +9,7 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.rdf.ontology.indexers.DefaultRdfPropertyIndexer;
-import org.openrdf.model.Value;
+import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;

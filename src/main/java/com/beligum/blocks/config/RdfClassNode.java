@@ -46,6 +46,7 @@ public class RdfClassNode implements Comparable<RdfClassNode>
     {
         return rdfClass;
     }
+    //this means: rdfClassNode should be evaluated before this
     public void addDependency(RdfClassNode rdfClassNode)
     {
         this.dependencies.add(rdfClassNode);

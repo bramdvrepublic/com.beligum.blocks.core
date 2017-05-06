@@ -1,10 +1,10 @@
 package com.beligum.blocks.rdf.importers.semargl;
 
-import org.openrdf.model.ValueFactory;
-import org.openrdf.rio.*;
-import org.openrdf.rio.helpers.BasicParserSettings;
-import org.openrdf.rio.helpers.RDFaParserSettings;
-import org.openrdf.rio.helpers.RDFaVersion;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.rio.*;
+import org.eclipse.rdf4j.rio.helpers.BasicParserSettings;
+import org.eclipse.rdf4j.rio.helpers.RDFaParserSettings;
+import org.eclipse.rdf4j.rio.helpers.RDFaVersion;
 import org.semarglproject.rdf.ParseException;
 import org.semarglproject.rdf.ProcessorGraphHandler;
 import org.semarglproject.rdf.rdfa.RdfaParser;

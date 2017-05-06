@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.importers.semargl;
 
-import org.openrdf.rio.RioSetting;
-import org.openrdf.rio.helpers.RioSettingImpl;
+import org.eclipse.rdf4j.rio.RioSetting;
+import org.eclipse.rdf4j.rio.helpers.RioSettingImpl;
 import org.semarglproject.rdf.rdfa.RdfaParser;
 import org.semarglproject.source.StreamProcessor;
 import org.xml.sax.XMLReader;

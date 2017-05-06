@@ -8,7 +8,7 @@ import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
-import org.openrdf.model.Model;
+import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
 import java.net.URI;

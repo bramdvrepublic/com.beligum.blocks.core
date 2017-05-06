@@ -6,7 +6,7 @@ import com.google.common.collect.Sets;
 /**
  * Created by bram on 3/23/16.
  */
-public class Mappings implements RdfResourceFactory
+public class Mappings implements RdfResourceFactory.RdfMappingFactory
 {
     //-----ENTRIES-----
     static {

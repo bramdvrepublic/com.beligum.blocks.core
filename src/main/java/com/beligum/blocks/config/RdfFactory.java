@@ -8,7 +8,10 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on 2/26/16.
@@ -145,8 +148,7 @@ public class RdfFactory
     public static void assertInitialized()
     {
         if (!initialized) {
-            Set<Class<? extends RdfResourceFactory>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true);
-            for (Class<? extends RdfResourceFactory> c : resourceFactories) {
+            for (Class<? extends RdfResourceFactory> c : ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true)) {
                 try {
                     c.newInstance();
                 }

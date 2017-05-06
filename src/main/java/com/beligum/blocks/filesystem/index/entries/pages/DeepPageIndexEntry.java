@@ -15,7 +15,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
-import org.openrdf.model.Statement;
+import org.eclipse.rdf4j.model.Statement;
 
 import java.io.IOException;
 import java.net.URI;

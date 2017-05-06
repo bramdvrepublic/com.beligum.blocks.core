@@ -2,7 +2,7 @@ package com.beligum.blocks.rdf.ontology.indexers;
 
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import org.openrdf.model.Value;
+import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;

@@ -12,9 +12,9 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.utils.RdfTools;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Literal;
-import org.openrdf.model.Value;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Value;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -157,6 +157,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                                               "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
                     }
                 }
+                //we didn't get a resource value from the endpoint and need to crash, but let's add some nice info to the stacktrace
                 else {
                     //make sure we have a language or we won't be able to lookup the resource from the uri
                     URI resourceNeedingIndexation = uriValue;

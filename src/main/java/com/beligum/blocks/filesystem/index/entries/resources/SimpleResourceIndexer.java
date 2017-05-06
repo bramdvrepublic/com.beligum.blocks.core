@@ -3,10 +3,10 @@ package com.beligum.blocks.filesystem.index.entries.resources;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import org.apache.commons.lang3.StringUtils;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
-import org.openrdf.model.Statement;
-import org.openrdf.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.net.URI;
 import java.util.Iterator;

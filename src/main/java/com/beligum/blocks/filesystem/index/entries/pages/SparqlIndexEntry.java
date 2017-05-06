@@ -1,8 +1,8 @@
 package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import org.openrdf.model.Model;
-import org.openrdf.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.IOException;
 
