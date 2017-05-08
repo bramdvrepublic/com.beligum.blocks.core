@@ -16,7 +16,7 @@ import static com.beligum.blocks.rdf.ontology.factories.Classes.*;
 /**
  * Created by bram on 3/22/16.
  */
-public class Terms implements RdfResourceFactory
+public class Terms implements RdfResourceFactory.RdfTermFactory
 {
     //-----CONSTANTS-----
     private static final int AUTOCOMPLETE_MAX_RESULTS = 10;

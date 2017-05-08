@@ -6,12 +6,10 @@ import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bram on 2/26/16.
@@ -148,7 +146,44 @@ public class RdfFactory
     public static void assertInitialized()
     {
         if (!initialized) {
-            for (Class<? extends RdfResourceFactory> c : ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true)) {
+
+            final Map<Class<? extends RdfResourceFactory>, Integer> PRIORITY_MAP = ImmutableMap.<Class<? extends RdfResourceFactory>, Integer>builder()
+                            .put(RdfResourceFactory.RdfClassFactory.class, 1)
+                            .put(RdfResourceFactory.RdfTermFactory.class, 2)
+                            .put(RdfResourceFactory.RdfMappingFactory.class, 3)
+                            .put(RdfResourceFactory.class, 4)
+                            .build();
+            final int LOWEST_PRIORITY = PRIORITY_MAP.size();
+
+            //we'll wrap the set in a list to be able to sort them
+            List<Class<? extends RdfResourceFactory>> resourceFactories = new ArrayList<>(ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true));
+            Collections.sort(resourceFactories, new Comparator()
+            {
+                @Override
+                public int compare(Object o1, Object o2)
+                {
+                    return getPriority(o1.getClass()).compareTo(getPriority(o2.getClass()));
+                }
+                /**
+                 * This is a quick and dirty lookup function because the hash-lookup doesn't work of course,
+                 * because specific classes don't result in the same hashcode as their implementations.
+                 */
+                private Integer getPriority(Class<?> clazz)
+                {
+                    Integer retVal = LOWEST_PRIORITY;
+
+                    for (Map.Entry<Class<? extends RdfResourceFactory>, Integer> e : PRIORITY_MAP.entrySet()) {
+                        if (e.getKey().isAssignableFrom(clazz)) {
+                            retVal = e.getValue();
+                            break;
+                        }
+                    }
+
+                    return retVal;
+                }
+            });
+
+            for (Class<? extends RdfResourceFactory> c : resourceFactories) {
                 try {
                     c.newInstance();
                 }

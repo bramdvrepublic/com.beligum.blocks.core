@@ -19,7 +19,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/25/16.
  */
-public class Classes implements RdfResourceFactory
+public class Classes implements RdfResourceFactory.RdfClassFactory
 {
     //-----CONSTANTS-----
     public static final int AUTOCOMPLETE_MAX_RESULTS = 10;
