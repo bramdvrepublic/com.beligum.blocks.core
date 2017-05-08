@@ -6,7 +6,6 @@ import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
-import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
 import java.util.*;
@@ -147,43 +146,7 @@ public class RdfFactory
     {
         if (!initialized) {
 
-            final Map<Class<? extends RdfResourceFactory>, Integer> PRIORITY_MAP = ImmutableMap.<Class<? extends RdfResourceFactory>, Integer>builder()
-                            .put(RdfResourceFactory.RdfClassFactory.class, 1)
-                            .put(RdfResourceFactory.RdfTermFactory.class, 2)
-                            .put(RdfResourceFactory.RdfMappingFactory.class, 3)
-                            .put(RdfResourceFactory.class, 4)
-                            .build();
-            final int LOWEST_PRIORITY = PRIORITY_MAP.size();
-
-            //we'll wrap the set in a list to be able to sort them
-            List<Class<? extends RdfResourceFactory>> resourceFactories = new ArrayList<>(ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true));
-            resourceFactories.sort(new Comparator<Class<? extends RdfResourceFactory>>()
-            {
-                @Override
-                public int compare(Class<? extends RdfResourceFactory> o1, Class<? extends RdfResourceFactory> o2)
-                {
-                    return getPriority(o1).compareTo(getPriority(o2));
-                }
-                /**
-                 * This is a quick and dirty lookup function because the hash-lookup doesn't work of course,
-                 * because specific classes don't result in the same hashcode as their implementations.
-                 */
-                private Integer getPriority(Class<? extends RdfResourceFactory> clazz)
-                {
-                    Integer retVal = LOWEST_PRIORITY;
-
-                    for (Map.Entry<Class<? extends RdfResourceFactory>, Integer> e : PRIORITY_MAP.entrySet()) {
-                        if (e.getKey().isAssignableFrom(clazz)) {
-                            retVal = e.getValue();
-                            break;
-                        }
-                    }
-
-                    return retVal;
-                }
-            });
-
-            for (Class<? extends RdfResourceFactory> c : resourceFactories) {
+            for (Class<? extends RdfResourceFactory> c : ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true)) {
                 try {
                     c.newInstance();
                 }

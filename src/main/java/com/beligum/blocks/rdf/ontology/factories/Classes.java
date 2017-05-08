@@ -19,13 +19,13 @@ import java.net.URI;
 /**
  * Created by bram on 2/25/16.
  */
-public class Classes implements RdfResourceFactory.RdfClassFactory
+public class Classes implements RdfResourceFactory
 {
     //-----CONSTANTS-----
     public static final int AUTOCOMPLETE_MAX_RESULTS = 10;
 
     //-----ENTRIES-----
-    public static final RdfClass Person = new RdfClassImpl("Person",
+    public static volatile RdfClass Person = new RdfClassImpl("Person",
                                                            SettingsVocabulary.INSTANCE,
                                                            ontology.Entries.classTitle_Person,
                                                            ontology.Entries.classLabel_Person,
@@ -37,7 +37,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                            new SettingsQueryEndpoint()
     );
 
-    public static final RdfClass Organization = new RdfClassImpl("Organization",
+    public static volatile RdfClass Organization = new RdfClassImpl("Organization",
                                                            SettingsVocabulary.INSTANCE,
                                                            ontology.Entries.classTitle_Organization,
                                                            ontology.Entries.classLabel_Organization,
@@ -49,7 +49,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                            new SettingsQueryEndpoint()
     );
 
-    public static final RdfClass Page = new RdfClassImpl("Page",
+    public static volatile RdfClass Page = new RdfClassImpl("Page",
                                                          SettingsVocabulary.INSTANCE,
                                                          ontology.Entries.classTitle_Page,
                                                          ontology.Entries.classLabel_Page,
@@ -59,7 +59,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                          true,
                                                          new SettingsQueryEndpoint());
 
-    public static final RdfClass Country = new RdfClassImpl("Country",
+    public static volatile RdfClass Country = new RdfClassImpl("Country",
                                                             SettingsVocabulary.INSTANCE,
                                                             ontology.Entries.classTitle_Country,
                                                             ontology.Entries.classLabel_Country,
@@ -70,7 +70,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                             false,
                                                             new GeonameQueryEndpoint(AbstractGeoname.Type.COUNTRY));
 
-    public static final RdfClass City = new RdfClassImpl("City",
+    public static volatile RdfClass City = new RdfClassImpl("City",
                                                          SettingsVocabulary.INSTANCE,
                                                          ontology.Entries.classTitle_City,
                                                          ontology.Entries.classLabel_City,
@@ -81,7 +81,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                          false,
                                                          new GeonameQueryEndpoint(AbstractGeoname.Type.CITY));
 
-    public static final RdfClass LogEntry = new RdfClassImpl("LogEntry",
+    public static volatile RdfClass LogEntry = new RdfClassImpl("LogEntry",
                                                          SettingsVocabulary.INSTANCE,
                                                          ontology.Entries.classTitle_LogEntry,
                                                          ontology.Entries.classLabel_LogEntry,
@@ -91,7 +91,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                                                          null);
 
     //-----CONFIGS-----
-    public static final InputTypeConfig DEFAULT_PERSON_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
+    public static volatile InputTypeConfig DEFAULT_PERSON_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.Person.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
@@ -104,7 +104,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                     }
     });
 
-    public static final InputTypeConfig DEFAULT_ORGANIZATION_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
+    public static volatile InputTypeConfig DEFAULT_ORGANIZATION_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.Organization.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
@@ -117,7 +117,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                     }
     });
 
-    public static final InputTypeConfig DEFAULT_CITY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
+    public static volatile InputTypeConfig DEFAULT_CITY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.City.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
@@ -131,7 +131,7 @@ public class Classes implements RdfResourceFactory.RdfClassFactory
                     }
     });
 
-    public static final InputTypeConfig DEFAULT_COUNTRY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
+    public static volatile InputTypeConfig DEFAULT_COUNTRY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.Country.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
