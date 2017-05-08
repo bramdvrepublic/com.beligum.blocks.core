@@ -96,10 +96,19 @@ public class HdfsUtils
         }
         else {
             if (createParents) {
-                context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096)), Options.CreateOpts.createParent()).close();
+                try (FSDataOutputStream file = context.create(f,
+                                                              EnumSet.of(CreateFlag.CREATE),
+                                                              Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096)),
+                                                              Options.CreateOpts.createParent())) {
+                    //NOOP
+                }
             }
             else {
-                context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096))).close();
+                try (FSDataOutputStream file = context.create(f,
+                                                              EnumSet.of(CreateFlag.CREATE),
+                                                              Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096)))) {
+                    //NOOP
+                }
             }
             return true;
         }
@@ -190,7 +199,7 @@ public class HdfsUtils
                 }
             }
             else {
-                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an setRollbackOnly; "+uri);
+                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an setRollbackOnly; " + uri);
             }
         }
 

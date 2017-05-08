@@ -317,14 +317,16 @@ public class StorageFactory
             throw new IOException("We're not in an active transaction context, so I can't instance an XDisk session inside the current transaction scope");
         }
         else {
-            //start up a new XDisk session if needed (synchronized method)
-            if (tx.getXdiskSession() == null) {
-                try {
-                    //boot a new xadisk, register it and save it in our wrapper
-                    tx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
-                }
-                catch (Exception e) {
-                    throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+            //start up a new XDisk session if needed
+            synchronized (tx) {
+                if (tx.getXdiskSession() == null) {
+                    try {
+                        //boot a new xadisk, register it and save it in our wrapper
+                        tx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
+                    }
+                    catch (Exception e) {
+                        throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                    }
                 }
             }
 

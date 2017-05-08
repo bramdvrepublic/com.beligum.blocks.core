@@ -249,7 +249,7 @@ public class ReindexThread extends Thread
 
         boolean keepRunning = true;
 
-        ThreadPoolExecutor taskExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), 10000);
+        ThreadPoolExecutor taskExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), 1000);
 
         PreparedStatement preparedStatement = null;
 
@@ -376,8 +376,15 @@ public class ReindexThread extends Thread
     }
     private ExecutorService executeDatabaseTasks() throws SQLException
     {
+        //count the number of classes in the db to create the executor
+        int numClasses;
+        try (Statement stmt = dbConnection.createStatement()) {
+            numClasses = stmt.executeQuery("SELECT COUNT(DISTINCT "+PAGE_COLUMN_TYPE_NAME+") FROM " + PAGE_TABLE_NAME + ";")
+                             .getInt(1);
+        }
+
         //this is the service that will execute the reindexation of the different rdfClasses
-        ExecutorService rdfClassExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), 1000);
+        ExecutorService rdfClassExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), numClasses);
 
         // Dexecutor is a small framework for (asynchronously) executing tasks that depend on each other (and detect cycles).
         // Here, we use it to create a dependency graph of RDF classes that depend on each other and process the
@@ -420,7 +427,7 @@ public class ReindexThread extends Thread
                 if (props != null) {
                     for (RdfProperty p : props) {
 
-                        //this seems to happen sometimes, but the NPE log doesn't help us much
+                        //this happens sometimes when we introduce a static RDF variable bug, but the NPE log doesn't help us much
                         if (p.getDataType() == null) {
                             Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class "+rdfClass+"; this is just debug info, it will lead to a crash...");
                         }
@@ -591,7 +598,8 @@ public class ReindexThread extends Thread
         {
             if (!cancelThread) {
                 //this is the executor that will parallellize the reindexation of all members in this rdfClass
-                ExecutorService reindexExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.1), 1000);
+                //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
+                ExecutorService reindexExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.1), 10);
 
                 TX transaction = null;
                 long startStamp = System.currentTimeMillis();
