@@ -114,7 +114,7 @@ public class RdfFactory
     /**
      * TODO: little bit dirty with all the casting...
      */
-    private static <T> Set<T> getLocalRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
+    private static synchronized  <T> Set<T> getLocalRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_VOCABULARY_ENTRIES)) {
             Map<RdfMapCacheKey, Set> retVal = new HashMap<>();
@@ -143,7 +143,7 @@ public class RdfFactory
      * This will instantiate all static factory classes once if needed,
      * so we can be sure every RDF member has been assigned to it's proper vocabulary, etc.
      */
-    public static void assertInitialized()
+    public static synchronized void assertInitialized()
     {
         if (!initialized) {
 
@@ -157,18 +157,18 @@ public class RdfFactory
 
             //we'll wrap the set in a list to be able to sort them
             List<Class<? extends RdfResourceFactory>> resourceFactories = new ArrayList<>(ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class, true));
-            Collections.sort(resourceFactories, new Comparator()
+            resourceFactories.sort(new Comparator<Class<? extends RdfResourceFactory>>()
             {
                 @Override
-                public int compare(Object o1, Object o2)
+                public int compare(Class<? extends RdfResourceFactory> o1, Class<? extends RdfResourceFactory> o2)
                 {
-                    return getPriority(o1.getClass()).compareTo(getPriority(o2.getClass()));
+                    return getPriority(o1).compareTo(getPriority(o2));
                 }
                 /**
                  * This is a quick and dirty lookup function because the hash-lookup doesn't work of course,
                  * because specific classes don't result in the same hashcode as their implementations.
                  */
-                private Integer getPriority(Class<?> clazz)
+                private Integer getPriority(Class<? extends RdfResourceFactory> clazz)
                 {
                     Integer retVal = LOWEST_PRIORITY;
 

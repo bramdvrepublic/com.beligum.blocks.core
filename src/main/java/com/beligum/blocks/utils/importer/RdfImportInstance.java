@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static com.beligum.blocks.rdf.ontology.factories.Terms.city;
-
 /**
  * Created by bram on 3/22/16.
  */
@@ -187,7 +185,7 @@ public class RdfImportInstance
         private String preparseCity(RdfProperty property, String val)
         {
             //we format the city value as eg; Bredene,8450,Belgium, but we want it to generate 'Bredene Belgium'
-            if (property.equals(city)) {
+            if (property.equals(com.beligum.blocks.rdf.ontology.factories.Terms.city)) {
 
                 String city = val;
                 String country = null;

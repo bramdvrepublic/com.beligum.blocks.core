@@ -420,6 +420,7 @@ public class ReindexThread extends Thread
                 if (props != null) {
                     for (RdfProperty p : props) {
 
+                        //this seems to happen sometimes, but the NPE log doesn't help us much
                         if (p.getDataType() == null) {
                             Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class "+rdfClass+"; this is just debug info, it will lead to a crash...");
                         }
