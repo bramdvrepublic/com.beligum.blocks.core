@@ -419,6 +419,11 @@ public class ReindexThread extends Thread
                 Set<RdfProperty> props = rdfClass.getProperties();
                 if (props != null) {
                     for (RdfProperty p : props) {
+
+                        if (p.getDataType() == null) {
+                            Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class "+rdfClass+"; this is just debug info, it will lead to a crash...");
+                        }
+
                         //if the datatype of the property is a true class, it's a valid dependency
                         if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
                             RdfClassNode dep = RdfClassNode.instance(p.getDataType());
