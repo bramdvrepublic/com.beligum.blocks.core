@@ -22,7 +22,7 @@ public class Terms implements RdfResourceFactory
     private static final int AUTOCOMPLETE_MAX_RESULTS = 10;
 
     //-----ENTRIES-----
-    public static volatile RdfProperty identifier = new RdfPropertyImpl("identifier",
+    public static final RdfProperty identifier = new RdfPropertyImpl("identifier",
                                                                      SettingsVocabulary.INSTANCE,
                                                                      ontology.Entries.propertyTitle_identifier,
                                                                      ontology.Entries.propertyLabel_identifier,
@@ -33,7 +33,7 @@ public class Terms implements RdfResourceFactory
                                                                      },
                                                                      true);
 
-    public static volatile RdfProperty givenName = new RdfPropertyImpl("givenName",
+    public static final RdfProperty givenName = new RdfPropertyImpl("givenName",
                                                                     SettingsVocabulary.INSTANCE,
                                                                     ontology.Entries.propertyTitle_givenName,
                                                                     ontology.Entries.propertyLabel_givenName,
@@ -45,7 +45,7 @@ public class Terms implements RdfResourceFactory
                                                                     },
                                                                     true);
 
-    public static volatile RdfProperty familyName = new RdfPropertyImpl("familyName",
+    public static final RdfProperty familyName = new RdfPropertyImpl("familyName",
                                                                      SettingsVocabulary.INSTANCE,
                                                                      ontology.Entries.propertyTitle_familyName,
                                                                      ontology.Entries.propertyLabel_familyName,
@@ -57,7 +57,7 @@ public class Terms implements RdfResourceFactory
                                                                      },
                                                                      true);
 
-    public static volatile RdfProperty name = new RdfPropertyImpl("name",
+    public static final RdfProperty name = new RdfPropertyImpl("name",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_name,
                                                                ontology.Entries.propertyLabel_name,
@@ -69,7 +69,7 @@ public class Terms implements RdfResourceFactory
                                                                },
                                                                true);
 
-    public static volatile RdfProperty role = new RdfPropertyImpl("role",
+    public static final RdfProperty role = new RdfPropertyImpl("role",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_role,
                                                                ontology.Entries.propertyLabel_role,
@@ -80,7 +80,7 @@ public class Terms implements RdfResourceFactory
                                                                },
                                                                true);
 
-    public static volatile RdfProperty email = new RdfPropertyImpl("email",
+    public static final RdfProperty email = new RdfPropertyImpl("email",
                                                                 SettingsVocabulary.INSTANCE,
                                                                 ontology.Entries.propertyTitle_email,
                                                                 ontology.Entries.propertyLabel_email,
@@ -93,7 +93,7 @@ public class Terms implements RdfResourceFactory
                                                                 },
                                                                 true);
 
-    public static volatile RdfProperty streetName = new RdfPropertyImpl("streetName",
+    public static final RdfProperty streetName = new RdfPropertyImpl("streetName",
                                                                      SettingsVocabulary.INSTANCE,
                                                                      ontology.Entries.propertyTitle_streetName,
                                                                      ontology.Entries.propertyLabel_streetName,
@@ -104,7 +104,7 @@ public class Terms implements RdfResourceFactory
                                                                      },
                                                                      true);
 
-    public static volatile RdfProperty streetNumber = new RdfPropertyImpl("streetNumber",
+    public static final RdfProperty streetNumber = new RdfPropertyImpl("streetNumber",
                                                                        SettingsVocabulary.INSTANCE,
                                                                        ontology.Entries.propertyTitle_streetNumber,
                                                                        ontology.Entries.propertyLabel_streetNumber,
@@ -115,7 +115,7 @@ public class Terms implements RdfResourceFactory
                                                                        },
                                                                        true);
 
-    public static volatile RdfProperty streetAddress = new RdfPropertyImpl("streetAddress",
+    public static final RdfProperty streetAddress = new RdfPropertyImpl("streetAddress",
                                                                         SettingsVocabulary.INSTANCE,
                                                                         ontology.Entries.propertyTitle_streetAddress,
                                                                         ontology.Entries.propertyLabel_streetAddress,
@@ -127,7 +127,7 @@ public class Terms implements RdfResourceFactory
                                                                         },
                                                                         true);
 
-    public static volatile RdfProperty postalCode = new RdfPropertyImpl("postalCode",
+    public static final RdfProperty postalCode = new RdfPropertyImpl("postalCode",
                                                                      SettingsVocabulary.INSTANCE,
                                                                      ontology.Entries.propertyTitle_postalCode,
                                                                      ontology.Entries.propertyLabel_postalCode,
@@ -139,7 +139,7 @@ public class Terms implements RdfResourceFactory
                                                                      },
                                                                      true);
 
-    public static volatile RdfProperty city = new RdfPropertyImpl("city",
+    public static final RdfProperty city = new RdfPropertyImpl("city",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_city,
                                                                ontology.Entries.propertyLabel_city,
@@ -150,7 +150,7 @@ public class Terms implements RdfResourceFactory
                                                                },
                                                                true);
 
-    public static volatile RdfProperty country = new RdfPropertyImpl("country",
+    public static final RdfProperty country = new RdfPropertyImpl("country",
                                                                   SettingsVocabulary.INSTANCE,
                                                                   ontology.Entries.propertyTitle_country,
                                                                   ontology.Entries.propertyLabel_country,
@@ -161,7 +161,7 @@ public class Terms implements RdfResourceFactory
                                                                   },
                                                                   true);
 
-    public static volatile RdfProperty createdAt = new RdfPropertyImpl("createdAt",
+    public static final RdfProperty createdAt = new RdfPropertyImpl("createdAt",
                                                                     SettingsVocabulary.INSTANCE,
                                                                     ontology.Entries.propertyTitle_createdAt,
                                                                     ontology.Entries.propertyLabel_createdAt,
@@ -172,7 +172,7 @@ public class Terms implements RdfResourceFactory
                                                                     },
                                                                     true);
 
-    public static volatile RdfProperty createdBy = new RdfPropertyImpl("createdBy",
+    public static final RdfProperty createdBy = new RdfPropertyImpl("createdBy",
                                                                     SettingsVocabulary.INSTANCE,
                                                                     ontology.Entries.propertyTitle_createdBy,
                                                                     ontology.Entries.propertyLabel_createdBy,
@@ -183,7 +183,7 @@ public class Terms implements RdfResourceFactory
                                                                     },
                                                                     true);
 
-    public static volatile RdfProperty comment = new RdfPropertyImpl("comment",
+    public static final RdfProperty comment = new RdfPropertyImpl("comment",
                                                                   SettingsVocabulary.INSTANCE,
                                                                   ontology.Entries.propertyTitle_comment,
                                                                   ontology.Entries.propertyLabel_comment,
@@ -195,7 +195,7 @@ public class Terms implements RdfResourceFactory
                                                                   true);
 
     //TODO integrate this in the blocks-image block
-    public static volatile RdfProperty image = new RdfPropertyImpl("image",
+    public static final RdfProperty image = new RdfPropertyImpl("image",
                                                                 SettingsVocabulary.INSTANCE,
                                                                 ontology.Entries.propertyTitle_image,
                                                                 ontology.Entries.propertyLabel_image,
@@ -207,7 +207,7 @@ public class Terms implements RdfResourceFactory
                                                                 false);
 
     //TODO integrate this in the blocks-text block
-    public static volatile RdfProperty text = new RdfPropertyImpl("text",
+    public static final RdfProperty text = new RdfPropertyImpl("text",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_text,
                                                                ontology.Entries.propertyLabel_text,
@@ -219,7 +219,7 @@ public class Terms implements RdfResourceFactory
                                                                false);
 
     //TODO integrate this in the ... (page?) block
-    public static volatile RdfProperty title = new RdfPropertyImpl("title",
+    public static final RdfProperty title = new RdfPropertyImpl("title",
                                                                 SettingsVocabulary.INSTANCE,
                                                                 ontology.Entries.propertyTitle_title,
                                                                 ontology.Entries.propertyLabel_title,
@@ -231,7 +231,7 @@ public class Terms implements RdfResourceFactory
                                                                 false);
 
     //TODO integrate this in the blocks-video block
-    public static volatile RdfProperty video = new RdfPropertyImpl("video",
+    public static final RdfProperty video = new RdfPropertyImpl("video",
                                                                 SettingsVocabulary.INSTANCE,
                                                                 ontology.Entries.propertyTitle_video,
                                                                 ontology.Entries.propertyLabel_video,
@@ -242,7 +242,7 @@ public class Terms implements RdfResourceFactory
                                                                 },
                                                                 false);
 
-    public static volatile RdfProperty description = new RdfPropertyImpl("description",
+    public static final RdfProperty description = new RdfPropertyImpl("description",
                                                                       SettingsVocabulary.INSTANCE,
                                                                       ontology.Entries.propertyTitle_description,
                                                                       ontology.Entries.propertyLabel_description,
@@ -253,7 +253,7 @@ public class Terms implements RdfResourceFactory
                                                                       },
                                                                       false);
 
-    public static volatile RdfProperty type = new RdfPropertyImpl("type",
+    public static final RdfProperty type = new RdfPropertyImpl("type",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_type,
                                                                ontology.Entries.propertyLabel_type,
@@ -266,7 +266,7 @@ public class Terms implements RdfResourceFactory
                                                                },
                                                                false);
 
-    public static volatile RdfProperty subject = new RdfPropertyImpl("subject",
+    public static final RdfProperty subject = new RdfPropertyImpl("subject",
                                                                   SettingsVocabulary.INSTANCE,
                                                                   ontology.Entries.propertyTitle_subject,
                                                                   ontology.Entries.propertyLabel_subject,
@@ -279,7 +279,7 @@ public class Terms implements RdfResourceFactory
                                                                   },
                                                                   false);
 
-    public static volatile RdfProperty software = new RdfPropertyImpl("software",
+    public static final RdfProperty software = new RdfPropertyImpl("software",
                                                                    SettingsVocabulary.INSTANCE,
                                                                    ontology.Entries.propertyTitle_software,
                                                                    ontology.Entries.propertyLabel_software,
@@ -290,7 +290,7 @@ public class Terms implements RdfResourceFactory
                                                                    },
                                                                    false);
 
-    public static volatile RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
+    public static final RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
                                                                           SettingsVocabulary.INSTANCE,
                                                                           ontology.Entries.propertyTitle_softwareVersion,
                                                                           ontology.Entries.propertyLabel_softwareVersion,
@@ -301,7 +301,7 @@ public class Terms implements RdfResourceFactory
                                                                           },
                                                                           false);
 
-    public static volatile RdfProperty language = new RdfPropertyImpl("language",
+    public static final RdfProperty language = new RdfPropertyImpl("language",
                                                                    SettingsVocabulary.INSTANCE,
                                                                    ontology.Entries.propertyTitle_language,
                                                                    ontology.Entries.propertyLabel_language,
@@ -312,7 +312,7 @@ public class Terms implements RdfResourceFactory
                                                                    },
                                                                    true);
 
-    public static volatile RdfProperty file = new RdfPropertyImpl("file",
+    public static final RdfProperty file = new RdfPropertyImpl("file",
                                                                SettingsVocabulary.INSTANCE,
                                                                ontology.Entries.propertyTitle_file,
                                                                ontology.Entries.propertyLabel_file,
@@ -323,7 +323,7 @@ public class Terms implements RdfResourceFactory
                                                                },
                                                                false);
 
-    public static volatile RdfProperty organization = new RdfPropertyImpl("organization",
+    public static final RdfProperty organization = new RdfPropertyImpl("organization",
                                                                        SettingsVocabulary.INSTANCE,
                                                                        ontology.Entries.propertyTitle_organization,
                                                                        ontology.Entries.propertyLabel_organization,
@@ -334,7 +334,7 @@ public class Terms implements RdfResourceFactory
                                                                        },
                                                                        false);
 
-    public static volatile RdfProperty sameAs = new RdfPropertyImpl("sameAs",
+    public static final RdfProperty sameAs = new RdfPropertyImpl("sameAs",
                                                                  SettingsVocabulary.INSTANCE,
                                                                  ontology.Entries.propertyTitle_sameAs,
                                                                  ontology.Entries.propertyLabel_sameAs,

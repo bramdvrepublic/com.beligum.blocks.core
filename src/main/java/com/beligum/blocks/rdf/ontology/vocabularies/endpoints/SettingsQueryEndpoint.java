@@ -33,14 +33,14 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
     //Note: don't make this static; it messes with the RdfFactory initialization
-    private final RdfProperty[] LABEL_PROPS;
+    //Also: don't initialize it in the constructor; it suffers from the same problem
+    private RdfProperty[] cachedLabelProps;
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
     public SettingsQueryEndpoint()
     {
-        this.LABEL_PROPS = new RdfProperty[] { RDFS.LABEL, Terms.title };
     }
 
     @Override
@@ -139,7 +139,11 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
     {
-        return LABEL_PROPS;
+        if (this.cachedLabelProps == null) {
+            this.cachedLabelProps = new RdfProperty[] { RDFS.LABEL, Terms.title };
+        }
+
+        return this.cachedLabelProps;
     }
     @Override
     public URI getExternalResourceId(URI resourceId, Locale language)

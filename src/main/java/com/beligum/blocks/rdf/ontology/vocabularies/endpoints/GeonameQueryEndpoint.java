@@ -50,9 +50,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //-----CONSTANTS-----
     private static final Pattern CITY_ZIP_COUNTRY_PATTERN = Pattern.compile("([^,]*),(\\d+),(.*)");
 
-    //Note: don't make these static; it messes with the RdfFactory initialization
-    private final RdfProperty[] LABEL_PROPS;
-    private final RdfClass EXTERNAL_RDF_CLASS;
+    //Note: don't make this static; it messes with the RdfFactory initialization
+    //Also: don't initialize it in the constructor; it suffers from the same problem
+    private RdfProperty[] cachedLabelProps;
 
     //-----VARIABLES-----
     private String username;
@@ -62,9 +62,6 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //-----CONSTRUCTORS-----
     public GeonameQueryEndpoint(AbstractGeoname.Type geonameType)
     {
-        this.LABEL_PROPS = new RdfProperty[] { GN.officialName, GN.name, GN.alternateName };
-        this.EXTERNAL_RDF_CLASS = GN.Feature;
-
         this.username = Settings.instance().getGeonamesUsername();
         this.geonameType = geonameType;
     }
@@ -241,7 +238,11 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
     {
-        return LABEL_PROPS;
+        if (this.cachedLabelProps == null) {
+            this.cachedLabelProps = new RdfProperty[] { GN.officialName, GN.name, GN.alternateName };
+        }
+
+        return this.cachedLabelProps;
     }
     @Override
     public URI getExternalResourceId(URI resourceId, Locale language)
@@ -320,7 +321,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     @Override
     public RdfClass getExternalClasses(RdfClass localResourceType)
     {
-        return EXTERNAL_RDF_CLASS;
+        return GN.Feature;
     }
 
     //-----PROTECTED METHODS-----

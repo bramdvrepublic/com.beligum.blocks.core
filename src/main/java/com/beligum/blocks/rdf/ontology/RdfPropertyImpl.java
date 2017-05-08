@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
@@ -66,6 +67,10 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
 
         //we don't have subclasses so don't worry about type checking (yet)
         vocabulary.addProperty(this);
+
+        if (this.dataType == null) {
+            Logger.error("Datatype of " + this.getName() + " (" + this.getFullName() + ") is null! This is a static-initializer bug and should be fixed");
+        }
     }
 
     //-----PUBLIC METHODS-----
