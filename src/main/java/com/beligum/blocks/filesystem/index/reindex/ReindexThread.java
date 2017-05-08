@@ -579,7 +579,7 @@ public class ReindexThread extends Thread
     private class ReindexRdfClassTask extends Task<RdfClassNode, Void> implements TX.Listener
     {
         //-----CONSTANTS-----
-        private static final int MAX_PAGES_PER_TX = 1000;
+        private static final int MAX_PAGES_PER_TX = 100;
         private static final long EXECUTOR_FINISH_TIMEOUT = 1;
         private final TimeUnit EXECUTOR_FINISH_TIMEOUT_UNIT = TimeUnit.HOURS;
 
