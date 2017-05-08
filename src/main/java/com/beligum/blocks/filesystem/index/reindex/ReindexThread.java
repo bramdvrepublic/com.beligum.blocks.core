@@ -599,7 +599,8 @@ public class ReindexThread extends Thread
             if (!cancelThread) {
                 //this is the executor that will parallellize the reindexation of all members in this rdfClass
                 //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
-                ExecutorService reindexExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.1), 10);
+                int threads = Runtime.getRuntime().availableProcessors() -1;
+                ExecutorService reindexExecutor = getBlockingExecutor(threads, threads);
 
                 TX transaction = null;
                 long startStamp = System.currentTimeMillis();
@@ -782,7 +783,7 @@ public class ReindexThread extends Thread
         {
             if (!cancelThread) {
                 try {
-                    //Logger.info("Reindexing " + pageUri);
+                    Logger.info("Reindexing " + pageUri);
 
                     //request the page directly, so we don't go through the resource cache
                     Page page = pageRepository.get(pageRepository.request(pageUri, null));
