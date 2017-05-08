@@ -109,6 +109,7 @@ public class ReindexThread extends Thread
     {
         ExecutorService executorService = null;
 
+        boolean keepDatabase = false;
         try {
             if (this.resumed) {
                 Logger.info("Resuming a reindexation task that was started on " + Files.getLastModifiedTime(this.dbFile));
@@ -142,6 +143,9 @@ public class ReindexThread extends Thread
                 Logger.info("Not iterating the file system because I found an existing database with " + pagesToResume + " pages in it to resume at " + this.dbFile);
             }
 
+            //once we get here, the entire FS is iterated and we'll keep the database
+            keepDatabase = true;
+
             //build and execute the dependency graph, based on the the different rdfClasses of the pages in the database
             Logger.info("Using the generated database to reindex all pages in the generated database.");
             executorService = this.executeDatabaseTasks();
@@ -169,8 +173,8 @@ public class ReindexThread extends Thread
                 //all db work is done, we can safely close it now
                 this.dbConnection.close();
 
-                if (pageNum == 0) {
-                    Logger.info("Cleaning up the database file because it's empty.");
+                if (pageNum == 0 || !keepDatabase) {
+                    Logger.info("Deleting the database file because " + (pageNum == 0 ? "it's empty." : "we didn't iterate all files."));
                     Files.deleteIfExists(this.dbFile);
                 }
                 else {
