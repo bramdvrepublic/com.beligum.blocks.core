@@ -8,9 +8,9 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedSuggestionResourceInfo;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.Model;
 
@@ -86,10 +86,15 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
 
         return retVal;
     }
+    /**
+     * Note that we'll have to force this method a little bit, because the passed-in resourceIds will actually be enum values.
+     * For an enum, it's handy to have this to translate values to their counterpart label (in a specific language)
+     */
     @Override
     public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
-        throw new NotImplementedException();
+        //Note: the toString() converts special URI characters back to their native form
+        return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.toString()), language);
     }
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)

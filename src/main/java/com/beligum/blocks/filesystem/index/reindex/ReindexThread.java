@@ -30,9 +30,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -296,7 +294,7 @@ public class ReindexThread extends Thread
                         taskExecutor.submit(new InsertTask(dbConnection, preparedStatement, page, pageCounter, processCounter));
 
                         if (pageCounter % SQL_FLUSH_NUM == 0) {
-                            Logger.info("Flushing all SQL inserts to disk.");
+                            Logger.info("Reached SQL statement threshold of " + SQL_FLUSH_NUM + "; flushing all SQL inserts to disk.");
                             synchronized (preparedStatement) {
                                 preparedStatement.executeBatch();
                                 dbConnection.commit();
@@ -379,7 +377,7 @@ public class ReindexThread extends Thread
         //count the number of classes in the db to create the executor
         int numClasses;
         try (Statement stmt = dbConnection.createStatement()) {
-            numClasses = stmt.executeQuery("SELECT COUNT(DISTINCT "+PAGE_COLUMN_TYPE_NAME+") FROM " + PAGE_TABLE_NAME + ";")
+            numClasses = stmt.executeQuery("SELECT COUNT(DISTINCT " + PAGE_COLUMN_TYPE_NAME + ") FROM " + PAGE_TABLE_NAME + ";")
                              .getInt(1);
         }
 
@@ -415,7 +413,7 @@ public class ReindexThread extends Thread
                 //so it needs parsing
                 RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(PAGE_COLUMN_TYPE_NAME)));
 
-                //                Logger.info("Checking deps of class " + rdfClass);
+                Logger.info("Checking deps of class " + rdfClass);
 
                 RdfClassNode node = RdfClassNode.instance(rdfClass);
                 //don't add it if a previous dependency added it already
@@ -429,7 +427,7 @@ public class ReindexThread extends Thread
 
                         //this happens sometimes when we introduce a static RDF variable bug, but the NPE log doesn't help us much
                         if (p.getDataType() == null) {
-                            Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class "+rdfClass+"; this is just debug info, it will lead to a crash...");
+                            Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class " + rdfClass + "; this is just debug info, it will lead to a crash...");
                         }
 
                         //if the datatype of the property is a true class, it's a valid dependency
@@ -437,12 +435,14 @@ public class ReindexThread extends Thread
                             RdfClassNode dep = RdfClassNode.instance(p.getDataType());
 
                             //link the two together
-                            //                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
+                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
                             node.addDependency(dep);
 
-                            //wipe it from the to-do list because we've added it to the executor now
+                            //wipe both sides from the to-do list because we've added it to the executor now
                             lonelyClasses.remove(dep);
+                            lonelyClasses.remove(node);
                             deletedClasses.add(dep);
+                            deletedClasses.add(node);
 
                             //this basically means: the indexing of p.getDataType() should finish before the indexing of rdfClass
                             //or more formally: arg1 should be evaluated before arg2
@@ -454,7 +454,7 @@ public class ReindexThread extends Thread
 
             //these classes have no dependency on other classes, make sure they get indexed
             for (RdfClassNode node : lonelyClasses) {
-                //                Logger.info("Adding an independent dependency for " + node.getRdfClass());
+                Logger.info("Adding an independent dependency for " + node.getRdfClass());
                 executor.addIndependent(node);
             }
         }
@@ -476,14 +476,64 @@ public class ReindexThread extends Thread
         //because the queue can grow very large
         //see http://stackoverflow.com/questions/2247734/executorservice-standard-way-to-avoid-to-task-queue-getting-too-full
         //return (ThreadPoolExecutor) Executors.newFixedThreadPool(ThreadPoolUtil.ioIntesivePoolSize());
-        return new ThreadPoolExecutor(nThreads, nThreads,
-                                      //same as Executors.newFixedThreadPool(), not the same as the SO article, hope that's ok.
-                                      //Note: should be because coreThreads is the same as maxThreads, right?
-                                      0L, TimeUnit.MILLISECONDS,
-                                      new ArrayBlockingQueue<>(queueSize, true), new ThreadPoolExecutor.CallerRunsPolicy());
+
+        //        return new ThreadPoolExecutor(nThreads, nThreads,
+        //                                      //same as Executors.newFixedThreadPool(), not the same as the SO article, hope that's ok.
+        //                                      //Note: should be because coreThreads is the same as maxThreads, right?
+        //                                      0L, TimeUnit.MILLISECONDS,
+        //                                      new ArrayBlockingQueue<>(queueSize, true), new ThreadPoolExecutor.CallerRunsPolicy());
+
+        //the above code doesn't block when the queue is full, but runs the code in the thread of the submitter instead,
+        //the implementation below works as expected.
+        return new BoundedExecutor(nThreads, queueSize);
     }
 
     //-----INNER CLASSES-----
+
+    /**
+     * This is an executor that blocks on submission of tasks (instead of using an unbounded queue or instead of executing the task in the calling thread)
+     * <p>
+     * See http://stackoverflow.com/questions/2001086/how-to-make-threadpoolexecutors-submit-method-block-if-it-is-saturated
+     * and read the comments for the difference with a new ThreadPoolExecutor.CallerRunsPolicy()
+     * and read the comments of the accepted post for more detail
+     */
+    private class BoundedExecutor extends ThreadPoolExecutor
+    {
+        private final Semaphore semaphore;
+
+        public BoundedExecutor(int nThreads, int queueSize)
+        {
+            super(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+
+            //read the comments of the SO post for details on this
+            this.semaphore = new Semaphore(nThreads + queueSize);
+        }
+
+        @Override
+        public Future<?> submit(final Runnable command) throws RejectedExecutionException
+        {
+            Future<?> retVal = null;
+
+            try {
+                semaphore.acquire();
+
+                super.submit(command);
+            }
+            catch (Throwable e) {
+
+                Logger.error("Error while submitting task to bounded executor", e);
+                cancelThread = true;
+
+                throw new RejectedExecutionException(e);
+            }
+            finally {
+                semaphore.release();
+            }
+
+            return retVal;
+        }
+    }
+
     private class InsertTask implements Runnable
     {
         //-----CONSTANTS-----
@@ -517,6 +567,7 @@ public class ReindexThread extends Thread
                 //           so we force an analysis of the original html.
                 try {
                     synchronized (this.preparedStatement) {
+                        //this is the URI that will be used to lookup the page (using the regular lookup methods)
                         this.preparedStatement.setString(1, page.getPublicAbsoluteAddress().toString());
                         //Note: this one is quite costly (reading in and anayzing the page HTML)
                         this.preparedStatement.setString(2, page.createAnalyzer(true).getHtmlTypeof().value);
@@ -579,6 +630,7 @@ public class ReindexThread extends Thread
     private class ReindexRdfClassTask extends Task<RdfClassNode, Void> implements TX.Listener
     {
         //-----CONSTANTS-----
+        //if this grows large (eg 1000), it's a source of "Too many open files" exceptions
         private static final int MAX_PAGES_PER_TX = 100;
         private static final long EXECUTOR_FINISH_TIMEOUT = 1;
         private final TimeUnit EXECUTOR_FINISH_TIMEOUT_UNIT = TimeUnit.HOURS;
@@ -599,14 +651,17 @@ public class ReindexThread extends Thread
             if (!cancelThread) {
                 //this is the executor that will parallellize the reindexation of all members in this rdfClass
                 //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
-                int threads = Runtime.getRuntime().availableProcessors() -1;
-                ExecutorService reindexExecutor = getBlockingExecutor(threads, threads);
+                int nThreads = Runtime.getRuntime().availableProcessors() - 1;
+                int queueSize = 20;
+                ExecutorService reindexExecutor = getBlockingExecutor(nThreads, queueSize);
 
                 TX transaction = null;
                 long startStamp = System.currentTimeMillis();
                 long pageCounter = 0;
+                long[] reindexCounter = new long[] { 0l };
                 long maxPages = 0;
                 boolean success = false;
+                List<String> deleteQueries = new LinkedList<>();
 
                 try {
                     //instance a transaction that's connected to this thread
@@ -629,7 +684,7 @@ public class ReindexThread extends Thread
                         Logger.info("Launching reindexation of RDF class " + this.rdfClass + " with " + maxPages + " members.");
 
                         //iterate all URIs of pages in this class
-                        ResultSet resultSet = stmt.executeQuery("SELECT " + PAGE_COLUMN_URI_NAME + " FROM " + PAGE_TABLE_NAME +
+                        ResultSet resultSet = stmt.executeQuery("SELECT " + PAGE_COLUMN_ID_NAME + ", " + PAGE_COLUMN_URI_NAME + " FROM " + PAGE_TABLE_NAME +
                                                                 " WHERE " + PAGE_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
                         long txBatchCounter = 0;
                         boolean aborted = false;
@@ -643,13 +698,22 @@ public class ReindexThread extends Thread
                             if (txBatchCounter > MAX_PAGES_PER_TX) {
                                 Logger.info("Max transaction limit reached for class " + this.rdfClass + " at " + pageCounter + " pages; finishing, committing and booting a new one");
 
-                                //we need to
                                 reindexExecutor.shutdown();
                                 reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);
+                                //we need to recreate it or the next submit will complain the executor is terminated.
+                                reindexExecutor = getBlockingExecutor(nThreads, queueSize);
 
                                 //close the active transaction
                                 StorageFactory.releaseCurrentThreadTx(false);
                                 txBatchCounter = 0;
+
+                                //if all went well, we'll flush the successful entries from the db
+                                try (Statement flushStmt = dbConnection.createStatement()) {
+                                    for (String sql : deleteQueries) {
+                                        flushStmt.addBatch(sql);
+                                    }
+                                    flushStmt.executeBatch();
+                                }
 
                                 //start a new transaction
                                 transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
@@ -657,7 +721,10 @@ public class ReindexThread extends Thread
                                                                                                       StorageFactory.getTriplestoreIndexer().connect(transaction));
                             }
 
-                            reindexExecutor.submit(new ReindexTask(URI.create(resultSet.getString(PAGE_COLUMN_URI_NAME)), indexConnectionsOption));
+                            long dbId = resultSet.getLong(PAGE_COLUMN_ID_NAME);
+                            URI publicUri = URI.create(resultSet.getString(PAGE_COLUMN_URI_NAME));
+                            //Logger.info("Submitting reindexation of " + publicUri);
+                            reindexExecutor.submit(new ReindexTask(publicUri, indexConnectionsOption, reindexCounter, deleteQueries, dbId));
 
                             pageCounter++;
                             txBatchCounter++;
@@ -697,8 +764,10 @@ public class ReindexThread extends Thread
                         long timeDiff = System.currentTimeMillis() - startStamp;
                         Logger.info((success ? "Finished" : "Aborted") + " reindexation of RDF class " + this.rdfClass + "\n" +
                                     "\tNumber of pages: " + pageCounter + "\n" +
+                                    "\tReindexed pages: " + reindexCounter[0] + "\n" +
                                     "\tTotal time: " + DurationFormatUtils.formatDuration(timeDiff, "H:mm:ss") + "\n" +
-                                    "\tMean reindexation time: " + (int) (pageCounter / (timeDiff / 1000.0)) + " pages/sec\n");
+                                    "\tMean submission time: " + (int) (pageCounter / (timeDiff / 1000.0)) + " pages/sec\n" +
+                                    "\tMean reindexation time: " + (int) (reindexCounter[0] / (timeDiff / 1000.0)) + " pages/sec\n");
                     }
 
                     if (transaction != null) {
@@ -716,13 +785,12 @@ public class ReindexThread extends Thread
 
                     if (dbConnection != null) {
 
-                        //If everything worked well, we'll open another connection and wipe all classes
+                        //If everything worked well, we'll open another connection and execute all remaining statements
                         if (success && !finishError) {
+
                             try (Statement stmt = dbConnection.createStatement()) {
-                                long deletedPages = stmt.executeUpdate("DELETE FROM " + PAGE_TABLE_NAME +
-                                                                       " WHERE " + PAGE_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
-                                if (deletedPages != pageCounter) {
-                                    Logger.error("Hmm, the number of deleted (" + deletedPages + ") and processed (" + pageCounter + ") pages don't seem to match for RDF class " + this.rdfClass);
+                                for (String sql : deleteQueries) {
+                                    stmt.addBatch(sql);
                                 }
                             }
                             catch (Exception e) {
@@ -769,12 +837,18 @@ public class ReindexThread extends Thread
         //-----VARIABLES-----
         private final URI pageUri;
         private final ResourceRepository.IndexOption indexConnectionsOption;
+        private long[] reindexCounter;
+        private List<String> deleteQueries;
+        private long dbId;
 
         //-----CONSTRUCTORS-----
-        public ReindexTask(URI pageUri, ResourceRepository.IndexOption indexConnectionsOption)
+        public ReindexTask(URI pageUri, ResourceRepository.IndexOption indexConnectionsOption, long[] reindexCounter, List<String> deleteQueries, long dbId)
         {
             this.pageUri = pageUri;
             this.indexConnectionsOption = indexConnectionsOption;
+            this.reindexCounter = reindexCounter;
+            this.deleteQueries = deleteQueries;
+            this.dbId = dbId;
         }
 
         //-----PUBLIC METHODS-----
@@ -783,18 +857,25 @@ public class ReindexThread extends Thread
         {
             if (!cancelThread) {
                 try {
-                    Logger.info("Reindexing " + pageUri);
+                    //Logger.info("Reindexing " + pageUri);
 
                     //request the page directly, so we don't go through the resource cache
                     Page page = pageRepository.get(pageRepository.request(pageUri, null));
 
                     //effectively reindex the page
                     pageRepository.reindex(page, this.indexConnectionsOption);
+
+                    //if reindexation succeeded, we add the delete stmt to the list
+                    deleteQueries.add("DELETE FROM " + PAGE_TABLE_NAME +
+                                      " WHERE " + PAGE_COLUMN_ID_NAME + "=" + this.dbId + ";");
                 }
                 catch (Throwable e) {
                     //let's signal we should end the processing as soon one error occurs
                     cancelThread = true;
                     Logger.error("Error while reindexing " + pageUri, e);
+                }
+                finally {
+                    this.reindexCounter[0]++;
                 }
             }
         }

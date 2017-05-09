@@ -1,4 +1,4 @@
-package com.beligum.blocks.filesystem.index;
+package com.beligum.blocks.filesystem.index.results;
 
 import com.beligum.blocks.filesystem.index.ifaces.RdfResult;
 
