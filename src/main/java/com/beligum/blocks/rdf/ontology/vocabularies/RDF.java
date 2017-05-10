@@ -135,6 +135,62 @@ public final class RDF extends AbstractRdfVocabulary
 
     /**
      * The datatype of language-tagged string values
+     *
+     * A little bit more information after the string-language  'bug' discovered in 05/17:
+     *
+     * In RDFa parsing:
+     *
+     * Note: these were tested with https://www.w3.org/2012/pyRdfa/Overview.html#distill_by_input
+     *       see notes below for details on / differences with our own Semargl parser
+     *
+     * 1) if a property doesn't have an explicit @datatype and it doesn't have an explicit @lang attribute,
+     *    it inherits the general @lang attribute from the umbrella html/body tag and implicitly gets the xsd:string datatype
+     *
+     * 2) if a property doesn't have an explicit @datatype and it has an explicit @lang attribute,
+     *    it's parsed as a language-suffixed string object and implicitly gets the rdf:langString datatype
+     *
+     * -- as a general remark for conclusions below: if the property has an explicit datatype set, the language seems to be ignored --
+     *
+     * 3) if a property is explicitly tagged with @datatype "xsd:string" and it doesn't have an explicit @lang attribute,
+     *    it's parsed as a no-language value (yielding a triple with a string as object without any language suffix)
+     *
+     * 4) if a property is explicitly tagged with @datatype "xsd:string" and it has an explicit @lang attribute,
+     *    it's still parsed as a no-language value
+     *
+     * 5) if a property is explicitly tagged with @datatype "rdf:langString" and it doesn't have an explicit @lang attribute,
+     *    it's parsed as a no-language value
+     *
+     * 6) if a property is explicitly tagged with @datatype "rdf:langString" and it has an explicit @lang attribute,
+     *    it's parsed as a no-language value
+     *
+     * => we concluded this rule of thumb from this behaviour: if you want to map a string-value that doesn't require (and will never have!) a specific language attached to it (eg. a "constant" string),
+     *    map it to the xsd:string type. If it conceptually should have a language attached, map it to the rdf:langString and make sure there's some client-logic that will (possibly invisibly) inherit
+     *    the general tag to the property, optionally allowing the user to select the proper language if that should ever deviate from the general language of that page.
+     *    Note that this doesn't reflect the behavior of 1) and 2) above, but allows us to explicitly distinguish between the two and solve the results in the UI
+     *
+     * => note that this is only the case for properties with an explicit @datatype attribute (eg. like in <blocks-fact>), for general-purpose properties that don't have an explicit @datatype set,
+     *    it doesn't really matter, since 1) and 2) result in the "same" behavior, but if they're translatable, they (stricto senso) should have rdf:langString as their datatype, not xsd:string.
+     *
+     * => this is more or less synchronous to the fact a rdf:HTML-datatyped string should also have an explicit @lang attribute set to annotate the triple with a language suffix;
+     *    eg. see https://www.w3.org/TR/rdf11-concepts/#section-html
+     *    However, the results vary; for the default Distiller/Parser, the @lang attribute is inherited to the first HTML tag inside that container tag.
+     *    If there's no such inner tag, the result is a no-language string with the rdf:HTML datatype
+     *
+     * -- Comments for our RDFa parser (Semargl) --
+     * Results are not them same as the "official" Distiller/Parser:
+     * - if a rdf:langString datatype is explicitly set, the lang attribute (set or not set), is not picked up, resulting in an error: "datatype rdf:langString requires a language tag".
+     *   This is because one of the two is passed to the context: the datatype or the language (where the datatype has precedence)
+     * - if a xsd:string datatype is explicitly set, the @lang is just ignored, whether it's set or not
+     *
+     * ### General conclusion ###
+     *
+     * Don't set the datatype explicitly if the required datatype is xsd:string or rdf:langString; the absence of a specific @lang attribute will make the datatype result in either of both.
+     * Don't count on the general html @lang language to be inherited though, make sure you set it specifically if you need it.
+     * This doesn't mean we cannot specifically build our models choosing between one of both; if you want the string to be translatable, use rdf:langString,
+     * if the value is language-agnostic, use xsd:string. We'll take care of this difference eg. in the <blocks-fact> client-side parsing.
+     *
+     * ##########################
+     *
      */
     public static final RdfDataType LANGSTRING = new RdfDataTypeImpl("langString", INSTANCE, Entries.RDF_title_langString, Entries.RDF_label_langString, null);
 

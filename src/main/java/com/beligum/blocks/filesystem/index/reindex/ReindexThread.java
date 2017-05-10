@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This is a single thread that will be responsible for a reindexation job.
@@ -74,7 +75,7 @@ public class ReindexThread extends Thread
     private final int depth;
     private final Listener listener;
     private long startStamp;
-    private boolean cancelThread;
+    private AtomicBoolean cancelThread;
     private Path dbFile;
     private boolean resumed;
     private String dbConnectionUrl;
@@ -90,7 +91,7 @@ public class ReindexThread extends Thread
         this.listener = listener;
         this.startStamp = System.currentTimeMillis();
         //reset a possibly active global cancellation
-        this.cancelThread = false;
+        this.cancelThread = new AtomicBoolean(false);
 
         //build a SQLite database in the temp folder that will hold all files to reindex, ordered by type,
         //Note: we don't add the start stamp to the file name anymore, so we can resume a broken reindex session
@@ -151,7 +152,7 @@ public class ReindexThread extends Thread
         catch (Throwable e) {
             Logger.error("Caught exception while executing the reindexation of all pages of this website", e);
 
-            cancelThread = true;
+            cancelThread.set(true);
         }
         finally {
 
@@ -186,7 +187,7 @@ public class ReindexThread extends Thread
                 this.dbFile = null;
             }
 
-            Logger.info("Reindexing " + (cancelThread ? "cancelled" : "completed") + " in " +
+            Logger.info("Reindexing " + (cancelThread.get() ? "cancelled" : "completed") + " in " +
                         DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
 
             if (this.listener != null) {
@@ -201,7 +202,7 @@ public class ReindexThread extends Thread
     }
     public synchronized void cancel()
     {
-        this.cancelThread = true;
+        this.cancelThread.set(true);
     }
 
     //-----PUBLIC METHODS-----
@@ -281,7 +282,7 @@ public class ReindexThread extends Thread
                 while (pageIterator.hasNext() && keepRunning) {
 
                     //this is a chance to cut-short the IO iteration
-                    keepRunning = keepRunning && !this.cancelThread;
+                    keepRunning = keepRunning && !this.cancelThread.get();
                     if (!keepRunning) {
                         Logger.info("Stopped creating database because it was cancelled");
                     }
@@ -320,7 +321,7 @@ public class ReindexThread extends Thread
             }
         }
         catch (Throwable e) {
-            cancelThread = true;
+            cancelThread.set(true);
             Logger.error("Error while creating database", e);
         }
         finally {
@@ -522,7 +523,7 @@ public class ReindexThread extends Thread
             catch (Throwable e) {
 
                 Logger.error("Error while submitting task to bounded executor", e);
-                cancelThread = true;
+                cancelThread.set(true);
 
                 throw new RejectedExecutionException(e);
             }
@@ -560,7 +561,7 @@ public class ReindexThread extends Thread
         public void run()
         {
             //one last check in the launched thread to make sure we can continue
-            if (!cancelThread) {
+            if (!cancelThread.get()) {
                 //note that this will read and analyze the html from disk, but it's slightly optimized to only read the necessary first line,
                 //so it should be quite fast.
                 //Watch out: the analyzer will read the normalized file, but we assume it might be broken or missing until we reindexed the page,
@@ -581,7 +582,7 @@ public class ReindexThread extends Thread
                     //                    }
                 }
                 catch (Throwable e) {
-                    cancelThread = true;
+                    cancelThread.set(true);
                     Logger.error("Error while executing database insert for " + page.getPublicAbsoluteAddress(), e);
                 }
                 finally {
@@ -648,7 +649,7 @@ public class ReindexThread extends Thread
         @Override
         public Void execute()
         {
-            if (!cancelThread) {
+            if (!cancelThread.get()) {
                 //this is the executor that will parallellize the reindexation of all members in this rdfClass
                 //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
                 int nThreads = Runtime.getRuntime().availableProcessors() - 1;
@@ -690,13 +691,15 @@ public class ReindexThread extends Thread
                         boolean aborted = false;
                         while (resultSet.next()) {
 
-                            if (cancelThread) {
+                            if (cancelThread.get()) {
                                 aborted = true;
                                 break;
                             }
 
                             if (txBatchCounter > MAX_PAGES_PER_TX) {
-                                Logger.info("Max transaction limit reached for class " + this.rdfClass + " at " + pageCounter + " pages; finishing, committing and booting a new one");
+                                Logger.info("Max transaction limit reached for class " + this.rdfClass +
+                                            " at " + pageCounter + "/" + maxPages + " pages (" + (int) (pageCounter / (float) maxPages * 100) +"%);" +
+                                            " finishing, committing and booting a new one");
 
                                 reindexExecutor.shutdown();
                                 reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);
@@ -792,6 +795,7 @@ public class ReindexThread extends Thread
                                 for (String sql : deleteQueries) {
                                     stmt.addBatch(sql);
                                 }
+                                stmt.executeBatch();
                             }
                             catch (Exception e) {
                                 Logger.error("Error while deleting the reindex tasks from the database after successfully processing all entries of RDF class " + this.rdfClass, e);
@@ -855,7 +859,7 @@ public class ReindexThread extends Thread
         @Override
         public void run()
         {
-            if (!cancelThread) {
+            if (!cancelThread.get()) {
                 try {
                     //Logger.info("Reindexing " + pageUri);
 
@@ -871,7 +875,7 @@ public class ReindexThread extends Thread
                 }
                 catch (Throwable e) {
                     //let's signal we should end the processing as soon one error occurs
-                    cancelThread = true;
+                    cancelThread.set(true);
                     Logger.error("Error while reindexing " + pageUri, e);
                 }
                 finally {

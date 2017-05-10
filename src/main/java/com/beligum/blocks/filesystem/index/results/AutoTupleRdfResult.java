@@ -1,7 +1,6 @@
 package com.beligum.blocks.filesystem.index.results;
 
 import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.filesystem.index.ifaces.RdfTupleResult;
@@ -39,8 +38,6 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
         this.tupleQueryResult = tupleQueryResult;
         this.labelBinding = labelBinding;
         this.valueBinding = valueBinding;
-
-        Logger.info(this.property.getDataType());
     }
 
     //-----PUBLIC METHODS-----

@@ -274,6 +274,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                     URI rdfUri = this.getExternalResourceId(resourceId, language);
 
                     //this seems to be the only RDF format that's accepted
+                    //TODO the geonames endpoint is limited to 2000 requests per hour, we should probably throttle this
                     Response response = httpClient.target(rdfUri).request("application/rdf+xml").get();
                     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                         //this will hold subjects about the resource and it's relationship with the about page,
