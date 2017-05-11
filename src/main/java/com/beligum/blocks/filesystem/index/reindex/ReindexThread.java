@@ -30,7 +30,10 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -61,18 +64,19 @@ public class ReindexThread extends Thread
         void reindexingEnded();
     }
 
-    //this is the folder that will hold all temp files for all reindexing taksks
+    //this is the folder that will hold all temp files for all reindexing tasks
     private static final String TEMP_FOLDER_NAME = "reindex";
-    private static final String PAGE_TABLE_NAME = "page";
-    private static final String PAGE_COLUMN_ID_NAME = "id";
-    private static final String PAGE_COLUMN_TYPE_NAME = "rdfClassCurie";
-    private static final String PAGE_COLUMN_URI_NAME = "absPageUri";
-    private static final String PAGE_COLUMN_STAMP_NAME = "stamp";
+    private static final String SQL_TABLE_NAME = "resource";
+    private static final String SQL_COLUMN_ID_NAME = "id";
+    private static final String SQL_COLUMN_TYPE_NAME = "rdfClassCurie";
+    private static final String SQL_COLUMN_URI_NAME = "absUri";
+    private static final String SQL_COLUMN_STAMP_NAME = "stamp";
 
     //-----VARIABLES-----
     private final List<String> folders;
     private final String filter;
     private final int depth;
+    private Class<? extends ReindexTask> reindexTaskClass;
     private final Listener listener;
     private long startStamp;
     private AtomicBoolean cancelThread;
@@ -80,14 +84,17 @@ public class ReindexThread extends Thread
     private boolean resumed;
     private String dbConnectionUrl;
     private Connection dbConnection;
-    private ResourceRepository pageRepository;
+    private ResourceRepository repository;
 
     //-----CONSTRUCTORS-----
-    public ReindexThread(final List<String> folders, final String filter, final int depth, final Listener listener) throws IOException
+    public ReindexThread(final List<String> folders, final String filter, final int depth, ResourceRepository repository,
+                         final Class<? extends ReindexTask> reindexTaskClass, final Listener listener) throws IOException
     {
         this.folders = folders;
         this.filter = filter;
         this.depth = depth;
+        this.repository = repository;
+        this.reindexTaskClass = reindexTaskClass;
         this.listener = listener;
         this.startStamp = System.currentTimeMillis();
         //reset a possibly active global cancellation
@@ -111,17 +118,14 @@ public class ReindexThread extends Thread
         boolean keepDatabase = false;
         try {
             if (this.resumed) {
-                Logger.info("Resuming a reindexation task that was started on " + Files.getLastModifiedTime(this.dbFile));
+                Logger.info("Resuming a reindexation task of " + this.reindexTaskClass.getSimpleName() + " that was started on " + Files.getLastModifiedTime(this.dbFile));
             }
             else {
-                Logger.info("Launching a new reindexation task.");
+                Logger.info("Launching a new reindexation task of " + this.reindexTaskClass.getSimpleName() + ".");
             }
             if (this.listener != null) {
                 this.listener.reindexingStarted();
             }
-
-            //Note: this is not very kosher, but it works
-            this.pageRepository = new PageRepository();
 
             //we'll have one big connection during the entire session
             this.dbConnection = DriverManager.getConnection(this.dbConnectionUrl);
@@ -216,7 +220,7 @@ public class ReindexThread extends Thread
 
         if (Files.exists(this.dbFile)) {
             try (Statement stmt = dbConnection.createStatement()) {
-                retVal = stmt.executeQuery("SELECT COUNT(*) FROM " + PAGE_TABLE_NAME + ";").getLong(1);
+                retVal = stmt.executeQuery("SELECT COUNT(*) FROM " + SQL_TABLE_NAME + ";").getLong(1);
             }
         }
 
@@ -225,16 +229,16 @@ public class ReindexThread extends Thread
     private void createPageTable() throws SQLException
     {
         //see http://somesimplethings.blogspot.be/2010/03/derby-create-table-if-not-exists.html
-        ResultSet rs = dbConnection.getMetaData().getTables(null, null, PAGE_TABLE_NAME, null);
+        ResultSet rs = dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
         if (!rs.next()) {
             //create the table
             try (Statement stmt = dbConnection.createStatement()) {
-                stmt.executeUpdate("CREATE TABLE " + PAGE_TABLE_NAME + " " +
-                                   "(" + PAGE_COLUMN_ID_NAME + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                                   " " + PAGE_COLUMN_URI_NAME + " TEXT NOT NULL," +
-                                   " " + PAGE_COLUMN_TYPE_NAME + " TEXT NOT NULL," +
+                stmt.executeUpdate("CREATE TABLE " + SQL_TABLE_NAME + " " +
+                                   "(" + SQL_COLUMN_ID_NAME + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                   " " + SQL_COLUMN_URI_NAME + " TEXT NOT NULL," +
+                                   " " + SQL_COLUMN_TYPE_NAME + " TEXT NOT NULL," +
                                    //needed for millisecond precision
-                                   " " + PAGE_COLUMN_STAMP_NAME + " TIMESTAMP NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))" +
+                                   " " + SQL_COLUMN_STAMP_NAME + " TIMESTAMP NOT NULL DEFAULT(STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))" +
                                    ");");
             }
         }
@@ -265,7 +269,7 @@ public class ReindexThread extends Thread
             dbConnection.setAutoCommit(false);
 
             //we can't make this a resource-try-catch because it can't be closed until all async tasks are done
-            preparedStatement = dbConnection.prepareStatement("INSERT INTO " + PAGE_TABLE_NAME + "(" + PAGE_COLUMN_URI_NAME + ", " + PAGE_COLUMN_TYPE_NAME + ") VALUES (?, ?);");
+            preparedStatement = dbConnection.prepareStatement("INSERT INTO " + SQL_TABLE_NAME + "(" + SQL_COLUMN_URI_NAME + ", " + SQL_COLUMN_TYPE_NAME + ") VALUES (?, ?);");
 
             //iterate all configured folders and start up an iterator for every one
             for (String folder : this.folders) {
@@ -276,7 +280,7 @@ public class ReindexThread extends Thread
                 if (!StringUtils.isEmpty(this.filter)) {
                     pathFilter = new DefaultResourceFilter(this.filter);
                 }
-                ResourceIterator pageIterator = this.pageRepository.getAll(true, URI.create(folder), pathFilter, this.depth);
+                ResourceIterator pageIterator = this.repository.getAll(true, URI.create(folder), pathFilter, this.depth);
 
                 //note: read-only because we won't be changing the page, only the index
                 while (pageIterator.hasNext() && keepRunning) {
@@ -378,7 +382,7 @@ public class ReindexThread extends Thread
         //count the number of classes in the db to create the executor
         int numClasses;
         try (Statement stmt = dbConnection.createStatement()) {
-            numClasses = stmt.executeQuery("SELECT COUNT(DISTINCT " + PAGE_COLUMN_TYPE_NAME + ") FROM " + PAGE_TABLE_NAME + ";")
+            numClasses = stmt.executeQuery("SELECT COUNT(DISTINCT " + SQL_COLUMN_TYPE_NAME + ") FROM " + SQL_TABLE_NAME + ";")
                              .getInt(1);
         }
 
@@ -403,7 +407,7 @@ public class ReindexThread extends Thread
             // on disk, so if we iterate files, all encountered classes should be in this set.
             //We'll sort them based on internal dependency and first index the ones that won't depend
             // on others down the line.
-            ResultSet resultSet = stmt.executeQuery("SELECT DISTINCT " + PAGE_COLUMN_TYPE_NAME + " FROM " + PAGE_TABLE_NAME + ";");
+            ResultSet resultSet = stmt.executeQuery("SELECT DISTINCT " + SQL_COLUMN_TYPE_NAME + " FROM " + SQL_TABLE_NAME + ";");
 
             //this will keep track of classes that don't have any dependency to add them after the loop
             Set<RdfClassNode> lonelyClasses = new HashSet<>();
@@ -412,7 +416,7 @@ public class ReindexThread extends Thread
             while (resultSet.next()) {
                 //Note: the type is the literal html string in the typeof="" attribute of a RDFa HTML page,
                 //so it needs parsing
-                RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(PAGE_COLUMN_TYPE_NAME)));
+                RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME)));
 
                 Logger.info("Checking deps of class " + rdfClass);
 
@@ -658,7 +662,7 @@ public class ReindexThread extends Thread
 
                 TX transaction = null;
                 long startStamp = System.currentTimeMillis();
-                long pageCounter = 0;
+                long taskCounter = 0;
                 long[] reindexCounter = new long[] { 0l };
                 long maxPages = 0;
                 boolean success = false;
@@ -678,15 +682,15 @@ public class ReindexThread extends Thread
                     try (Statement stmt = dbConnection.createStatement()) {
 
                         //this is the number of results we can expect
-                        maxPages = stmt.executeQuery("SELECT COUNT(*) FROM " + PAGE_TABLE_NAME +
-                                                     " WHERE " + PAGE_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';")
+                        maxPages = stmt.executeQuery("SELECT COUNT(*) FROM " + SQL_TABLE_NAME +
+                                                     " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';")
                                        .getLong(1);
 
                         Logger.info("Launching reindexation of RDF class " + this.rdfClass + " with " + maxPages + " members.");
 
                         //iterate all URIs of pages in this class
-                        ResultSet resultSet = stmt.executeQuery("SELECT " + PAGE_COLUMN_ID_NAME + ", " + PAGE_COLUMN_URI_NAME + " FROM " + PAGE_TABLE_NAME +
-                                                                " WHERE " + PAGE_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
+                        ResultSet resultSet = stmt.executeQuery("SELECT " + SQL_COLUMN_ID_NAME + ", " + SQL_COLUMN_URI_NAME + " FROM " + SQL_TABLE_NAME +
+                                                                " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
                         long txBatchCounter = 0;
                         boolean aborted = false;
                         while (resultSet.next()) {
@@ -698,7 +702,7 @@ public class ReindexThread extends Thread
 
                             if (txBatchCounter > MAX_PAGES_PER_TX) {
                                 Logger.info("Max transaction limit reached for class " + this.rdfClass +
-                                            " at " + pageCounter + "/" + maxPages + " pages (" + (int) (pageCounter / (float) maxPages * 100) +"%);" +
+                                            " at " + taskCounter + "/" + maxPages + " pages (" + (int) (taskCounter / (float) maxPages * 100) + "%);" +
                                             " finishing, committing and booting a new one");
 
                                 reindexExecutor.shutdown();
@@ -724,12 +728,13 @@ public class ReindexThread extends Thread
                                                                                                       StorageFactory.getTriplestoreIndexer().connect(transaction));
                             }
 
-                            long dbId = resultSet.getLong(PAGE_COLUMN_ID_NAME);
-                            URI publicUri = URI.create(resultSet.getString(PAGE_COLUMN_URI_NAME));
                             //Logger.info("Submitting reindexation of " + publicUri);
-                            reindexExecutor.submit(new ReindexTask(publicUri, indexConnectionsOption, reindexCounter, deleteQueries, dbId));
+                            ReindexTask reindexTask = reindexTaskClass.newInstance();
+                            reindexTask.init(URI.create(resultSet.getString(SQL_COLUMN_URI_NAME)), repository, indexConnectionsOption, deleteQueries, SQL_TABLE_NAME, SQL_COLUMN_ID_NAME,
+                                             resultSet.getLong(SQL_COLUMN_ID_NAME), reindexCounter, cancelThread);
+                            reindexExecutor.submit(reindexTask);
 
-                            pageCounter++;
+                            taskCounter++;
                             txBatchCounter++;
                         }
 
@@ -766,10 +771,10 @@ public class ReindexThread extends Thread
                     finally {
                         long timeDiff = System.currentTimeMillis() - startStamp;
                         Logger.info((success ? "Finished" : "Aborted") + " reindexation of RDF class " + this.rdfClass + "\n" +
-                                    "\tNumber of pages: " + pageCounter + "\n" +
+                                    "\tNumber of pages: " + taskCounter + "\n" +
                                     "\tReindexed pages: " + reindexCounter[0] + "\n" +
                                     "\tTotal time: " + DurationFormatUtils.formatDuration(timeDiff, "H:mm:ss") + "\n" +
-                                    "\tMean submission time: " + (int) (pageCounter / (timeDiff / 1000.0)) + " pages/sec\n" +
+                                    "\tMean submission time: " + (int) (taskCounter / (timeDiff / 1000.0)) + " pages/sec\n" +
                                     "\tMean reindexation time: " + (int) (reindexCounter[0] / (timeDiff / 1000.0)) + " pages/sec\n");
                     }
 
@@ -826,62 +831,6 @@ public class ReindexThread extends Thread
         {
             //We're not interested in every single status change
             //Logger.info("TX change from " + Decoder.decodeStatus(oldStatus) + " to " + Decoder.decodeStatus(newStatus) + " for TX " + transaction.hashCode());
-        }
-
-        //-----PROTECTED METHODS-----
-
-        //-----PRIVATE METHODS-----
-
-    }
-
-    private class ReindexTask implements Runnable
-    {
-        //-----CONSTANTS-----
-
-        //-----VARIABLES-----
-        private final URI pageUri;
-        private final ResourceRepository.IndexOption indexConnectionsOption;
-        private long[] reindexCounter;
-        private List<String> deleteQueries;
-        private long dbId;
-
-        //-----CONSTRUCTORS-----
-        public ReindexTask(URI pageUri, ResourceRepository.IndexOption indexConnectionsOption, long[] reindexCounter, List<String> deleteQueries, long dbId)
-        {
-            this.pageUri = pageUri;
-            this.indexConnectionsOption = indexConnectionsOption;
-            this.reindexCounter = reindexCounter;
-            this.deleteQueries = deleteQueries;
-            this.dbId = dbId;
-        }
-
-        //-----PUBLIC METHODS-----
-        @Override
-        public void run()
-        {
-            if (!cancelThread.get()) {
-                try {
-                    //Logger.info("Reindexing " + pageUri);
-
-                    //request the page directly, so we don't go through the resource cache
-                    Page page = pageRepository.get(pageRepository.request(pageUri, null));
-
-                    //effectively reindex the page
-                    pageRepository.reindex(page, this.indexConnectionsOption);
-
-                    //if reindexation succeeded, we add the delete stmt to the list
-                    deleteQueries.add("DELETE FROM " + PAGE_TABLE_NAME +
-                                      " WHERE " + PAGE_COLUMN_ID_NAME + "=" + this.dbId + ";");
-                }
-                catch (Throwable e) {
-                    //let's signal we should end the processing as soon one error occurs
-                    cancelThread.set(true);
-                    Logger.error("Error while reindexing " + pageUri, e);
-                }
-                finally {
-                    this.reindexCounter[0]++;
-                }
-            }
         }
 
         //-----PROTECTED METHODS-----

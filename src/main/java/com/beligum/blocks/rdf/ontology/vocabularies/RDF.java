@@ -152,7 +152,7 @@ public final class RDF extends AbstractRdfVocabulary
      * -- as a general remark for conclusions below: if the property has an explicit datatype set, the language seems to be ignored --
      *
      * 3) if a property is explicitly tagged with @datatype "xsd:string" and it doesn't have an explicit @lang attribute,
-     *    it's parsed as a no-language value (yielding a triple with a string as object without any language suffix)
+     *    it's parsed as a no-language value (yielding a triple with a string as object without any language suffix, but with an explicit data type)
      *
      * 4) if a property is explicitly tagged with @datatype "xsd:string" and it has an explicit @lang attribute,
      *    it's still parsed as a no-language value
@@ -184,10 +184,17 @@ public final class RDF extends AbstractRdfVocabulary
      *
      * ### General conclusion ###
      *
-     * Don't set the datatype explicitly if the required datatype is xsd:string or rdf:langString; the absence of a specific @lang attribute will make the datatype result in either of both.
-     * Don't count on the general html @lang language to be inherited though, make sure you set it specifically if you need it.
-     * This doesn't mean we cannot specifically build our models choosing between one of both; if you want the string to be translatable, use rdf:langString,
-     * if the value is language-agnostic, use xsd:string. We'll take care of this difference eg. in the <blocks-fact> client-side parsing.
+     * - Don't set the datatype explicitly if the required datatype is xsd:string or rdf:langString and you need a language;
+     *   it seems to override the value of the @lang attribute.
+     * - Don't count on the general html @lang language to be inherited. Make sure you set it specifically if you need it.
+     *
+     * This doesn't mean we cannot specifically build our models choosing between one of both; if you want the string to be translatable,
+     * set the @lang attribute and omit the datatype. This will result in an implicit rdf:langString datatype.
+     * If the value is explicitly language-agnostic, explicitly set xsd:string; this will 'override' any language (explicit or implicit).
+     * We'll take care of this difference eg. in the <blocks-fact> client-side parsing.
+     * Note that in doubt between these two string datatypes, choose the rdf:langString, because it offers the same (eg. SPARQL) functionality as
+     * xsd:string, but has the added bonus to know in what language it was written afterwards. Only explicitly choose xsd:string if you have a good
+     * reason for it (eg. for identifier strings, email addresses, etc). But be aware that an rdf:langString *always* needs a language set!
      *
      * ##########################
      *

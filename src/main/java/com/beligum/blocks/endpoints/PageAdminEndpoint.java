@@ -10,7 +10,10 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.index.reindex.PageReindexTask;
+import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
 import com.beligum.blocks.filesystem.index.reindex.ReindexThread;
+import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.NewPageSource;
@@ -20,6 +23,7 @@ import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.new_block;
@@ -54,6 +58,7 @@ public class PageAdminEndpoint
     private static Format ERROR_STAMP_FORMATTER = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
 
     //-----VARIABLES-----
+    private static Object currentIndexAllLock = new Object();
     private static ReindexThread currentIndexAllThread = null;
 
     //-----CONSTRUCTORS-----
@@ -61,8 +66,10 @@ public class PageAdminEndpoint
     //-----PUBLIC METHODS-----
     public static void endAllAsyncTasksNow()
     {
-        if (currentIndexAllThread != null) {
-            currentIndexAllThread.cancel();
+        synchronized (currentIndexAllLock) {
+            if (currentIndexAllThread != null) {
+                currentIndexAllThread.cancel();
+            }
         }
     }
     /**
@@ -249,26 +256,28 @@ public class PageAdminEndpoint
     @POST
     @javax.ws.rs.Path("/index")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response reindex(@QueryParam("url") URI uri) throws Exception
+    public Response reindex(@QueryParam("url") URI uri) throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
-        if (currentIndexAllThread == null) {
-            Page page = R.resourceManager().get(uri, MimeTypes.HTML, Page.class);
-            if (page == null) {
-                throw new NotFoundException("Page not found; " + uri);
+        synchronized (currentIndexAllLock) {
+            if (currentIndexAllThread == null) {
+                Page page = R.resourceManager().get(uri, MimeTypes.HTML, Page.class);
+                if (page == null) {
+                    throw new NotFoundException("Page not found; " + uri);
+                }
+
+                //Note: transaction handling is done through the global XA transaction
+                getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
+                getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
+
+                retVal = Response.ok("Index of item successfull; " + uri);
             }
-
-            //Note: transaction handling is done through the global XA transaction
-            getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
-            getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
-
-            retVal = Response.ok("Index of item successfull; " + uri);
-        }
-        else {
-            retVal =
-                            Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
-                                        ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            else {
+                retVal =
+                                Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
+                                            ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            }
         }
 
         return retVal.build();
@@ -277,8 +286,8 @@ public class PageAdminEndpoint
     @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAll(@QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
-                                          @QueryParam("depth") Integer depth)
+    public Response indexAll(@QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
+                             @QueryParam("depth") Integer depth, @QueryParam("task") String task)
                     throws Exception
     {
         Response.ResponseBuilder retVal = null;
@@ -291,29 +300,49 @@ public class PageAdminEndpoint
             folder = Lists.newArrayList("/");
         }
 
-        if (currentIndexAllThread == null) {
-            //will register itself in the static variable
-            currentIndexAllThread = new ReindexThread(folder, filter, depth, new ReindexThread.Listener()
-            {
-                @Override
-                public void reindexingStarted()
-                {
+        synchronized (currentIndexAllLock) {
+            if (currentIndexAllThread == null) {
+                final Map<String, Class<? extends ReindexTask>> taskMappings = ImmutableMap.<String, Class<? extends ReindexTask>>builder()
+                                .put("pageReindex", PageReindexTask.class)
+                                .put("pageFix", PageFixTask.class)
+                                .build();
+                Class<? extends ReindexTask> taskClass = null;
+                if (task != null) {
+                    taskClass = taskMappings.get(task);
                 }
-                @Override
-                public void reindexingEnded()
-                {
-                    currentIndexAllThread = null;
+
+                if (taskClass != null) {
+                    //will register itself in the static variable
+                    //Note: the PageRepository is not very kosher, but it works
+                    currentIndexAllThread = new ReindexThread(folder, filter, depth, new PageRepository(), PageFixTask.class, new ReindexThread.Listener()
+                    {
+                        @Override
+                        public void reindexingStarted()
+                        {
+                        }
+                        @Override
+                        public void reindexingEnded()
+                        {
+                            synchronized (currentIndexAllLock) {
+                                currentIndexAllThread = null;
+                            }
+                        }
+                    });
+
+                    currentIndexAllThread.start();
+
+                    retVal = Response.ok("Launched new reindexation thread with folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
+                                         ", depth " + depth);
                 }
-            });
-
-            currentIndexAllThread.start();
-
-            retVal = Response.ok("Launched new reindexation thread with folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
-                                 ", depth " + depth);
-        }
-        else {
-            retVal = Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " +
-                                 ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+                else {
+                    retVal = Response.ok("Can't start an index all action because you didn't supply a (correct) 'task' parameter; possible values are: " +
+                                         Joiner.on(", ").join(taskMappings.keySet()) + ".");
+                }
+            }
+            else {
+                retVal = Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " +
+                                     ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            }
         }
 
         return retVal.build();
@@ -326,6 +355,7 @@ public class PageAdminEndpoint
     //    {
     //        Response.ResponseBuilder retVal = null;
     //
+    //        synchronized (currentIndexAllLock) {
     //        if (currentIndexAllThread == null) {
     //            try {
     //                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
@@ -346,6 +376,7 @@ public class PageAdminEndpoint
     //        else {
     //            retVal = Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
     //        }
+    //        }
     //
     //        return retVal.build();
     //    }
@@ -353,16 +384,18 @@ public class PageAdminEndpoint
     @GET
     @javax.ws.rs.Path("/index/all/cancel")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAllCancel() throws Exception
+    public Response indexAllCancel() throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
-        if (currentIndexAllThread != null) {
-            currentIndexAllThread.cancel();
-            retVal = Response.ok("Reindex all process cancelled");
-        }
-        else {
-            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
+        synchronized (currentIndexAllLock) {
+            if (currentIndexAllThread != null) {
+                currentIndexAllThread.cancel();
+                retVal = Response.ok("Reindex all process cancelled");
+            }
+            else {
+                retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
+            }
         }
 
         return retVal.build();
@@ -371,15 +404,17 @@ public class PageAdminEndpoint
     @GET
     @javax.ws.rs.Path("/index/all/status")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAllStatus() throws Exception
+    public Response indexAllStatus() throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
-        if (currentIndexAllThread != null) {
-            retVal = Response.ok("Reindex all process currently running and started at " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
-        }
-        else {
-            retVal = Response.ok("No reindex all process currently running.");
+        synchronized (currentIndexAllLock) {
+            if (currentIndexAllThread != null) {
+                retVal = Response.ok("Reindex all process currently running and started at " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+            }
+            else {
+                retVal = Response.ok("No reindex all process currently running.");
+            }
         }
 
         return retVal.build();

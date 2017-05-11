@@ -7,6 +7,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -277,6 +278,12 @@ public abstract class AbstractImportEndpoint
                 break;
             default:
                 throw new IOException("Encountered unimplemented widget type parser, please fix; " + property.getWidgetType());
+        }
+
+        //Some extra filtering, based on the datatype
+        if (property.getDataType().equals(RDF.LANGSTRING)) {
+            //see the comments in blocks-fact-entry.js and RDF.LANGSTRING for why we remove the datatype in case of a rdf:langString
+            addDataType = false;
         }
 
         if (addDataType) {

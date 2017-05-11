@@ -13,6 +13,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -184,16 +185,26 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL;
         }
 
+        boolean isNumber = NumberUtils.isNumber(phrase);
         //makes sense to _not_ add the wildcard * expansion to numbers, no?
-        String wildcardSuffix = NumberUtils.isNumber(phrase) ? "" : "*";
+        String wildcardSuffix = isNumber ? "" : "*";
 
         if (!complex) {
-            QueryParser queryParser = new QueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
-            //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+
             try {
-                retVal = queryParser.parse(QueryParser.escape(phrase) + wildcardSuffix);
+                String phraseEsc = QueryParser.escape(phrase) + wildcardSuffix;
+
+                //this is the new approach for the version below, which didn't always result in the right results,
+                //also based on this: http://www.avajava.com/tutorials/lessons/how-do-i-perform-a-wildcard-query.html
+                Term term = new Term(fieldName, phraseEsc);
+                retVal = isNumber ? new TermQuery(term) : new WildcardQuery(term);
+
+//                QueryParser queryParser = new QueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
+//                we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+//                retVal = queryParser.parse(phraseEsc);
             }
-            catch (ParseException e) {
+            catch (Exception e) {
+                //add some metaeata to the stacktrack
                 throw new IOException("Error while building simple Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
             }
         }
