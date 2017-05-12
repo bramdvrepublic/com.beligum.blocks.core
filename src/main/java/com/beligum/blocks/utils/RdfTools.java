@@ -10,9 +10,9 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -155,14 +155,14 @@ public class RdfTools
 
         return retval;
     }
-    public static CharSequence serializeDateHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    public static CharSequence serializeDateHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
                         .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(" ")
                         .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime));
     }
-    public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
                         .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
@@ -170,7 +170,7 @@ public class RdfTools
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }
-    public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, ZonedDateTime utcDateTime)
+    public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
                         .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))

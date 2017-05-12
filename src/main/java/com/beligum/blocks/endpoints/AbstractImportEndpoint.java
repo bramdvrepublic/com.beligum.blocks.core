@@ -19,6 +19,7 @@ import java.text.ParseException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -38,7 +39,7 @@ public abstract class AbstractImportEndpoint
     //-----PUBLIC METHODS-----
 
     //-----PROTECTED METHODS-----
-    protected Object importRawPropertyValue(RdfProperty property, String value, Locale language) throws IOException, ParseException
+    public static Object importRawPropertyValue(RdfProperty property, String value, Locale language) throws IOException, ParseException
     {
         Object retVal = null;
 
@@ -59,7 +60,7 @@ public abstract class AbstractImportEndpoint
 
             case Date:
                 if (isNumber) {
-                    retVal = this.epochToLocalDateTime(Long.parseLong(value)).toLocalDate();
+                    retVal = epochToLocalDateTime(Long.parseLong(value)).toLocalDate();
                 }
                 else {
                     retVal = LocalDate.parse(value);
@@ -68,7 +69,7 @@ public abstract class AbstractImportEndpoint
 
             case Time:
                 if (isNumber) {
-                    retVal = this.epochToLocalDateTime(Long.parseLong(value)).toLocalTime();
+                    retVal = epochToLocalDateTime(Long.parseLong(value)).toLocalTime();
                 }
                 else {
                     retVal = LocalTime.parse(value);
@@ -77,7 +78,7 @@ public abstract class AbstractImportEndpoint
 
             case DateTime:
                 if (isNumber) {
-                    retVal = this.epochToLocalDateTime(Long.parseLong(value));
+                    retVal = epochToLocalDateTime(Long.parseLong(value));
                 }
                 else {
                     retVal = LocalDateTime.parse(value);
@@ -146,11 +147,11 @@ public abstract class AbstractImportEndpoint
 
         return retVal;
     }
-    protected String propertyValueToHtml(RdfProperty property, Object value, Locale language, RdfProperty previous) throws IOException, ParseException
+    public static String propertyValueToHtml(RdfProperty property, Object value, Locale language, RdfProperty previous) throws IOException, ParseException
     {
         StringBuilder factEntryHtml = new StringBuilder();
 
-        if (previous!=null && previous.equals(property)) {
+        if (previous != null && previous.equals(property)) {
             factEntryHtml.append("<blocks-fact-entry class=\"double\">");
         }
         else {
@@ -184,9 +185,16 @@ public abstract class AbstractImportEndpoint
                 html = value.toString();
                 break;
             case Date:
-                LocalDate localDate = (LocalDate) value;
-                ZonedDateTime utcDate = ZonedDateTime.ofInstant(localDate.atStartOfDay(localZone).toInstant(), UTC);
-                content = utcDate.format(DateTimeFormatter.ISO_DATE);
+                TemporalAccessor utcDate;
+                if (value instanceof LocalDate) {
+                    utcDate = ZonedDateTime.ofInstant(((LocalDate) value).atStartOfDay(localZone).toInstant(), UTC);
+                }
+                else {
+                    utcDate = (TemporalAccessor) value;
+                }
+
+                //Note: local because we only support timezones in dateTime
+                content = DateTimeFormatter.ISO_LOCAL_DATE.format(utcDate);
                 factEntryHtml.append(" data-gmt=\"false\"");
 
                 //https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html
@@ -196,9 +204,16 @@ public abstract class AbstractImportEndpoint
                 break;
 
             case Time:
-                LocalTime localTime = (LocalTime) value;
-                ZonedDateTime utcTime = ZonedDateTime.ofInstant(ZonedDateTime.of(LocalDate.now(), localTime, localZone).toInstant(), UTC);
-                content = utcTime.format(DateTimeFormatter.ISO_TIME);
+                TemporalAccessor utcTime;
+                if (value instanceof LocalTime) {
+                    utcTime = ZonedDateTime.ofInstant(ZonedDateTime.of(LocalDate.now(), (LocalTime) value, localZone).toInstant(), UTC);
+                }
+                else {
+                    utcTime = (TemporalAccessor) value;
+                }
+
+                //Note: local because we only support timezones in dateTime
+                content = DateTimeFormatter.ISO_LOCAL_TIME.format(utcTime);
                 factEntryHtml.append(" data-gmt=\"false\"");
 
                 //html = "1:00 AM<span class=\"timezone\">(UTC+01:00)</span>";
@@ -209,9 +224,15 @@ public abstract class AbstractImportEndpoint
                 break;
 
             case DateTime:
-                LocalDateTime localDateTime = (LocalDateTime) value;
-                ZonedDateTime utcDateTime = ZonedDateTime.ofInstant(ZonedDateTime.of(localDateTime, localZone).toInstant(), UTC);
-                content = utcDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+                TemporalAccessor utcDateTime;
+                if (value instanceof LocalDateTime) {
+                    utcDateTime = ZonedDateTime.ofInstant(ZonedDateTime.of((LocalDateTime) value, localZone).toInstant(), UTC);
+                }
+                else {
+                    utcDateTime = (TemporalAccessor) value;
+                }
+
+                content = DateTimeFormatter.ISO_DATE_TIME.format(utcDateTime);
                 factEntryHtml.append(" data-gmt=\"false\"");
 
                 //html = "Friday January 1, 2016 - 1:00 AM<span class=\"timezone\">(UTC+01:00)</span>";
@@ -249,7 +270,7 @@ public abstract class AbstractImportEndpoint
 
                 //note: contrary to the resource endpoint below, we want the endpoint of the property, not the class, so don't use property.getDataType().getEndpoint() here
                 Collection<AutocompleteSuggestion> enumSuggestion = property.getEndpoint().search(property, enumKey, RdfQueryEndpoint.QueryType.NAME, language, 1);
-                if (enumSuggestion.size()==1) {
+                if (enumSuggestion.size() == 1) {
                     AutocompleteSuggestion enumValue = enumSuggestion.iterator().next();
                     addDataType = true;
                     content = enumValue.getValue();
@@ -305,8 +326,7 @@ public abstract class AbstractImportEndpoint
 
         return factEntryHtml.toString();
     }
-
-    protected String buildResourceImageHtml(NamedUri uri)
+    public static String buildResourceImageHtml(NamedUri uri)
     {
         StringBuilder retVal = new StringBuilder();
 
@@ -318,13 +338,13 @@ public abstract class AbstractImportEndpoint
     }
 
     //-----PRIVATE METHODS-----
-    private LocalDateTime epochToLocalDateTime(long value)
+    private static LocalDateTime epochToLocalDateTime(long value)
     {
         return LocalDateTime.ofInstant(Instant.ofEpochSecond(value), ZoneId.systemDefault());
     }
 
     //-----INNER CLASSES-----
-    protected class NamedUri
+    protected static class NamedUri
     {
         URI uri;
         String name;

@@ -12,6 +12,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.utils.RdfTools;
+import org.apache.commons.lang.math.NumberUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -19,7 +20,14 @@ import org.eclipse.rdf4j.model.Value;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.GregorianCalendar;
 import java.util.Locale;
+import java.util.TimeZone;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Created by bram on 5/31/16.
@@ -63,7 +71,11 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
                 //the return value is mostly used to sort the field, and to construct the _all field, do it makes sense to return the long instead of the calendar object
-                Long val = objLiteral.calendarValue().toGregorianCalendar().getTimeInMillis();
+                GregorianCalendar cal = objLiteral.calendarValue().toGregorianCalendar();
+                //dates are indexed with UTC timezone, so make sure it's not created with the server's timezone
+                cal.setTimeZone(TimeZone.getTimeZone(UTC));
+
+                Long val = cal.getTimeInMillis();
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -196,7 +208,24 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 retVal = Boolean.parseBoolean(value) ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
             }
             else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
-                retVal = Long.parseLong(value);
+                if (NumberUtils.isNumber(value)) {
+                    retVal = Long.parseLong(value);
+                }
+                else {
+
+                    if (property.getDataType().equals(XSD.DATE)) {
+                        LocalDate localDate = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(value));
+                        retVal = localDate.atStartOfDay(UTC).toInstant().toEpochMilli();
+                    }
+                    else if (property.getDataType().equals(XSD.TIME)) {
+                        LocalDate localDate = LocalDate.from(DateTimeFormatter.ISO_LOCAL_TIME.parse(value));
+                        retVal = localDate.atStartOfDay(UTC).toInstant().toEpochMilli();
+                    }
+                    else if (property.getDataType().equals(XSD.DATE_TIME)) {
+                        ZonedDateTime zonedDateTime = ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value));
+                        retVal = zonedDateTime.toInstant().toEpochMilli();
+                    }
+                }
             }
             else if (property.getDataType().equals(XSD.INT)
                      || property.getDataType().equals(XSD.INTEGER)

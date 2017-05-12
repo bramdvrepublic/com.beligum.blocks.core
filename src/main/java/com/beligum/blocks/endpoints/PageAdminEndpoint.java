@@ -314,7 +314,7 @@ public class PageAdminEndpoint
                 if (taskClass != null) {
                     //will register itself in the static variable
                     //Note: the PageRepository is not very kosher, but it works
-                    currentIndexAllThread = new ReindexThread(folder, filter, depth, new PageRepository(), PageFixTask.class, new ReindexThread.Listener()
+                    currentIndexAllThread = new ReindexThread(folder, filter, depth, new PageRepository(), taskClass, new ReindexThread.Listener()
                     {
                         @Override
                         public void reindexingStarted()

@@ -10,6 +10,7 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.rdf.ontology.indexers.DefaultRdfPropertyIndexer;
+import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
@@ -70,6 +71,14 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
 
         if (this.dataType == null) {
             Logger.error("Datatype of " + this.getName() + " (" + this.getFullName() + ") is null! This is a static-initializer bug and should be fixed");
+        }
+        else {
+            //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
+            if ((dataType.equals(XSD.DATE) && !widgetType.equals(InputType.Date))
+                || (dataType.equals(XSD.TIME) && !widgetType.equals(InputType.Time))
+                || (dataType.equals(XSD.DATE_TIME) && !widgetType.equals(InputType.DateTime))) {
+                throw new RuntimeException("Encountered RDF property with datatype-inputtype mismatch; "+this);
+            }
         }
     }
 

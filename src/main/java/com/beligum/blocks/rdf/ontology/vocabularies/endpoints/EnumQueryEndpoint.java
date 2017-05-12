@@ -87,14 +87,15 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     /**
-     * Note that we'll have to force this method a little bit, because the passed-in resourceIds will actually be enum values.
-     * For an enum, it's handy to have this to translate values to their counterpart label (in a specific language)
+     * Note that we'll have to force this method a little bit, because the passed-in resourceIds will actually be enum values (that can be anything).
+     * For an enum, it's handy to have this to translate values to their counterpart label (in a specific language), so use this method this way to
+     * pass a lookup for a resourceId: UriBuilder.fromPath(rawValue).build()
      */
     @Override
     public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
-        //Note: the toString() converts special URI characters back to their native form
-        return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.toString()), language);
+        //Note: the getPath() converts special URI characters back to their native form
+        return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);
     }
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)

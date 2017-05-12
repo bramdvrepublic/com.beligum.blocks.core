@@ -62,7 +62,7 @@ public class HtmlAnalyzer
         this.pageSource = pageSource;
 
         try (InputStream is = pageSource.newInputStream()) {
-            this.htmlDocument = new Source(is);
+            this.htmlDocument = HtmlTemplate.readHtmlInputStream(is);
         }
 
         this.init();
@@ -73,12 +73,12 @@ public class HtmlAnalyzer
 
         if (readOriginal) {
             try (InputStream is = page.getFileContext().open(page.getLocalStoragePath())) {
-                this.htmlDocument = new Source(is);
+                this.htmlDocument = HtmlTemplate.readHtmlInputStream(is);
             }
         }
         else {
             try (InputStream is = page.newInputStream()) {
-                this.htmlDocument = new Source(is);
+                this.htmlDocument = HtmlTemplate.readHtmlInputStream(is);
             }
         }
 

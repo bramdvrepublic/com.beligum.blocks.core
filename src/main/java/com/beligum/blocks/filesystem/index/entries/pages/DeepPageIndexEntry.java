@@ -144,12 +144,6 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
             //index all field names so we can search for documents that do/don't have a certain field set
             this.luceneDoc.add(new StringField(CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
         }
-
-        //this will allow us to do a search-all query
-        //        if (allField != null && !allField.isEmpty()) {
-        //            String allValue = Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(allField);
-        //            this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, allValue);
-        //        }
     }
 
     //-----STATIC METHODS-----

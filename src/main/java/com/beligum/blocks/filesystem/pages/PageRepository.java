@@ -284,6 +284,11 @@ public class PageRepository extends AbstractResourceRepository
         boolean rdfMissing = !page.getFileContext().util().exists(page.getRdfExportFile());
         boolean rdfDepsMissing = !page.getFileContext().util().exists(page.getRdfDependenciesExportFile());
 
+        //For debugging only!!
+        //        normalizedMissing = true;
+        //        rdfMissing = true;
+        //        rdfDepsMissing = false;
+
         //Note that we only need to have a write context if one of the above files is missing
         if (normalizedMissing || rdfMissing || rdfDepsMissing) {
             //create a write context
@@ -302,12 +307,12 @@ public class PageRepository extends AbstractResourceRepository
                 }
 
                 if (rdfMissing || rdfDepsMissing) {
-//                    if (rdfMissing) {
-//                        Logger.info("Regenerating missing RDF proxy file for " + page);
-//                    }
-//                    if (rdfDepsMissing) {
-//                        Logger.info("Regenerating missing RDF dependencies proxy file for " + page);
-//                    }
+                    //                    if (rdfMissing) {
+                    //                        Logger.info("Regenerating missing RDF proxy file for " + page);
+                    //                    }
+                    //                    if (rdfDepsMissing) {
+                    //                        Logger.info("Regenerating missing RDF dependencies proxy file for " + page);
+                    //                    }
                     rwPage.updateRdfProxy(pageSource);
                 }
 

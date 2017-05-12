@@ -2,13 +2,16 @@ package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
+import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.endpoints.AbstractImportEndpoint;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
+import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import net.htmlparser.jericho.*;
@@ -18,8 +21,11 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Created by bram on 11/05/17.
@@ -55,24 +61,31 @@ public class PageFixTask extends ReindexTask
             NewPageSource pageSource = null;
             try (InputStream originalHtml = page.getFileContext().open(page.getLocalStoragePath())) {
 
-                Source htmlSource = new Source(originalHtml);
+                Source htmlSource = HtmlTemplate.readHtmlInputStream(originalHtml);
                 OutputDocument htmlOutput = new OutputDocument(htmlSource);
 
-                somethingChanged = this.fixBlocksFactLangString(page, htmlSource, htmlOutput);
+                somethingChanged = this.fixBlocksFacts(page, htmlSource, htmlOutput);
 
                 if (somethingChanged) {
                     pageSource = new NewPageSource(page.getUri(), htmlOutput.toString());
                 }
             }
 
+//            com.beligum.base.utils.Logger.warn("Watch out: DEBUGGING activated");
+//            somethingChanged = false;
+
             if (somethingChanged) {
-                com.beligum.base.utils.Logger.info("Fixing page "+page);
+                com.beligum.base.utils.Logger.info("Fixing page " + page);
                 rwPage.write(pageSource);
+
+                // Note: reindexing the page will check if the normalized, n-triple and n-triple dep file exists, not if it was changed or not.
+                // Since it's easy to update them here, so that the reindex step only need to reindex.
                 rwPage.updateNormalizedProxy(pageSource);
                 rwPage.updateRdfProxy(pageSource);
 
+                //Update: after all, we decided it's best to do this in a separate run
                 //we changed the RDFs, so the page needs to be reindexed as well
-                resource.getRepository().reindex(resource, indexConnectionsOption);
+                //resource.getRepository().reindex(resource, indexConnectionsOption);
             }
         }
     }
@@ -80,35 +93,76 @@ public class PageFixTask extends ReindexTask
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private boolean fixBlocksFactLangString(Page page, Source source, OutputDocument output)
+    private boolean fixBlocksFacts(Page page, Source source, OutputDocument output) throws IOException
     {
+        final String DATATYPE_ATTR = "datatype";
+        final String BLOCKS_FACT_TAG = "blocks-fact-entry";
+        final String PROPERTY_ATTR = "property";
+
         boolean retVal = false;
 
-        for (StartTag factStartTag : source.getAllStartTags("blocks-fact-entry")) {
+        for (StartTag factStartTag : source.getAllStartTags(BLOCKS_FACT_TAG)) {
             Element factElement = factStartTag.getElement();
-            Element propertyEl = factElement.getFirstElementByClass("property");
+            Element propertyEl = factElement.getFirstElementByClass(PROPERTY_ATTR);
             if (propertyEl != null) {
                 String resourceType = HtmlTemplate.getPropertyAttribute(propertyEl.getStartTag());
                 if (!StringUtils.isEmpty(resourceType)) {
                     RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resourceType));
                     if (rdfClass != null && rdfClass instanceof RdfProperty) {
                         RdfProperty rdfProperty = (RdfProperty) rdfClass;
+                        StartTag propertyStartTag = propertyEl.getStartTag();
 
+                        //on 11/05/17, we started using the RDF.LANGSTRING datatype to mark a string as translatable,
+                        //this will process any XSD.STRING datatypes that should be "upgraded" to RDF.LANGSTRING
                         if (rdfProperty.getDataType().equals(RDF.LANGSTRING)) {
-                            StartTag propertyStartTag = propertyEl.getStartTag();
                             Map<String, String> attrMap = new LinkedHashMap<>();
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
                             propertyAttributes.populateMap(attrMap, false);
 
-                            final String DATATYPE_ATTR = "datatype";
                             if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(com.beligum.blocks.rdf.ontology.vocabularies.XSD.STRING.getCurieName().toString())) {
-                                //if we reach this point, we are dealing with a <blocks-fact-entry> start tag that has a datatype="xsd:string",
-                                // but was later upgraded to rdf:langString. Following our own rules in RDF.LANGSTRING, we'll delete the datatype-attribute.
+                                // if we reach this point, we are dealing with a <blocks-fact-entry> start tag that has a datatype="xsd:string",
+                                // but was later upgraded to rdf:langString. Following our own rules in RDF.LANGSTRING,
+                                // we'll delete the datatype-attribute.
                                 attrMap.remove(DATATYPE_ATTR);
                                 output.replace(propertyAttributes, attrMap);
 
                                 retVal = true;
                             }
+                        }
+                        //we made a few mistakes in the past where we introduced the wrong inputType for date/time related dataTypes,
+                        //this will make sure the inputType follows the dataType
+                        else if (rdfProperty.getDataType().equals(XSD.DATE) || rdfProperty.getDataType().equals(XSD.TIME) || rdfProperty.getDataType().equals(XSD.DATE_TIME)) {
+
+                            Attributes propertyAttributes = propertyStartTag.getAttributes();
+
+                            Set<String> classes = new HashSet<>();
+                            String classAttr = propertyAttributes.getValue("class");
+                            if (!StringUtils.isEmpty(classAttr)) {
+                                classes.addAll(Arrays.asList(classAttr.trim().split(" ")));
+                            }
+
+                            //This is the class that is always there, regardless of the inputType and
+                            // is actually FACT_ENTRY_PROPERTY_CLASS
+                            final String generalClass = "property";
+                            final String contentAttr = "content";
+
+                            try {
+                                //TODO this doesn't account for the GMT flag!
+                                if ((rdfProperty.getDataType().equals(XSD.DATE) && !classes.contains(InputType.Date.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.TIME) && !classes.contains(InputType.Time.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.DATE_TIME) && !classes.contains(InputType.DateTime.getConstant()))) {
+
+                                    Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(contentAttr));
+                                    String newHtml = AbstractImportEndpoint.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
+                                    output.replace(factElement, new Source(newHtml));
+
+                                    retVal = true;
+                                }
+                            }
+                            catch (Exception e) {
+                                throw new IOException("Error while trying to fix a date/time fact of page " + page, e);
+                            }
+
                         }
                     }
                 }
@@ -116,5 +170,30 @@ public class PageFixTask extends ReindexTask
         }
 
         return retVal;
+    }
+    private Object parseDateTimeRelatedValue(String value)
+    {
+        try {
+            //Note: all values are stored in UTC, so force the zone
+            return DateTimeFormatter.ISO_DATE_TIME.withZone(UTC).parse(value);
+        }
+        catch (DateTimeParseException e) {
+        }
+
+        try {
+            //Note: local because we only support timezones in dateTime
+            return DateTimeFormatter.ISO_LOCAL_DATE.parse(value);
+        }
+        catch (DateTimeParseException e) {
+        }
+
+        try {
+            //Note: local because we only support timezones in dateTime
+            return DateTimeFormatter.ISO_LOCAL_TIME.parse(value);
+        }
+        catch (DateTimeParseException e) {
+        }
+
+        return null;
     }
 }

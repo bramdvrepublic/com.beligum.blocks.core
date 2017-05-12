@@ -18,6 +18,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.*;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
@@ -509,6 +511,16 @@ public abstract class HtmlTemplate
         String relAttr = element.getAttributeValue("rel");
         return name.equals("script") || name.equals("style") || (name.equals("link") && relAttr != null && relAttr.trim().equalsIgnoreCase("stylesheet"));
     }
+    /**
+     * Use this method instead of the Source constructor with an inputStream:
+     * We got in trouble with special characters if we didn't explicitly read the file as UTF-8
+     * because the auto-detect functions of Jericho mis-detected the encoding of the inputStream.
+     * Because Jericho reads the entire file in anyway, let's do the same, but forced to the right encoding.
+     */
+    public static Source readHtmlInputStream(InputStream inputStream) throws IOException
+    {
+        return new Source(IOUtils.toString(inputStream, Charsets.UTF_8));
+    }
 
     //-----PUBLIC METHODS-----
     /**
@@ -679,7 +691,7 @@ public abstract class HtmlTemplate
         String retVal;
 
         try (InputStream is = source.newInputStream()) {
-            Source htmlSource = new Source(is);
+            Source htmlSource = HtmlTemplate.readHtmlInputStream(is);
             OutputDocument htmlOutput = new OutputDocument(htmlSource);
 
             Iterator<Segment> nodes = htmlSource.getNodeIterator();

@@ -56,6 +56,10 @@ public enum InputType
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * Note: this value will be used instead of the name of the enum during serialization;
+     * Eg. see the @XmlJavaTypeAdapter on com.beligum.blocks.rdf.ifaces.RdfProperty.getWidgetType()
+     */
     public String getConstant()
     {
         return constantEntry.getValue();

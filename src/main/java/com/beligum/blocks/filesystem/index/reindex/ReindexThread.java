@@ -252,7 +252,7 @@ public class ReindexThread extends Thread
 
         boolean keepRunning = true;
 
-        ThreadPoolExecutor taskExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), 1000);
+        ThreadPoolExecutor taskExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.5), 1000);
 
         PreparedStatement preparedStatement = null;
 
@@ -418,7 +418,7 @@ public class ReindexThread extends Thread
                 //so it needs parsing
                 RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME)));
 
-                Logger.info("Checking deps of class " + rdfClass);
+//                Logger.info("Checking deps of class " + rdfClass);
 
                 RdfClassNode node = RdfClassNode.instance(rdfClass);
                 //don't add it if a previous dependency added it already
@@ -440,7 +440,7 @@ public class ReindexThread extends Thread
                             RdfClassNode dep = RdfClassNode.instance(p.getDataType());
 
                             //link the two together
-                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
+//                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
                             node.addDependency(dep);
 
                             //wipe both sides from the to-do list because we've added it to the executor now
@@ -459,7 +459,7 @@ public class ReindexThread extends Thread
 
             //these classes have no dependency on other classes, make sure they get indexed
             for (RdfClassNode node : lonelyClasses) {
-                Logger.info("Adding an independent dependency for " + node.getRdfClass());
+//                Logger.info("Adding an independent dependency for " + node.getRdfClass());
                 executor.addIndependent(node);
             }
         }
@@ -656,8 +656,8 @@ public class ReindexThread extends Thread
             if (!cancelThread.get()) {
                 //this is the executor that will parallellize the reindexation of all members in this rdfClass
                 //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
-                int nThreads = Runtime.getRuntime().availableProcessors() - 1;
-                int queueSize = 20;
+                int nThreads = ThreadPoolUtil.poolSize(0.9);
+                int queueSize = 100;
                 ExecutorService reindexExecutor = getBlockingExecutor(nThreads, queueSize);
 
                 TX transaction = null;
@@ -697,6 +697,7 @@ public class ReindexThread extends Thread
 
                             if (cancelThread.get()) {
                                 aborted = true;
+                                reindexExecutor.shutdownNow();
                                 break;
                             }
 
@@ -760,7 +761,13 @@ public class ReindexThread extends Thread
 
                     try {
                         if (reindexExecutor != null) {
-                            reindexExecutor.shutdown();
+                            if (success) {
+                                reindexExecutor.shutdown();
+                            }
+                            else {
+                                reindexExecutor.shutdownNow();
+                            }
+
                             reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);
                         }
                     }

@@ -1,6 +1,5 @@
 package com.beligum.blocks.filesystem.index.results;
 
-import com.beligum.base.server.R;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.filesystem.index.ifaces.RdfTupleResult;
@@ -11,8 +10,12 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
-import java.net.URI;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.time.temporal.TemporalAccessor;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 
 /**
@@ -30,14 +33,20 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
     private TupleQueryResult tupleQueryResult;
     private String labelBinding;
     private String valueBinding;
+    private Locale language;
+
+    private DateTimeFormatter cachedDateFormatter;
+    private DateTimeFormatter cachedTimeFormatter;
+    private DateTimeFormatter cachedDateTimeFormatter;
 
     //-----CONSTRUCTORS-----
-    public AutoTupleRdfResult(RdfProperty property, TupleQueryResult tupleQueryResult, String labelBinding, String valueBinding)
+    public AutoTupleRdfResult(RdfProperty property, TupleQueryResult tupleQueryResult, String labelBinding, String valueBinding, Locale language)
     {
         this.property = property;
         this.tupleQueryResult = tupleQueryResult;
         this.labelBinding = labelBinding;
         this.valueBinding = valueBinding;
+        this.language = language;
     }
 
     //-----PUBLIC METHODS-----
@@ -98,9 +107,23 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
                         throw new IOException("Encountered unsupported boolean value; this shouldn't happen; " + rawValue);
                     }
                 }
+                else if (this.property.getDataType().equals(XSD.DATE)) {
+                    //Note: local because we only support timezones in dateTime
+                    TemporalAccessor value = DateTimeFormatter.ISO_LOCAL_DATE.parse(rawValue);
+                    retVal = this.getDateFormatter().format(value);
+                }
+                else if (this.property.getDataType().equals(XSD.TIME)) {
+                    //Note: local because we only support timezones in dateTime
+                    TemporalAccessor value = DateTimeFormatter.ISO_LOCAL_TIME.parse(rawValue);
+                    retVal = this.getTimeFormatter().format(value);
+                }
+                else if (this.property.getDataType().equals(XSD.DATE_TIME)) {
+                    TemporalAccessor value = DateTimeFormatter.ISO_DATE_TIME.parse(rawValue);
+                    retVal = this.getDateTimeFormatter().format(value);
+                }
                 else if (this.property.getWidgetType().equals(InputType.Enum)) {
                     //this translates the raw enum value to a translated label for the current request language
-                    ResourceInfo res = this.property.getEndpoint().getResource(this.property, URI.create(rawValue), R.i18n().getOptimalLocale());
+                    ResourceInfo res = this.property.getEndpoint().getResource(this.property, UriBuilder.fromPath(rawValue).build(), this.language);
                     retVal = res.getLabel();
                 }
 
@@ -125,5 +148,31 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
 
             this.initCause(cause);
         }
+    }
+
+    private DateTimeFormatter getDateFormatter()
+    {
+        if (this.cachedDateFormatter == null) {
+            //Note that we need at least MEDIUM or it won't be possible to distinguish between eg. 2010 and 1910
+            this.cachedDateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(this.language);
+        }
+
+        return this.cachedDateFormatter;
+    }
+    private DateTimeFormatter getTimeFormatter()
+    {
+        if (this.cachedTimeFormatter == null) {
+            this.cachedTimeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(this.language);
+        }
+
+        return this.cachedTimeFormatter;
+    }
+    private DateTimeFormatter getDateTimeFormatter()
+    {
+        if (this.cachedDateTimeFormatter == null) {
+            this.cachedDateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(this.language);
+        }
+
+        return this.cachedDateTimeFormatter;
     }
 }
