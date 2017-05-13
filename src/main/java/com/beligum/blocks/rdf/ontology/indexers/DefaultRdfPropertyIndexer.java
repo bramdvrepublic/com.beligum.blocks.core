@@ -21,6 +21,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.GregorianCalendar;
@@ -69,13 +70,27 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 indexer.indexConstantField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
+            //because both date and time are strict dates, we'll use the millis (long) since epoch as the index value
+            else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.DATE_TIME)) {
+
                 //the return value is mostly used to sort the field, and to construct the _all field, do it makes sense to return the long instead of the calendar object
                 GregorianCalendar cal = objLiteral.calendarValue().toGregorianCalendar();
                 //dates are indexed with UTC timezone, so make sure it's not created with the server's timezone
                 cal.setTimeZone(TimeZone.getTimeZone(UTC));
 
                 Long val = cal.getTimeInMillis();
+                indexer.indexLongField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
+            }
+            //we don't have a date for time, so we'll use the millis since midnight as the index value
+            else if (property.getDataType().equals(XSD.TIME)) {
+                //Note that this will create a date with the day set to 01/01/1970
+                GregorianCalendar cal = objLiteral.calendarValue().toGregorianCalendar();
+                //dates are indexed with UTC timezone, so make sure it's not created with the server's timezone
+                cal.setTimeZone(TimeZone.getTimeZone(UTC));
+
+                //millis since midnight
+                Long val = cal.toZonedDateTime().toLocalTime().toNanoOfDay()/1000000;
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -149,6 +164,14 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
             URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 
+            //We'll always index the relative, stringified URI as a value for the field,
+            //but if the property has an endpoint, we'll query it to get (and index) the label
+            //as well.
+            String uriValueStr = uriValue.toString();
+            indexer.indexConstantField(fieldName, uriValueStr);
+            //for now, we'll set the retVal to the URI and see if we can augment it with a human readable label
+            retVal = new RdfIndexer.IndexResult(uriValueStr);
+
             RdfClass dataType = property.getDataType();
             RdfQueryEndpoint endpoint = dataType.getEndpoint();
             // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
@@ -157,12 +180,15 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 if (resourceValue != null) {
                     //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                     try {
-                        String val = resourceValue.getResourceUri().toString();
-                        indexer.indexConstantField(fieldName, val);
                         //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
-                        String valStr = resourceValue.getLabel();
-                        indexer.indexStringField(fieldName, valStr);
-                        retVal = new RdfIndexer.IndexResult(val, valStr);
+                        String label = resourceValue.getLabel();
+
+                        indexer.indexStringField(fieldName, label);
+                        //we'll mimic the behavior of String indexing, see above
+                        if (label.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
+                            indexer.indexConstantField(fieldName, label);
+                        }
+                        retVal = new RdfIndexer.IndexResult(uriValueStr, label);
                     }
                     catch (Exception e) {
                         throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject +
@@ -182,13 +208,6 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     throw new NotIndexedException(subject, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject +
                                                                                       "' because it's resource endpoint returned null");
                 }
-            }
-            //not all URIs have an endpoint (eg an <img> tag)
-            else {
-                String val = uriValue.toString();
-                indexer.indexConstantField(fieldName, val);
-                retVal = new RdfIndexer.IndexResult(val);
-                //throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property data type has no endpoint configured");
             }
         }
         else {
@@ -212,18 +231,21 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     retVal = Long.parseLong(value);
                 }
                 else {
-
                     if (property.getDataType().equals(XSD.DATE)) {
                         LocalDate localDate = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(value));
-                        retVal = localDate.atStartOfDay(UTC).toInstant().toEpochMilli();
-                    }
-                    else if (property.getDataType().equals(XSD.TIME)) {
-                        LocalDate localDate = LocalDate.from(DateTimeFormatter.ISO_LOCAL_TIME.parse(value));
                         retVal = localDate.atStartOfDay(UTC).toInstant().toEpochMilli();
                     }
                     else if (property.getDataType().equals(XSD.DATE_TIME)) {
                         ZonedDateTime zonedDateTime = ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value));
                         retVal = zonedDateTime.toInstant().toEpochMilli();
+                    }
+                    else if (property.getDataType().equals(XSD.TIME)) {
+                        LocalTime localTime = LocalTime.from(DateTimeFormatter.ISO_LOCAL_TIME.parse(value));
+                        //we return the millis since midnight
+                        retVal = localTime.toNanoOfDay()/1000000;
+                    }
+                    else {
+                        throw new IOException("Unsupported datatype; this shouldn't happen; "+property.getDataType());
                     }
                 }
             }

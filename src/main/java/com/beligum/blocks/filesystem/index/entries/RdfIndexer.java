@@ -38,16 +38,35 @@ public interface RdfIndexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * Add the supplied value as an integer to the index
+     */
     void indexIntegerField(String fieldName, int value);
 
+    /**
+     * Add the supplied value as a long to the index
+     */
     void indexLongField(String fieldName, long value);
 
+    /**
+     * Add the supplied value as a float to the index
+     */
     void indexFloatField(String fieldName, float value);
 
+    /**
+     * Add the supplied value as a double to the index
+     */
     void indexDoubleField(String fieldName, double value);
 
+    /**
+     * Add the supplied value as an *analyzed* string to the index
+     */
     void indexStringField(String fieldName, String value);
 
+    /**
+     * Add the supplied value as a *constant* string to the index
+     */
     void indexConstantField(String fieldName, String value);
 
     //-----PROTECTED METHODS-----
