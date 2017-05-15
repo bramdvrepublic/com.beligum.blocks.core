@@ -332,7 +332,7 @@ public class PageRepository extends AbstractResourceRepository
             retVal = page;
         }
 
-        //This is actually what he're here for: update both indexes
+        //This is actually what he're here for: update both indexes (Note: order is important!)
         mainPageConnection.update(retVal);
         triplestoreConnection.update(retVal);
 
@@ -385,6 +385,7 @@ public class PageRepository extends AbstractResourceRepository
     private void index(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
+        //Note: order is important!
         pageIndexer.update(page);
         triplestoreIndexer.update(page);
     }
@@ -395,8 +396,9 @@ public class PageRepository extends AbstractResourceRepository
     private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
-        pageIndexer.delete(page);
+        //Note: we must delete the triplestore before the page index because the page index is used to calculate translations!
         triplestoreIndexer.delete(page);
+        pageIndexer.delete(page);
     }
     private void expire(Page page)
     {

@@ -187,7 +187,17 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
-        //make sure the update of this page wipes all previous triples first
+        //Make sure the update of this page wipes all previous triples first
+        //Note: this needs some further explanation, because it has some tricky side-effects:
+        // The delete method works like this: read the RDF model from disk, substract it with the
+        // RDF models from all existing translations and what is left is safe to delete.
+        // However, to search all translations of a page, we need access to the information in the
+        // lucene index, because the pages are tied using a back-end resource URI, not using the filesystem
+        // (eg. indeed, sometimes, we want to translate the public URI of a page for SEO purposes).
+        // This means, eg. during reindexing, we need a lucene-indexed page to be able to search for
+        // it's translations...
+        // The bottom line is that we always need to (re)index the Lucene index before we (re)index
+        // the triplestore.
         this.delete(page);
 
         //add the base model to the triple store

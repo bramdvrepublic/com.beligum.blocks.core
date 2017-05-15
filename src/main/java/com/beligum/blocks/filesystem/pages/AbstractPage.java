@@ -7,9 +7,15 @@ import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
+import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
+import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.utils.RdfTools;
@@ -17,12 +23,17 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.TermQuery;
 import org.eclipse.rdf4j.model.Model;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -159,17 +170,24 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         Locale thisLang = this.getLanguage();
         Map<String, Locale> siteLanguages = R.configuration().getLanguages();
 
-        for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
-            Locale lang = l.getValue();
-            //we're searching for a translation, not the same language
-            if (!lang.equals(thisLang)) {
-                UriBuilder translatedUri = UriBuilder.fromUri(this.getPublicAbsoluteAddress());
-                if (R.i18n().getUrlLocale(this.getPublicAbsoluteAddress(), translatedUri, lang) != null) {
-                    Page transPage = R.resourceManager().get(translatedUri.build(), MimeTypes.HTML, Page.class);
-                    if (transPage != null) {
-                        retVal.put(lang, transPage);
-                    }
-                }
+        //We read the resource uri from disk. Note that resource URIs don't have languages set
+        URI resourceNoLangUri = UriBuilder.fromUri(this.createAnalyzer().getHtmlAbout().value).build();
+
+        //Now, we'll search the index for all pages with this resource URI
+        //Note that resource URIs are the only way to effectively get translations. We can't rely
+        //     on the filesystem names because public URIs in a different language can have completely
+        //     different URIs (eg. for SEO purposes).
+        //Note that this also means the lucene index needs to be up-to-date (eg. this is important during reindexing;
+        // see the notes in the delete() method of the triple store index connection)
+        LuceneQueryConnection queryConnection = StorageFactory.getMainPageQueryConnection();
+        BooleanQuery pageQuery = new BooleanQuery();
+        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), StringFunctions.getRightOfDomain(resourceNoLangUri).toString())), BooleanClause.Occur.FILTER);
+        IndexSearchResult searchResult = queryConnection.search(pageQuery, siteLanguages.size());
+        Iterator<IndexEntry> iter = searchResult.getResults().iterator();
+        while (iter.hasNext()) {
+            Page transPage = R.resourceManager().get(URI.create(iter.next().getId()), MimeTypes.HTML, Page.class);
+            if (transPage != null && !transPage.getLanguage().equals(thisLang)) {
+                retVal.put(transPage.getLanguage(), transPage);
             }
         }
 

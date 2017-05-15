@@ -185,7 +185,7 @@ public class ApplicationEndpoint
                     Collection<Locale> allLanguages = R.configuration().getLanguages().values();
                     for (Locale locale : allLanguages) {
                         if (!locale.equals(optimalLocale)) {
-                            //replace the language of the uri by the language of the loopo
+                            //replace the language of the uri by the language of the loop
                             UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                             R.i18n().getUrlLocale(requestedUri, uriBuilder, locale);
                             //we'll search for a page that has the translated request uri as it's address

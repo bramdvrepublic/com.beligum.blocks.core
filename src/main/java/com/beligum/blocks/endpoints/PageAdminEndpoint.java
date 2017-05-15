@@ -268,6 +268,7 @@ public class PageAdminEndpoint
                 }
 
                 //Note: transaction handling is done through the global XA transaction
+                //Note: the page index must be indexed first, because it's used to search the translations during triplestore indexing!
                 getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
                 getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
 
