@@ -3,6 +3,7 @@ package com.beligum.blocks.filesystem.pages.ifaces;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
 import com.beligum.blocks.filesystem.logger.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
+import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
@@ -123,5 +124,10 @@ public interface Page extends BlocksResource
      * Iterates the registered site languages and checks if we have translations stored of this page for each language
      */
     Map<Locale, Page> getTranslations() throws IOException;
+
+    /**
+     * Creates a read/write variant of this page if needed (just returns itself if it's a read/write page)
+     */
+    ReadWritePage getReadWriteVariant() throws IOException;
 
 }

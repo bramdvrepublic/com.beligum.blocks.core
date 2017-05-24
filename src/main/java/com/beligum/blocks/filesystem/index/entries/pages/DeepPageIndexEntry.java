@@ -84,11 +84,11 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                     String indexValueStr = value.indexValue.toString();
                     //we always index the raw (stringified) value...
                     allField.add(indexValueStr);
-                    this.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL, indexValueStr);
+                    this.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL_CONSTANT, indexValueStr);
 
                     //also index it so we can search it lowercase, without punctuation, etc...
                     allField.add(value.stringValue);
-                    this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
+                    this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL_ANALYZED, value.stringValue);
 
                     Set<String> sortField = sortFieldMapping.get(predicate);
                     if (sortField == null) {

@@ -64,9 +64,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         }
 
         BooleanQuery subQuery = new BooleanQuery();
-        boolean complexWildcard = queryType == QueryType.FULL ? false : true;
-        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.tokenisedId.name(), query, complexWildcard), BooleanClause.Occur.SHOULD);
-        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.title.name(), query, true), BooleanClause.Occur.SHOULD);
+        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.tokenisedId.name(), query), BooleanClause.Occur.SHOULD);
+        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.title.name(), query), BooleanClause.Occur.SHOULD);
         mainQuery.add(subQuery, BooleanClause.Occur.FILTER);
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description

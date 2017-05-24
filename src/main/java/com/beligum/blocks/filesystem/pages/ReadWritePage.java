@@ -237,6 +237,11 @@ public class ReadWritePage extends DefaultPage
             metadataWriter.close();
         }
     }
+    @Override
+    public ReadWritePage getReadWriteVariant()
+    {
+        return this;
+    }
 
     //-----PROTECTED METHODS-----
 

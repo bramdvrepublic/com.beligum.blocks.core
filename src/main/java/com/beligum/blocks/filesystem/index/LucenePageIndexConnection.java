@@ -13,13 +13,14 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -175,63 +176,63 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         return this.search(luceneQuery, null, false, maxResults, 0);
     }
     @Override
-    public Query buildWildcardQuery(String fieldName, String phrase, boolean complex) throws IOException
+    public Query buildWildcardQuery(String fieldName, String phrase) throws IOException
     {
         this.assertActive();
 
         Query retVal = null;
 
         if (StringUtils.isEmpty(fieldName)) {
-            fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL;
+            fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL_ANALYZED;
         }
 
         boolean isNumber = NumberUtils.isNumber(phrase);
-        //makes sense to _not_ add the wildcard * expansion to numbers, no?
-        String wildcardSuffix = isNumber ? "" : "*";
 
-        if (!complex) {
-
-            try {
-                String phraseEsc = QueryParser.escape(phrase) + wildcardSuffix;
-
-                //this is the new approach for the version below, which didn't always result in the right results,
-                //also based on this: http://www.avajava.com/tutorials/lessons/how-do-i-perform-a-wildcard-query.html
-                Term term = new Term(fieldName, phraseEsc);
-                retVal = isNumber ? new TermQuery(term) : new WildcardQuery(term);
-
-//                QueryParser queryParser = new QueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
-//                we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-//                retVal = queryParser.parse(phraseEsc);
-            }
-            catch (Exception e) {
-                //add some metaeata to the stacktrack
-                throw new IOException("Error while building simple Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
-            }
-        }
-        else {
-            //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+        try {
+            //we'll use a complex phrase query parser because a regular phrase parser doesn't support wildcards
             ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
             complexPhraseParser.setInOrder(true);
-            //this is tricky: using an asterisk after a special character seems to throw lucene off
-            // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
-            // it's safe to delete those special characters and just add the asterisk
-            //Update: no, had some weird issues when looking for eg. "tongs/scissors-shaped" -> worked better when replacing with a space instead of deleting them
-            String parsedQuery = LucenePageIndexer.removeEscapedChars(phrase, " ").trim();
-            String queryStr = null;
-            //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
-            if (parsedQuery.contains(" ")) {
-                queryStr = "\"" + parsedQuery + wildcardSuffix + "\"";
-            }
-            else {
-                queryStr = parsedQuery + wildcardSuffix;
+
+            //Note: the escaping of the special characters is not really necessary, because they'll be removed in the analyzer below anyway
+            String safePhrase = QueryParser.escape(phrase.trim());
+
+            //Instead of relying on the analyzer in the parser, we'll pass the search phrase through the analyzer ourself,
+            // this allows us to interact with the terms more closely
+            //Note: the standard analyzer doesn't index special characters (eg. "blah (en)" gets indexed as "blah" and "en").
+            StringBuilder sb = new StringBuilder();
+            boolean multiword = false;
+            try (TokenStream stream = LucenePageIndexer.DEFAULT_ANALYZER.tokenStream(fieldName, new StringReader(safePhrase))) {
+                CharTermAttribute termAttr = stream.getAttribute(CharTermAttribute.class);
+                stream.reset();
+                boolean hasNext = stream.incrementToken();
+                while (hasNext) {
+                    String term = termAttr.toString();
+                    if (sb.length() > 0) {
+                        sb.append(" ");
+                        multiword = true;
+                    }
+                    sb.append(term);
+
+                    hasNext = stream.incrementToken();
+
+                    //makes sense to _not_ add the wildcard * expansion to numbers, no? Otherwise, 15 would also match 15000, which is somewhat weird/wrong.
+                    if (!isNumber && !hasNext) {
+                        sb.append("*");
+                    }
+                }
             }
 
-            try {
-                retVal = complexPhraseParser.parse(queryStr);
+            String parsedQuery = sb.toString();
+
+            //this check is necessary because in Lucene, '"bram"' doesn't seem to match 'bram'
+            if (multiword) {
+                parsedQuery = "\"" + parsedQuery + "\"";
             }
-            catch (ParseException e) {
-                throw new IOException("Error while building complex Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
-            }
+
+            retVal = complexPhraseParser.parse(parsedQuery);
+        }
+        catch (Exception e) {
+            throw new IOException("Error while building Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
         }
 
         return retVal;

@@ -44,6 +44,11 @@ public class ReadOnlyPage extends DefaultPage
     {
         return true;
     }
+    @Override
+    public ReadWritePage getReadWriteVariant() throws IOException
+    {
+        return new ReadWritePage(this.getRepository(), this);
+    }
 
     //-----PROTECTED METHODS-----
 

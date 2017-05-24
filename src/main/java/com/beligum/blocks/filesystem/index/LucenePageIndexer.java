@@ -48,7 +48,13 @@ public class LucenePageIndexer implements PageIndexer
     private static final String CUSTOM_FIELD_PREFIX = "_";
     //mimics the "_all" field of ElasticSearch
     // see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
-    public static final String CUSTOM_FIELD_ALL = CUSTOM_FIELD_PREFIX + "all";
+    //Note: difference between the two below is that the first one indexes all fields analyzed,
+    //      the second field stores the value as is.
+    //Note: reason why we need two separate (and can't just index both under '_all') is that if you want to
+    //      query an analyzed field in Lucene, and you're using it's analyzed metadata (eg. slop), the constant (un-analyzed)
+    //      field will be searched as well, crashing the search session with eg. "field "_all" was indexed without position data"
+    public static final String CUSTOM_FIELD_ALL_ANALYZED = CUSTOM_FIELD_PREFIX + "all-a";
+    public static final String CUSTOM_FIELD_ALL_CONSTANT = CUSTOM_FIELD_PREFIX + "all-c";
     //keeps a list of all fields in this doc, to be able to search for non-existence of a field
     public static final String CUSTOM_FIELD_FIELDS = CUSTOM_FIELD_PREFIX + "fields";
 
@@ -159,7 +165,7 @@ public class LucenePageIndexer implements PageIndexer
 
     //-----PUBLIC STATIC METHODS-----
     //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    public static String removeEscapedChars(String s, String replacement)
+    public static String replaceEscapedChars(String s, String replacement)
     {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < s.length(); i++) {

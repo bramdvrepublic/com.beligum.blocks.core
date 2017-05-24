@@ -207,6 +207,7 @@ public class ReindexThread extends Thread
     public synchronized void cancel()
     {
         this.cancelThread.set(true);
+        Logger.info("Reindexing cancellation requested, please wait for the last tasks to complete...");
     }
 
     //-----PUBLIC METHODS-----

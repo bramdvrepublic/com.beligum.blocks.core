@@ -312,6 +312,15 @@ public class PageAdminEndpoint
                     taskClass = taskMappings.get(task);
                 }
 
+                //if we didn't use a shortcut name, try to parse the supplied string to a class
+                if (taskClass == null) {
+                    try {
+                        taskClass = (Class<? extends ReindexTask>) Class.forName(task);
+                    }
+                    catch (ClassNotFoundException e) {
+                    }
+                }
+
                 if (taskClass != null) {
                     //will register itself in the static variable
                     //Note: the PageRepository is not very kosher, but it works
@@ -336,7 +345,7 @@ public class PageAdminEndpoint
                                          ", depth " + depth);
                 }
                 else {
-                    retVal = Response.ok("Can't start an index all action because you didn't supply a (correct) 'task' parameter; possible values are: " +
+                    retVal = Response.ok("Can't start an index all action because you didn't supply a (correct) 'task' parameter; either pass a full class name or a shortcut string; possible shortcut values are: " +
                                          Joiner.on(", ").join(taskMappings.keySet()) + ".");
                 }
             }

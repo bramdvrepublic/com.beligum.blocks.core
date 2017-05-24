@@ -29,9 +29,9 @@ public interface LuceneQueryConnection extends QueryConnection
     IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException;
 
     /**
-     * Builds a wildcard phrase query for a user-input text, taking care of all special modalities internal to the above search() methods
+     * Builds a wildcard phrase query for a user-input text, taking care of all special modalities internal to the above search() methods.
      */
-    Query buildWildcardQuery(String fieldName, String queryPhrase, boolean complex) throws IOException;
+    Query buildWildcardQuery(String fieldName, String queryPhrase) throws IOException;
 
     //-----PROTECTED METHODS-----
 

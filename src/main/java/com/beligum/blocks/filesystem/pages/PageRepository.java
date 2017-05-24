@@ -51,6 +51,15 @@ public class PageRepository extends AbstractResourceRepository
             this.mainPageConnection = mainPageConnection;
             this.triplestoreConnection = triplestoreConnection;
         }
+
+        public PageIndexConnection getMainPageConnection()
+        {
+            return mainPageConnection;
+        }
+        public PageIndexConnection getTriplestoreConnection()
+        {
+            return triplestoreConnection;
+        }
     }
 
     public static final String PUBLIC_PATH_PREFIX = "/";
