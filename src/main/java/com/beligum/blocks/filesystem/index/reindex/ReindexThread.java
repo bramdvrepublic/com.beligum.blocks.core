@@ -20,7 +20,6 @@ import com.github.dexecutor.core.ExecutionConfig;
 import com.github.dexecutor.core.support.ThreadPoolUtil;
 import com.github.dexecutor.core.task.Task;
 import com.github.dexecutor.core.task.TaskProvider;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import net.sf.ehcache.concurrent.Sync;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -30,10 +29,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -74,6 +70,7 @@ public class ReindexThread extends Thread
 
     //-----VARIABLES-----
     private final List<String> folders;
+    private final Set<RdfClass> classes;
     private final String filter;
     private final int depth;
     private Class<? extends ReindexTask> reindexTaskClass;
@@ -87,10 +84,11 @@ public class ReindexThread extends Thread
     private ResourceRepository repository;
 
     //-----CONSTRUCTORS-----
-    public ReindexThread(final List<String> folders, final String filter, final int depth, ResourceRepository repository,
-                         final Class<? extends ReindexTask> reindexTaskClass, final Listener listener) throws IOException
+    public ReindexThread(final List<String> folders, Set<RdfClass> classes, final String filter, final int depth, ResourceRepository repository, final Class<? extends ReindexTask> reindexTaskClass,
+                         final Listener listener) throws IOException
     {
         this.folders = folders;
+        this.classes = classes;
         this.filter = filter;
         this.depth = depth;
         this.repository = repository;
@@ -253,7 +251,7 @@ public class ReindexThread extends Thread
 
         boolean keepRunning = true;
 
-        ThreadPoolExecutor taskExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.5), 1000);
+        ThreadPoolExecutor taskExecutor = createBlockingExecutor(ThreadPoolUtil.poolSize(0.5), 1000);
 
         PreparedStatement preparedStatement = null;
 
@@ -388,7 +386,7 @@ public class ReindexThread extends Thread
         }
 
         //this is the service that will execute the reindexation of the different rdfClasses
-        ExecutorService rdfClassExecutor = getBlockingExecutor(ThreadPoolUtil.poolSize(0.3), numClasses);
+        ExecutorService rdfClassExecutor = createBlockingExecutor(ThreadPoolUtil.poolSize(0.3), numClasses);
 
         // Dexecutor is a small framework for (asynchronously) executing tasks that depend on each other (and detect cycles).
         // Here, we use it to create a dependency graph of RDF classes that depend on each other and process the
@@ -411,57 +409,79 @@ public class ReindexThread extends Thread
             ResultSet resultSet = stmt.executeQuery("SELECT DISTINCT " + SQL_COLUMN_TYPE_NAME + " FROM " + SQL_TABLE_NAME + ";");
 
             //this will keep track of classes that don't have any dependency to add them after the loop
+            Set<RdfClassNode> allClasses = new HashSet<>();
             Set<RdfClassNode> lonelyClasses = new HashSet<>();
-            Set<RdfClassNode> deletedClasses = new HashSet<>();
+            Set<RdfClassNode> addedClasses = new HashSet<>();
 
             while (resultSet.next()) {
                 //Note: the type is the literal html string in the typeof="" attribute of a RDFa HTML page,
                 //so it needs parsing
                 RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME)));
 
-//                Logger.info("Checking deps of class " + rdfClass);
-
-                RdfClassNode node = RdfClassNode.instance(rdfClass);
-                //don't add it if a previous dependency added it already
-                if (!deletedClasses.contains(node)) {
-                    lonelyClasses.add(node);
+                //see if we need to process this class; if the list is empty (no specific class to reindex selected) or it's in there.
+                boolean selectClass = true;
+                if (this.classes != null && !this.classes.isEmpty()) {
+                    selectClass = this.classes.contains(rdfClass);
                 }
 
-                Set<RdfProperty> props = rdfClass.getProperties();
-                if (props != null) {
-                    for (RdfProperty p : props) {
+                RdfClassNode node = RdfClassNode.instance(rdfClass);
+                allClasses.add(node);
 
-                        //this happens sometimes when we introduce a static RDF variable bug, but the NPE log doesn't help us much
-                        if (p.getDataType() == null) {
-                            Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class " + rdfClass + "; this is just debug info, it will lead to a crash...");
-                        }
+                if (selectClass) {
+                    //                Logger.info("Checking deps of class " + rdfClass);
 
-                        //if the datatype of the property is a true class, it's a valid dependency
-                        if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
-                            RdfClassNode dep = RdfClassNode.instance(p.getDataType());
+                    //don't add it if a previous dependency added it already
+                    if (!addedClasses.contains(node)) {
+                        lonelyClasses.add(node);
+                    }
 
-                            //link the two together
-//                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
-                            node.addDependency(dep);
+                    Set<RdfProperty> props = rdfClass.getProperties();
+                    if (props != null) {
+                        for (RdfProperty p : props) {
 
-                            //wipe both sides from the to-do list because we've added it to the executor now
-                            lonelyClasses.remove(dep);
-                            lonelyClasses.remove(node);
-                            deletedClasses.add(dep);
-                            deletedClasses.add(node);
+                            //this happens sometimes when we introduce a static RDF variable bug, but the NPE log doesn't help us much
+                            if (p.getDataType() == null) {
+                                Logger.error("Encountered a null-valued datatype for RDF property " + p + " of class " + rdfClass + "; this is just debug info, it will lead to a crash...");
+                            }
 
-                            //this basically means: the indexing of p.getDataType() should finish before the indexing of rdfClass
-                            //or more formally: arg1 should be evaluated before arg2
-                            executor.addDependency(dep, node);
+                            //if the datatype of the property is a true class, it's a valid dependency
+                            if (p.getDataType().getType().equals(RdfClass.Type.CLASS)) {
+                                RdfClassNode dep = RdfClassNode.instance(p.getDataType());
+
+                                //link the two together
+                                //                            Logger.info("Adding a dependency: " + p.getDataType() + " should be evaluated before " + rdfClass);
+                                node.addDependency(dep);
+
+                                //wipe both sides from the to-do list because we've added it to the executor now
+                                lonelyClasses.remove(dep);
+                                lonelyClasses.remove(node);
+                                addedClasses.add(dep);
+                                addedClasses.add(node);
+
+                                //this basically means: the indexing of p.getDataType() should finish before the indexing of rdfClass
+                                //or more formally: arg1 should be evaluated before arg2
+                                executor.addDependency(dep, node);
+                            }
                         }
                     }
+                }
+                else {
+                    Logger.info("Skipping first-level processing of this class because we have an explicit class list and it's not selected; " + rdfClass);
                 }
             }
 
             //these classes have no dependency on other classes, make sure they get indexed
             for (RdfClassNode node : lonelyClasses) {
-//                Logger.info("Adding an independent dependency for " + node.getRdfClass());
+                //                Logger.info("Adding an independent dependency for " + node.getRdfClass());
                 executor.addIndependent(node);
+            }
+
+            for (RdfClassNode rdfClass : allClasses) {
+                //if this class was never used, delete it from the database cause it's won't be processed because of an explicit type selection
+                if (!addedClasses.contains(rdfClass) && !lonelyClasses.contains(rdfClass)) {
+                    stmt.executeUpdate("DELETE FROM " + SQL_TABLE_NAME +
+                                       " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getRdfClass().getCurieName() + "';");
+                }
             }
         }
 
@@ -476,7 +496,7 @@ public class ReindexThread extends Thread
 
         return rdfClassExecutor;
     }
-    private ThreadPoolExecutor getBlockingExecutor(int nThreads, int queueSize)
+    private ThreadPoolExecutor createBlockingExecutor(int nThreads, int queueSize)
     {
         //we rewrote this one to have a limited and blocking queue instead of a (standard) unbounded queue,
         //because the queue can grow very large
@@ -659,7 +679,7 @@ public class ReindexThread extends Thread
                 //Note: we can't make the queue size too large or we'll run into a "Too many open files" exception
                 int nThreads = ThreadPoolUtil.poolSize(0.9);
                 int queueSize = 100;
-                ExecutorService reindexExecutor = getBlockingExecutor(nThreads, queueSize);
+                ExecutorService reindexExecutor = createBlockingExecutor(nThreads, queueSize);
 
                 TX transaction = null;
                 long startStamp = System.currentTimeMillis();
@@ -667,7 +687,7 @@ public class ReindexThread extends Thread
                 long[] reindexCounter = new long[] { 0l };
                 long maxPages = 0;
                 boolean success = false;
-                List<String> deleteQueries = new LinkedList<>();
+                List<String> deleteQueries = Collections.synchronizedList(new LinkedList<>());
 
                 try {
                     //instance a transaction that's connected to this thread
@@ -710,16 +730,20 @@ public class ReindexThread extends Thread
                                 reindexExecutor.shutdown();
                                 reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);
                                 //we need to recreate it or the next submit will complain the executor is terminated.
-                                reindexExecutor = getBlockingExecutor(nThreads, queueSize);
+                                reindexExecutor = createBlockingExecutor(nThreads, queueSize);
 
                                 //close the active transaction
                                 StorageFactory.releaseCurrentThreadTx(false);
+                                transaction = null;
                                 txBatchCounter = 0;
 
                                 //if all went well, we'll flush the successful entries from the db
                                 try (Statement flushStmt = dbConnection.createStatement()) {
-                                    for (String sql : deleteQueries) {
-                                        flushStmt.addBatch(sql);
+                                    //From javadoc: It is imperative that the user manually synchronize on the returned list when iterating over it.
+                                    synchronized (deleteQueries) {
+                                        for (String sql : deleteQueries) {
+                                            flushStmt.addBatch(sql);
+                                        }
                                     }
                                     flushStmt.executeBatch();
                                 }
@@ -745,13 +769,15 @@ public class ReindexThread extends Thread
                 }
                 catch (Throwable e) {
                     try {
-                        transaction.setRollbackOnly();
+                        if (transaction != null) {
+                            transaction.setRollbackOnly();
+                        }
                     }
                     catch (Exception e1) {
                         Logger.error("Internal error while rolling back reindexation transaction for RDF class " + rdfClass + "; this shouldn't happen.", e);
                     }
                     finally {
-                        throw new UncheckedExecutionException("Error while reindexing rdfClass " + rdfClass, e);
+                        throw new RuntimeException("Error while reindexing rdfClass " + rdfClass, e);
                     }
                 }
                 finally {

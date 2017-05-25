@@ -60,9 +60,9 @@ public abstract class ReindexTask implements Runnable
                                   " WHERE " + this.dbIdColumn + "=" + this.dbId + ";");
             }
             catch (Throwable e) {
+                Logger.error("Error inside reindexing task " + this.getClass() + " while processing resource " + resourceUri, e);
                 //let's signal we should end the processing as soon one error occurs
                 cancelThread.set(true);
-                Logger.error("Error while reindexing " + resourceUri, e);
             }
             finally {
                 this.reindexCounter[0]++;

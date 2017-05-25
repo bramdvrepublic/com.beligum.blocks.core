@@ -9,6 +9,7 @@ import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.index.reindex.PageReindexTask;
 import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
@@ -16,6 +17,7 @@ import com.beligum.blocks.filesystem.index.reindex.ReindexThread;
 import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -287,8 +289,11 @@ public class PageAdminEndpoint
     @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response indexAll(@QueryParam("folder") List<String> folder, @QueryParam("filter") String filter,
-                             @QueryParam("depth") Integer depth, @QueryParam("task") String task)
+    public Response indexAll(@QueryParam("folder") List<String> folder,
+                             @QueryParam("classCurie") List<String> classCurie,
+                             @QueryParam("filter") String filter,
+                             @QueryParam("depth") Integer depth,
+                             @QueryParam("task") String task)
                     throws Exception
     {
         Response.ResponseBuilder retVal = null;
@@ -299,6 +304,9 @@ public class PageAdminEndpoint
         }
         if (folder == null || folder.isEmpty()) {
             folder = Lists.newArrayList("/");
+        }
+        if (classCurie == null) {
+            classCurie = Lists.newArrayList();
         }
 
         synchronized (currentIndexAllLock) {
@@ -322,31 +330,56 @@ public class PageAdminEndpoint
                 }
 
                 if (taskClass != null) {
-                    //will register itself in the static variable
-                    //Note: the PageRepository is not very kosher, but it works
-                    currentIndexAllThread = new ReindexThread(folder, filter, depth, new PageRepository(), taskClass, new ReindexThread.Listener()
-                    {
-                        @Override
-                        public void reindexingStarted()
-                        {
+
+                    //now lookup the classes if we have them
+                    boolean allClassesOk = true;
+                    Set<RdfClass> rdfClasses = new HashSet<>();
+                    for (String c : classCurie) {
+                        RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(c));
+                        if (rdfClass == null) {
+                            retVal =
+                                            Response.ok("Can't start an index all action because you supplied an unknown 'class' parameter: '" + c +
+                                                        "'; please make sure you pass correct RDF class curies for this param.");
+                            allClassesOk = false;
+                            break;
                         }
-                        @Override
-                        public void reindexingEnded()
+                        else {
+                            rdfClasses.add(rdfClass);
+                        }
+                    }
+
+                    if (allClassesOk) {
+                        //will register itself in the static variable
+                        //Note: the PageRepository is not very kosher, but it works
+                        currentIndexAllThread = new ReindexThread(folder, rdfClasses, filter, depth, new PageRepository(), taskClass, new ReindexThread.Listener()
                         {
-                            synchronized (currentIndexAllLock) {
-                                currentIndexAllThread = null;
+                            @Override
+                            public void reindexingStarted()
+                            {
                             }
-                        }
-                    });
+                            @Override
+                            public void reindexingEnded()
+                            {
+                                synchronized (currentIndexAllLock) {
+                                    currentIndexAllThread = null;
+                                }
+                            }
+                        });
 
-                    currentIndexAllThread.start();
+                        currentIndexAllThread.start();
 
-                    retVal = Response.ok("Launched new reindexation thread with folder " + Arrays.toString(folder.toArray()) + ", filter " + filter +
-                                         ", depth " + depth);
+                        retVal = Response.ok("Launched new reindexation thread with" +
+                                             " folder " + Arrays.toString(folder.toArray()) + "," +
+                                             " classes " + Arrays.toString(classCurie.toArray()) + "," +
+                                             " filter " + filter + "," +
+                                             " depth " + depth
+                        );
+                    }
                 }
                 else {
-                    retVal = Response.ok("Can't start an index all action because you didn't supply a (correct) 'task' parameter; either pass a full class name or a shortcut string; possible shortcut values are: " +
-                                         Joiner.on(", ").join(taskMappings.keySet()) + ".");
+                    retVal =
+                                    Response.ok("Can't start an index all action because you didn't supply a (correct) 'task' parameter; either pass a full class name or a shortcut string; possible shortcut values are: " +
+                                                Joiner.on(", ").join(taskMappings.keySet()) + ".");
                 }
             }
             else {

@@ -6,6 +6,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.exceptions.NotIndexedException;
+import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -143,7 +144,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 //if the value is within certain bounds, also index it as a constant,
                 //so that we're able to search for it exactly.
                 if (val.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
-                    indexer.indexConstantField(fieldName, val);
+                    indexer.indexConstantField(LucenePageIndexer.buildVerbatimFieldName(fieldName), val);
                 }
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -151,7 +152,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 String val = StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue());
                 indexer.indexStringField(fieldName, val);
                 if (val.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
-                    indexer.indexConstantField(fieldName, val);
+                    indexer.indexConstantField(LucenePageIndexer.buildVerbatimFieldName(fieldName), val);
                 }
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -183,10 +184,12 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                         //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
                         String label = resourceValue.getLabel();
 
-                        indexer.indexStringField(fieldName, label);
+                        String humanReadableFieldName = LucenePageIndexer.buildHumanReadableFieldName(fieldName);
+
+                        indexer.indexStringField(humanReadableFieldName, label);
                         //we'll mimic the behavior of String indexing, see above
                         if (label.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
-                            indexer.indexConstantField(fieldName, label);
+                            indexer.indexConstantField(LucenePageIndexer.buildVerbatimFieldName(humanReadableFieldName), label);
                         }
                         retVal = new RdfIndexer.IndexResult(uriValueStr, label);
                     }
@@ -286,7 +289,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             //Note: the pure class options if the IRI in the index() counterpart
             else if (property.getDataType().equals(XSD.ANY_URI) || property.getDataType().getType().equals(RdfClass.Type.CLASS)) {
                 //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-                retVal = RdfTools.relativizeToLocalDomain(URI.create(value)).toString();
+                retVal = RdfTools.relativizeToLocalDomain(URI.create(value));
             }
             else {
                 throw new IOException("Unimplemented data type; " + property.getDataType());

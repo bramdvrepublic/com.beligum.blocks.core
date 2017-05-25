@@ -183,15 +183,14 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         Query retVal = null;
 
         if (StringUtils.isEmpty(fieldName)) {
-            fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL_ANALYZED;
+            fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL;
         }
 
         boolean isNumber = NumberUtils.isNumber(phrase);
 
         try {
             //we'll use a complex phrase query parser because a regular phrase parser doesn't support wildcards
-            ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
-            complexPhraseParser.setInOrder(true);
+            ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, LucenePageIndexer.ACTIVE_ANALYZER);
 
             //Note: the escaping of the special characters is not really necessary, because they'll be removed in the analyzer below anyway
             String safePhrase = QueryParser.escape(phrase.trim());
@@ -201,7 +200,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             //Note: the standard analyzer doesn't index special characters (eg. "blah (en)" gets indexed as "blah" and "en").
             StringBuilder sb = new StringBuilder();
             boolean multiword = false;
-            try (TokenStream stream = LucenePageIndexer.DEFAULT_ANALYZER.tokenStream(fieldName, new StringReader(safePhrase))) {
+            try (TokenStream stream = LucenePageIndexer.ACTIVE_ANALYZER.tokenStream(fieldName, new StringReader(safePhrase))) {
                 CharTermAttribute termAttr = stream.getAttribute(CharTermAttribute.class);
                 stream.reset();
                 boolean hasNext = stream.incrementToken();
@@ -226,7 +225,11 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
             //this check is necessary because in Lucene, '"bram"' doesn't seem to match 'bram'
             if (multiword) {
-                parsedQuery = "\"" + parsedQuery + "\"";
+                //Update: instead of searching for the exact phrase, we switched to an ordered search where
+                //        all terms need to be present
+                complexPhraseParser.setInOrder(true);
+                complexPhraseParser.setDefaultOperator(QueryParser.Operator.AND);
+                //parsedQuery = "\"" + parsedQuery + "\"";
             }
 
             retVal = complexPhraseParser.parse(parsedQuery);

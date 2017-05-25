@@ -64,6 +64,9 @@ public class TX implements AutoCloseable
 
             //get the transaction object that represents the transaction context of the calling thread.
             this.jtaTransaction = transactionManager.getTransaction();
+            if (this.jtaTransaction == null) {
+                throw new IOException("I seem to have gotten a null-valued transaction from the transaction manager; this shouldn't happen...");
+            }
 
             if (this.jtaTransaction instanceof BitronixTransaction) {
                 BitronixTransaction btxTx = (BitronixTransaction) this.jtaTransaction;
@@ -166,7 +169,12 @@ public class TX implements AutoCloseable
      */
     public synchronized void setRollbackOnly() throws Exception
     {
-        this.jtaTransaction.setRollbackOnly();
+        if (this.jtaTransaction == null) {
+            throw new IOException("Can't mark this transaction as rollback-only because it seems like it has been closed already...");
+        }
+        else {
+            this.jtaTransaction.setRollbackOnly();
+        }
     }
     /**
      * This is the main and single deconstructor, wrapping and handling all internal administration

@@ -10,6 +10,7 @@ import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -45,7 +46,27 @@ public class LucenePageIndexer implements PageIndexer
     //-----CONSTANTS-----
     public static final String DEFAULT_FIELD_JOINER = " ";
 
+    /**
+     * The prefix character we use to insert "meta fields" into the index (sort, all, etc.)
+     */
     private static final String CUSTOM_FIELD_PREFIX = "_";
+
+    /**
+     * The suffix character we use to turn field names into their verbatim counterpart.
+     * Ie. they get indexed as-is, without an analyzer.
+     * See notes below for why we need this separated from the analyzed field name.
+     * Note that the check below (.contains(...)) assumes this character won't appear anywhere in regular field names.
+     */
+    private static final String VERBATIM_FIELD_SUFFIX = "~";
+
+    /**
+     * The suffix character we use to index human-readable labels of resource URIs.
+     * Note that this value is both indexed regularly and verbatim, so it should
+     * differ from the verbatim suffix because the two can be (and are) combined.
+     * Note that the check below (.contains(...)) assumes this character won't appear anywhere in regular field names.
+     */
+    private static final String HUMAN_READABLE_FIELD_SUFFIX = "+";
+
     //mimics the "_all" field of ElasticSearch
     // see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
     //Note: difference between the two below is that the first one indexes all fields analyzed,
@@ -53,15 +74,43 @@ public class LucenePageIndexer implements PageIndexer
     //Note: reason why we need two separate (and can't just index both under '_all') is that if you want to
     //      query an analyzed field in Lucene, and you're using it's analyzed metadata (eg. slop), the constant (un-analyzed)
     //      field will be searched as well, crashing the search session with eg. "field "_all" was indexed without position data"
-    public static final String CUSTOM_FIELD_ALL_ANALYZED = CUSTOM_FIELD_PREFIX + "all-a";
-    public static final String CUSTOM_FIELD_ALL_CONSTANT = CUSTOM_FIELD_PREFIX + "all-c";
+    public static final String CUSTOM_FIELD_ALL = CUSTOM_FIELD_PREFIX + "all";
+    public static final String CUSTOM_FIELD_ALL_VERBATIM = buildVerbatimFieldName(CUSTOM_FIELD_ALL);
     //keeps a list of all fields in this doc, to be able to search for non-existence of a field
     public static final String CUSTOM_FIELD_FIELDS = CUSTOM_FIELD_PREFIX + "fields";
 
     protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
     protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
     protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
-    public static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
+
+    /**
+     * We switched to using this analyzer instead of the standard one because of better support for french words.
+     * Eg. if the user looks for "écope à grain" and the indexed string was "Ecope à grain", the standard analyzer won't find it.
+     */
+    protected static Analyzer CUSTOM_ANALYZER;
+    static {
+        try {
+            CUSTOM_ANALYZER = CustomAnalyzer.builder()
+                                            //difference between these two is that 'standard' also strips punctuation characters like (),' etc.
+                                            //.withTokenizer("whitespace")
+                                            .withTokenizer("standard")
+
+                                            .addTokenFilter("standard")
+                                            //this one is extra, see comment above
+                                            .addTokenFilter("asciifolding",
+                                                            "preserveOriginal", "false")
+                                            .addTokenFilter("lowercase")
+                                            .addTokenFilter("stop",
+                                                            //note: if no stopwords are set, the default list of english stopwords is used
+                                                            "ignoreCase", "false")
+                                            .build();
+        }
+        catch (Exception e) {
+            Logger.error("Error while building CUSTOM_ANALYZER, this shouldn't happen; ", e);
+        }
+    }
+
+    public static final Analyzer ACTIVE_ANALYZER = CUSTOM_ANALYZER;
 
     //-----VARIABLES-----
     private static final FSLockFactory luceneLockFactory = FSLockFactory.getDefault();
@@ -79,6 +128,34 @@ public class LucenePageIndexer implements PageIndexer
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * This converts a regular field name into it's "verbatim" counterpart.
+     * A verbatim field is a mirror of that field that was indexed un-analyzed
+     * and can be searched "exactly as the original"
+     */
+    public static String buildVerbatimFieldName(String fieldName)
+    {
+        if (fieldName.contains(VERBATIM_FIELD_SUFFIX)) {
+            return fieldName;
+        }
+        else {
+            return fieldName + VERBATIM_FIELD_SUFFIX;
+        }
+    }
+    /**
+     * This converts a regular field name into it's "human readable" counterpart.
+     * A human readable field is a mirror of a resource-URI field that is (also) indexed as a label.
+     * so we can search for "Belgium" instead of "/resource/Country/12345678"
+     */
+    public static String buildHumanReadableFieldName(String fieldName)
+    {
+        if (fieldName.contains(HUMAN_READABLE_FIELD_SUFFIX)) {
+            return fieldName;
+        }
+        else {
+            return fieldName + HUMAN_READABLE_FIELD_SUFFIX;
+        }
+    }
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
@@ -220,7 +297,7 @@ public class LucenePageIndexer implements PageIndexer
      */
     private IndexWriter buildNewLuceneIndexWriter(Path docDir) throws IOException
     {
-        IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.DEFAULT_ANALYZER);
+        IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.ACTIVE_ANALYZER);
 
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
