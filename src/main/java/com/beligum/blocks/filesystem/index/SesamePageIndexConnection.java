@@ -9,6 +9,7 @@ import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.pages.SimpleIndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.SparqlIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
@@ -341,9 +342,8 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         long luceneTime = 0;
         long end = 0;
 
-        IndexSearchResult retVal = new IndexSearchResult(new ArrayList<>());
-
         List<Term> ids = null;
+        List<IndexEntry> tempResults = null;
         org.apache.lucene.search.BooleanQuery luceneIdQuery = null;
         switch (fetchPageMethod) {
             case BULK_BOOLEAN_QUERY:
@@ -353,7 +353,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                 ids = new ArrayList<>();
                 break;
             case SINGLE_TERM_QUERY:
-                //NOOP: results go straight to retVal
+                tempResults = new ArrayList<>();
                 break;
         }
 
@@ -390,7 +390,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                             ids.add(new Term(resourceField, subjectStr));
                             break;
                         case SINGLE_TERM_QUERY:
-                            this.fetchPageExecutor.submit(new IndexLoader(subjectStr, languageStr, luceneConnection, retVal.getResults(), count));
+                            this.fetchPageExecutor.submit(new IndexLoader(subjectStr, languageStr, luceneConnection, tempResults, count));
                             break;
                     }
 
@@ -403,6 +403,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
         parseTime = System.currentTimeMillis();
 
+        IndexSearchResult retVal;
         if (fetchPageMethod != FetchPageMethod.SINGLE_TERM_QUERY) {
             if (count > 0) {
                 org.apache.lucene.search.BooleanQuery luceneQuery = new org.apache.lucene.search.BooleanQuery();
@@ -420,6 +421,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
                 retVal = luceneConnection.search(luceneQuery, count);
             }
+            else {
+                retVal = new SimpleIndexSearchResult(new ArrayList<>());
+            }
         }
         else {
             if (this.fetchPageExecutor != null) {
@@ -434,8 +438,12 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                     Logger.warn("Watch out: wait time for index-fetcher timed out; this shouldn't happen", e);
                 }
                 finally {
+                    retVal = new SimpleIndexSearchResult(tempResults);
                     //NOOP: force close check now done in close()
                 }
+            }
+            else {
+                retVal = new SimpleIndexSearchResult(new ArrayList<>());
             }
         }
 
@@ -601,10 +609,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                 if (this.language != null) {
                     pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), this.language)), BooleanClause.Occur.MUST);
                 }
-                List<IndexEntry> page = luceneConnection.search(pageQuery, 1).getResults();
-
-                if (!page.isEmpty()) {
-                    retVal.add(page.iterator().next());
+                IndexSearchResult results = luceneConnection.search(pageQuery, 1);
+                if (results.size() > 0) {
+                    retVal.add(results.iterator().next());
                 }
                 else {
                     Logger.warn("Watch out: encountered a SPARQL result without a matching page index entry; this shouldn't happen; " + this.subject);

@@ -39,6 +39,8 @@ public enum CacheKeys implements CacheKey
     NEW_PAGE_TEMPLATE_NAME,
     //flash cache key that holds the temporarily selected new page URL to copy from
     NEW_PAGE_COPY_URL,
+    //flash cache key that holds the temporarily boolean to see if we need to link the copy to the original
+    NEW_PAGE_COPY_LINK,
     //Application cache key that hold the lucene index writer
     LUCENE_INDEX_WRITER,
     //Application cache key that hold the lucene index searcher

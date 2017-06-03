@@ -59,7 +59,7 @@ public interface PageIndexEntry extends IndexEntry
     {
         PageIndexEntry retVal = null;
 
-        for (IndexEntry entry : searchResult.getResults()) {
+        for (IndexEntry entry : searchResult) {
             if (entry instanceof PageIndexEntry) {
                 PageIndexEntry page = (PageIndexEntry) entry;
 

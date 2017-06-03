@@ -82,7 +82,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
          * based on the grouping of the resource URI, selecting the best matching language, effectively narrowing the results to a number < maxResults
          */
         Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
-        for (IndexEntry entry : matchingPages.getResults()) {
+        for (IndexEntry entry : matchingPages) {
             PageIndexEntry page = (PageIndexEntry) entry;
 
             URI pageId = URI.create(page.getId());

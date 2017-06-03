@@ -82,31 +82,30 @@ public class PageAdminEndpoint
      *
      * @param pageUrl          the url of the new page to be created
      * @param pageTemplateName the name of the page template to use for the new page
+     * @param pageCopyUrl      the url of an existing page to make a copy from
+     * @param pageCopyLink     true if the existing page needs to share the resource with the copy, false if a new resource URI will be generated
      */
     @GET
     @Path("/template")
     @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING })
     public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) String pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
-                                    @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl) throws URISyntaxException
+                                    @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
+                                    @QueryParam(NEW_PAGE_COPY_LINK_PARAM) Boolean pageCopyLink) throws URISyntaxException
     {
         if (StringUtils.isEmpty(pageUrl)) {
             throw new InternalServerErrorException(core.Entries.newPageNoUrlError.toString());
         }
         else {
-            boolean processed = false;
 
             if (!StringUtils.isEmpty(pageTemplateName)) {
                 R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name(), pageTemplateName);
-                processed = true;
             }
-
-            if (!StringUtils.isEmpty(pageCopyUrl)) {
+            else if (!StringUtils.isEmpty(pageCopyUrl)) {
                 R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_COPY_URL.name(), pageCopyUrl);
-                processed = true;
+                R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_COPY_LINK.name(), pageCopyLink == null ? false : pageCopyLink);
             }
-
-            if (!processed) {
+            else {
                 throw new InternalServerErrorException(core.Entries.newPageNoDataError.toString());
             }
 

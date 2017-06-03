@@ -9,14 +9,14 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
     translations.click(function (e)
     {
         var link = $(this);
-        NewPage.handleSelect(null, link.attr(BlocksConstants.NEW_PAGE_TRANSLATION_ATTR), null);
+        NewPage.handleSelect(null, link.attr(BlocksConstants.NEW_PAGE_TRANSLATION_ATTR), null, true);
     });
 
     var input = $('.' + BlocksConstants.NEW_PAGE_CLASS + ' .actions .copy input');
 
     var MAX_RESULTS = 10;
     var acEndpointURL = BlocksConstants.RDF_RESOURCES_ENDPOINT + '?'
-            //we want to search for all types, so don't specify a type curie
+        //we want to search for all types, so don't specify a type curie
         //+ BlocksConstants.RDF_RES_TYPE_CURIE_PARAM + '=' + '' + '&'
         + BlocksConstants.RDF_MAX_RESULTS_PARAM + '=' + MAX_RESULTS + '&'
         + BlocksConstants.RDF_PREFIX_SEARCH_PARAM + '=true' + '&'
@@ -62,10 +62,10 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
     //gets called when a real selection is done
     input.bind('typeahead:select', function (ev, suggestion)
     {
-        NewPage.handleSelect(suggestion.title, suggestion.publicPage, suggestion.value);
+        NewPage.handleSelect(suggestion.title, suggestion.publicPage, suggestion.value, false);
     });
 
-    this.handleSelect = function (pageTitle, pagePublicUrl, pageResourceUrl)
+    this.handleSelect = function (pageTitle, pagePublicUrl, pageResourceUrl, linkResources)
     {
         var message = BlocksMessages.newPageCopyDialogMessage +
             '<blockquote><p><a href="' + pagePublicUrl + '" target="_blank" class="text-info">' + pagePublicUrl + '</a></p></blockquote>';
@@ -91,7 +91,8 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
                     {
                         var createUrl = BlocksConstants.NEW_PAGE_TEMPLATE_ENDPOINT + '?'
                             + BlocksConstants.NEW_PAGE_URL_PARAM + '=' + encodeURIComponent(window.location) + '&'
-                            + BlocksConstants.NEW_PAGE_COPY_URL_PARAM + '=' + encodeURIComponent(pagePublicUrl);
+                            + BlocksConstants.NEW_PAGE_COPY_URL_PARAM + '=' + encodeURIComponent(pagePublicUrl) + '&'
+                            + BlocksConstants.NEW_PAGE_COPY_LINK_PARAM + '=' + (linkResources ? 'true' : 'false');
 
                         window.location = createUrl;
 

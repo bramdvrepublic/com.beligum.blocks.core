@@ -1,9 +1,15 @@
 package com.beligum.blocks.rdf.sources;
 
 import com.beligum.base.resources.ifaces.Source;
+import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ontology.factories.Classes;
+import com.beligum.blocks.utils.RdfTools;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 
 /**
  * Created by bram on 1/8/17.
@@ -13,11 +19,14 @@ public class PageSourceCopy extends PageSource
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private final boolean linkToSource;
 
     //-----CONSTRUCTORS-----
-    public PageSourceCopy(Source source) throws IOException
+    public PageSourceCopy(Source source, boolean linkToSource) throws IOException
     {
         super(source.getUri());
+
+        this.linkToSource = linkToSource;
 
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
@@ -38,6 +47,27 @@ public class PageSourceCopy extends PageSource
         //note that it will be added again on save
         this.language = null;
         this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
+
+        //if we need to break the link with the source (this means, it won't have the "about" attribute in common),
+        //we need to replace the about attribute with a newly generated URI. If we need to keep the link,
+        //nothing needs to be done because this is the default situation (keeping the @about intact).
+        if (!this.linkToSource) {
+            String aboutUri = this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
+            if (StringUtils.isEmpty(aboutUri)) {
+                throw new IOException("Encountered empty html @about attribute while copying a page source; " + this.document);
+            }
+            else {
+                //since we're making a copy of a page, it makes sense to use the class of that page
+                String typeOfStr = this.htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
+                RdfClass typeOf = StringUtils.isEmpty(typeOfStr) ? Classes.Page : RdfFactory.getClassForResourceType(URI.create(typeOfStr));
+                if (typeOf==null) {
+                    throw new IOException("Unable to parse the html @typeof attribute to a valid RDF class; " + this.document);
+                }
+                else {
+                    this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, RdfTools.createRelativeResourceId(typeOf).toString());
+                }
+            }
+        }
     }
 
     //-----PRIVATE METHODS-----

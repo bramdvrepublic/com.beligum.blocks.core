@@ -194,9 +194,9 @@ public class ApplicationEndpoint
                     }
                     results = queryConnection.search(pageQuery, allLanguages.size());
                     //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
-                    if (!results.getResults().isEmpty()) {
+                    if (!results.isEmpty()) {
                         //since all resources should be the same, we take the first match
-                        String resourceUri = ((PageIndexEntry) results.getResults().iterator().next()).getResource();
+                        String resourceUri = ((PageIndexEntry) results.iterator().next()).getResource();
                         pageQuery = new BooleanQuery();
                         pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), resourceUri)), BooleanClause.Occur.FILTER);
                         pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), optimalLocale.getLanguage())), BooleanClause.Occur.FILTER);
@@ -287,9 +287,11 @@ public class ApplicationEndpoint
                                 //this means we redirected from the new-page-selection page
                                 String newPageTemplateName = null;
                                 String newPageCopyUrl = null;
+                                Boolean newPageCopyLink = false;
                                 if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
                                     newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
                                     newPageCopyUrl = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
+                                    newPageCopyLink = (Boolean) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
                                 }
 
                                 //OPTION 5: there's a template-selection in the flash cache (we came from the page-selection page)
@@ -337,7 +339,7 @@ public class ApplicationEndpoint
                                         source = HtmlTemplate.prepareForCopy(source, requestedUri, optimalLocale);
 
                                         //effectively make a copy
-                                        PageSource html = new PageSourceCopy(source);
+                                        PageSource html = new PageSourceCopy(source, newPageCopyLink);
 
                                         Template template;
                                         try (InputStream is = html.newInputStream()) {

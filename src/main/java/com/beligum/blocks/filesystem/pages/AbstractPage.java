@@ -33,7 +33,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -183,9 +182,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         BooleanQuery pageQuery = new BooleanQuery();
         pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), StringFunctions.getRightOfDomain(resourceNoLangUri).toString())), BooleanClause.Occur.FILTER);
         IndexSearchResult searchResult = queryConnection.search(pageQuery, siteLanguages.size());
-        Iterator<IndexEntry> iter = searchResult.getResults().iterator();
-        while (iter.hasNext()) {
-            Page transPage = R.resourceManager().get(URI.create(iter.next().getId()), MimeTypes.HTML, Page.class);
+        for (IndexEntry entry : searchResult) {
+            Page transPage = R.resourceManager().get(URI.create(entry.getId()), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {
                 retVal.put(transPage.getLanguage(), transPage);
             }

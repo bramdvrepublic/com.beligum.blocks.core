@@ -3,14 +3,12 @@ package com.beligum.blocks.filesystem.index;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.*;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.TokenStream;
@@ -22,9 +20,6 @@ import org.apache.lucene.search.*;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Created by bram on 2/22/16.
@@ -32,11 +27,8 @@ import java.util.Set;
 public class LucenePageIndexConnection extends AbstractIndexConnection implements PageIndexConnection, LuceneQueryConnection
 {
     //-----CONSTANTS-----
-    private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.Field.object.name());
-
-    //this is a cap value for the most results we'll ever return
-    // (eg. the size of the array that will hold the values to be sorted before pagination)
-    public static final int MAX_SEARCH_RESULTS = 1000;
+    //this is the default number of maximum search results that will be returned when no specific value is passed
+    public static final int DEFAULT_MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
     private LucenePageIndexer pageIndexer;
@@ -129,44 +121,47 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     {
         this.assertActive();
 
-        List<IndexEntry> retVal = new ArrayList<>();
-
         long searchStart = System.currentTimeMillis();
         IndexSearcher indexSearcher = this.pageIndexer.getIndexSearcher();
-        TopDocsCollector mainCollector = null;
 
         //keep supplied values within reasonable bounds
-        //note that MAX_SEARCH_RESULTS should always be larger than pageSize -> verify it here and adjust if needed
-        //also note we can use a negative pageSize to 'disable' fixed sizing
-        int validPageSize = pageSize < 0 ? MAX_SEARCH_RESULTS : Math.min(pageSize, MAX_SEARCH_RESULTS);
-        int validMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
-        int validPageOffset = pageOffset < 0 ? 0 : (pageOffset * validPageSize > validMaxResults ? (int) Math.floor(validMaxResults / validPageSize) : pageOffset);
+        //Note that Lucene always expects numHits to be > 0!
+        int validPageSize = pageSize <= 0 ? DEFAULT_MAX_SEARCH_RESULTS : pageSize;
+        int validPageOffset = pageOffset < 0 ? 0 : pageOffset;
 
         //see http://stackoverflow.com/questions/29695307/sortiing-string-field-alphabetically-in-lucene-5-0
         //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
+        Sort sort = null;
         if (sortField != null) {
-            Sort sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortReversed));
+            sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortReversed));
 
             //found this here, I suppose we need to call this to allow very specific sort fields?
             //  https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/HEAD/root/projects/solr4/source/java/org/alfresco/solr/query/AlfrescoReRankQParserPlugin.java
             sort = sort.rewrite(indexSearcher);
+        }
 
-            mainCollector = TopFieldCollector.create(sort, validMaxResults, null, true, false, false);
+        TopDocs results;
+        if (validPageOffset == 0) {
+            results = sort == null ? indexSearcher.search(luceneQuery, validPageSize) : indexSearcher.search(luceneQuery, validPageSize, sort);
         }
         else {
-            //Actually, I suppose we could write this as a TopFieldCollector, sorting on SortField.FIELD_SCORE, no?
-            mainCollector = TopScoreDocCollector.create(validMaxResults);
+
+            int maxResultSize = validPageSize;
+            TopDocs tempResults = sort == null ? indexSearcher.search(luceneQuery, maxResultSize) : indexSearcher.search(luceneQuery, maxResultSize, sort);
+            ScoreDoc last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
+            int currPageIdx = 0;
+            while (++currPageIdx <= validPageOffset) {
+                //if we're in the last page, we shouldn't return the size of an entire page because it will be padded with other results
+                if ((currPageIdx + 1) * validPageSize > tempResults.totalHits) {
+                    maxResultSize = tempResults.totalHits % validPageSize;
+                }
+                tempResults = sort == null ? indexSearcher.searchAfter(last, luceneQuery, maxResultSize) : indexSearcher.searchAfter(last, luceneQuery, maxResultSize, sort);
+            }
+
+            results = tempResults;
         }
 
-        //TODO: if using deep paging, we should refactor and start using searchAfter() instead
-        indexSearcher.search(luceneQuery, mainCollector);
-
-        TopDocs hits = mainCollector.topDocs(validPageOffset * validPageSize, validPageSize);
-        for (ScoreDoc scoreDoc : hits.scoreDocs) {
-            retVal.add(SimplePageIndexEntry.fromLuceneDoc(indexSearcher.doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
-        }
-
-        return new IndexSearchResult(retVal, mainCollector.getTotalHits(), validPageOffset, validPageSize, System.currentTimeMillis() - searchStart);
+        return new LuceneIndexSearchResult(indexSearcher, results, validPageOffset, validPageSize, System.currentTimeMillis() - searchStart);
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
