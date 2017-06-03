@@ -156,6 +156,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
                     maxResultSize = tempResults.totalHits % validPageSize;
                 }
                 tempResults = sort == null ? indexSearcher.searchAfter(last, luceneQuery, maxResultSize) : indexSearcher.searchAfter(last, luceneQuery, maxResultSize, sort);
+                last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
             }
 
             results = tempResults;
