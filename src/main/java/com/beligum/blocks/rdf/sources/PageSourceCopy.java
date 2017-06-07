@@ -31,8 +31,6 @@ public class PageSourceCopy extends PageSource
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
         }
-
-        this.postparseUri();
     }
 
     //-----PUBLIC METHODS-----

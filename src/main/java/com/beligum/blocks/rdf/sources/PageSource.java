@@ -7,6 +7,7 @@ import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.UriDetector;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
@@ -19,9 +20,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 import org.jsoup.select.Elements;
 
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -81,8 +86,6 @@ public abstract class PageSource extends AbstractSource implements Source
         finally {
             IOUtils.closeQuietly(is);
         }
-
-        this.postparseUri();
     }
     protected PageSource(Source source) throws IOException
     {
@@ -92,8 +95,6 @@ public abstract class PageSource extends AbstractSource implements Source
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
         }
-
-        this.postparseUri();
     }
     protected PageSource(URI uri, InputStream html) throws IOException
     {
@@ -101,15 +102,13 @@ public abstract class PageSource extends AbstractSource implements Source
         super(preparseUri(uri), MimeTypes.HTML, null);
 
         this.parseHtml(html);
-
-        this.postparseUri();
     }
     protected PageSource(URI uri)
     {
         //note: the language will be set in parseHtml()
         super(preparseUri(uri), MimeTypes.HTML, null);
 
-        //Note: subclass must call parseHtml() and postparseUri() manually
+        //Note: subclass must call parseHtml() manually
     }
 
     //-----PUBLIC METHODS-----
@@ -123,6 +122,7 @@ public abstract class PageSource extends AbstractSource implements Source
     }
     /**
      * Note this always returns -1 because we only render out the HTML document lazily in newInputStream() (where it's size is correctly filled in)
+     *
      * @return
      */
     @Override
@@ -195,21 +195,6 @@ public abstract class PageSource extends AbstractSource implements Source
             el.html(html);
         }
     }
-    protected void postparseUri()
-    {
-//        //remove all unsupported query params from the URI
-//        URI uri = this.getUri();
-//
-//        UriBuilder uriBuilder = UriBuilder.fromUri(uri);
-//        MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(uri);
-//        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
-//            if (!SUPPORTED_PARAMS.contains(param.getKey())) {
-//                uriBuilder.replaceQueryParam(param.getKey(), null);
-//            }
-//        }
-//
-//        this.uri = uriBuilder.build();
-    }
 
     //-----PRIVATE METHODS-----
     /**
@@ -225,6 +210,18 @@ public abstract class PageSource extends AbstractSource implements Source
         if (!unsafeUri.isAbsolute()) {
             unsafeUri = R.configuration().getSiteDomain().resolve(unsafeUri);
         }
+
+        //remove all unsupported query params from the page URI, so it doesn't matter if we
+        // eg. save a page while on page 6 in a search result, or in the root; they should resolve to
+        //     and save the same page, from use user-admin's point of view.
+        MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(unsafeUri);
+        UriBuilder uriBuilder = UriBuilder.fromUri(unsafeUri);
+        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
+            if (!SUPPORTED_PARAMS.contains(param.getKey())) {
+                uriBuilder.replaceQueryParam(param.getKey(), null);
+            }
+        }
+        unsafeUri = uriBuilder.build();
 
         return unsafeUri;
     }

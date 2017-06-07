@@ -21,6 +21,8 @@ public class IndexSearchRequest
     private Integer pageSize;
     private RdfClass typeOf;
     private String format;
+    private Boolean hideHeader;
+    private Boolean hidePager;
 
     //-----CONSTRUCTORS-----
     public IndexSearchRequest()
@@ -91,6 +93,22 @@ public class IndexSearchRequest
     public void setFormat(String format)
     {
         this.format = format;
+    }
+    public Boolean getHideHeader()
+    {
+        return hideHeader;
+    }
+    public void setHideHeader(Boolean hideHeader)
+    {
+        this.hideHeader = hideHeader;
+    }
+    public Boolean getHidePager()
+    {
+        return hidePager;
+    }
+    public void setHidePager(Boolean hidePager)
+    {
+        this.hidePager = hidePager;
     }
 
     //-----PROTECTED METHODS-----

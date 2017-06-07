@@ -150,13 +150,19 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             TopDocs tempResults = sort == null ? indexSearcher.search(luceneQuery, maxResultSize) : indexSearcher.search(luceneQuery, maxResultSize, sort);
             ScoreDoc last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
             int currPageIdx = 0;
-            while (++currPageIdx <= validPageOffset) {
-                //if we're in the last page, we shouldn't return the size of an entire page because it will be padded with other results
+            boolean keepSearching = true;
+            while (keepSearching && ++currPageIdx <= validPageOffset) {
+                //if we're in the last page, we shouldn't return the size of an entire page
+                // because it will be padded with other results (seems like lucene wraps around?)
                 if ((currPageIdx + 1) * validPageSize > tempResults.totalHits) {
                     maxResultSize = tempResults.totalHits % validPageSize;
+                    //this will make sure oversized index values won't lead to out of bounds exceptions
+                    keepSearching = false;
                 }
-                tempResults = sort == null ? indexSearcher.searchAfter(last, luceneQuery, maxResultSize) : indexSearcher.searchAfter(last, luceneQuery, maxResultSize, sort);
-                last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
+                if (keepSearching) {
+                    tempResults = sort == null ? indexSearcher.searchAfter(last, luceneQuery, maxResultSize) : indexSearcher.searchAfter(last, luceneQuery, maxResultSize, sort);
+                    last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
+                }
             }
 
             results = tempResults;
