@@ -705,6 +705,128 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return formGroup;
         },
 
+        /**
+         * Links the value of a css style to the values in a controlled list
+         *
+         * element: element to change
+         * labelText: name to show as label
+         * cssProperty: name of the css property the value changes
+         * values = array of objects {value: 'a value to change', name: 'name of the value, (optional) default: true}
+         */
+        addUniqueStyle: function (Sidebar, element, labelText, cssProperty, values, changeListener)
+        {
+            var _this = this;
+
+            //note: we parse the raw style attribue instead of using $.css() to control the html-attribute better
+            var initStyles = this.splitStyles(element.attr('style'));
+
+            var defaultObj = null;
+            for (var i = 0; i < values.length; i++) {
+                var val = values[i];
+                if (val.default) {
+                    defaultObj = val;
+                    break;
+                }
+            }
+
+            var initValue = initStyles[cssProperty];
+            if (!initValue && defaultObj) {
+                initValue = defaultObj.value;
+            }
+
+
+            var retVal = this.createCombobox(Sidebar, labelText, values,
+                function initCallback(testValue)
+                {
+                    var retVal = false;
+
+                    //make sure we don't set the attribute to "undefined"
+                    if (typeof testValue !== typeof undefined) {
+                        if (testValue == initValue) {
+                            retVal = true;
+                        }
+                    }
+
+                    return retVal;
+                },
+                function changeCallback(oldValue, newValue)
+                {
+                    var styles = _this.splitStyles(element.attr('style'));
+
+                    delete styles[cssProperty];
+                    if (newValue != "") {
+                        if (defaultObj && defaultObj.value == newValue) {
+                            //NOOP: instead of adding the default value explicitly when it's chosen,
+                            //      we delete it and let the browser decide the default
+                        }
+                        else {
+                            styles[cssProperty] = newValue;
+                        }
+                    }
+
+                    var styleStr = _this.joinStyles(styles);
+                    if (styleStr && styleStr.length > 0) {
+                        element.attr('style', styleStr);
+                    }
+                    else {
+                        element.removeAttr('style');
+                    }
+
+                    //propagate up if we have a someone listening
+                    if (changeListener) {
+                        changeListener(oldValue, newValue);
+                    }
+                });
+
+            return retVal;
+        },
+
+        /**
+         * Links the value of a css style to an input box (with optional selection methods)
+         *
+         * element: element to change
+         * labelText: name to show as label
+         * cssProperty: name of the css property the value changes
+         * confirm: value only changes when user confirms
+         * fileSelect: user can only select file from server
+         * pageSelect: user can select a page url from the sitemap
+         * */
+        addValueStyle: function (Sidebar, element, labelText, placeholderText, cssProperty, confirm, fileSelect, pageSelect)
+        {
+            var _this = this;
+
+            //note: we parse the raw style attribue instead of using $.css() to control the html-attribute better
+            var styles = this.splitStyles(element.attr('style'));
+
+            var content = this.createTextInput(Sidebar,
+                function getterFunction()
+                {
+                    return styles[cssProperty];
+                },
+                function setterFunction(val)
+                {
+                    delete styles[cssProperty];
+                    if (val != "") {
+                        styles[cssProperty] = val;
+                    }
+
+                    var styleStr = _this.joinStyles(styles);
+                    if (styleStr && styleStr.length > 0) {
+                        element.attr('style', styleStr);
+                    }
+                    else {
+                        element.removeAttr('style');
+                    }
+                },
+                labelText, placeholderText, confirm,
+
+                //we omitted the last param (preselection) because the input is not always predictable
+                this.buildInputActions(Sidebar, fileSelect, pageSelect)
+            );
+
+            return content;
+        },
+
         //-----PRIVATE METHODS-----
         //These are more or less real private methods, used in the add* functions above
         /**
@@ -745,7 +867,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //check if we need to show the reset button
             if (input.attr(Widget.OLD_VAL_ATTR) !== '') {
-                resetBtn = $('<a title="'+BlocksMessages.inputActionResetValueTitle+'" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
+                resetBtn = $('<a title="' + BlocksMessages.inputActionResetValueTitle + '" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
                 resetBtn.click(function (e)
                 {
                     input.val(input.attr(Widget.OLD_VAL_ATTR));
@@ -760,7 +882,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             //append the clear button
-            var clearBtn = $('<a title="'+BlocksMessages.inputActionClearValueTitle+'" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
+            var clearBtn = $('<a title="' + BlocksMessages.inputActionClearValueTitle + '" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
             input.on("change keyup focus", function (event)
             {
                 inputGroup.addClass('focus');
@@ -1199,7 +1321,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
             var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="'+BlocksMessages.autocompleteInputPlaceholder+'">').appendTo(inputGroup);
+            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="' + BlocksMessages.autocompleteInputPlaceholder + '">').appendTo(inputGroup);
 
             //init the typeahead plugin
             var engine = new Bloodhound(
@@ -1323,7 +1445,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             var inputActions = $('<div class="input-group actions"/>').appendTo(formGroup);
 
-            var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"/> '+BlocksMessages.textareaApplyBtnTitle+'</a>').appendTo(inputActions);
+            var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"/> ' + BlocksMessages.textareaApplyBtnTitle + '</a>').appendTo(inputActions);
             applyBtn.click(function (e)
             {
                 if (setterFunction) {
@@ -1333,7 +1455,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             inputActions.append('&#160;');
 
             //append the clear button
-            var clearBtn = $('<a class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> '+BlocksMessages.textareaResetBtnTitle+'</a>').appendTo(inputActions);
+            var clearBtn = $('<a class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> ' + BlocksMessages.textareaResetBtnTitle + '</a>').appendTo(inputActions);
             clearBtn.click(function (e)
             {
                 input.val('');
@@ -1344,7 +1466,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return formGroup;
         },
-        sortComboEntries: function(comboEntries)
+        sortComboEntries: function (comboEntries)
         {
             //sort the combobox entries on name
             comboEntries.sort(function (a, b)
@@ -1365,7 +1487,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
             });
         },
-        createListGroup: function(labelText, sortable, reorderListener)
+        createListGroup: function (labelText, sortable, reorderListener)
         {
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"/>');
             var id = Commons.generateId();
@@ -1397,6 +1519,63 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             return formGroup;
+        },
+        splitStyles: function (rawStyleValue)
+        {
+            var retVal = {};
+
+            if (rawStyleValue) {
+                var styleTuples = rawStyleValue.split(';');
+                for (var i = 0; i < styleTuples.length; i++) {
+                    var style = styleTuples[i];
+                    if (style && style.length > 0) {
+                        //Note: we can't just split on colon, because eg. an URL can contain a colon too
+                        var idx = style.indexOf(':');
+                        if (idx >= 0) {
+                            var key = $.trim(style.substring(0, idx));
+                            var val = $.trim(style.substring(idx + 1));
+                            if (val.substring(0, 'url'.length) == 'url') {
+                                val = val.substring('url'.length);
+                                //trim all remaining braces, spaces and quotes from start and end
+                                //See https://stackoverflow.com/questions/26156292/trim-specific-character-from-a-string
+                                val = val.replace(/^[() "']+|[() "']+$/g, '');
+                                //TODO also defingerprint if a URI?
+                            }
+                            retVal[key] = val;
+                        }
+                        else {
+                            Logger.error('Encountered style tuple without a colon, this should not happen; ' + style);
+                        }
+                    }
+                }
+            }
+
+            return retVal;
+        },
+        joinStyles: function (styleTuples)
+        {
+            var retVal = '';
+
+            var _this = this;
+            $.each(styleTuples, function (key, value)
+            {
+                retVal += key + ': ' + _this.parseStyleValue(value) + ';';
+            });
+
+            return retVal;
+        },
+        parseStyleValue: function (val)
+        {
+            //cleanup and makes sure the calculations below are correct in case of padding
+            var retVal = $.trim(val);
+
+            //URL test: not really 100% correct (eg. relative paths), but close enough for our use
+            //TODO we should probably curate a list of css properties instead
+            if (retVal.substring(0, '/'.length) == '/' || retVal.substring(0, 'http'.length) == 'http') {
+                retVal = 'url(' + retVal + ')';
+            }
+
+            return retVal;
         },
     });
 }]);

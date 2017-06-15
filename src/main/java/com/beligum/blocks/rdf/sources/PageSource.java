@@ -53,8 +53,13 @@ public abstract class PageSource extends AbstractSource implements Source
 
     private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
 
-    //these are the supported query params (all other ones will be removed from the URI during postparse)
-    private static final Set<String> SUPPORTED_PARAMS = Sets.newHashSet(I18nFactory.LANG_QUERY_PARAM);
+    /*
+     * These are the supported query params that are relevant to the storage/retrieval of pages.
+     * All other ones will be removed from the URI during postparse.
+     */
+    public static final Set<String> SUPPORTED_QUERY_PARAMS = Sets.newHashSet(
+                    I18nFactory.LANG_QUERY_PARAM
+    );
 
     //-----VARIABLES-----
     protected Document document;
@@ -112,6 +117,26 @@ public abstract class PageSource extends AbstractSource implements Source
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * This will remove all query params from the supplied URI so that the only ones left,
+     * are the ones relevant to the storage/retrieval system of a page,
+     * eg. removing all search/sort/... related params.
+     */
+    public static URI cleanQueryParams(URI unsafeUri)
+    {
+        //remove all unsupported query params from the page URI, so it doesn't matter if we
+        // eg. save a page while on page 6 in a search result, or in the root; they should resolve to
+        //     and save the same page, from use user-admin's point of view.
+        MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(unsafeUri);
+        UriBuilder uriBuilder = UriBuilder.fromUri(unsafeUri);
+        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
+            if (!SUPPORTED_QUERY_PARAMS.contains(param.getKey())) {
+                uriBuilder.replaceQueryParam(param.getKey(), null);
+            }
+        }
+
+        return uriBuilder.build();
+    }
     /**
      * Note that by default this will return _X_HTML
      */
@@ -211,17 +236,7 @@ public abstract class PageSource extends AbstractSource implements Source
             unsafeUri = R.configuration().getSiteDomain().resolve(unsafeUri);
         }
 
-        //remove all unsupported query params from the page URI, so it doesn't matter if we
-        // eg. save a page while on page 6 in a search result, or in the root; they should resolve to
-        //     and save the same page, from use user-admin's point of view.
-        MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(unsafeUri);
-        UriBuilder uriBuilder = UriBuilder.fromUri(unsafeUri);
-        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
-            if (!SUPPORTED_PARAMS.contains(param.getKey())) {
-                uriBuilder.replaceQueryParam(param.getKey(), null);
-            }
-        }
-        unsafeUri = uriBuilder.build();
+        unsafeUri = cleanQueryParams(unsafeUri);
 
         return unsafeUri;
     }

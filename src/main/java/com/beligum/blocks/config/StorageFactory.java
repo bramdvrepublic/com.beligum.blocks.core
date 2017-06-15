@@ -394,7 +394,7 @@ public class StorageFactory
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
                 pageStorePath = URI.create(DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + ":" + pageStorePath.getSchemeSpecificPart());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "'://' prefix to use the local transactional file system; " +
+                Logger.info("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "'://' prefix to use the local transactional file system; " +
                             pageStorePath.toString());
             }
 

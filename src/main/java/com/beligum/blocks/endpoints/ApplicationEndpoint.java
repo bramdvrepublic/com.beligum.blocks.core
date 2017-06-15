@@ -88,6 +88,14 @@ public class ApplicationEndpoint
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery())
                                      .build();
 
+        //remove all unsupported query params from the page URI, so it doesn't matter if we
+        // eg. save a page while on page 6 in a search result, or in the root; they should resolve to
+        //     and save the same page, from use user-admin's point of view.
+        //Note: the reason this works while creating a page (eg. the page_url and page_class_name query params),
+        //      is because that callback is caught by the /admin/page/template endpoint and those parameters
+        //      are in the flash cache once this request comes in.
+        requestedUri = PageSource.cleanQueryParams(requestedUri);
+
         Locale optimalLocale = R.i18n().getOptimalLocale();
 
         // First, check if we're dealing with a resource.
