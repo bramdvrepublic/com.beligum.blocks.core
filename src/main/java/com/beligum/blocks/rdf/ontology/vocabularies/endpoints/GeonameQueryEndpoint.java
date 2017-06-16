@@ -103,7 +103,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                                                // (better to find a large, more-or-less-good match, than to find the very specific wrong match)
                                                //can be any of [population,elevation,relevance]
                                                //Note: reverted to relevance (inspired by eg. Tielt-Winge, who kept on suggesting Houwaart because it has a higher population)
-                                               .queryParam("orderby", "relevance")
+                                               //Note 2: reverted to nothing (by the way, population doesn't seem to be the default) because of "Ger" in Normandy;
+                                               //        impossible to find in combination with name_startsWith (note: the API docs seem to say the orderby is only relevant for name_startsWith)
+                                               //.queryParam("orderby", "relevance")
                                                .queryParam("type", "json");
 
                 //from the Geoname docs: needs to be query encoded (but builder.queryParam() does that for us, so don't encode twice!)!
