@@ -20,7 +20,12 @@ public abstract class AbstractGeoname
         //Note: see the Geonames ontology mapping for these values:
         // http://www.geonames.org/ontology/mappings_v3.01.rdf
         // Especially, we want this value to match the OWL restrictions that map to http://schema.org/Country
-        COUNTRY(new String[] { "A" }, new String[] { "PCLI" }, GeonameCountrySuggestion.class),
+        COUNTRY(new String[] { "A" }, new String[] {
+                        //independent political entity
+                        "PCLI",
+                        //historical political entity
+                        "PCLH"
+        }, GeonameCountrySuggestion.class),
 
         //Note: see the Geonames ontology mapping for these values:
         // http://www.geonames.org/export/codes.html
