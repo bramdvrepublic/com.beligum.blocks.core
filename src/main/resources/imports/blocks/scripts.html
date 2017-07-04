@@ -20,9 +20,9 @@
 
 
 ## -----ADMIN IMPORTS-----
-## this $BLOCKS_MODE is set server-side
 #if($PRINCIPAL)
 
+## this $BLOCKS_MODE is set server-side
     #if ($BLOCKS_MODE=="create" || $BLOCKS_MODE=="edit")
 
     <script src="/assets/webjars/jquery-ui-src/1.11.4/ui/widget.js"></script>
@@ -39,9 +39,6 @@
     <script src="/assets/webjars/typeaheadjs/0.11.1/typeahead.jquery.js" type="application/javascript"></script>
     <script src="/assets/webjars/typeaheadjs/0.11.1/bloodhound.js" type="application/javascript"></script>
     <script src="/assets/webjars/handlebars/4.0.5/handlebars.js" type="application/javascript"></script>
-
-    ## not needed anymore, it's inside bootstrap.js?
-    ##<script src="/assets/webjars/bootstrap/3.3.4/js/dropdown.js" type="application/javascript"></script>
 
     #end
 
