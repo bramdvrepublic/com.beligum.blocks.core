@@ -487,6 +487,12 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     > .panel {
       margin: @sidebarPanelMargin;
 
+      &.disabled {
+        .panel-heading {
+          .opacity(0.5);
+        }
+      }
+
       label {
         font-weight: normal;
       }

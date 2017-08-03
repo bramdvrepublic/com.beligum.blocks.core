@@ -341,7 +341,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
-                        Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                        Notification.error(BlocksMessages.loadResourcesError + (exception ? "; " + exception : ""), xhr, textStatus, exception);
                     });
             }
             else {

@@ -2,8 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages)
-{
+base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages) {
     var SideBar = this;
     var configPanels = {};
     var currentProperty = null;
@@ -19,8 +18,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
      * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
      * @param event the original event that triggered this all
      */
-    this.focusBlock = function (block, element, hotspot, event)
-    {
+    this.focusBlock = function (block, element, hotspot, event) {
         this.reset();
 
         var currBlock = block;
@@ -28,8 +26,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         activeBlocks = [];
 
         //little helper function to refactor things
-        var pushActiveBlock = function (currBlock, currElement)
-        {
+        var pushActiveBlock = function (currBlock, currElement) {
             activeBlocks.push({
                 block: currBlock,
                 element: currElement
@@ -68,13 +65,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 pushActiveBlock(currBlock, currElement);
             }
             else if (currBlock instanceof blocks.elements.Row) {
-                if (firstRow==null) {
+                if (firstRow == null) {
                     firstRow = currBlock;
                 }
                 lastRow = currBlock;
             }
             else if (currBlock instanceof blocks.elements.Column) {
-                if (firstColumn==null) {
+                if (firstColumn == null) {
                     firstColumn = currBlock;
                 }
                 lastColumn = currBlock;
@@ -88,6 +85,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
         var title = null;
         for (var i = activeBlocks.length - 1; i >= 0; i--) {
+
             var e = activeBlocks[i];
 
             var widget = Widget.Class.create(e.element);
@@ -121,9 +119,14 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 collapsed = true;
             }
 
+            //we'll iterate the array in reverse order, but when focusing a block,
+            //we don't want users to be able to save the page (it causes all kinds of problems),
+            //so we disable the 'page-entry' if a block is focused
+            var disabled = !(block instanceof blocks.elements.Page) && e.block instanceof blocks.elements.Page;
+
             // if a parent stopped the creation of sub-windows, keep executing the focus() method,
             // but without a window ID (allowing for logic without UI consequences)
-            var windowID = SideBar.createWindow(e.element, windowTitle, collapsed);
+            var windowID = SideBar.createWindow(e.element, windowTitle, collapsed, disabled);
             var addedOptions = false;
 
             // don't render the remove button for properties: only blocks can be deleted
@@ -161,8 +164,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         }
     };
 
-    this.reset = function ()
-    {
+    this.reset = function () {
         this.unloadFinder();
 
         for (var i = 0; i < activeBlocks.length; i++) {
@@ -186,24 +188,21 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     /*
      * Drill down and add functionality for each block
      * */
-    var update = function (property)
-    {
+    var update = function (property) {
         // property: add div
         currentProperty = property;
         setBlockFocus(property);
         SideBar.refresh();
     };
 
-    this.animateSidebarWidth = function (width, callback)
-    {
+    this.animateSidebarWidth = function (width, callback) {
         var windowWidth = $(window).width();
 
         var sidebarElement = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
         sidebarElement.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
         sidebarElement.css("width", (width) + "px");
         //one() = on() but only once
-        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
-        {
+        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event) {
             if ($(event.target).hasClass(BlocksConstants.PAGE_SIDEBAR_CLASS)) {
                 sidebarElement.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
                 $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
@@ -215,17 +214,15 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         });
     };
 
-    this.addRemoveBlockButton = function (windowID, property)
-    {
+    this.addRemoveBlockButton = function (windowID, property) {
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
-        var removeAction = $("<li><label>"+BlocksMessages.deleteBlockLabel+"</label></li>");
+        var removeAction = $("<li><label>" + BlocksMessages.deleteBlockLabel + "</label></li>");
         var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
         blockActions.append(removeAction);
         removeAction.append(removeButton);
 
-        removeButton.click(function ()
-        {
+        removeButton.click(function () {
             //TODO let's not ask for a confirmation but implement an undo-function later on...
             //confirm.removeClass("hidden");
             //text.addClass("hidden");
@@ -238,8 +235,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         this.addUIForProperty(windowID, blockActions);
     };
 
-    this.addUIForProperty = function (windowId, html)
-    {
+    this.addUIForProperty = function (windowId, html) {
         var config = SideBar.getWindowForId(windowId);
         if (config) {
             var content = config.find(".panel-body");
@@ -250,8 +246,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         }
     };
 
-    this.createWindow = function (element, title, collapsed)
-    {
+    this.createWindow = function (element, title, collapsed, disabled) {
         var windowId = Commons.generateId();
         if (configPanels == null) {
             configPanels = {};
@@ -261,25 +256,26 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
             var panelId = windowId + '-panel';
             var bodyId = windowId + '-panel-body';
-            var div = $('<div id="' + panelId + '" class="panel panel-default"/>');
-            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#' + bodyId + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-controls="' + bodyId + '">' + title + '</div>').appendTo(div);
-            // note: the "in" makes it start unfolded
-            var collapse = $('<div id="' + bodyId + '" class="collapse ' + (collapsed ? '' : 'in') + '" role="tabpanel">').appendTo(div);
-            var content = $('<div class="panel-body"/>').appendTo(collapse);
+            var div = $('<div id="' + panelId + '" class="panel panel-default' + (disabled ? ' disabled' : '') + '"/>');
+            var header = $('<div class="panel-heading collapser' + (collapsed ? ' collapsed' : '') + '" data-toggle="collapse" data-target="#' + bodyId + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-controls="' + bodyId + '">' + title + '</div>').appendTo(div);
+
+            if (!disabled) {
+                // note: the "in" makes it start unfolded
+                var collapse = $('<div id="' + bodyId + '" class="collapse' + (collapsed ? '' : ' in') + '" role="tabpanel">').appendTo(div);
+                var content = $('<div class="panel-body"/>').appendTo(collapse);
+
+                if (element) {
+                    div.mouseenter(function () {
+                        highlight(element);
+                    });
+
+                    div.mouseleave(function () {
+                        unhighlight(element);
+                    });
+                }
+            }
 
             configPanels[windowId] = div;
-
-            if (element) {
-                div.mouseenter(function ()
-                {
-                    highlight(element);
-                });
-
-                div.mouseleave(function ()
-                {
-                    unhighlight(element);
-                });
-            }
 
             //note: real adding is done manually in appendWindowToSidebar()
         }
@@ -287,13 +283,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         return windowId
     };
 
-    this.getWindowForId = function (id)
-    {
+    this.getWindowForId = function (id) {
         return configPanels[id];
     };
 
-    this.appendWindowToSidebar = function (type, id)
-    {
+    this.appendWindowToSidebar = function (type, id) {
         var div = this.getWindowForId(id);
 
         if (type == BlocksConstants.SIDEBAR_CONTEXT_ID) {
@@ -307,8 +301,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     };
 
     //TODO factor this away because the finder is no dependency of this project
-    this.loadFinder = function (options)
-    {
+    this.loadFinder = function (options) {
         var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
         var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
         contextTab.addClass(BlocksConstants.LOADING_CLASS);
@@ -328,8 +321,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
         //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
         var finder = frame.find(".panel-body");
-        finder.load("/media/finder-inline", function (response, status, xhr)
-        {
+        finder.load("/media/finder-inline", function (response, status, xhr) {
             if (status == "error") {
                 var msg = "Error while loading the finder; ";
                 Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
@@ -343,8 +335,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             }
         });
     };
-    this.unloadFinder = function ()
-    {
+    this.unloadFinder = function () {
         //'switch' back to the context tab
         $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
 
@@ -358,15 +349,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     };
 
     // -----PRIVATE-----
-    var highlight = function (element)
-    {
+    var highlight = function (element) {
         //don't highlight the entire page
         if (!element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
             element.addClass(BlocksConstants.HIGHLIGHT_CLASS);
         }
     };
-    var unhighlight = function (element)
-    {
+    var unhighlight = function (element) {
         element.removeClass(BlocksConstants.HIGHLIGHT_CLASS);
     };
 
