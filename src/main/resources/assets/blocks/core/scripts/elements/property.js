@@ -35,7 +35,8 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             this.isField = !(this instanceof blocks.elements.Block);
             this.isTemplate = !this.isField;
 
-            this.overlay = $("<div />").css("z-index", DOM.getMaxZIndex()).addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
+            //we removed the max z-index application because eg. the notifications needs to come in front
+            this.overlay = $("<div />")/*.css("z-index", DOM.getMaxZIndex())*/.addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
             if (this.isTemplate) {
                 this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
             }

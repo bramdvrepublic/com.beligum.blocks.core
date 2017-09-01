@@ -6,14 +6,14 @@
 <script src="/assets/webjars/bootstrap/3.3.4/js/bootstrap.js" type="application/javascript"></script>
 <script src="/assets/webjars/bootstrap-dialog/1.34.3/js/bootstrap-dialog.js" type="application/javascript"></script>
 
-<script src="/assets/scripts/core.js" type="application/javascript"></script>
-<script src="/assets/scripts/commons.js" type="application/javascript"></script>
+<script src="/assets/base/core/scripts/main.js" type="application/javascript"></script>
+<script src="/assets/base/core/scripts/commons.js" type="application/javascript"></script>
 
-<script src="/assets/scripts/broadcaster.js" type="application/javascript"></script>
-<script src="/assets/scripts/notification.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/broadcaster.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/notification.js" type="application/javascript"></script>
 
 ## dynamic page with JS array of all the import tags
-<script src="/templates/scripts/imports/all.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/imports/all.js" type="application/javascript"></script>
 
 ## this will make the current language accessible to the JS code in a uniform way
 <script src="/messages/base/core?type=js" type="application/javascript"></script>
@@ -33,7 +33,7 @@
     <script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
 
     ## load the mime.js plugin from base-core
-    <script src="/assets/scripts/mime.js" type="application/javascript"></script>
+    <script src="/assets/base/core/scripts/mime.js" type="application/javascript"></script>
 
     ## for autocomplete widget in widget.js
     <script src="/assets/webjars/typeaheadjs/0.11.1/typeahead.jquery.js" type="application/javascript"></script>
@@ -44,49 +44,49 @@
 
     #if ($BLOCKS_MODE=="create")
 
-    <script src="/assets/scripts/new-page.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/new-page.js" type="application/javascript"></script>
 
     #end
 
 ## Don't activate this part while creating a new page (we don't want to accidentally save that page)
     #if ($BLOCKS_MODE=="edit")
 
-    <script src="/assets/scripts/elements/surface.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/layoutElement.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/property.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/resizeHandle.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/dropspot.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/row.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/column.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/container.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/block.js" type="application/javascript"></script>
-    <script src="/assets/scripts/elements/page.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/surface.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/layoutElement.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/property.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/resizeHandle.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/dropspot.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/row.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/column.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/container.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/block.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/elements/page.js" type="application/javascript"></script>
 
-    <script src="/assets/scripts/ui.js" type="application/javascript"></script>
-    <script src="/assets/scripts/layout.js" type="application/javascript"></script>
-    <script src="/assets/scripts/mouse.js" type="application/javascript"></script>
-    <script src="/assets/scripts/resizer.js" type="application/javascript"></script>
-    <script src="/assets/scripts/dragdrop.js" type="application/javascript"></script>
-    <script src="/assets/scripts/hover.js" type="application/javascript"></script>
-    <script src="/assets/scripts/manager.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/ui.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/layout.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/mouse.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/resizer.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/dragdrop.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/hover.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/manager.js" type="application/javascript"></script>
 
-    <script src="/assets/scripts/dom-manipulation.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/dom-manipulation.js" type="application/javascript"></script>
 
-    <script src="/assets/scripts/sidebar.js" type="application/javascript"></script>
-    <script src="/assets/scripts/menu.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/sidebar.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/menu.js" type="application/javascript"></script>
 
     ## these are the widgets we need to include manually
-    <script src="/assets/scripts/imports/widget.js" type="application/javascript"></script>
-    <script src="/assets/scripts/imports/block.js" type="application/javascript"></script>
-    <script src="/assets/scripts/imports/property.js" type="application/javascript"></script>
-    <script src="/assets/scripts/imports/page.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/imports/widget.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/imports/block.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/imports/property.js" type="application/javascript"></script>
+    <script src="/assets/blocks/core/scripts/imports/page.js" type="application/javascript"></script>
 
     <script src="/assets/webjars/perfect-scrollbar/0.6.16/js/perfect-scrollbar.jquery.js" type="application/javascript"></script>
 
     ## TODO: refactor this away cause we're not in pom.xml
-    <script src="/assets/scripts/finder/finder-jobs.js" type="application/javascript"></script>
-    <script src="/assets/scripts/finder/finder.js" type="application/javascript"></script>
-    <script src="/assets/scripts/finder/finder-ui.js" type="application/javascript"></script>
+    <script src="/assets/blocks/media/core/scripts/finder-jobs.js" type="application/javascript"></script>
+    <script src="/assets/blocks/media/core/scripts/finder.js" type="application/javascript"></script>
+    <script src="/assets/blocks/media/core/scripts/finder-ui.js" type="application/javascript"></script>
 
     #end
 

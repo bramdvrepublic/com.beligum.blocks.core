@@ -5,21 +5,21 @@
 ## this will import the bootstrap with the right paths so relative paths works while minimizing
 ## Note that we don't include fontawesome here, because we prefer to add it in the footer of the page for performance reasons.
 ## If you want it, just add it again (see below) in the footer of the page and the resource parser will eliminate any possible doubles.
-<link href="/assets/styles/imports/blocks-styles-bootstrap.less" rel="stylesheet">
+<link href="/assets/blocks/core/styles/imports/bootstrap.less" rel="stylesheet">
 
 <link href="/assets/webjars/bootstrap-dialog/1.34.3/css/bootstrap-dialog.css" rel="stylesheet">
 
 ## dynamic page with reset code for the imports
-<link href="/templates/styles/imports/reset.css" rel="stylesheet">
+<link href="/assets/blocks/core/styles/imports/reset.css" rel="stylesheet">
 
 
 ## -----ADMIN IMPORTS-----
 ## if we reach this part, we need to include it no matter what
-<link href="/assets/styles/imports/blocks-styles-fontawesome.less" rel="stylesheet" data-scope-role="user">
+<link href="/assets/blocks/core/styles/imports/fontawesome.less" rel="stylesheet" data-scope-role="user">
 
 ## all styles for the sidebar, etc; always included (because we also need some styles for the select-template page)
-<link href="/assets/styles/blocks.less" rel="stylesheet" data-scope-role="user">
-<link href="/assets/styles/finder.less" rel="stylesheet" data-scope-role="user">
+<link href="/assets/blocks/core/styles/main.less" rel="stylesheet" data-scope-role="user">
+<link href="/assets/blocks/media/core/styles/finder.less" rel="stylesheet" data-scope-role="user">
 
 
 ## -----ADMIN + EDIT IMPORTS-----
@@ -27,8 +27,8 @@
 <link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
 ## For autocomplete widget in widget.js
 ## Note: double scope workaround...
-<link href="/assets/styles/typeaheadjs/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
-<link href="/assets/styles/typeaheadjs/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="create">
+<link href="/assets/blocks/core/styles/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
+<link href="/assets/blocks/core/styles/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="create">
 
 
 ## just to make it a template

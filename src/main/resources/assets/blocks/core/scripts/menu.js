@@ -33,16 +33,20 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $("body").append(menuStartButton);
 
     var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
-    sidebarElement.load("/templates/sidebar");
-
-    //check for a cookie and auto-open when the sidebar was active
-    var sidebarState = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE);
-    if (sidebarState === SIDEBAR_STATE_SHOW) {
-        $(document).ready(function ()
-        {
-            toggleSidebar(true);
-        });
-    }
+    sidebarElement.load(BlocksConstants.SIDEBAR_ENDPOINT, function(response, status, xhr){
+        if (status == "error") {
+            Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+        }
+        else {
+            //check for a cookie and auto-open when the sidebar was active
+            var sidebarState = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE);
+            if (sidebarState === SIDEBAR_STATE_SHOW) {
+                $(document).ready(function () {
+                    toggleSidebar(true);
+                });
+            }
+        }
+    });
 
     var toggleSidebar = function (show)
     {

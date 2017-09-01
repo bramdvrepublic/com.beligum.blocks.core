@@ -13,9 +13,8 @@
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/fixed-width.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/larger.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/list.less";
-
-@import (reference) "/assets/styles/loader.less";
-@import (reference) "/assets/styles/finder.less";
+@import (reference) "/assets/base/core/styles/loader.less";
+@import (reference) "/assets/blocks/media/core/styles/finder.less";
 
 //-----BASIC BOOTSTRAP MIXINS-----
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
@@ -36,7 +35,6 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
 // Mixins
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/text-overflow.less";
-
 @import (inline, css) "/assets/webjars/perfect-scrollbar/0.6.16/css/perfect-scrollbar.css";
 
 //-----MIXINS-----
@@ -185,6 +183,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   left: 0px;
   right: 0px;
   bottom: 0px;
+  z-index: @zindex-navbar - 1;
 
   .defaultBorder() {
 
@@ -309,7 +308,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
   position: absolute;
   cursor: col-resize;
-  background: darken(@controlBgColor, 10%) url('/assets/images/blocks/splitter_ver_padded.png') center center repeat-y;
+  background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
   border-left: 1px solid darken(@controlBgColor, 15%);
   border-right: 1px solid darken(@controlBgColor, 15%);
 }
@@ -395,8 +394,8 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   //overflow-y: auto;
 }
 
-@sidebarTabHeight: 41px;
 //this is taken from a real world example, hope it won't change
+@sidebarTabHeight: 41px;
 .@{PAGE_SIDEBAR_CLASS} {
   //Sync this with the bgColor of the finder
   @controlBgColor: #e8e8e8;
@@ -423,7 +422,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     width: @resizerWidth;
     height: 100%;
     cursor: col-resize;
-    background: darken(@controlBgColor, 10%) url('/assets/images/blocks/splitter_ver_padded.png') center center repeat-y;
+    background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
     border-left: 1px solid darken(@controlBgColor, 40%);
     border-right: 1px solid darken(@controlBgColor, 15%);
 
@@ -483,7 +482,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 
   .tab-pane {
+
     @sidebarPanelMargin: 10px;
+
     > .panel {
       margin: @sidebarPanelMargin;
 
@@ -497,7 +498,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         font-weight: normal;
       }
 
-      .collapser {
+      > .collapser {
         cursor: pointer;
 
         &:after {
@@ -514,221 +515,283 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         }
       }
 
-      hr {
-        //small adjustment to make it look better
-        margin-bottom: 15px;
-      }
+      .panel-body {
 
-      //we invented this class as a means to add sub-panels
-      .@{PANEL_GROUP_CLASS} {
-        position: relative;
-        border: 1px solid @table-border-color;
-        margin-bottom: @line-height-computed;
-        padding: @panel-body-padding;
-        padding-top: @panel-body-padding+5px;
+        //we hide this by default and activate it in js
+        .@{PANEL_BODY_ADVANCED_CLASS} {
+          @padding: 10px;
+          @border: 1px solid rgba(0, 0, 0, 0.1);
+          display: none;
+          margin-top: 15px;
 
-        > .title {
-          position: absolute;
-          background-color: @panel-bg;
-          top: -0.80em;
-          left: 0.75em;
-          padding: 0 0.25em;
-          font-variant: small-caps;
-          color: darken(@table-border-color, 25%);
-        }
+          > .collapser {
+            cursor: pointer;
+            padding: @padding;
+            border: @border;
+            .transition(0.2s, ease-in, padding-bottom);
 
-        > .form-group:last-child {
-          margin-bottom: 0;
-        }
-        //little trick if the last child is hidden:
-        //show it, but with a negative margin
-        > .form-group.hidden:last-child {
-          display: block !important;
-          height: 0px;
-          overflow: hidden;
-          margin-bottom: -15px;
-        }
-      }
+            &:before {
+              font-family: fontawesome;
+              content: @fa-var-angle-down;
+              float: left;
+              margin-right: 5px;
 
-      .form-group {
-        .clearfix();
+              .transition(0.2s, ease-in);
+            }
+            &.collapsed {
+              border: 1px solid transparent;
+              border-top: @border;
+              padding-bottom: 0;
+              &:before {
+                .fa-icon-rotate(-90deg, 1);
+              }
+            }
+          }
+          > .collapse > div,
+          > .collapsing > div {
+            padding: @padding;
+            padding-top: 20px;
+            border-right: @border;
+            border-bottom: @border;
+            border-left: @border;
 
-        .input-group {
-          width: 100%;
-          &.@{INPUT_WITH_BUTTONS_CLASS} {
-            .inline-input-buttons();
+            > .form-group:last-child {
+              margin-bottom: 0;
+            }
           }
         }
-        //make all dropdowns behave more like <select>s
-        .dropdown,
-        .checkbox,
-        .@{RADIO_GROUP_CLASS},
-        .list-group {
-          @textAlign: left;
-          @formAlign: right;
-          @caretAlign: right;
-          text-align: @formAlign;
 
-          .pull-right();
+        hr {
+          //small adjustment to make it look better
+          margin-bottom: 15px;
+        }
 
-          &.checkbox {
-            top: -0.7em; //align it with the label
+        //we invented this class as a means to add sub-panels
+        .@{PANEL_GROUP_CLASS} {
+          position: relative;
+          border: 1px solid @table-border-color;
+          margin-bottom: @line-height-computed;
+          padding: @panel-body-padding;
+          padding-top: @panel-body-padding+5px;
+
+          > .title {
+            position: absolute;
+            background-color: @panel-bg;
+            top: -0.80em;
+            left: 0.75em;
+            padding: 0 0.25em;
+            font-variant: small-caps;
+            color: darken(@table-border-color, 25%);
           }
 
-          &.@{RADIO_GROUP_CLASS} {
-            //Because of the way radio groups look (a single label and a large vertical block of radios),
-            //the margin with a possibly next element looks off like there's too much spacing between them.
-            //This 'fixes' that situation.
-            margin-bottom: -20px;
+          > .form-group:last-child {
+            margin-bottom: 0;
+          }
+          //little trick if the last child is hidden:
+          //show it, but with a negative margin
+          > .form-group.hidden:last-child {
+            display: block !important;
+            height: 0px;
+            overflow: hidden;
+            margin-bottom: -15px;
+          }
+        }
 
-            .radio {
+        //this is the base wrapping class for a widget and it's label
+        .form-group {
+          .clearfix();
+
+          .input-group {
+            width: 100%;
+            &.@{INPUT_WITH_BUTTONS_CLASS} {
+              .inline-input-buttons();
+            }
+          }
+
+          //make all dropdowns behave more like <select>s
+          .dropdown,
+          .checkbox,
+          .@{RADIO_GROUP_CLASS},
+          .@{COLOR_GROUP_CLASS},
+          .list-group {
+            @textAlign: left;
+            @formAlign: right;
+            @caretAlign: right;
+            text-align: @formAlign;
+
+            .pull-right();
+
+            &.checkbox {
+              top: -0.7em; //align it with the label
+            }
+
+            &.@{RADIO_GROUP_CLASS} {
+              //Because of the way radio groups look (a single label and a large vertical block of radios),
+              //the margin with a possibly next element looks off like there's too much spacing between them.
+              //This 'fixes' that situation.
+              margin-bottom: -20px;
+
+              .radio {
+                text-align: @textAlign;
+                //align the first radio with the label
+                &:first-child {
+                  margin-top: 0;
+                }
+                //remove the margin of the last child because the form-group takes care of that
+                &:last-child {
+                  margin-bottom: 0;
+                }
+              }
+            }
+
+            &.@{COLOR_GROUP_CLASS} {
+              input {
+                display: inline-block;
+                width: 50px;
+              }
+              .btn-reset {
+                color: #333;
+                .opacity(0.5);
+              }
+            }
+
+            .dropdown-toggle {
+              //min-width: 100px;
               text-align: @textAlign;
-              //align the first radio with the label
-              &:first-child {
-                margin-top: 0;
+
+              .caret {
+                &:extend(.pull-@{caretAlign});
+                margin-top: 0.7em; //floating the caret seems to change it's height...
               }
-              //remove the margin of the last child because the form-group takes care of that
-              &:last-child {
-                margin-bottom: 0;
+            }
+            .dropdown-menu {
+              min-width: 0; //reset
+              max-height: 300px; //don't let the dropdown grow outside the page
+              max-width: 240px; // a good default value so large strings make the dropdown scroll horizontally
+              overflow: auto; //make the menu act like a combobox
+              &:extend(.dropdown-menu-@{formAlign});
+              & > li {
+                //it's a bit weird to align long lists of text to the right,
+                //don't do it, it's difficult to read (although the menu itself is aligned to the right)
+                text-align: left;
+
+                & > a {
+                  cursor: pointer;
+
+                  small {
+                    display: block;
+                    .opacity(0.5);
+                  }
+                }
               }
             }
           }
 
-          .dropdown-toggle {
-            //min-width: 100px;
-            text-align: @textAlign;
+          //this is a list widget like the slides in the admin side of the carousel
+          .list-group {
+            //we expect the list to be quite large, so give it full width
+            width: 100%;
 
-            .caret {
-              &:extend(.pull-@{caretAlign});
-              margin-top: 0.7em; //floating the caret seems to change it's height...
-            }
-          }
-          .dropdown-menu {
-            min-width: 0; //reset
-            max-height: 300px; //don't let the dropdown grow outside the page
-            max-width: 240px; // a good default value so large strings make the dropdown scroll horizontally
-            overflow: auto; //make the menu act like a combobox
-            &:extend(.dropdown-menu-@{formAlign});
-            & > li {
-              //it's a bit weird to align long lists of text to the right,
-              //don't do it, it's difficult to read (although the menu itself is aligned to the right)
+            //make it scroll nicely
+            position: relative; //for perfect scrollbar
+            max-height: 300px;
+            overflow-y: auto;
+
+            //since we're in a form-group, we'll use that margin instead
+            margin-bottom: 0;
+
+            //we'll move the borders of the first and last item to the container
+            //so the overflow looks much nicer
+            border-top: 1px solid @list-group-border;
+            border-bottom: 1px solid @list-group-border;
+            .border-top-radius(@list-group-border-radius);
+            .border-bottom-radius(@list-group-border-radius);
+
+            .list-group-item {
+              .clearfix;
               text-align: left;
 
-              & > a {
-                cursor: pointer;
+              //we'll put a subtle left shadow on all items to simulate a shadow on the entire list
+              @leftShadow: 6px;
+              .box-shadow(inset @leftShadow 0 @leftShadow -@leftShadow rgba(0, 0, 0, .125));
 
-                small {
-                  display: block;
-                  .opacity(0.5);
+              &:first-child {
+                border-top: none;
+              }
+              //this 'last' class is needed because the perfect scrollbar adds elements and
+              // the last-of-type selector is messed up
+              &.last {
+                margin-bottom: 0;
+                border-bottom: none;
+              }
+
+              //don't really know why, but real invisible
+              // seems to be buggy sometimes when DnD-sorting
+              &.invisible {
+                visibility: visible;
+                .opacity(0.3);
+              }
+
+              .handle,
+              .title,
+              .btn-group {
+                display: block;
+              }
+
+              .handle,
+              .title,
+              .btn-group a {
+                &:extend(.@{UNLINK_CLASS});
+              }
+
+              //the is the DnD handle
+              .handle {
+                .pull-left;
+                margin-right: 10px;
+              }
+
+              .title {
+                .text-overflow;
+              }
+
+              .btn-group {
+                .pull-right;
+                margin-left: 5px;
+
+                .btn {
+                  &:focus,
+                  &:active {
+                    .box-shadow(none);
+                  }
                 }
               }
             }
           }
-        }
 
-        //this is a list widget like the slides in the admin side of the carousel
-        .list-group {
-          //we expect the list to be quite large, so give it full width
-          width: 100%;
+          .slider.slider-horizontal {
+            width: 100%;
 
-          //make it scroll nicely
-          position: relative;//for perfect scrollbar
-          max-height: 300px;
-          overflow-y: auto;
-
-          //since we're in a form-group, we'll use that margin instead
-          margin-bottom: 0;
-
-          //we'll move the borders of the first and last item to the container
-          //so the overflow looks much nicer
-          border-top: 1px solid @list-group-border;
-          border-bottom: 1px solid @list-group-border;
-          .border-top-radius(@list-group-border-radius);
-          .border-bottom-radius(@list-group-border-radius);
-
-          .list-group-item {
-            .clearfix;
-            text-align: left;
-
-            //we'll put a subtle left shadow on all items to simulate a shadow on the entire list
-            @leftShadow: 6px;
-            .box-shadow(inset @leftShadow 0 @leftShadow -@leftShadow rgba(0,0,0,.125));
-
-            &:first-child {
-              border-top: none;
+            .slider-handle {
+              //disable the gradient and override the color of the handle with a plain primary button color
+              background-image: none !important;
+              background-color: @btn-primary-bg;
             }
-            //this 'last' class is needed because the perfect scrollbar adds elements and
-            // the last-of-type selector is messed up
-            &.last {
-              margin-bottom: 0;
-              border-bottom: none;
-            }
+          }
 
-            //don't really know why, but real invisible
-            // seems to be buggy sometimes when DnD-sorting
-            &.invisible {
-              visibility: visible;
-              .opacity(0.3);
-            }
-
-            .handle,
-            .title,
-            .btn-group {
-              display: block;
-            }
-
-            .handle,
-            .title,
-            .btn-group a {
-              &:extend(.@{UNLINK_CLASS});
-            }
-
-            //the is the DnD handle
-            .handle {
-              .pull-left;
-              margin-right: 10px;
-            }
-
-            .title {
-              .text-overflow;
-            }
-
-            .btn-group {
-              .pull-right;
-              margin-left: 5px;
-
-              .btn {
-                &:focus,
-                &:active {
-                  .box-shadow(none);
-                }
-              }
+          .btn-toggle {
+            &:hover {
+              background-color: transparent;
             }
           }
         }
 
-        .slider.slider-horizontal {
-          width: 100%;
-
-          .slider-handle {
-            //disable the gradient and override the color of the handle with a plain primary button color
-            background-image: none !important;
-            background-color: @btn-primary-bg;
-          }
+        //general class used for the container of a panel actions buttons
+        .actions {
+          margin-top: 5px;
         }
-
-        .btn-toggle {
-          &:hover {
-            background-color: transparent;
-          }
-        }
-      }
-
-      //general class used for the container of a panel actions buttons
-      .actions {
-        margin-top: 5px;
       }
     }
+
     .panel.@{SIDEBAR_FINDER_PANEL_CLASS} {
       //stretches open the entire finder
       position: absolute;

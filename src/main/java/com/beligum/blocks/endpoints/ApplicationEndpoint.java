@@ -29,7 +29,7 @@ import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
-import gen.com.beligum.blocks.core.fs.html.views.new_page;
+import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.new_page;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Term;

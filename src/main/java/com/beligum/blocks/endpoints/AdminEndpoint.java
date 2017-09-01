@@ -33,7 +33,7 @@ public class AdminEndpoint
             return Response.seeOther(gen.com.beligum.blocks.endpoints.AdminEndpointRoutes.get().getUri()).build();
         }
         else {
-            return Response.ok(gen.com.beligum.blocks.core.fs.html.views.admin.get()).build();
+            return Response.ok(gen.com.beligum.blocks.core.fs.html.templates.blocks.core.admin.get()).build();
         }
     }
 

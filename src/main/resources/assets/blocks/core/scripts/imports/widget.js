@@ -4,8 +4,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification)
-{
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification) {
     var Widget = this;
 
     //-----CONSTANTS-----
@@ -24,8 +23,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
              * Register a new widget class for the supplied tags
              * @param selectors the array of jquery selectors you want to register this widget class to
              */
-            register: function (selectors)
-            {
+            register: function (selectors) {
                 //there should always be a tags option specified
                 if (selectors && selectors.length && selectors.length > 0) {
                     for (var i = 0; i < selectors.length; i++) {
@@ -49,16 +47,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
              * @param element the html element you want to construct a widget for
              * @returns the instance or null if no such tag is registered
              */
-            create: function (element)
-            {
+            create: function (element) {
                 var retVal = null;
 
                 if (element != null) {
                     var clazz = null;
 
                     //search for the first selector that matches
-                    $.each(Widget.Class.SELECTOR_INDEX, function (selector, widget)
-                    {
+                    $.each(Widget.Class.SELECTOR_INDEX, function (selector, widget) {
                         if (element.is(selector)) {
                             clazz = widget;
                             return false; // == break
@@ -75,6 +71,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
         },
 
+        //-----PUBLIC -----
+        //this is the default weight (other than undefined) that is used to pull up
+        // an internal setting to the top of the sidebar list
+        CONFIG_WEIGHT_DEFAULT: 10,
+
         //-----PUBLIC VARIABLES-----
         id: null,
         creationStamp: null,
@@ -82,8 +83,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         //-----PRIVATE VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function ()
-        {
+        constructor: function () {
             this.id = Commons.generateId();
             this.creationStamp = new Date().getTime();
 
@@ -100,8 +100,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         /**
          * This class gets called only once for each subclass: when the first object of this subclass is instantiated
          */
-        init: function ()
-        {
+        init: function () {
         },
 
         /**
@@ -113,36 +112,71 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
          * @param event the original event that triggered this all
          */
-        focus: function (block, element, hotspot, event)
-        {
+        focus: function (block, element, hotspot, event) {
         },
 
         /**
          * @param same parameters as in focus()
          */
-        blur: function (block, element)
-        {
+        blur: function (block, element) {
         },
 
         /**
          * @param first two parameters as in focus()
          * @return an array containing config UI, created with the factory methods below (eg. addValueAttribute())
          */
-        getConfigs: function (block, element)
-        {
+        getConfigs: function (block, element) {
             return [];
         },
 
         /**
          * @return the name of the sidebar window for this widget if it's a block
          */
-        getWindowName: function ()
-        {
+        getWindowName: function () {
             return null;
         },
 
         //-----PUBLIC METHODS-----
         //Note: all the methods below can be used by subclasses to add widgets to the sidebar
+
+        /**
+         * Sets the setting belonging to key on the config element to the specified value
+         */
+        setSetting: function (configElement, key, value) {
+
+            var config = configElement.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
+            if (!config) {
+                config = {};
+            }
+            config[key] = value;
+
+            configElement.data(BlocksConstants.SIDEBAR_CONFIG_KEY, config);
+
+            return configElement;
+        },
+        /**
+         * Returns the setting belonging to key on the config element or null if it's not there.
+         */
+        getSetting: function (configElement, key) {
+            var config = configElement.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
+            return config ? config[key] : null;
+        },
+        /**
+         * This method can be used as a shortcut to wrap the config element with a setting so it ends up in
+         * the advanced section.
+         *
+         * For example: retVal.push(this.setAdvancedSetting(this.addUniqueClass(Sidebar, block.element, ...)));
+         */
+        setAdvancedSetting: function (configElement, weight) {
+
+            this.setSetting(configElement, BlocksConstants.SIDEBAR_CONFIG_ADVANCED_KEY, true);
+
+            if (typeof weight != 'undefined') {
+                this.setSetting(configElement, BlocksConstants.SIDEBAR_CONFIG_WEIGHT_KEY, weight);
+            }
+
+            return configElement;
+        },
         /**
          * Links the value of the class="" attribute to a dropdown list
          *
@@ -150,8 +184,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * labelText: name to show as label
          * values = array of objects {value: 'a value to change', name: 'name of the value}
          * */
-        addUniqueClass: function (Sidebar, element, labelText, values, changeListener)
-        {
+        addUniqueClass: function (Sidebar, element, labelText, values, changeListener) {
             var classFound = false;
 
             //small dryrun so we know if the (possible) empty value needs to be selected
@@ -164,8 +197,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             var retVal = this.createCombobox(Sidebar, labelText, values,
-                function initCallback(testValue)
-                {
+                function initCallback(testValue) {
                     var retVal = false;
 
                     //second uses lazy testing: element doens't have the class, but the value is the empty string, so it should match
@@ -182,8 +214,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
-                {
+                function changeCallback(oldValue, newValue) {
                     //this will reset the classes even if newValue is ""
                     for (var i = 0; i < values.length; i++) {
                         element.removeClass(values[i].value);
@@ -211,11 +242,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * changeListener: optional change listener
          * attribute: set this if you want to change an attribute instead of the class
          * */
-        addOptionalClass: function (Sidebar, element, labelText, value, changeListener, attribute)
-        {
+        addOptionalClass: function (Sidebar, element, labelText, value, changeListener, attribute) {
             var retVal = this.createToggleButton(labelText,
-                function initStateCallback()
-                {
+                function initStateCallback() {
                     if (attribute) {
                         return element.hasAttribute(attribute);
                     }
@@ -224,8 +253,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                 },
 
-                function switchStateCallback(oldValue, newValue)
-                {
+                function switchStateCallback(oldValue, newValue) {
                     if (attribute) {
                         if (newValue) {
                             //Note: having a value seems to be necessary
@@ -264,8 +292,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * changeListener: optional change listener
          * attribute: set this if you want to change an attribute instead of the class
          * */
-        addSliderClass: function (Sidebar, element, labelText, values, showTooltip, changeListener, attribute)
-        {
+        addSliderClass: function (Sidebar, element, labelText, values, showTooltip, changeListener, attribute) {
             var id = Commons.generateId();
 
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
@@ -310,14 +337,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 value: initValue,
                 step: 1,
                 tooltip: showTooltip ? 'show' : 'hide',
-                formatter: function (value)
-                {
+                formatter: function (value) {
                     return values[value].name;
                 }
             });
 
-            input.on("change", function (event)
-            {
+            input.on("change", function (event) {
                 // Call a method on the slider
                 var currentIdx = sliderWidget.slider('getValue');
 
@@ -375,16 +400,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * labelText: name to show as label
          * values = array of objects {value: 'a value to change', name: 'name of the value}
          * */
-        addUniqueAttributeValue: function (Sidebar, element, labelText, attribute, values, changeListener)
-        {
+        addUniqueAttributeValue: function (Sidebar, element, labelText, attribute, values, changeListener) {
             var hasAttr = element.hasAttribute(attribute);
             //get the value of the attribute on the element
             var attr = hasAttr ? element.attr(attribute) : null;
 
             var attrFound = false;
             var retVal = this.createCombobox(Sidebar, labelText, values,
-                function initCallback(testValue)
-                {
+                function initCallback(testValue) {
                     var retVal = false;
 
                     //make sure we don't set the attribute to "undefined"
@@ -399,8 +422,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
-                {
+                function changeCallback(oldValue, newValue) {
                     if (newValue) {
                         element.attr(attribute, newValue);
                     }
@@ -419,8 +441,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return retVal;
         },
 
-        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener)
-        {
+        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener) {
             var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
                 [{
                     name: BlocksMessages.comboboxLoadingName,
@@ -434,8 +455,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             var _this = this;
             $.getJSON(valuesEndpoint)
-                .done(function (data)
-                {
+                .done(function (data) {
                     //initialize a private variable that will hold mappings between the data objects from the server
                     // and the keys in the combobox
                     //Note that we need to make this unique by using the combobox ID because we can have multiple comboboxes in one widget
@@ -447,8 +467,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
 
                     var comboEntries = [];
-                    $.each(data, function (idx, entry)
-                    {
+                    $.each(data, function (idx, entry) {
                         //note: null values aren't handled very well, force-switch to empty string
                         var value = entry[valueProperty] === null ? '' : entry[valueProperty];
 
@@ -470,8 +489,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     //we externalized this method to be able to load the data lazily when an async json call completed
                     _this.reinitCombobox(retVal, comboEntries,
-                        function initCallback(testValue)
-                        {
+                        function initCallback(testValue) {
                             var retVal = false;
 
                             //make sure we don't set the attribute to "undefined"
@@ -488,8 +506,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             //return true if this element needs to be selected
                             return retVal;
                         },
-                        function changeCallback(oldValue, newValue)
-                        {
+                        function changeCallback(oldValue, newValue) {
                             var oldValueTerm = _this._termMappings[comboId][oldValue];
                             var newValueTerm = _this._termMappings[comboId][newValue];
 
@@ -506,8 +523,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         }
                     );
                 })
-                .fail(function (xhr, textStatus, exception)
-                {
+                .fail(function (xhr, textStatus, exception) {
                     Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
                 });
 
@@ -521,13 +537,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * labelText: name to show as label
          * values = array of objects {value: 'a value to change', name: 'name of the value}
          * */
-        addUniqueAttribute: function (Sidebar, element, labelText, values, changeListener)
-        {
+        addUniqueAttribute: function (Sidebar, element, labelText, values, changeListener) {
             var attrFound = false;
 
             var retVal = this.createCombobox(Sidebar, labelText, values,
-                function initCallback(testValue)
-                {
+                function initCallback(testValue) {
                     var retVal = false;
 
                     if (element.hasAttribute(testValue)) {
@@ -542,8 +556,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
-                {
+                function changeCallback(oldValue, newValue) {
                     element.removeAttr(oldValue);
                     if (newValue != "") {
                         element.attr(newValue, "");
@@ -568,8 +581,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * fileSelect: user can only select file from server
          * pageSelect: user can select a page url from the sitemap
          * */
-        addValueAttribute: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
-        {
+        addValueAttribute: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect) {
             var selectedFilePath = element.attr(attribute);
 
             if (Commons.isUriAttribute(attribute)) {
@@ -579,8 +591,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var inputActions = this.buildInputActions(Sidebar, fileSelect, pageSelect, selectedFilePath);
 
             var content = this.createTextInput(Sidebar,
-                function getterFunction()
-                {
+                function getterFunction() {
                     var retVal = element.attr(attribute);
 
                     if (Commons.isUriAttribute(attribute)) {
@@ -589,8 +600,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function setterFunction(val)
-                {
+                function setterFunction(val) {
                     return element.attr(attribute, val);
                 },
                 labelText, placeholderText, confirm, inputActions
@@ -608,14 +618,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * confirm: value only changes when user clicks apply button
          * textarea: set to true if you want to render a <textarea> element instead of an <input> element
          **/
-        addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm, textarea)
-        {
-            var getterFunction = function ()
-            {
+        addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm, textarea) {
+            var getterFunction = function () {
                 return $.trim(element.html());
             };
-            var setterFunction = function (val)
-            {
+            var setterFunction = function (val) {
                 return element.html($.trim(val));
             }
 
@@ -636,10 +643,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param changeListener
          * @returns {*|jQuery|HTMLElement}
          */
-        addRadioAttribute: function (labelText, attribute, values, initialValue, changeListener)
-        {
-            var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
-            {
+        addRadioAttribute: function (labelText, attribute, values, initialValue, changeListener) {
+            var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback) {
                 //Note: 'radio' is a bootstrap class
                 var radioEl = $('<div class="radio"' + (isDisabled ? ' disabled' : '') + '>').appendTo(formGroup);
 
@@ -656,8 +661,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     labelEl.append(label);
                 }
 
-                input.change(function (event)
-                {
+                input.change(function (event) {
                     var newValue = $('input[name=\'' + name + '\']:checked').val();
 
                     if (changeCallback) {
@@ -686,8 +690,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             var radioGroup = $('<div class="' + BlocksConstants.RADIO_GROUP_CLASS + '" />').appendTo(formGroup);
 
-            var initStateCallback = function (value)
-            {
+            var initStateCallback = function (value) {
                 var retVal = false;
 
                 if (initialValue && value == initialValue) {
@@ -713,8 +716,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * cssProperty: name of the css property the value changes
          * values = array of objects {value: 'a value to change', name: 'name of the value, (optional) default: true}
          */
-        addUniqueStyle: function (Sidebar, element, labelText, cssProperty, values, changeListener)
-        {
+        addUniqueStyle: function (Sidebar, element, labelText, cssProperty, values, changeListener) {
             var _this = this;
 
             //note: we parse the raw style attribue instead of using $.css() to control the html-attribute better
@@ -736,8 +738,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
 
             var retVal = this.createCombobox(Sidebar, labelText, values,
-                function initCallback(testValue)
-                {
+                function initCallback(testValue) {
                     var retVal = false;
 
                     //make sure we don't set the attribute to "undefined"
@@ -749,8 +750,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
-                {
+                function changeCallback(oldValue, newValue) {
                     var styles = _this.splitStyles(element.attr('style'));
 
                     delete styles[cssProperty];
@@ -791,20 +791,17 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * fileSelect: user can only select file from server
          * pageSelect: user can select a page url from the sitemap
          * */
-        addValueStyle: function (Sidebar, element, labelText, placeholderText, cssProperty, confirm, fileSelect, pageSelect)
-        {
+        addValueStyle: function (Sidebar, element, labelText, placeholderText, cssProperty, confirm, fileSelect, pageSelect) {
             var _this = this;
 
             //note: we parse the raw style attribue instead of using $.css() to control the html-attribute better
             var styles = this.splitStyles(element.attr('style'));
 
             var content = this.createTextInput(Sidebar,
-                function getterFunction()
-                {
+                function getterFunction() {
                     return styles[cssProperty];
                 },
-                function setterFunction(val)
-                {
+                function setterFunction(val) {
                     delete styles[cssProperty];
                     if (val != "") {
                         styles[cssProperty] = val;
@@ -838,8 +835,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * placeholderText: string to show as placeholder
          * confirm: value only changes when user clicks apply button
          **/
-        createTextInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownActions)
-        {
+        createTextInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownActions) {
             var id = Commons.generateId();
 
             var resetBtn = null;
@@ -868,23 +864,20 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             //check if we need to show the reset button
             if (input.attr(Widget.OLD_VAL_ATTR) !== '') {
                 resetBtn = $('<a title="' + BlocksMessages.inputActionResetValueTitle + '" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
-                resetBtn.click(function (e)
-                {
+                resetBtn.click(function (e) {
                     input.val(input.attr(Widget.OLD_VAL_ATTR));
                     input.change();
                     input.focus();
                 });
                 //don't let input lose focus when the button is clicked
-                resetBtn.mousedown(function (e)
-                {
+                resetBtn.mousedown(function (e) {
                     return false;
                 });
             }
 
             //append the clear button
             var clearBtn = $('<a title="' + BlocksMessages.inputActionClearValueTitle + '" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
-            input.on("change keyup focus", function (event)
-            {
+            input.on("change keyup focus", function (event) {
                 inputGroup.addClass('focus');
 
                 if (input.val() == null || input.val() == '') {
@@ -911,8 +904,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     setterFunction(input.val());
                 }
             });
-            input.on("blur", function (event)
-            {
+            input.on("blur", function (event) {
                 inputGroup.removeClass('focus');
 
                 if (clearBtn) {
@@ -927,12 +919,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             });
 
             //don't let input lose focus when the button is clicked
-            clearBtn.mousedown(function (e)
-            {
+            clearBtn.mousedown(function (e) {
                 return false;
             });
-            clearBtn.click(function (e)
-            {
+            clearBtn.click(function (e) {
                 input.val('');
                 input.change();
                 input.focus();
@@ -943,8 +933,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var dropdownOptions = $('<ul class="dropdown-menu dropdown-menu-right"/>');
                 var firstLink = null;
                 var firstLinkCaption = null;
-                $.each(dropdownActions, function (key, value)
-                {
+                $.each(dropdownActions, function (key, value) {
                     var option = $('<li />').appendTo(dropdownOptions);
                     var link = $('<a href="javascript:void(0)">' + key + '</a>').appendTo(option);
                     if (value[Widget.TEXT_INPUT_ACTION_OPTION_DISABLE] === true) {
@@ -953,8 +942,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //don't add the event handler when the link is disabled
                     else {
                         if (value[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT]) {
-                            link.click(function (event)
-                            {
+                            link.click(function (event) {
                                 if (selectBtn) {
                                     //close the dropdown menu
                                     selectBtn.dropdown('toggle');
@@ -975,16 +963,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //if we only have one link, let the users click it immediately
                     if (dropdownOptions.children().length == 1) {
                         selectBtn = $('<a title="' + firstLinkCaption + '" class="btn btn-default input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
-                        selectBtn.mousedown(function (e)
-                        {
+                        selectBtn.mousedown(function (e) {
                             firstLink.click();
                         });
                     }
                     else {
                         selectBtn = $('<a title="More actions" class="btn btn-default input-btn-actions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-search"></a>').appendTo(inputActions);
                         //don't let input lose focus when the button is clicked
-                        selectBtn.mousedown(function (e)
-                        {
+                        selectBtn.mousedown(function (e) {
                             return false;
                         });
 
@@ -996,8 +982,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             if (confirm) {
                 var actionsGroup = $('<div class="input-group actions"></div>').appendTo(formGroup);
                 var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"></i> Apply</a>').appendTo(actionsGroup);
-                applyBtn.click(function (event)
-                {
+                applyBtn.click(function (event) {
                     if (setterFunction) {
                         setterFunction(input.val());
                     }
@@ -1018,14 +1003,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param pageSelect boolean to enable page URL selection
          * @param selectedFilePath initial pre-selection value of the media finder
          */
-        buildInputActions: function (Sidebar, fileSelect, pageSelect, selectedFilePath)
-        {
+        buildInputActions: function (Sidebar, fileSelect, pageSelect, selectedFilePath) {
             var retVal = {};
 
             if (fileSelect) {
                 var fileSelectOptions = {};
-                fileSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
-                {
+                fileSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input) {
                     // Define variable so we can access it after of or cancel
                     var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
 
@@ -1039,8 +1022,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = mediaFilePath;
                     }
 
-                    finderOptions.onSelect = function (selectedFileUrls)
-                    {
+                    finderOptions.onSelect = function (selectedFileUrls) {
                         if (selectedFileUrls.length > 0) {
                             //we can only select the first one
                             var fileUrl = selectedFileUrls[0];
@@ -1061,8 +1043,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         Sidebar.animateSidebarWidth(sidebarWidth);
                     };
 
-                    finderOptions.onCancel = function ()
-                    {
+                    finderOptions.onCancel = function () {
                         Sidebar.unloadFinder();
                         // restore sidebar width
                         Sidebar.animateSidebarWidth(sidebarWidth);
@@ -1075,8 +1056,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //first move the sidebar, then load it, because we don't have a watcher that updates the components-size
                     // (was problematic with the statusbar elements)
                     if (windowWidth / 2 > sidebarWidth) {
-                        Sidebar.animateSidebarWidth(windowWidth / 2, function ()
-                        {
+                        Sidebar.animateSidebarWidth(windowWidth / 2, function () {
                             Sidebar.loadFinder(finderOptions);
                         });
                     }
@@ -1091,8 +1071,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             if (pageSelect) {
                 var pageSelectOptions = {};
                 pageSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_DISABLE] = true;
-                pageSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
-                {
+                pageSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input) {
                     alert("Coming soon!");
                 };
 
@@ -1112,8 +1091,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param changeCallback
          * @returns {*|jQuery|HTMLElement}
          */
-        createCombobox: function (Sidebar, labelText, values, initCallback, changeCallback)
-        {
+        createCombobox: function (Sidebar, labelText, values, initCallback, changeCallback) {
             // Create selectbox to add to sidebar
             var id = Commons.generateId();
             var content = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
@@ -1140,8 +1118,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param initCallback see createCombobox()
          * @param changeCallback see createCombobox()
          */
-        reinitCombobox: function (combobox, values, initCallback, changeCallback)
-        {
+        reinitCombobox: function (combobox, values, initCallback, changeCallback) {
             //Note: sync this with the classes in createCombobox() above
             var dropdownMenu = combobox.find(".dropdown-menu");
             var dropdownToggle = combobox.find("button.dropdown-toggle");
@@ -1160,8 +1137,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var subtitle = null/*c.value*/;
                 var a = $('<a data-value="' + c.value + '">' + title + (subtitle ? '<small>' + subtitle + '</small>' : '') + '</a>').appendTo(li);
 
-                var clickHandler = function (event, manualElement)
-                {
+                var clickHandler = function (event, manualElement) {
                     //we need to re-create this variable in the closure because the loop overwrites the previous 'a's
                     var linkElement = manualElement || $(this);
 
@@ -1223,8 +1199,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param offLabel
          * @returns {*|jQuery|HTMLElement}
          */
-        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel)
-        {
+        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel) {
             var INACTIVE_FA_CLASS = 'fa-square-o';
             var ACTIVE_FA_CLASS = 'fa-check-square-o';
 
@@ -1245,8 +1220,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var input = $('<input id="' + id + '" type="checkbox" data-toggle="toggle" data-size="small" ' + ACTIVE_ATTR + '="false" aria-pressed="false">').appendTo(formGroup);
             //var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
 
-            var toggleState = function (newState)
-            {
+            var toggleState = function (newState) {
                 input.attr(ACTIVE_ATTR, '' + newState);
 
                 if (newState) {
@@ -1288,8 +1262,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             });
 
             //listener
-            input.change(function (e)
-            {
+            input.change(function (e) {
                 var oldState = input.attr(ACTIVE_ATTR) === 'true';
                 toggleState(!oldState);
                 switchStateCallback(oldState, !oldState);
@@ -1310,8 +1283,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param setterFunction
          * @returns {*|jQuery|HTMLElement}
          */
-        createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acEndpointOptions, labelText, initialValue, setterFunction)
-        {
+        createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acEndpointOptions, labelText, initialValue, setterFunction) {
             var id = Commons.generateId();
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
             if (formGroupExtraClass) {
@@ -1331,8 +1303,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     remote: {
                         //note: the prepare function below will add the correct query at the end
                         url: acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT],
-                        prepare: function (query, settings)
-                        {
+                        prepare: function (query, settings) {
                             settings.url = settings.url + encodeURIComponent(query);
                             return settings;
                         },
@@ -1360,15 +1331,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             input.typeahead(options, dataSet);
 
             //gets called when a real selection is done
-            input.bind('typeahead:select', function (ev, suggestion)
-            {
+            input.bind('typeahead:select', function (ev, suggestion) {
                 $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
-                    .done(function (data)
-                    {
+                    .done(function (data) {
                         setterFunction(element, data);
                     })
-                    .fail(function (xhr, textStatus, exception)
-                    {
+                    .fail(function (xhr, textStatus, exception) {
                         Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
                     });
             });
@@ -1389,8 +1357,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             if (firstValue) {
                 //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
                 $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
-                    .done(function (data)
-                    {
+                    .done(function (data) {
                         //init autocomplete input box
                         input.typeahead('val', data.name);
 
@@ -1400,8 +1367,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         //        so we re-activated it.
                         setterFunction(element, data);
                     })
-                    .fail(function (xhr, textStatus, exception)
-                    {
+                    .fail(function (xhr, textStatus, exception) {
                         Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
                     });
             }
@@ -1422,16 +1388,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * placeholderText: string to show as placeholder
          * numRows: the number of rows to show (eg. the height of the textarea)
          **/
-        createTextareaInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, numRows)
-        {
+        createTextareaInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, numRows) {
             var id = Commons.generateId();
 
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
-            var inputGroupText = $('<div class="input-group"></div>').appendTo(formGroup);
-            var input = $('<textarea id="' + id + '" rows="' + (numRows ? numRows : 5) + '" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroupText);
+            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+            var input = $('<textarea id="' + id + '" rows="' + (numRows ? numRows : 5) + '" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
 
             var oldVal = '';
             if (getterFunction) {
@@ -1446,8 +1411,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var inputActions = $('<div class="input-group actions"/>').appendTo(formGroup);
 
             var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"/> ' + BlocksMessages.textareaApplyBtnTitle + '</a>').appendTo(inputActions);
-            applyBtn.click(function (e)
-            {
+            applyBtn.click(function (e) {
                 if (setterFunction) {
                     setterFunction(input.val());
                 }
@@ -1456,8 +1420,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //append the clear button
             var clearBtn = $('<a class="btn btn-sm btn-default btn-clear"><i class="fa fa-times"/> ' + BlocksMessages.textareaResetBtnTitle + '</a>').appendTo(inputActions);
-            clearBtn.click(function (e)
-            {
+            clearBtn.click(function (e) {
                 input.val('');
                 input.change();
                 input.focus();
@@ -1466,11 +1429,62 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return formGroup;
         },
-        sortComboEntries: function (comboEntries)
-        {
+        /**
+         * Create a color input widget
+         *
+         * getterFunction: the function to use to get the value we're changing
+         * setterFunction: the function to use to set the value we're changing
+         * labelText: name to show as label
+         *
+         * TODO: we might take into consideration to make this a general 'input-typed' function (with inline or not switch)
+         **/
+        createColorInput: function (Sidebar, getterFunction, setterFunction, labelText) {
+
+            //note: html5 spec says the color cannot be empty and defaults to black
+            //see https://www.w3schools.com/jsreF/prop_color_value.asp
+            var DEFAULT_VALUE = '#000000';
+
+            var id = Commons.generateId();
+
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+
+            var colorGroup = $('<div class="' + BlocksConstants.COLOR_GROUP_CLASS + '" />').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="color" class="form-control">');
+
+            var oldVal = DEFAULT_VALUE;
+            if (getterFunction) {
+                oldVal = getterFunction();
+                if (!oldVal) {
+                    oldVal = DEFAULT_VALUE;
+                }
+            }
+            input.val(oldVal);
+            input.change(); //doesn't seem to happen automatically
+
+            //listener
+            input.change(function (e) {
+                if (setterFunction) {
+                    //dependency code requires the 'reset-value' to be the empty string
+                    setterFunction(input.val() == DEFAULT_VALUE ? '' : input.val());
+                }
+            });
+
+            var reset = $('<a href="javascript:void(0);" class="btn btn-link btn-xs btn-reset"><i class="fa fa-close"></a>').appendTo(colorGroup);
+            reset.click(function (e) {
+                input.val(DEFAULT_VALUE);
+                input.change(); //doesn't seem to happen automatically
+            });
+
+            input.appendTo(colorGroup);
+
+            return formGroup;
+        },
+        sortComboEntries: function (comboEntries) {
             //sort the combobox entries on name
-            comboEntries.sort(function (a, b)
-            {
+            comboEntries.sort(function (a, b) {
                 //this makes sure the special 'empty valued' entries appear on top
                 if (!a.value && b.value) {
                     return -1;
@@ -1487,8 +1501,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
             });
         },
-        createListGroup: function (labelText, sortable, reorderListener)
-        {
+        createListGroup: function (labelText, sortable, reorderListener) {
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"/>');
             var id = Commons.generateId();
             if (labelText) {
@@ -1520,8 +1533,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return formGroup;
         },
-        splitStyles: function (rawStyleValue)
-        {
+        splitStyles: function (rawStyleValue) {
             var retVal = {};
 
             if (rawStyleValue) {
@@ -1552,20 +1564,17 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             return retVal;
         },
-        joinStyles: function (styleTuples)
-        {
+        joinStyles: function (styleTuples) {
             var retVal = '';
 
             var _this = this;
-            $.each(styleTuples, function (key, value)
-            {
+            $.each(styleTuples, function (key, value) {
                 retVal += key + ': ' + _this.parseStyleValue(value) + ';';
             });
 
             return retVal;
         },
-        parseStyleValue: function (val)
-        {
+        parseStyleValue: function (val) {
             //cleanup and makes sure the calculations below are correct in case of padding
             var retVal = $.trim(val);
 

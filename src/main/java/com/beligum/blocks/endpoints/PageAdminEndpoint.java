@@ -28,7 +28,7 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import gen.com.beligum.blocks.core.fs.html.views.modals.new_block;
+import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;

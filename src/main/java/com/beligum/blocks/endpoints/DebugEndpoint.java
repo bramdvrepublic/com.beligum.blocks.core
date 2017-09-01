@@ -27,7 +27,7 @@ import java.util.Map;
 
 import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 
-@Path("debug")
+@Path("/debug")
 @RequiresRoles(ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
