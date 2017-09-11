@@ -35,91 +35,9 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
 // Mixins
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/text-overflow.less";
-@import (inline, css) "/assets/webjars/perfect-scrollbar/0.6.16/css/perfect-scrollbar.css";
 
 //-----MIXINS-----
-//note that this requires a relatively positioned parent
-.inline-input-buttons() {
-  @inputZIndex: 2;
-
-  //make the wrapping container look like an input box
-  @border-color: #ccc;
-  @background-color: #ffffff;
-  border: 1px solid @border-color;
-  background-color: @background-color;
-  .box-shadow(inset 0 1px 1px rgba(0, 0, 0, .075)); // Redeclare so transitions work
-  padding-right: 8px; //this is the default value of an input box
-
-  &.focus {
-    @color: @input-border-focus;
-    @color-rgba: rgba(red(@color), green(@color), blue(@color), .6);
-    border-color: @color;
-    outline: 0;
-    .box-shadow(~"inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px @{color-rgba}");
-  }
-
-  // this will reset the bootstrap shadows etc on the input and buttons
-  // because we'll simulate it on the wrapping container instead
-  input[type='text'],
-  .input-group-btn .btn {
-    border: none;
-    .box-shadow(none);
-    background-color: transparent;
-  }
-
-  input[type='text'] {
-    padding-right: 3px; //reset because we set it on the wrapper instead
-    left: -1px; //something weird: the vertical separator between the input and the buttons seems to overflow without a little help...
-  }
-
-  @bgColor: #ffffff;
-  .input-group-btn {
-    background-color: @bgColor;
-    width: 1%;
-
-    .btn {
-      display: none;
-      cursor: pointer;
-      text-shadow: 0 1px 0 #fff;
-      color: #333;
-      padding-left: 10px;
-      padding-right: 3px;
-      background-color: @bgColor;
-
-      &.show {
-        //the .show class from bootstrap forces this to become a block, and it messes up the floating
-        display: inline-block !important;
-      }
-
-      .fa {
-        .opacity(0.4) !important;
-      }
-      &:hover {
-        .fa {
-          .opacity(0.6) !important;
-        }
-      }
-    }
-
-    //From http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107
-    // Select all .shown buttons that are children of .input-actions, including the first one
-    & > .btn.show {
-      border-left: 1px solid rgba(0, 0, 0, 0.1);
-    }
-    //Then "undo" the styles for elements with the class that come after the first one
-    & > .btn.show ~ .btn.show {
-      border-left: 1px solid transparent;
-    }
-  }
-}
-
-//overloaded from elements.less to be able to specify the property
-.transition(@duration:0.2s, @ease:ease-out, @property: all) {
-  -webkit-transition: @property @duration @ease;
-  -moz-transition: @property @duration @ease;
-  -o-transition: @property @duration @ease;
-  transition: @property @duration @ease;
-}
+@import (reference) "/assets/blocks/core/styles/mixins.less";
 
 //-----MAIN-----
 html {
@@ -175,6 +93,15 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
+//some scrollbar tweaking
+.ps-container > .ps-scrollbar-y-rail > .ps-scrollbar-y {
+  width: 4px;
+}
+
+//this is the starting point of our overlay z-indexes
+//the idea is that the overlay controls should slide under the navbar
+//and are always under modal notification panels
+@blockOverlayZ: @zindex-navbar - 10;
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
 .@{BLOCK_OVERLAY_CLASS} {
@@ -183,7 +110,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   left: 0px;
   right: 0px;
   bottom: 0px;
-  z-index: @zindex-navbar - 1;
+  z-index: @blockOverlayZ;
 
   .defaultBorder() {
 
@@ -196,7 +123,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
       border-top: none;
     }
   }
-;
 
   .defaultBorder();
 
@@ -237,6 +163,9 @@ body.@{BODY_EDIT_MODE_CLASS} {
   @offsetPct: 5%;
   @startPct: @offsetPct;
   @stopPct: 100% - @offsetPct;
+
+  //the dropspot line should be in front of both the block overlay and the resizer
+  z-index: @blockOverlayZ + 2;
 
   border: none;
   &.@{BLOCKS_DROPSPOT_CLASS}-top,
@@ -285,6 +214,19 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
+.@{COLUMN_RESIZER_CLASS} {
+  @controlBgColor: #e8e8e8;
+
+  position: absolute;
+  cursor: col-resize;
+  background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
+  border-left: 1px solid darken(@controlBgColor, 15%);
+  border-right: 1px solid darken(@controlBgColor, 15%);
+
+  //the resizer should be in front of the block overlays
+  z-index: @blockOverlayZ + 1;
+}
+
 .@{OPACITY_CLASS} {
   opacity: 0.2;
   -webkit-filter: blur(5px) grayscale(20%);
@@ -301,16 +243,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
   -o-filter: blur(0) !important;
   -ms-filter: blur(0) !important;
   filter: blur(0) !important;
-}
-
-.@{COLUMN_RESIZER_CLASS} {
-  @controlBgColor: #e8e8e8;
-
-  position: absolute;
-  cursor: col-resize;
-  background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
-  border-left: 1px solid darken(@controlBgColor, 15%);
-  border-right: 1px solid darken(@controlBgColor, 15%);
 }
 
 .@{UNLINK_CLASS} {
@@ -348,6 +280,19 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
   user-select: none;
 }
 
+//the wrapper class where all html end up if the sidebar is open
+.@{PAGE_CONTENT_CLASS} {
+  position: relative; //we can only make sticky footers work when this is relative
+  z-index: 0;
+  //  margin-top: @mainMenuHeight;
+  width: 100% - @initSidebarWidth;
+
+  //TODO: setRollbackOnly (activate the body overflow to hidden to see why)
+  //this will make the left panel scroll independently from the sidebar
+  //height: 100%;
+  //overflow-y: auto;
+}
+
 // force for height wrapping divs
 .image {
   display: inline-block;
@@ -380,18 +325,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 .sub-container {
   margin-top: 20px;
   margin-left: 20px;
-}
-
-.@{PAGE_CONTENT_CLASS} {
-  position: relative; //we can only make sticky footers work when this is relative
-  z-index: 0;
-  //  margin-top: @mainMenuHeight;
-  width: 100% - @initSidebarWidth;
-
-  //TODO: setRollbackOnly (activate the body overflow to hidden to see why)
-  //this will make the left panel scroll independently from the sidebar
-  //height: 100%;
-  //overflow-y: auto;
 }
 
 //this is taken from a real world example, hope it won't change
@@ -479,14 +412,18 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
     //only scroll starting from this panel so the resize handler doesn't scroll away
     overflow-y: auto;
+
+    .ps-scrollbar-y-rail {
+      @extra-margin: 2px;
+      margin-top: @sidebarTabHeight + @extra-margin;
+      margin-bottom: @extra-margin;
+    }
   }
 
   .tab-pane {
 
-    @sidebarPanelMargin: 10px;
-
     > .panel {
-      margin: @sidebarPanelMargin;
+      margin: 10px;
 
       &.disabled {
         .panel-heading {
@@ -501,11 +438,18 @@ ul.@{BLOCK_ACTIONS_CLASS} {
       > .collapser {
         cursor: pointer;
 
+        //make some room for the collapser
+        padding-right: 25px;
+        position: relative;
+
         &:after {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+
           font-family: fontawesome;
           text-shadow: 0 1px 0 #fff;
           content: @fa-var-chevron-down;
-          float: right;
           color: grey;
 
           .transition(0.2s, ease-in);

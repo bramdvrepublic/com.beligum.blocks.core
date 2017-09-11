@@ -425,7 +425,11 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                .append(htmlTemplate.getTemplateName()).append("\"");
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             String value = attribute.getValue();
-            builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
+            //don't forget to escape quotes in the attribute values cause eg. this is a valid situation: style="background-image: url(&quot;/webhdfs/v1/mission_bg.png&quot;);"
+            //and it results in the &quot; to be converted back to ", breaking the structure of the parsed html,
+            //so I guess the best thing to do is to convert it back to &quot;
+            String safeValue = value == null ? "" : value.replace("\"", "&quot;");
+            builder.append(",\"").append(attribute.getKey()).append("\",\"").append(safeValue).append("\"");
         }
         builder.append(")").append(NEWLINE);
 

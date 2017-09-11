@@ -33,7 +33,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $("body").append(menuStartButton);
 
     var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
-    sidebarElement.load(BlocksConstants.SIDEBAR_ENDPOINT, function(response, status, xhr){
+    sidebarElement.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
+    {
         if (status == "error") {
             Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
         }
@@ -41,7 +42,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             //check for a cookie and auto-open when the sidebar was active
             var sidebarState = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE);
             if (sidebarState === SIDEBAR_STATE_SHOW) {
-                $(document).ready(function () {
+                $(document).ready(function ()
+                {
                     toggleSidebar(true);
                 });
             }
@@ -85,6 +87,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             body.append(ignoredBody);
             body.append(sidebarElement);
             body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+            //set up perfect-scrollbar.js
+            if (jQuery().perfectScrollbar) {
+                //only scroll from the tab content so the header doesn't scroll away
+                sidebarElement.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
+            }
 
             // Prevent clicking on links while in editing mode
             // Note: after trying mousedown or mouseup to prevent vanishing links from triggering the modal,
@@ -137,12 +145,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     if (pierceThrough) {
                         var tag = control.prop("tagName").toLowerCase();
                         //for now, we only support regular links, because buttons are harder to implement...
-                        if (tag=="a") {
+                        if (tag == "a") {
                             newLocation = control.attr("href");
                         }
                         else {
                             pierceThrough = false;
-                            Logger.warn("Unsupported tag name encountered while handling a force-click; "+tag);
+                            Logger.warn("Unsupported tag name encountered while handling a force-click; " + tag);
                         }
                     }
                 }
@@ -201,9 +209,14 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 }, 0);
             });
 
-        } else {
+        }
+        //hide the sidebar
+        else {
             //about to stop up the side bar and modify the HTML
             Broadcaster.send(Broadcaster.EVENTS.PRE_STOP_BLOCKS);
+
+            //make sure all focused blocks are blurred in a clean manner
+            Sidebar.reset();
 
             cookieState = SIDEBAR_STATE_HIDE;
             var CLOSE_SIDEBAR_WIDTH = 0.0;
@@ -217,7 +230,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
 
                 //this will select all (original) ignored content tags, excluding the placeholders
-                var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS+')');
+                var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
                 ignoredContent.detach();
 
                 var content = content.html();
@@ -225,7 +238,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 body.append(content);
 
                 //this will loop the ignored content and put them back in the placeholders in-order
-                body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function(idx) {
+                body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
+                {
                     $(this).replaceWith(ignoredContent[idx]);
                 });
 
@@ -541,58 +555,50 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     });
 
-    $(document).on("keyup keydown", function (e)
-    {
-        switch (e.type) {
-            case "keydown" :
-                keysPressed[e.keyCode] = true;
-                break;
-            case "keyup" :
-                keysPressed[e.keyCode] = false;
-                break;
-        }
-    });
-
     this.isKeyPressed = function (code)
     {
         return keysPressed[code] === true;
     };
 
-    //TODO SETUP THE KEYBOARD SHORTCUTS (messed up the editor)
-    //$(document).keydown(function (e)
-    //{
-    //    var retVal = true;
-    //
-    //    //$.ui.keyCode.S
-    //    var btn;
-    //    if (e) {
-    //        if (e.ctrlKey) {
-    //            switch (e.which) {
-    //                //Ctrl+S
-    //                case 83:
-    //                    btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
-    //                    break;
-    //            }
-    //        }
-    //        else {
-    //            switch (e.which) {
-    //                //DELETE
-    //                case 46:
-    //                    btn = $("." + BlocksConstants.DELETE_PAGE_BUTTON);
-    //                    break;
-    //            }
-    //        }
-    //    }
-    //
-    //    if (btn) {
-    //        if (btn.is(":visible")) {
-    //            btn.click();
-    //            event.preventDefault();
-    //            retVal = false;
-    //        }
-    //    }
-    //
-    //    return retVal;
-    //});
+    $(document).on("keyup keydown", function (e)
+    {
+        var KEYCODE_SHIFT = 16;
+        var KEYCODE_CTRL = 17;
+        var KEYCODE_TAB = 9;
+        var KEYCODE_DELETE = 46;
+        var KEYCODE_ALT = 18;
+        var KEYCODE_SPACE = 32;
+        var KEYCODE_BACKSPACE = 8;
+        var KEYCODE_ESC = 27;
+        var KEYCODE_LEFT = 37;
+        var KEYCODE_UP = 38;
+        var KEYCODE_RIGHT = 39;
+        var KEYCODE_DOWN = 40;
+
+        var KEYCODE_S = 83;
+
+        switch (e.type) {
+            case "keydown" :
+                keysPressed[e.keyCode] = true;
+                break;
+            case "keyup" :
+                //Logger.info("key up: "+e.keyCode);
+                keysPressed[e.keyCode] = false;
+                break;
+        }
+
+        var btn;
+        //disabled for now
+        // if (Frame.isKeyPressed(KEYCODE_CTRL) && Frame.isKeyPressed(KEYCODE_S)) {
+        //     btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
+        // }
+
+        if (btn) {
+            if (btn.is(":visible")) {
+                btn.click();
+                e.preventDefault();
+            }
+        }
+    });
 
 }]);

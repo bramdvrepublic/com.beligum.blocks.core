@@ -44,7 +44,6 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
                     {
                         $(document).off("mouseup.resizehandle");
                         Resizer.endDrag(null);
-
                     });
                 }
             });
@@ -59,7 +58,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.css("height", height);
             this.overlay.css("left", left);
             this.overlay.css("width", width);
-            this.overlay.css("z-index", DOM.getMaxZIndex() + 2);
+            //this.overlay.css("z-index", DOM.getMaxZIndex() + 2);
 
             //TODO
             //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);

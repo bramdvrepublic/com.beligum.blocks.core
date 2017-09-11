@@ -20,6 +20,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
      * @param event the original event that triggered this all
      */
     this.focusBlock = function (block, element, hotspot, event) {
+
         this.reset();
 
         var currBlock = block;

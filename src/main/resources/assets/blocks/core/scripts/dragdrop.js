@@ -411,10 +411,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var createDropPointerElement = function ()
     {
         //Logger.debug("create droppointer ");
-        var zindex = DOM.getMaxZIndex() + 3;
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='" + BlocksConstants.BLOCKS_DROPSPOT_CLASS + "' />");
-            dropPointerElements.css("z-index", zindex);
+            //dropPointerElements.css("z-index", DOM.getMaxZIndex() + 3);
             dropPointerElements.css("position", "absolute");
             $("body").append(dropPointerElements);
         }

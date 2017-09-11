@@ -77,7 +77,9 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     this.getColumnWidth = function (element)
     {
-        var getClazz = function (clazz)
+        //extracts the class width number from the element,
+        //searching for a supplied clazz prefix eg. 'col-md-', 'col-xs-', etc
+        var getColWidth = function (clazz)
         {
             //g: global
             //i: ignore case
@@ -90,11 +92,12 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 return null;
             }
         };
+
         var currentWidth = null;
         var docWidth = $(document).width();
         for (var i = 0; i < DOM.COLUMN_WIDTH_CLASS.length; i++) {
             var colWidth = DOM.COLUMN_WIDTH_CLASS[i];
-            var newWidth = getClazz(colWidth.name);
+            var newWidth = getColWidth(colWidth.name);
             if (docWidth > colWidth.max && newWidth != null) {
                 currentWidth = newWidth;
             } else if (docWidth >= colWidth.min && docWidth < colWidth.max) {
@@ -105,6 +108,11 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 }
             }
         }
+
+        if (currentWidth == 0) {
+            Logger.error("Encountered zero column width for an element, this shouldn't happen", element);
+        }
+
         return currentWidth;
     };
 
@@ -113,17 +121,17 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
         // TODO Wouter: This should change with screen width
         return "col-md-";
 
-        var colClass = null;
-        var docWidth = $(document).width();
-        for (var i = 0; i < DOM.COLUMN_WIDTH_CLASS.length; i++) {
-            if ((docWidth >= DOM.COLUMN_WIDTH_CLASS[i].min && docWidth < DOM.COLUMN_WIDTH_CLASS[i].max)) {
-                colClass = DOM.COLUMN_WIDTH_CLASS[i].name;
-                break;
-            } else if (docWidth > DOM.COLUMN_WIDTH_CLASS[i].max) {
-                colClass = DOM.COLUMN_WIDTH_CLASS[i].name;
-            }
-        }
-        return colClass;
+        // var colClass = null;
+        // var docWidth = $(document).width();
+        // for (var i = 0; i < DOM.COLUMN_WIDTH_CLASS.length; i++) {
+        //     if ((docWidth >= DOM.COLUMN_WIDTH_CLASS[i].min && docWidth < DOM.COLUMN_WIDTH_CLASS[i].max)) {
+        //         colClass = DOM.COLUMN_WIDTH_CLASS[i].name;
+        //         break;
+        //     } else if (docWidth > DOM.COLUMN_WIDTH_CLASS[i].max) {
+        //         colClass = DOM.COLUMN_WIDTH_CLASS[i].name;
+        //     }
+        // }
+        // return colClass;
     };
 
     // Sets the column width in grid-units, not pixels
@@ -233,9 +241,39 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                         //if not, make some room by resizing a neighbour
                         else {
                             columnsWidth[newColIdx] = 1;
-                            //if the new column is the first one, resize it's right col, otherwise it's left
-                            var neighbour = newColIdx == 0 ? 1 : -1;
-                            columnsWidth[newColIdx + neighbour] = columnsWidth[newColIdx + neighbour] - 1;
+
+                            //now, we want to find the closest neighbour we can steal one width from (width >= 2)
+                            //(to give to our new col). First, we go to the left, then we go to the right,
+                            //then we compare distances and choose the closest.
+                            var lNeigh = -1;
+                            for (var i = newColIdx; i >= 0 && lNeigh < 0; i--) {
+                                if (columnsWidth[i] > 1) {
+                                    lNeigh = i;
+                                }
+                            }
+                            var rNeigh = -1;
+                            for (var i = newColIdx; i < columnCount && rNeigh < 0; i++) {
+                                if (columnsWidth[i] > 1) {
+                                    rNeigh = i;
+                                }
+                            }
+
+                            var bestNeigh;
+                            if (lNeigh >= 0 && rNeigh >= 0) {
+                                //note: the <= means: if both are equal, we prefer to alter the left one
+                                bestNeigh = Math.abs(newColIdx - lNeigh) <= Math.abs(newColIdx - rNeigh) ? lNeigh : rNeigh;
+                            }
+                            else if (lNeigh >= 0) {
+                                bestNeigh = lNeigh;
+                            }
+                            else if (rNeigh >= 0) {
+                                bestNeigh = rNeigh;
+                            }
+                            else {
+                                Logger.error("Both left- and right-side neightbours of the new block don't have room; this should be impossible", element);
+                            }
+
+                            columnsWidth[bestNeigh] = columnsWidth[bestNeigh] - 1;
                         }
                     }
                 }
@@ -244,6 +282,9 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 newTotalWidth = 0;
                 for (var i = 0; i < columnCount; i++) {
                     newTotalWidth += columnsWidth[i];
+                }
+                if (newTotalWidth != DOM.MAX_COLUMNS) {
+                    Logger.error("New total width of the columns in this row does not equal " + DOM.MAX_COLUMNS + '; this shouldn\'t happen', element);
                 }
             }
 
@@ -603,6 +644,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     this.enableContextMenu = function ()
     {
         $("html").removeAttr("oncontextmenu", "");
+        // IE < 10
         $("html").removeAttr("onselectstart");
     };
 

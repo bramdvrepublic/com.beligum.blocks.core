@@ -166,7 +166,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         var min = offsetLeft + 1;
         var max = offsetRight - 1;
         // column width in pixels
-        var colWidth = (row.getFullWidth()) / 12;
+        var colWidth = row.getFullWidth() / DOM.MAX_COLUMNS;
         // dragColumns are the trigger zones when we jump to the next column
         // trigger zone is half a column left and right from start of a column
         if (max > min) {
@@ -182,56 +182,53 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         currentDragColumn = currentPosition;
         minColumn = min;
         maxColumn = max;
-
     };
 
     /*
      * While dragging check if we are in a new dragColumn
      * if so resize our column
-     *
-     * */
+     */
     var checkDrag = function (event)
     {
-        var curCol = dragColumns[currentDragColumn];
-        if (curCol != null && (event.pageX > curCol.start && event.pageX < curCol.end)) {
-            //Logger.debug("No column change");
-            return;
-        }
+        if (dragColumns.length > 0) {
+            var curCol = dragColumns[currentDragColumn];
+            if (curCol != null && (event.pageX > curCol.start && event.pageX < curCol.end)) {
+                //Logger.debug("No column change");
+                return;
+            }
 
-        for (var i = minColumn; i <= maxColumn; i++) {
-            var diff = i - currentDragColumn;
-            if (event.pageX > dragColumns[currentDragColumn + diff].start &&
-                event.pageX < dragColumns[currentDragColumn + diff].end) {
-                currentDragColumn = currentDragColumn + diff;
-                if (activeResizeHandle.leftColumn == null) {
-                    var element = $('<div class="col-md-1"><div></div></div>');
-                    activeResizeHandle.rightColumn.element.before(element);
-                    activeResizeHandle.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
-                    DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
-                    activeResizeHandle.updateHeight();
+            for (var i = minColumn; i <= maxColumn; i++) {
+                var diff = i - currentDragColumn;
+                if (event.pageX > dragColumns[currentDragColumn + diff].start &&
+                    event.pageX < dragColumns[currentDragColumn + diff].end) {
+                    currentDragColumn = currentDragColumn + diff;
+                    if (activeResizeHandle.leftColumn == null) {
+                        var element = $('<div class="col-md-1"><div></div></div>');
+                        activeResizeHandle.rightColumn.element.before(element);
+                        activeResizeHandle.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
+                        DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
+                        activeResizeHandle.updateHeight();
 
-                } else if (activeResizeHandle.rightColumn == null) {
+                    } else if (activeResizeHandle.rightColumn == null) {
+                        activeResizeHandle.rightColumn = {};
+                        activeResizeHandle.rightColumn.element = $('<div class="col-md-1"><div></div></div>');
+                        DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
+                        activeResizeHandle.leftColumn.element.after(activeResizeHandle.rightColumn.element);
+                        activeResizeHandle.updateHeight();
+                    } else {
+                        DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
+                        DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
+                        activeResizeHandle.updateHeight();
+                    }
 
-                    activeResizeHandle.rightColumn = {};
-                    activeResizeHandle.rightColumn.element = $('<div class="col-md-1"><div></div></div>');
-                    DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
-                    activeResizeHandle.leftColumn.element.after(activeResizeHandle.rightColumn.element);
-                    activeResizeHandle.updateHeight();
-                } else {
-                    DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
-                    DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
-                    activeResizeHandle.updateHeight();
+                    // move resizehandle and update all handles in the current row
+                    activeResizeHandle.update();
+
+                    break;
                 }
-                // move resizehandle and update all handles in the current row
-                activeResizeHandle.update();
-
-                break;
             }
         }
     };
-
-
-    // On boot
 
 }]);
 
