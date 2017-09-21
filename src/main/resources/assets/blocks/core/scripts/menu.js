@@ -79,6 +79,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             //detach is like remove() but without the releasing of memory structures
             ignoredBody.detach();
 
+            //Note: this means all previously installed event handlers will be lost!
+            //We should actually migrate to "body.clone(true).unwrap()" but the JS of the modules are not ready for that yet...
             var bodyHtml = body.html();
             body.empty();
             //wrap the content of the body in the class and add that again to the body
