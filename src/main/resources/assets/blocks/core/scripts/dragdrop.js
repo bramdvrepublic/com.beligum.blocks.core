@@ -228,74 +228,82 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             }
             //we added a new block
             else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(dropX, dropY)) {
+
                 // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, blockEvent);
                 Hover.removeHoverOverlays();
+
                 // show normal cursor during dialog
                 $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
                 // Remove all pointer elements
                 removeDropPointerElements();
                 //removeDraggedOverlay();
+
                 // show select box with all blocks
-                var box = $("<div />");
-
                 var boxDialog;
-                box.load("/blocks/admin/page/blocks", function ()
+                //Note: the inner div will be replaced when the new load() content comes in
+                var box = $('<div><div style="padding: 20px;">' + BlocksMessages.newBlockLoading + '</div></div>');
+                box.load(BlocksConstants.GET_BLOCKS_ENDPOINT, function (response, status, xhr)
                 {
-                    box.find("a").click(function (event)
-                    {
-                        var name = $(this).attr("data-value");
+                    if (status == "error") {
+                        Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);
+                    }
+                    else {
+                        box.find("a").click(function (event)
+                        {
+                            var name = $(this).attr("data-value");
 
-                        //seems fast enough...
-                        var waitingDialog;
-                        //var waitingDialog = new BootstrapDialog({
-                        //    message: "Please wait"
-                        //});
-
-                        boxDialog.close();
-                        if (waitingDialog) {
-                            waitingDialog.open();
-                        }
-
-                        $.getJSON("/blocks/admin/page/block/" + name)
-                            .done(function (data)
-                            {
-                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style");
-                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style");
-
-                                if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML]!=="") {
-                                    // whow, this is weird stuff!
-                                    // Originally just $(data.html), but docs say the current version is safer.
-                                    // Problem was it failed with certains custom elements:
-                                    // th-search didn't work, where div-search did work.
-                                    // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
-                                    // Fixed with a patched version (see pom.xml)
-                                    var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
-
-                                    Hover.removeHoverOverlays();
-                                    resetDragDrop();
-                                    cancelled = false;
-                                    Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
-                                    {
-                                        addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", true);
-                                        addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", true);
-                                    });
-                                }
-                                else {
-                                    Notification.error(BlocksMessages.newBlockError, data);
-                                }
-                            })
-                            .fail(function (xhr, textStatus, exception)
-                            {
-                                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
-                            })
-                            .always(function ()
-                            {
-                                if (waitingDialog) {
-                                    waitingDialog.close();
-                                }
+                            //not always very fast, so show the wait dialog
+                            //var waitingDialog;
+                            var waitingDialog = new BootstrapDialog({
+                                message: BlocksMessages.newBlockLoadingResources
                             });
-                    });
+
+                            boxDialog.close();
+                            if (waitingDialog) {
+                                waitingDialog.open();
+                            }
+
+                            $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT + name)
+                                .done(function (data)
+                                {
+                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES);
+                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES);
+
+                                    if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] !== "") {
+                                        // whow, this is weird stuff!
+                                        // Originally just $(data.html), but docs say the current version is safer.
+                                        // Problem was it failed with certains custom elements:
+                                        // th-search didn't work, where div-search did work.
+                                        // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
+                                        // Fixed with a patched version (see pom.xml)
+                                        var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
+
+                                        Hover.removeHoverOverlays();
+                                        resetDragDrop();
+                                        cancelled = false;
+                                        Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
+                                        {
+                                            addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
+                                            addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
+                                        });
+                                    }
+                                    else {
+                                        Notification.error(BlocksMessages.newBlockError, data);
+                                    }
+                                })
+                                .fail(function (xhr, textStatus, exception)
+                                {
+                                    Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+                                })
+                                .always(function ()
+                                {
+                                    if (waitingDialog) {
+                                        waitingDialog.close();
+                                    }
+                                });
+                        });
+                    }
                 });
 
                 var cancelled = true;
@@ -327,33 +335,46 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         currentDraggedBlock = null;
     };
 
-    var addHeadResources = function (resourceArray, className, isScript)
+    var addHeadResources = function (resourceArray, className, resourceType, isScript)
     {
         if (resourceArray != null && resourceArray.length > 0) {
-            //remove existing ones
-            $("head ." + className).remove();
-
-            loadRecursiveHeadResources(resourceArray, 0, className, isScript);
+            loadRecursiveHeadResources(resourceArray, 0, className, resourceType, isScript);
         }
     };
-    var loadRecursiveHeadResources = function (resourceArray, idx, className, isScript)
+    var loadRecursiveHeadResources = function (resourceArray, idx, className, resourceType, isScript)
     {
-        if (idx<resourceArray.length) {
+        if (idx < resourceArray.length) {
+
+            //parse the raw html to a jquery object
             var resourceEl = $(resourceArray[idx]);
 
-            resourceEl.addClass(className);
-            $("head").append(resourceEl);
+            //Note: we don't so this anymore because we implemented the 'is present' check, see below
+            //start off by removing existing ones
+            //$("head ." + className).remove();
+            //resourceEl.addClass(className);
 
             var srcAttr = resourceEl.attr("src");
             if (isScript && srcAttr) {
-                $.getScript(srcAttr)
-                    .done(function (script, textStatus)
+
+                //Note 1: this also adds the script to the head of the page (in case of a crossdomain URL, not in case of a local one, is that ok?),
+                //        so we don't execute a $("head").append(resourceEl); here, hope that's ok
+                //Note 2: we can't just append the script to the head element, cause we need to catch the callback and wire-in the plugin...
+                //Note 3: By default, $.getScript() sets the cache setting to false by appending a timestamp to the script, so it's re-requested every time.
+                //        Since we won't want that, we replace $.getScript by it's $.ajax counterpart and set the cache to true
+                $.ajax({
+                    type: "GET",
+                    url: srcAttr,
+                    dataType: "script",
+                    cache: true
+                })
+                //$.getScript(srcAttr)
+                    .done(function (data, textStatus, jqxhr)
                     {
                         //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
                         base.run();
 
                         //recursive call to make sure the resources are loaded synchronously
-                        loadRecursiveHeadResources(resourceArray, idx+1, className, isScript);
+                        loadRecursiveHeadResources(resourceArray, idx + 1, className, resourceType, isScript);
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
@@ -361,7 +382,35 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     });
             }
             else {
-                loadRecursiveHeadResources(resourceArray, idx+1, className, isScript);
+
+                var head = $('head');
+                var resourceElRaw = resourceEl[0];
+                var resourceElInnerHtml = resourceElRaw.innerHTML;
+
+                //since scripts will probably be in the footer, make sure we search the entire DOM,
+                //then sub-filter on full html string
+                var isPresent = $('html').find(resourceElRaw.tagName).filter(function ()
+                {
+
+                    if (resourceType == BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES) {
+                        return $(this).attr('href') === resourceEl.attr('href');
+                    }
+                    else if (resourceType == BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS) {
+                        return $(this).attr('src') === resourceEl.attr('src');
+                    }
+                    else {
+                        return this.innerHTML === resourceElInnerHtml;
+                    }
+                });
+
+                if (isPresent.length == 0) {
+                    head.append(resourceEl);
+                }
+                else {
+                    //Logger.info('Skipped resource append for ' + resourceElRaw.outerHTML);
+                }
+
+                loadRecursiveHeadResources(resourceArray, idx + 1, className, resourceType, isScript);
             }
         }
     };

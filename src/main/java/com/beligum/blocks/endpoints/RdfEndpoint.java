@@ -52,8 +52,8 @@ public class RdfEndpoint
     //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
     public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
                                                                 null,
-                                                                core.Entries.searchClassAllTitle,
-                                                                core.Entries.searchClassAllLabel,
+                                                                core.Entries.rdfClassAllTitle,
+                                                                core.Entries.rdfClassAllLabel,
                                                                 new URI[] {},
                                                                 false,
                                                                 new SettingsQueryEndpoint(),
