@@ -16,10 +16,12 @@
 
 package com.beligum.blocks.utils;
 
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import org.apache.commons.lang.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -29,7 +31,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
-import java.util.HashMap;
 import java.util.Locale;
 
 import static com.beligum.base.server.R.configuration;
@@ -43,28 +44,27 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_
 public class RdfTools
 {
     // Simpleflake generates a Long id, based on timestamp
-    public static final SimpleFlake SIMPLE_FLAKE = new SimpleFlake();
-    public static HashMap<URI, HashMap<String, URI>> urlcache = new HashMap<URI, HashMap<String, URI>>();
+    private static final SimpleFlake SIMPLE_FLAKE = new SimpleFlake();
     private static final URI ROOT = URI.create("/");
 
     /**
      * Create an absolute resource based on the resource endpoint and a type.
      * Generate a new id-value
-     * e.g. http://www.republic.be/v1/resource/address/156465
+     * e.g. http://www.stralo.com/resource/877920329832560392
      */
     public static URI createAbsoluteResourceId(RdfClass entity)
     {
-        return createAbsoluteResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
+        return createAbsoluteResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString(), true);
     }
 
     /**
      * Create a local, relative (to the current root) resource based on the resource endpoint and a type.
      * Generate a new id-value
-     * e.g. /v1/resource/address/156465
+     * e.g. /resource/877920329832560392
      */
     public static URI createRelativeResourceId(RdfClass entity)
     {
-        return createRelativeResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
+        return createRelativeResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString(), true);
     }
 
     /**
@@ -73,7 +73,7 @@ public class RdfTools
      */
     public static URI createAbsoluteResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri(configuration().getSiteDomain()).path(Settings.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
+        return createAbsoluteResourceId(entity, id, false);
     }
 
     /**
@@ -82,42 +82,7 @@ public class RdfTools
      */
     public static URI createRelativeResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri("/").path(Settings.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
-    }
-
-    /**
-     * Extracts the last part (the real ID) from a resource URI.
-     * Only returns non-null if the supplied URI is a valid resource URI
-     * Note that the resource itself may not exist though, this extraction is just lexicographical.
-     */
-    public static String extractResourceId(URI resourceUri)
-    {
-        String retVal = null;
-
-        if (isResourceUrl(resourceUri)) {
-            //a resource URI has form /resource/<type>/<id> so third part is the ID
-            retVal = Paths.get(resourceUri.getPath()).getName(2).toString();
-        }
-
-        return retVal;
-    }
-
-    /**
-     * Determines if the supplied URL is a valid resource URL (might not exist though)
-     */
-    public static boolean isResourceUrl(URI uri)
-    {
-        boolean retVal = false;
-
-        if (uri != null && uri.getPath() != null) {
-            Path path = Paths.get(uri.getPath());
-            //A bit conservative: we need three segments: the word 'resource', the type of the resource and the ID
-            if (path.getNameCount() == 3 && path.startsWith(Settings.RESOURCE_ENDPOINT)) {
-                retVal = true;
-            }
-        }
-
-        return retVal;
+        return createRelativeResourceId(entity, id, false);
     }
 
     /**
@@ -171,6 +136,10 @@ public class RdfTools
 
         return retval;
     }
+
+    /**
+     * Generate a RDFa-compatible HTML string from the supplied date
+     */
     public static CharSequence serializeDateHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
@@ -178,6 +147,10 @@ public class RdfTools
                         .append(" ")
                         .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime));
     }
+
+    /**
+     * Generate a RDFa-compatible HTML string from the supplied time
+     */
     public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
@@ -186,6 +159,10 @@ public class RdfTools
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }
+
+    /**
+     * Generate a RDFa-compatible HTML string from the supplied date and time
+     */
     public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
     {
         return new StringBuilder()
@@ -198,6 +175,10 @@ public class RdfTools
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }
+
+    /**
+     * Generate a RDFa-compatible HTML string from the supplied enum.
+     */
     public static CharSequence serializeEnumHtml(AutocompleteSuggestion enumValue)
     {
         // <p> is consistent with JS
@@ -206,6 +187,10 @@ public class RdfTools
                         .append(enumValue.getTitle())
                         .append("</p>");
     }
+
+    /**
+     * Generate a RDFa-compatible HTML string from the supplied resource info
+     */
     public static CharSequence serializeResourceHtml(ResourceInfo resourceInfo)
     {
         CharSequence retVal = null;
@@ -232,5 +217,127 @@ public class RdfTools
         }
 
         return retVal;
+    }
+
+    /**
+     * Small wrapper to make all absolute call pass through here
+     */
+    private static URI createAbsoluteResourceId(RdfClass entity, String id, boolean ontologyUniqueId)
+    {
+        return createResourceIdPath(UriBuilder.fromUri(configuration().getSiteDomain()), entity, id, ontologyUniqueId).build();
+    }
+
+    /**
+     * Small wrapper to make all relative call pass through here
+     */
+    private static URI createRelativeResourceId(RdfClass entity, String id, boolean ontologyUniqueId)
+    {
+        return createResourceIdPath(UriBuilder.fromUri("/"), entity, id, ontologyUniqueId).build();
+    }
+
+    /**
+     * Central method for uniform resource path creation.
+     * Note: the ontologyUniqueId flag indicates the id is (always) unique to the entire ontology
+     * if it is, we're can resolve a resource using only this id
+     * if it's not, we need additional information to resolve the resource (eg. coming from a SQL primary key or linking to an external ontology)
+     * see this discussion https://github.com/republic-of-reinvention/com.stralo.site/issues/15
+     */
+    private static UriBuilder createResourceIdPath(UriBuilder uriBuilder, RdfClass entity, String id, boolean ontologyUniqueId)
+    {
+        //this is the constant factor for all resource ID's and needs to be synced with isResourceUrl() and extractResourceId()
+        uriBuilder.path(Settings.RESOURCE_ENDPOINT);
+
+        if (!ontologyUniqueId) {
+            uriBuilder.path(entity.getName());
+        }
+
+        uriBuilder.path(id);
+
+        return uriBuilder;
+    }
+
+    /**
+     * This is a convenient wrapper class that wraps the parsing of RDF resource URIs and caches it's result
+     * A resource URI has form /resource/<id> or /resource/<class>/<id>
+     * For details, see https://github.com/republic-of-reinvention/com.stralo.site/issues/15
+     */
+    public static class RdfResourceUri
+    {
+        private URI rawUri;
+        private Path resourcePath;
+        private RdfClass resourceClass;
+        private String resourceId;
+        private boolean valid = false;
+
+        public RdfResourceUri(URI rawUri)
+        {
+            this.rawUri = rawUri;
+
+            if (this.rawUri != null && this.rawUri.getPath() != null) {
+
+                //split the path into parts
+                this.resourcePath = Paths.get(this.rawUri.getPath());
+
+                if (this.resourcePath.startsWith(Settings.RESOURCE_ENDPOINT)) {
+                    switch (this.resourcePath.getNameCount()) {
+                        case 2:
+                            this.resourceId = this.resourcePath.getName(1).toString();
+                            this.valid = StringUtils.isNotEmpty(this.resourceId);
+
+                            break;
+
+                        case 3:
+                            this.resourceClass = RdfFactory.getClassForResourceType(URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + this.resourcePath.getName(1).toString()));
+                            this.resourceId = this.resourcePath.getName(2).toString();
+                            this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
+
+                            break;
+                    }
+                }
+            }
+        }
+
+        /**
+         * The raw URI as it was supplied in the first place
+         */
+        public URI getRawUri()
+        {
+            return rawUri;
+        }
+        /**
+         * The parsed path of the raw URI (split into parts for parsing)
+         */
+        public Path getResourcePath()
+        {
+            return resourcePath;
+        }
+        /**
+         * The detected resource class in case of a typed resource URI or null in case of unsuccessful parsing or an ID-only URI
+         */
+        public RdfClass getResourceClass()
+        {
+            return resourceClass;
+        }
+        /**
+         * The extracted ID or null in case of unsuccessful parsing
+         */
+        public String getResourceId()
+        {
+            return resourceId;
+        }
+        /**
+         * True if the supplied URI was a lexicographical valid resource URI (may not exist though)
+         */
+        public boolean isValid()
+        {
+            return valid;
+        }
+        /**
+         * This only returns true in case of a validly-typed (three-parts) resource URI (see GitHub discussion)
+         */
+        public boolean isValidTypedResource()
+        {
+            return this.isValid() && this.getResourceClass()!=null;
+        }
     }
 }

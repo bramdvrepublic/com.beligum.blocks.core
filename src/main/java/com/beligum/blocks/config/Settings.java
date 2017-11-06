@@ -77,7 +77,6 @@ public class Settings
     private Class<? extends TransactionManager> cachedTransactionManagerClass;
     protected HashMap<String, String> cachedTransactionsProperties = null;
     protected HashMap<String, String> cachedHdfsProperties = null;
-    protected HashMap<String, String> cachedEsProperties = null;
     private String cachedPagesFileExtension;
     private String cachedPagesLockFileExtension;
     private String cachedGeonamesUsername;

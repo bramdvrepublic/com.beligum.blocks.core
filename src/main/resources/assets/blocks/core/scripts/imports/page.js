@@ -17,7 +17,7 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, UI)
+base.plugin("blocks.imports.Page.core", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Class, Widget, BlocksConstants, BlocksMessages)
 {
     var Page = this;
     this.TAGS = ['.' + BlocksConstants.PAGE_CONTENT_CLASS];
@@ -56,7 +56,6 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
 
             //activation is done in menu.js (we need one element)
             pageActions = pageActions.wrap('<div/>');
-            pageActions.append('<hr>');
 
             //initialize the newBlock popover
             //Note that the popover might not be added to the DOM yet if things load fast (hence the timeout)
@@ -82,18 +81,6 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             });
 
             retVal.push(pageActions);
-
-            var title = $("title");
-            if (title.length == 0) {
-                title = $("<title property='title' />").html(BlocksMessages.defaultPageTitle);
-                $("head").append(title);
-            }
-
-            if (title.hasAttribute("property") || title.hasAttribute("data-property")) {
-                retVal.push(this.addValueHtml(Sidebar, title, BlocksMessages.pageTitleLabel, BlocksMessages.pageTitlePlaceholder, false));
-            }
-
-            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), BlocksMessages.pageSubjectLabel, "typeof", BlocksConstants.RDF_CLASSES_ENDPOINT, "title", "curieName", null));
 
             return retVal;
         },

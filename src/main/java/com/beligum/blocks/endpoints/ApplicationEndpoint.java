@@ -41,6 +41,7 @@ import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
@@ -114,23 +115,17 @@ public class ApplicationEndpoint
 
         Locale optimalLocale = R.i18n().getOptimalLocale();
 
-        // First, check if we're dealing with a resource.
+        //this will parse (and cache) the URI in the light of possible detection of an RDF resource URI
+        RdfTools.RdfResourceUri rdfResourceUri = new RdfTools.RdfResourceUri(requestedUri);
+
+        // First, check if we're dealing with an external resource.
         // If it's associated endpoint wants to redirect to another URL (eg. when we use resources of an external ontology)
         // don't try to lookup the resource locally, but redirect there.
         URI externalRedirectUri = null;
-        if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
-            //check if it's a full resource path
-            java.nio.file.Path requestedPath = Paths.get(requestedUri.getPath());
-            if (requestedPath.getNameCount() == 3) {
-                //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type (and 2 to be the ID)
-                URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + requestedPath.getName(1).toString());
-                RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
-                if (rdfClass != null) {
-                    RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
-                    if (endpoint != null) {
-                        externalRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
-                    }
-                }
+        if (rdfResourceUri.isValidTypedResource()) {
+            RdfQueryEndpoint endpoint = rdfResourceUri.getResourceClass().getEndpoint();
+            if (endpoint != null) {
+                externalRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
             }
         }
 
@@ -274,9 +269,9 @@ public class ApplicationEndpoint
                                 throw new IOException("Encountered null-valued default language; this shouldn't happen; " + requestedUri);
                             }
                             else {
-                                //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
+                                //we redirect to the &lang=.. (instead of lang-prefixed url) when we're dealing with a resource to have a cleaner URL
                                 //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
-                                if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
+                                if (rdfResourceUri.isValid()) {
                                     retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
                                 }
                                 else {
@@ -293,7 +288,9 @@ public class ApplicationEndpoint
                             else {
                                 //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
                                 // to make sure it can be mapped in our ontology (during page creation)
-                                if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
+
+                                //TODO this should only validate the resource URI and throw exceptions in the case where we don't want to proceed, think this through first by checking below
+                                if (rdfRe  sourceUri.isValid()) {
                                     java.nio.file.Path requestedPath = Paths.get(requestedUri.getPath());
                                     if (requestedPath.getNameCount() != 3) {
                                         throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
