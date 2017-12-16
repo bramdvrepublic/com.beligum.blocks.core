@@ -45,7 +45,7 @@ import java.util.*;
 /**
  * Created by bram on 3/14/16.
  */
-public class SettingsQueryEndpoint implements RdfQueryEndpoint
+public class LocalQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
     //Note: don't make this static; it messes with the RdfFactory initialization
@@ -55,7 +55,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public SettingsQueryEndpoint()
+    public LocalQueryEndpoint()
     {
     }
 

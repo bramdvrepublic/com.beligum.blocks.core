@@ -74,10 +74,14 @@ public class PageTemplate extends HtmlTemplate
         if (!html.getName().equalsIgnoreCase(HtmlParser.HTML_ROOT_ELEM)) {
             throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; " + relativePath);
         }
+        else {
+            //save it for future use
+            this.rootElement = html;
+        }
 
         // fill in the template attribute's value
         // a little bit verbose, but I didn't find a shorter way...
-        Attributes templateAttr = html.getAttributes();
+        Attributes templateAttr = this.rootElement.getAttributes();
         Map<String, String> attrs = new LinkedHashMap<>();
         templateAttr.populateMap(attrs, true);
         attrs.put(HtmlParser.HTML_ROOT_TEMPLATE_ATTR, this.getTemplateName());

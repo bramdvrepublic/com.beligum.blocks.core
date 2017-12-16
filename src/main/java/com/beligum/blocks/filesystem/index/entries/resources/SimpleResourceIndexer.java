@@ -38,7 +38,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
     private boolean initialized;
     private IRI titleIri;
     private IRI textIri;
-    private IRI commentIri;
+    private IRI descriptionIri;
     private IRI imageIri;
 
     //-----CONSTRUCTORS-----
@@ -60,7 +60,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
 
         String title = null;
         String text = null;
-        String comment = null;
+        String description = null;
         URI image = null;
 
         Iterator<Statement> iter = model.iterator();
@@ -83,12 +83,12 @@ public class SimpleResourceIndexer implements ResourceIndexer
                     Logger.debug("Double " + textIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
-            else if (stmt.getPredicate().equals(commentIri)) {
-                if (comment == null) {
-                    comment = stmt.getObject().stringValue();
+            else if (stmt.getPredicate().equals(descriptionIri)) {
+                if (description == null) {
+                    description = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.debug("Double " + commentIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + descriptionIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(imageIri)) {
@@ -101,12 +101,12 @@ public class SimpleResourceIndexer implements ResourceIndexer
             }
         }
 
-        //a comment property has precedence over a general 'text', but only if it's not empty
-        if (StringUtils.isEmpty(comment)) {
-            comment = text;
+        //a description property has precedence over a general 'text', but only if it's not empty
+        if (StringUtils.isEmpty(description)) {
+            description = text;
         }
 
-        return new DefaultIndexedResource(title, comment, image);
+        return new DefaultIndexedResource(title, description, image);
     }
 
     //-----PROTECTED METHODS-----
@@ -117,7 +117,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
         if (!this.initialized) {
             this.titleIri = SimpleValueFactory.getInstance().createIRI(Terms.title.getFullName().toString());
             this.textIri = SimpleValueFactory.getInstance().createIRI(Terms.text.getFullName().toString());
-            this.commentIri = SimpleValueFactory.getInstance().createIRI(Terms.comment.getFullName().toString());
+            this.descriptionIri = SimpleValueFactory.getInstance().createIRI(Terms.description.getFullName().toString());
             this.imageIri = SimpleValueFactory.getInstance().createIRI(Terms.image.getFullName().toString());
 
             this.initialized = true;

@@ -22,7 +22,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.templating.blocks.HtmlRdfContext;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Joiner;
@@ -156,8 +156,9 @@ public class NewPageSource extends PageSource
                 }
 
                 //if the address of this page is already a resource url, we don't have to generate a new one, but just make it relative
-                // if not, we instance a new resource URL, based on the typeof attribute
-                if (RdfTools.isResourceUrl(this.getUri())) {
+                //if not, we instance a new resource URL, based on the typeof attribute
+                RdfTools.RdfResourceUri rdfResourceUri = new RdfTools.RdfResourceUri(this.getUri());
+                if (rdfResourceUri.isValid()) {
                     //Note that this will chop off any query parameters (especially the lang param) too, which is expected behavior,
                     // because the resource should be the relative 'base' URI, without any languages, otherwise we'll have double results when using the SPARQL endpoint
                     newResource = URI.create(this.getUri().getPath());
@@ -179,12 +180,12 @@ public class NewPageSource extends PageSource
         }
 
         if (StringUtils.isEmpty(vocabAttr)) {
-            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, HtmlTemplate.getDefaultRdfVocab().toString());
+            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, HtmlRdfContext.getDefaultRdfVocab().toString());
         }
 
         if (StringUtils.isEmpty(prefixAttr)) {
             //Note: separate multiple prefixes by a space, like so: prefix="dc: http://purl.org/dc/terms/ schema: http://schema.org/"
-            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlTemplate.getDefaultRdfPrefixes()));
+            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlRdfContext.getDefaultRdfPrefixes()));
         }
     }
     private HtmlAnalyzer findTranslationAnalyzer() throws IOException

@@ -25,7 +25,7 @@ import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.RdfClassImpl;
-import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.SettingsQueryEndpoint;
+import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -56,7 +56,7 @@ public class RdfEndpoint
                                                                 core.Entries.rdfClassAllLabel,
                                                                 new URI[] {},
                                                                 false,
-                                                                new SettingsQueryEndpoint(),
+                                                                new LocalQueryEndpoint(),
                                                                 null);
 
     //-----VARIABLES-----

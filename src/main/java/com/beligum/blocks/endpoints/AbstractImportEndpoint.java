@@ -22,7 +22,6 @@ import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
@@ -133,10 +132,11 @@ public abstract class AbstractImportEndpoint
                 else {
                     //I think it's better to use a true query-like search, so we can add more liberties (eg. specify "Loenhout,Belgium" instead of "Loenhout" and hope for the best)
                     RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
-                    //Hmmm, this doesn't seem to work well with countries (like a query for 'Belgium' yields Zimbabwe if you do a full 'q' query (instead of searching by name))
-                    if (property.equals(Terms.country)) {
-                        queryType = RdfQueryEndpoint.QueryType.NAME;
-                    }
+                    //Note: we disabled this when factoring out the ontologies from blocks-core, please re-enable it if necessary
+                    //                    //Hmmm, this doesn't seem to work well with countries (like a query for 'Belgium' yields Zimbabwe if you do a full 'q' query (instead of searching by name))
+                    //                    if (property.equals(Terms.country)) {
+                    //                        queryType = RdfQueryEndpoint.QueryType.NAME;
+                    //                    }
 
                     //extra wrapper around this part because it might call a remote API and the return values (eg. 404) can be mixed up
                     // with the return values of this endpoint. By wrapping it in a different try-catch, we get extra logging if something goes wrong.

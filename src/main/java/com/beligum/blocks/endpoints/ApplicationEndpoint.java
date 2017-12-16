@@ -24,7 +24,6 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
@@ -33,7 +32,6 @@ import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.rdf.sources.PageSourceCopy;
@@ -61,7 +59,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -122,7 +119,7 @@ public class ApplicationEndpoint
         // If it's associated endpoint wants to redirect to another URL (eg. when we use resources of an external ontology)
         // don't try to lookup the resource locally, but redirect there.
         URI externalRedirectUri = null;
-        if (rdfResourceUri.isValidTypedResource()) {
+        if (rdfResourceUri.isValid() && rdfResourceUri.isTyped()) {
             RdfQueryEndpoint endpoint = rdfResourceUri.getResourceClass().getEndpoint();
             if (endpoint != null) {
                 externalRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
@@ -271,7 +268,9 @@ public class ApplicationEndpoint
                             else {
                                 //we redirect to the &lang=.. (instead of lang-prefixed url) when we're dealing with a resource to have a cleaner URL
                                 //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
-                                if (rdfResourceUri.isValid()) {
+                                //Note: don't use isValid() here because it will redirect /resource/... to eg. /en/resource/...
+                                //      and it will fail the validity test down below. This is only a low-level lexicographical test, not a resource check yet
+                                if (rdfResourceUri.isPrefixed()) {
                                     retValBuilder = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
                                 }
                                 else {
@@ -286,23 +285,9 @@ public class ApplicationEndpoint
                                 throw new NotFoundException("Can't find this page and you have no rights to instance it; " + path);
                             }
                             else {
-                                //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
-                                // to make sure it can be mapped in our ontology (during page creation)
-
-                                //TODO this should only validate the resource URI and throw exceptions in the case where we don't want to proceed, think this through first by checking below
-                                if (rdfRe  sourceUri.isValid()) {
-                                    java.nio.file.Path requestedPath = Paths.get(requestedUri.getPath());
-                                    if (requestedPath.getNameCount() != 3) {
-                                        throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
-                                    }
-                                    else {
-                                        //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
-                                        URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + requestedPath.getName(1).toString());
-                                        RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
-                                        if (resourcedType == null) {
-                                            throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type (" + resourceTypeCurie + ");" + requestedUri);
-                                        }
-                                    }
+                                // This means we're about to create a resource-prefixed URI, but we don't allow the creation of invalid resource URIs
+                                if (rdfResourceUri.isPrefixed() && !rdfResourceUri.isValid()) {
+                                    throw new IOException("Encountered an invalid resource URI;" + requestedUri);
                                 }
 
                                 //this means we redirected from the new-page-selection page
@@ -321,8 +306,7 @@ public class ApplicationEndpoint
                                     //check if the name exists and is all right
                                     HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(newPageTemplateName);
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                        Template
-                                                        newPageInstance =
+                                        Template newPageInstance =
                                                         R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, optimalLocale));
 
                                         //this will allow the blocks javascript/css to be included

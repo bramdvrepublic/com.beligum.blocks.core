@@ -256,7 +256,7 @@ public class TemplateCache
 
                 try (InputStream inputStream = Files.newInputStream(absolutePath)) {
 
-                    String source = HtmlParser.eatVelocityComments(inputStream);
+                    String source = HtmlParser.eatTemplateComments(inputStream);
 
                     HtmlTemplate template = HtmlTemplate.create(templateName, new Source(source), absolutePath, relativePath, parent);
                     if (template != null) {

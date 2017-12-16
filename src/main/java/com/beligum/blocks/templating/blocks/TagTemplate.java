@@ -60,8 +60,10 @@ public class TagTemplate extends HtmlTemplate
             if (templateElements.size() > 1) {
                 throw new IOException("Encountered tag template with more than one <" + HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM + "> tags (" + templateElements.size() + "); " + absolutePath);
             }
-
-            Element templateTag = templateElements.get(0);
+            else {
+                //save it for future use
+                this.rootElement = templateElements.get(0);
+            }
 
             //FIRST, parse the attributes
             //we'll merge the attributes of the <template> tag from the parent, but let them be overridden by this child template
@@ -69,9 +71,9 @@ public class TagTemplate extends HtmlTemplate
             if (superTemplate != null && superTemplate.getAttributes() != null) {
                 attrs = superTemplate.getAttributes();
             }
-            if (templateTag.getAttributes() != null) {
+            if (this.rootElement.getAttributes() != null) {
                 //note that populate just does a put() so this works well to override the parent properties
-                templateTag.getAttributes().populateMap(attrs, true);
+                this.rootElement.getAttributes().populateMap(attrs, true);
             }
             this.attributes = attrs;
         }

@@ -247,7 +247,7 @@ public class RdfTools
         //this is the constant factor for all resource ID's and needs to be synced with isResourceUrl() and extractResourceId()
         uriBuilder.path(Settings.RESOURCE_ENDPOINT);
 
-        if (!ontologyUniqueId) {
+        if (!ontologyUniqueId && entity != null) {
             uriBuilder.path(entity.getName());
         }
 
@@ -263,32 +263,36 @@ public class RdfTools
      */
     public static class RdfResourceUri
     {
-        private URI rawUri;
-        private Path resourcePath;
+        private URI uri;
+        private Path path;
         private RdfClass resourceClass;
         private String resourceId;
+        private boolean prefixed = false;
         private boolean valid = false;
 
-        public RdfResourceUri(URI rawUri)
+        public RdfResourceUri(URI uri)
         {
-            this.rawUri = rawUri;
+            this.uri = uri;
 
-            if (this.rawUri != null && this.rawUri.getPath() != null) {
+            if (this.uri != null && this.uri.getPath() != null) {
 
                 //split the path into parts
-                this.resourcePath = Paths.get(this.rawUri.getPath());
+                this.path = Paths.get(this.uri.getPath());
 
-                if (this.resourcePath.startsWith(Settings.RESOURCE_ENDPOINT)) {
-                    switch (this.resourcePath.getNameCount()) {
+                if (this.path.startsWith(Settings.RESOURCE_ENDPOINT)) {
+
+                    this.prefixed = true;
+
+                    switch (this.path.getNameCount()) {
                         case 2:
-                            this.resourceId = this.resourcePath.getName(1).toString();
+                            this.resourceId = this.path.getName(1).toString();
                             this.valid = StringUtils.isNotEmpty(this.resourceId);
 
                             break;
 
                         case 3:
-                            this.resourceClass = RdfFactory.getClassForResourceType(URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + this.resourcePath.getName(1).toString()));
-                            this.resourceId = this.resourcePath.getName(2).toString();
+                            this.resourceClass = RdfFactory.getClassForResourceType(URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + this.path.getName(1).toString()));
+                            this.resourceId = this.path.getName(2).toString();
                             this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
 
                             break;
@@ -300,16 +304,16 @@ public class RdfTools
         /**
          * The raw URI as it was supplied in the first place
          */
-        public URI getRawUri()
+        public URI getUri()
         {
-            return rawUri;
+            return uri;
         }
         /**
          * The parsed path of the raw URI (split into parts for parsing)
          */
-        public Path getResourcePath()
+        public Path getPath()
         {
-            return resourcePath;
+            return path;
         }
         /**
          * The detected resource class in case of a typed resource URI or null in case of unsuccessful parsing or an ID-only URI
@@ -326,18 +330,47 @@ public class RdfTools
             return resourceId;
         }
         /**
-         * True if the supplied URI was a lexicographical valid resource URI (may not exist though)
+         * True if the supplied URI starts with the correct /resource/ prefix, but may otherwise be invalid (see below)
+         */
+        public boolean isPrefixed()
+        {
+            return prefixed;
+        }
+        /**
+         * True if the supplied URI was a lexicographical valid resource URI consisting of 2 or 3 parts (may not exist though)
          */
         public boolean isValid()
         {
             return valid;
         }
         /**
-         * This only returns true in case of a validly-typed (three-parts) resource URI (see GitHub discussion)
+         * This only returns true in case the 2nd part in a 3-parts resource URI resolved to a type (see GitHub discussion)
          */
-        public boolean isValidTypedResource()
+        public boolean isTyped()
         {
-            return this.isValid() && this.getResourceClass()!=null;
+            return this.getResourceClass() != null;
+        }
+
+        //-----MGMT FUNCTIONS-----
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (!(o instanceof RdfResourceUri)) return false;
+
+            RdfResourceUri that = (RdfResourceUri) o;
+
+            return getUri() != null ? getUri().equals(that.getUri()) : that.getUri() == null;
+        }
+        @Override
+        public int hashCode()
+        {
+            return getUri() != null ? getUri().hashCode() : 0;
+        }
+        @Override
+        public String toString()
+        {
+            return "" + this.getUri();
         }
     }
 }

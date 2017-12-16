@@ -26,7 +26,6 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.Predicate;
@@ -109,9 +108,6 @@ public abstract class HtmlTemplate
 
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
-    private static URI cachedDefaultRdfVocabAttr;
-    private static Map<String, URI> cachedDefaultRdfPrefixAttr;
-
     //-----VARIABLES-----
     protected Map<String, String> attributes;
     protected Path absolutePath;
@@ -126,8 +122,7 @@ public abstract class HtmlTemplate
     protected Iterable<Element> inlineStyleElements;
     protected Iterable<Element> externalStyleElements;
     protected MetaDisplayType displayType;
-    protected URI rdfVocab;
-    protected Map<String, URI> rdfPrefixes;
+    protected Element rootElement;
     protected List<SubstitionReference> normalizationSubstitutions;
 
     //this will enable us to save the 'inheritance tree'
@@ -172,11 +167,6 @@ public abstract class HtmlTemplate
         //INIT THE HTML
         //note: this should take the parent into account
         OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), superTemplate);
-
-        this.rdfVocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get(HtmlParser.RDF_VOCAB_ATTR));
-
-        this.rdfPrefixes = new LinkedHashMap<>();
-        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.rdfPrefixes);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.title = superTemplate != null ? superTemplate.getTitle() : null;
@@ -503,24 +493,6 @@ public abstract class HtmlTemplate
 
         return new StringSource(source.getUri(), result, source.getMimeType(), source.getLanguage());
     }
-    public static URI getDefaultRdfVocab()
-    {
-        if (cachedDefaultRdfVocabAttr == null) {
-            cachedDefaultRdfVocabAttr = Settings.instance().getRdfOntologyUri();
-        }
-
-        return cachedDefaultRdfVocabAttr;
-    }
-    public static Map<String, URI> getDefaultRdfPrefixes()
-    {
-        if (cachedDefaultRdfPrefixAttr == null) {
-            cachedDefaultRdfPrefixAttr = new LinkedHashMap<>();
-            //TODO ideally, this should set the other prefixes too..., but it's more complex...
-            cachedDefaultRdfPrefixAttr.put(Settings.instance().getRdfOntologyPrefix(), Settings.instance().getRdfOntologyUri());
-        }
-
-        return cachedDefaultRdfPrefixAttr;
-    }
     public static boolean isResourceElement(Element element)
     {
         String name = element.getName().toLowerCase();
@@ -658,17 +630,13 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    public URI getRdfVocab()
-    {
-        return rdfVocab;
-    }
-    public Map<String, URI> getRdfPrefixes()
-    {
-        return rdfPrefixes;
-    }
     public MetaDisplayType getDisplayType()
     {
         return displayType;
+    }
+    public Element getRootElement()
+    {
+        return rootElement;
     }
     /**
      * Returns a mapping between JSoup cssSelector strings and places that can be folded/substituted in this template

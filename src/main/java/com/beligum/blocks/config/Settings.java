@@ -63,7 +63,6 @@ public class Settings
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
-    private static final String DEFAULT_GEONAMES_USERNAME = "demo";
 
     private static Settings instance;
     private Boolean cachedDeleteLocksOnStartup;
@@ -79,7 +78,6 @@ public class Settings
     protected HashMap<String, String> cachedHdfsProperties = null;
     private String cachedPagesFileExtension;
     private String cachedPagesLockFileExtension;
-    private String cachedGeonamesUsername;
 
     private Settings()
     {
@@ -376,18 +374,6 @@ public class Settings
     public String getRdfOntologyPrefix()
     {
         return R.configuration().getString("blocks.core.rdf.ontology.prefix");
-    }
-    public String getGeonamesUsername()
-    {
-        if (this.cachedGeonamesUsername == null) {
-            this.cachedGeonamesUsername = R.configuration().getString("blocks.core.geonames.username", null);
-            if (this.cachedGeonamesUsername == null) {
-                Logger.warn("No geonames username specified, using default username '" + DEFAULT_GEONAMES_USERNAME + "', but this is not optimal...");
-                this.cachedGeonamesUsername = DEFAULT_GEONAMES_USERNAME;
-            }
-        }
-
-        return this.cachedGeonamesUsername;
     }
 
     //-----PRIVATE METHODS-----

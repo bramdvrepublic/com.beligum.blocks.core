@@ -132,8 +132,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         if (!this.checkedAbsoluteAddress) {
             //Note: the relative-root removed the leading slash, allowing us to let siteDomain have a prefix path (which is unlikely, but still)
             URI relativePath = HdfsUtils.ROOT.relativize(this.getCanonicalAddress());
-            boolean isResource = RdfTools.isResourceUrl(this.getCanonicalAddress());
-            if (!isResource && this.getLanguage() != null) {
+            RdfTools.RdfResourceUri rdfResourceUri = new RdfTools.RdfResourceUri(this.getCanonicalAddress());
+            if (!rdfResourceUri.isValid() && this.getLanguage() != null) {
                 //note: no leading slash, same reason as above
                 relativePath = URI.create(this.getLanguage().getLanguage() + "/").resolve(relativePath);
             }
@@ -145,7 +145,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
             // but use the 'lang' query parameter in public form, because it reflects the nature
             // of a resource url better, so if the second path-part (the first in public form) is a resource string,
             // we're dealing with a resource page and need to convert it back to it's public form
-            if (isResource && this.getLanguage() != null) {
+            if (rdfResourceUri.isValid() && this.getLanguage() != null) {
                 builder.queryParam(I18nFactory.LANG_QUERY_PARAM, this.getLanguage().getLanguage());
             }
 

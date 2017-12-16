@@ -17,6 +17,7 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.collect.Iterators;
 
@@ -302,7 +303,9 @@ public class TemplateResources
         {
             if (this == o) return true;
             if (!(o instanceof ExternalResource)) return false;
-            if (!super.equals(o)) return false;
+            //Note: it's important this one isn't included or a slight difference (eg. if the @type="application/javascript" comes before the @src)
+            //will trigger inequality, allowing resources to be printed out in double
+            //if (!super.equals(o)) return false;
 
             ExternalResource that = (ExternalResource) o;
 
@@ -311,7 +314,9 @@ public class TemplateResources
         @Override
         public int hashCode()
         {
-            int result = super.hashCode();
+            //Note: see above in equals() why we can't do this
+            //int result = super.hashCode();
+            int result = 1;
             result = 31 * result + (getUri() != null ? getUri().hashCode() : 0);
             return result;
         }
@@ -323,6 +328,8 @@ public class TemplateResources
         {
             super(TemplateResourcesDirective.Argument.inlineStyles, element, joinHint, enableDynamicFingerprinting);
         }
+
+
     }
 
     public class InlineScript extends InlineResource

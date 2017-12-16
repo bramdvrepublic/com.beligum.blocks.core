@@ -17,18 +17,23 @@
 package com.beligum.blocks.filesystem.logger;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.factories.Classes;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.RdfClassImpl;
+import com.beligum.blocks.rdf.ontology.RdfPropertyImpl;
+import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
+import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
+import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.collect.Sets;
+import gen.com.beligum.blocks.core.messages.blocks.ontology;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
@@ -53,7 +58,109 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     //-----CONSTANTS-----
     private static final ValueFactory RDF_FACTORY = SimpleValueFactory.getInstance();
     private static DatatypeFactory DATATYPE_FACTORY;
+
+    //instead of adding the LogEntry to the general ontology class, we decided to put it here,
+    // because it has little to do with the mapping of the general/public ontologies,
+    // it simply uses our same API.
+
+    private static final RdfClass LogEntry = new RdfClassImpl("LogEntry",
+                                                              LocalVocabulary.INSTANCE,
+                                                              ontology.Entries.classTitle_LogEntry,
+                                                              ontology.Entries.classLabel_LogEntry,
+                                                              new URI[] {},
+                                                              false,
+                                                              null);
+
+    private static final RdfProperty type = new RdfPropertyImpl("type",
+                                                                LocalVocabulary.INSTANCE,
+                                                                ontology.Entries.propertyTitle_type,
+                                                                ontology.Entries.propertyLabel_type,
+                                                                RDF.LANGSTRING,
+                                                                InputType.InlineEditor,
+                                                                null,
+                                                                new URI[] {},
+                                                                false);
+
+    private static final RdfProperty subject = new RdfPropertyImpl("subject",
+                                                                   LocalVocabulary.INSTANCE,
+                                                                   ontology.Entries.propertyTitle_subject,
+                                                                   ontology.Entries.propertyLabel_subject,
+                                                                   XSD.ANY_URI,
+                                                                   InputType.Resource,
+                                                                   null,
+                                                                   new URI[] {},
+                                                                   false);
+
+    private static final RdfProperty title = new RdfPropertyImpl("title",
+                                                                 LocalVocabulary.INSTANCE,
+                                                                 ontology.Entries.propertyTitle_title,
+                                                                 ontology.Entries.propertyLabel_title,
+                                                                 RDF.LANGSTRING,
+                                                                 InputType.InlineEditor,
+                                                                 null,
+                                                                 new URI[] {},
+                                                                 false);
+
+    private static final RdfProperty description = new RdfPropertyImpl("description",
+                                                                       LocalVocabulary.INSTANCE,
+                                                                       ontology.Entries.propertyTitle_description,
+                                                                       ontology.Entries.propertyLabel_description,
+                                                                       RDF.LANGSTRING,
+                                                                       InputType.Editor,
+                                                                       null,
+                                                                       new URI[] {},
+                                                                       false);
+
+    private static final RdfProperty createdAt = new RdfPropertyImpl("createdAt",
+                                                                     LocalVocabulary.INSTANCE,
+                                                                     ontology.Entries.propertyTitle_createdAt,
+                                                                     ontology.Entries.propertyLabel_createdAt,
+                                                                     XSD.DATE_TIME,
+                                                                     InputType.DateTime,
+                                                                     null,
+                                                                     new URI[] {},
+                                                                     true);
+
+    private static final RdfProperty username = new RdfPropertyImpl("username",
+                                                                    LocalVocabulary.INSTANCE,
+                                                                    ontology.Entries.propertyTitle_username,
+                                                                    ontology.Entries.propertyLabel_username,
+                                                                    XSD.STRING,
+                                                                    InputType.InlineEditor,
+                                                                    null,
+                                                                    new URI[] {},
+                                                                    false);
+
+    private static final RdfProperty software = new RdfPropertyImpl("software",
+                                                                    LocalVocabulary.INSTANCE,
+                                                                    ontology.Entries.propertyTitle_software,
+                                                                    ontology.Entries.propertyLabel_software,
+                                                                    RDF.LANGSTRING,
+                                                                    InputType.InlineEditor,
+                                                                    null,
+                                                                    new URI[] {},
+                                                                    false);
+
+    private static final RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
+                                                                           LocalVocabulary.INSTANCE,
+                                                                           ontology.Entries.propertyTitle_softwareVersion,
+                                                                           ontology.Entries.propertyLabel_softwareVersion,
+                                                                           RDF.LANGSTRING,
+                                                                           InputType.InlineEditor,
+                                                                           null,
+                                                                           new URI[] {},
+                                                                           false);
+
     static {
+        LogEntry.setProperties(Sets.newHashSet(RdfLogWriter.type,
+                                               RdfLogWriter.subject,
+                                               RdfLogWriter.title,
+                                               RdfLogWriter.description,
+                                               RdfLogWriter.createdAt,
+                                               RdfLogWriter.username,
+                                               RdfLogWriter.software,
+                                               RdfLogWriter.softwareVersion));
+
         try {
             DATATYPE_FACTORY = DatatypeFactory.newInstance();
         }
@@ -84,17 +191,17 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         PageLogEntry pageEntry = (PageLogEntry) logEntry;
 
         //Note: external IRIs always need to be absolute
-        IRI entryId = this.toIRI(RdfTools.createAbsoluteResourceId(Classes.LogEntry));
+        IRI entryId = this.toIRI(RdfTools.createAbsoluteResourceId(RdfLogWriter.LogEntry));
 
         String creatorFirstName = pageEntry.getCreator().getFirstName();
-        if (creatorFirstName==null) {
+        if (creatorFirstName == null) {
             creatorFirstName = "";
         }
         String creatorLastName = pageEntry.getCreator().getLastName();
-        if (creatorLastName==null) {
+        if (creatorLastName == null) {
             creatorLastName = "";
         }
-        String creatorName = (creatorFirstName+" "+creatorLastName).trim();
+        String creatorName = (creatorFirstName + " " + creatorLastName).trim();
         if (StringUtils.isEmpty(creatorName)) {
             creatorName = "anonymous";
         }
@@ -104,20 +211,27 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         String startComment = "----- " + timestampStr + " -----";
         rdfWriter.handleComment(startComment);
 
-        this.logStatement(entryId, RDF.TYPE, Classes.LogEntry);
-        this.logStatement(entryId, Terms.type, pageEntry.getAction().name());
-        this.logStatement(entryId, Terms.subject, pageEntry.getPage().getPublicAbsoluteAddress());
-        this.logStatement(entryId, Terms.title, "Log entry "+timestampStr+" for page "+pageEntry.getPage().getPublicAbsoluteAddress()+"", Locale.ENGLISH);
-        this.logStatement(entryId, Terms.description, "Page " + pageEntry.getPage().getPublicAbsoluteAddress() + " was " + pageEntry.getAction().getVerb() + " by " + creatorName + " on " +
-                                                      ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), BlocksResource.FOLDER_TIMESTAMP_TIMEZONE).format(DateTimeFormatter.RFC_1123_DATE_TIME), Locale.ENGLISH);
-        this.logStatement(entryId, Terms.createdAt, pageEntry.getUTCTimestamp());
-        this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
+        this.logStatement(entryId, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, RdfLogWriter.LogEntry);
+        this.logStatement(entryId, RdfLogWriter.type, pageEntry.getAction().name());
+        this.logStatement(entryId, RdfLogWriter.subject, pageEntry.getPage().getPublicAbsoluteAddress());
+        this.logStatement(entryId, RdfLogWriter.title, "Log entry " + timestampStr + " for page " + pageEntry.getPage().getPublicAbsoluteAddress() + "", Locale.ENGLISH);
+        this.logStatement(entryId, RdfLogWriter.description, "Page " + pageEntry.getPage().getPublicAbsoluteAddress() + " was " + pageEntry.getAction().getVerb() + " by " + creatorName + " on " +
+                                                             ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), BlocksResource.FOLDER_TIMESTAMP_TIMEZONE)
+                                                                          .format(DateTimeFormatter.RFC_1123_DATE_TIME),
+                          Locale.ENGLISH);
+        this.logStatement(entryId, RdfLogWriter.createdAt, pageEntry.getUTCTimestamp());
+
+        //This is legacy code to show this URI was logged in earlier versions of Stralo,
+        //but was replaced by the more uniform 'username' property during the ontology cleanup.
+        //See https://github.com/republic-of-reinvention/com.stralo.site/issues/13
+        //this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
+        this.logStatement(entryId, RdfLogWriter.username, pageEntry.getCreator().getSubject().getPrincipal());
 
         //length is always > 0
         String[] software = this.buildSoftwareId();
-        this.logStatement(entryId, Terms.software, software[0]);
-        if (software.length>1) {
-            this.logStatement(entryId, Terms.softwareVersion, software[1]);
+        this.logStatement(entryId, RdfLogWriter.software, software[0]);
+        if (software.length > 1) {
+            this.logStatement(entryId, RdfLogWriter.softwareVersion, software[1]);
         }
     }
     @Override

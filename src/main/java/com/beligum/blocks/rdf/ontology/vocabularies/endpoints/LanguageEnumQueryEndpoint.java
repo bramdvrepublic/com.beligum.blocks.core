@@ -17,6 +17,7 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.ibm.icu.util.ULocale;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -40,9 +41,11 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
         //we can make the languageSuggestions static and save some space because it won't change across instances anyway
         if (languageSuggestions==null) {
             languageSuggestions = new LinkedHashMap<>();
-            String[] allLangs = Locale.getISOLanguages();
+            //we switched from the built-in java list to the list of the more complete ICU4J project
+            //String[] allLangs = Locale.getISOLanguages();
+            String[] allLangs = ULocale.getISOLanguages();
             for (String lang : allLangs) {
-                LanguageEnumSuggestion sugg = new LanguageEnumSuggestion(Locale.forLanguageTag(lang));
+                LanguageEnumSuggestion sugg = new LanguageEnumSuggestion(ULocale.forLanguageTag(lang).toLocale());
                 languageSuggestions.put(sugg.getValue(), sugg);
             }
         }
