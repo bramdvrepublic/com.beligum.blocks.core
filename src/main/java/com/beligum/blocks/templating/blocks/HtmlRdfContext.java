@@ -16,7 +16,6 @@
 
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.resources.ifaces.Source;
 import com.beligum.blocks.config.Settings;
 import com.google.common.collect.ImmutableMap;
 import net.htmlparser.jericho.Attribute;
@@ -41,16 +40,16 @@ public class HtmlRdfContext
     private static URI cachedDefaultRdfVocabAttr;
     private static Map<String, URI> cachedDefaultRdfPrefixAttr;
 
-    private Source source;
+    private URI sourceUri;
     private Stack<URI> currentVocabStack;
     private Stack<Map<String, URI>> currentPrefixesStack;
     private Set<EndTag> vocabPopTags;
     private Set<EndTag> prefixPopTags;
 
     //-----CONSTRUCTORS-----
-    public HtmlRdfContext(Source source)
+    public HtmlRdfContext(URI sourceUri)
     {
-        this.source = source;
+        this.sourceUri = sourceUri;
 
         this.currentVocabStack = new Stack<>();
         // It doesn't really make sense to start out without any vocab, because all non-prefixed URIs are
@@ -200,7 +199,7 @@ public class HtmlRdfContext
                         //it makes sense to stop if we decided we're dealing with a curie, but it can't be expanded in the current context
                         if (!validCurie) {
                             throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> as a CURIE with an unknown prefix '" + uri.getScheme() + "' in this context; " +
-                                                  this.source.getUri());
+                                                  this.sourceUri);
                         }
                     }
                     else {
@@ -208,7 +207,7 @@ public class HtmlRdfContext
                     }
                 }
                 else {
-                    throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> as a URI or CURIE but it didn't parse to a valid URI; " + this.source.getUri());
+                    throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> as a URI or CURIE but it didn't parse to a valid URI; " + this.sourceUri);
                 }
             }
             //if the value is no CURIE or URI, prefix it with the currentVocab if we have one
@@ -226,7 +225,7 @@ public class HtmlRdfContext
             //the value is no URI, CURIE and we don't have a vocab; it's invalid
             else {
                 throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " +
-                                      this.source.getUri());
+                                      this.sourceUri);
             }
         }
 
@@ -267,7 +266,7 @@ public class HtmlRdfContext
                     retVal = URI.create(attr.getValue().trim());
                 }
                 catch (IllegalArgumentException e) {
-                    throw new IOException("You supplied a '" + HtmlParser.RDF_VOCAB_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.source.getUri() +
+                    throw new IOException("You supplied a '" + HtmlParser.RDF_VOCAB_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
                                           "', but it doesn't seem to be a valid URI; " + attr.getValue(), e);
                 }
             }
@@ -285,7 +284,7 @@ public class HtmlRdfContext
             if (attr != null && attr.hasValue()) {
                 String[] prefixAttrSplit = attr.getValue().trim().split(" ");
                 if (prefixAttrSplit.length % 2 != 0) {
-                    throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.source.getUri() +
+                    throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
                                           "', but it doesn't contain an even space-separated list that form one (or more) key-value pairs; " + attr.getValue());
                 }
                 for (int i = 0; i < prefixAttrSplit.length; i += 2) {
@@ -295,7 +294,7 @@ public class HtmlRdfContext
                         uri = URI.create(prefixAttrSplit[i + 1]);
                     }
                     catch (IllegalArgumentException e) {
-                        throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.source.getUri() +
+                        throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
                                               "', but the value for prefix '" + p + "' doesn't seem to be a valid URI; " + attr.getValue(), e);
                     }
 

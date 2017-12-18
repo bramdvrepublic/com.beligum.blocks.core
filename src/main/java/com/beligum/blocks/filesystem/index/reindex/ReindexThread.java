@@ -84,12 +84,15 @@ public class ReindexThread extends Thread
     private static final String SQL_COLUMN_URI_NAME = "absUri";
     private static final String SQL_COLUMN_STAMP_NAME = "stamp";
 
+    private static final int MAX_NUM_THREADS = Runtime.getRuntime().availableProcessors();
+
     //-----VARIABLES-----
     private final List<String> folders;
     private final Set<RdfClass> classes;
     private final String filter;
     private final int depth;
     private Class<? extends ReindexTask> reindexTaskClass;
+    private Integer fixedNumThreads;
     private final Listener listener;
     private long startStamp;
     private AtomicBoolean cancelThread;
@@ -101,7 +104,7 @@ public class ReindexThread extends Thread
 
     //-----CONSTRUCTORS-----
     public ReindexThread(final List<String> folders, Set<RdfClass> classes, final String filter, final int depth, ResourceRepository repository, final Class<? extends ReindexTask> reindexTaskClass,
-                         final Listener listener) throws IOException
+                         final Integer fixedNumThreads, final Listener listener) throws IOException
     {
         this.folders = folders;
         this.classes = classes;
@@ -109,6 +112,11 @@ public class ReindexThread extends Thread
         this.depth = depth;
         this.repository = repository;
         this.reindexTaskClass = reindexTaskClass;
+        this.fixedNumThreads = fixedNumThreads;
+        if (this.fixedNumThreads != null && this.fixedNumThreads > MAX_NUM_THREADS) {
+            Logger.warn("Requested " + this.fixedNumThreads + " threads, but the maximum is set to " + MAX_NUM_THREADS + ", limiting.");
+            this.fixedNumThreads = MAX_NUM_THREADS;
+        }
         this.listener = listener;
         this.startStamp = System.currentTimeMillis();
         //reset a possibly active global cancellation
@@ -527,7 +535,7 @@ public class ReindexThread extends Thread
 
         //the above code doesn't block when the queue is full, but runs the code in the thread of the submitter instead,
         //the implementation below works as expected.
-        return new BoundedExecutor(nThreads, queueSize);
+        return new BoundedExecutor(this.fixedNumThreads == null ? nThreads : this.fixedNumThreads, queueSize);
     }
 
     //-----INNER CLASSES-----
@@ -739,9 +747,18 @@ public class ReindexThread extends Thread
                             }
 
                             if (txBatchCounter > MAX_PAGES_PER_TX) {
-                                Logger.info("Max transaction limit reached for class " + this.rdfClass +
-                                            " at " + taskCounter + "/" + maxPages + " pages (" + (int) (taskCounter / (float) maxPages * 100) + "%);" +
-                                            " finishing, committing and booting a new one");
+
+                                long timeDiffMillis = System.currentTimeMillis() - startStamp;
+                                float pctDone = taskCounter / (float) maxPages;
+                                float pctLeft = 1.0f - pctDone;
+                                long estimatedMillisLeft = (long) (timeDiffMillis * pctLeft);
+
+                                Logger.info("Max transaction limit reached; finishing, committing and booting a new one.\n" +
+                                            "Statistics: \n" +
+                                            "  - class: " + this.rdfClass + "\n" +
+                                            "  - progress: " + taskCounter + "/" + maxPages + " (" + (int) (pctDone * 100) + "%)\n" +
+                                            "  - time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
+                                            "");
 
                                 reindexExecutor.shutdown();
                                 reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);

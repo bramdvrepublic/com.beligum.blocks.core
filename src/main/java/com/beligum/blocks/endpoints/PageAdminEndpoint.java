@@ -308,7 +308,8 @@ public class PageAdminEndpoint
                              @QueryParam("classCurie") List<String> classCurie,
                              @QueryParam("filter") String filter,
                              @QueryParam("depth") Integer depth,
-                             @QueryParam("task") String task)
+                             @QueryParam("task") String task,
+                             @QueryParam("threads") Integer threads)
                     throws Exception
     {
         Response.ResponseBuilder retVal = null;
@@ -366,7 +367,7 @@ public class PageAdminEndpoint
                     if (allClassesOk) {
                         //will register itself in the static variable
                         //Note: the PageRepository is not very kosher, but it works
-                        currentIndexAllThread = new ReindexThread(folder, rdfClasses, filter, depth, new PageRepository(), taskClass, new ReindexThread.Listener()
+                        currentIndexAllThread = new ReindexThread(folder, rdfClasses, filter, depth, new PageRepository(), taskClass, threads, new ReindexThread.Listener()
                         {
                             @Override
                             public void reindexingStarted()

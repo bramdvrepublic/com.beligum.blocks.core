@@ -47,10 +47,20 @@ public class PropertyMap extends HashMap<String, Object>
     {
         return super.get(this.expandKey(key));
     }
+    @Override
+    public Object put(String key, Object value)
+    {
+        return super.put(this.expandKey(key), value);
+    }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private String expandKey(String key)
+    {
+        Object retVal = this.expandKey((Object)key);
+        return retVal == null ? null : retVal.toString();
+    }
     private Object expandKey(Object key)
     {
         Object retVal = key;

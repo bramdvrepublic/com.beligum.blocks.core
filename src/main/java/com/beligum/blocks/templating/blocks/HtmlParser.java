@@ -316,7 +316,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         Map<String, PropertyToken> propertyRefs = new HashMap<>();
 
         //Create and initialize the RDF context with the root element attributes
-        HtmlRdfContext rdfContext = new HtmlRdfContext(source);
+        HtmlRdfContext rdfContext = new HtmlRdfContext(source.getUri());
+        //Note: this means we initialize the (root of the) template _instance_ with the root of the template itself
         rdfContext.updateContext(htmlTemplate.getRootElement().getStartTag());
 
         // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
@@ -544,7 +545,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //the same for a Tag or Page template; preprocess the replaceable properties
 
         //this will hold the RDF context while we parse our html elements
-        HtmlRdfContext rdfContext = new HtmlRdfContext(source);
+        HtmlRdfContext rdfContext = new HtmlRdfContext(source.getUri());
 
         //initialize the context with the root element attributes
         rdfContext.updateContext(sourceTemplate.getRootElement().getStartTag());
