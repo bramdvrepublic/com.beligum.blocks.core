@@ -29,7 +29,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -188,7 +187,7 @@ public class TemplateInstanceStackDirective extends Block
         //-----VARIABLES-----
         private HtmlTemplate template;
         private TemplateController controller;
-        private Map<String, Object> properties;
+        private PropertyMap properties;
         private int frameDepth;
 
         //-----CONSTRUCTORS-----
@@ -197,7 +196,7 @@ public class TemplateInstanceStackDirective extends Block
             this.template = template;
             this.controller = controller;
             this.frameDepth = frameDepth;
-            this.properties = new HashMap<>();
+            this.properties = new PropertyMap();
         }
 
         //-----PUBLIC METHODS-----
@@ -209,13 +208,9 @@ public class TemplateInstanceStackDirective extends Block
         {
             return controller;
         }
-        public Map<String, Object> getProperties()
+        public PropertyMap getProperties()
         {
             return properties;
-        }
-        public void setProperties(Map<String, Object> properties)
-        {
-            this.properties = properties;
         }
 
         //-----PROTECTED METHODS-----
