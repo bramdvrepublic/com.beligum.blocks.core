@@ -102,7 +102,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             throw new IOException(e);
         }
 
-        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(this.getTransaction(), p), bufferSize));
+        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(tx, p), bufferSize));
     }
     @Override
     public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException

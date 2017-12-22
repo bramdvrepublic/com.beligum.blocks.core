@@ -113,9 +113,13 @@ public class ReindexThread extends Thread
         this.repository = repository;
         this.reindexTaskClass = reindexTaskClass;
         this.fixedNumThreads = fixedNumThreads;
-        if (this.fixedNumThreads != null && this.fixedNumThreads > MAX_NUM_THREADS) {
-            Logger.warn("Requested " + this.fixedNumThreads + " threads, but the maximum is set to " + MAX_NUM_THREADS + ", limiting.");
-            this.fixedNumThreads = MAX_NUM_THREADS;
+        if (this.fixedNumThreads != null) {
+            if (this.fixedNumThreads > MAX_NUM_THREADS) {
+                Logger.warn("Requested " + this.fixedNumThreads + " threads, but the maximum is set to " + MAX_NUM_THREADS + ", limiting.");
+                this.fixedNumThreads = MAX_NUM_THREADS;
+            }
+
+            Logger.info("Capping reindex execution threads to "+this.fixedNumThreads);
         }
         this.listener = listener;
         this.startStamp = System.currentTimeMillis();
@@ -757,7 +761,8 @@ public class ReindexThread extends Thread
                                             "Statistics: \n" +
                                             "  - class: " + this.rdfClass + "\n" +
                                             "  - progress: " + taskCounter + "/" + maxPages + " (" + (int) (pctDone * 100) + "%)\n" +
-                                            "  - time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
+                                            "  - time running: " + DurationFormatUtils.formatDuration(timeDiffMillis, "H:mm:ss") +
+                                            "  - est. time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
                                             "");
 
                                 reindexExecutor.shutdown();

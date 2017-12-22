@@ -65,9 +65,10 @@ import static com.beligum.base.server.R.cacheManager;
 public class StorageFactory
 {
     //-----CONSTANTS-----
-    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
-    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
-    public static final HdfsImplDef DEFAULT_PAGES_NOTX_FILESYSTEM = FileSystems.LOCAL_CHROOT;
+//    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
+    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.SQL;
+//    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
+    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.SQL;
 
     //-----VARIABLES-----
     private static final Object mainPageIndexerLock = new Object();
