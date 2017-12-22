@@ -219,7 +219,7 @@ public class ReadWritePage extends DefaultPage
         }
 
         //move the snapshot in it's place
-        this.getFileContext().rename(snapshotMetaFolder, new Path(newHistoryEntryFolder, oldPage.getMetadataFolder().getName()));
+        this.getFileContext().rename(snapshotMetaFolder, new Path(newHistoryEntryFolder, oldPage.getDotFolder().getName()));
 
         //zip it
         Path newHistoryEntryZipFile = new Path(newHistoryEntryFolder.toUri().toString() + ".tgz");

@@ -380,10 +380,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 String pathNameRec = pathName + Path.SEPARATOR;
 
                 try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                                 " SET " + SQL_COLUMN_PATH_NAME + "=?||" + this.getSqlSubstrFunction(SQL_COLUMN_PATH_NAME, "?") +
+                                                                                 " SET " + SQL_COLUMN_PATH_NAME + "=? || " + this.getSqlSubstrFunction(SQL_COLUMN_PATH_NAME, "?") +
                                                                                  " WHERE " + SQL_COLUMN_PATH_NAME + "=? OR " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ?")) {
                     stmt.setString(1, pathToSql(dst));
-                    stmt.setInt(2, pathNameRec.length() + 1);
+                    stmt.setInt(2, pathName.length() + 1);
                     stmt.setString(3, pathName);
                     stmt.setInt(4, pathNameRec.length() + 1);
                     stmt.setString(5, pathNameRec);
