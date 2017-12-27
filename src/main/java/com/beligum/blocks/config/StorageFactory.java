@@ -37,7 +37,6 @@ import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
@@ -65,25 +64,24 @@ import static com.beligum.base.server.R.cacheManager;
 public class StorageFactory
 {
     //-----CONSTANTS-----
-//    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
-    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.SQL;
-//    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
-    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.SQL;
+    public static final HdfsImplDef DEFAULT_PAGES_TX_FILESYSTEM = FileSystems.LOCAL_TX_CHROOT;
+    public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
 
     //-----VARIABLES-----
     private static final Object mainPageIndexerLock = new Object();
     private static final Object triplestoreIndexerLock = new Object();
     private static final Object transactionManagerLock = new Object();
-    private static final Object pageStoreTxManagerLock = new Object();
-    private static final Object requestTxLock = new Object();
+    private static final Object xadiskTxManagerLock = new Object();
+    private static final Object txLock = new Object();
     private static final Object pageStoreFsLock = new Object();
     private static final Object pageViewFsLock = new Object();
 
     /**
-     * An inherited thread local is needed if we want to support executor services launched from
+     * An inheritable thread local is needed if we want to support executor services launched from
      * an asynchronous thread, so all child-threads spawned from the main async thread will
      * share the same transaction.
      * Note: I assume the access to the contents of this variable is thread safe, right?
+     *       --> the access yes, but we still need to synchronize the glue code, see below.
      */
     private static final ThreadLocal<TX> currentThreadTx = new InheritableThreadLocal();
 
@@ -212,7 +210,7 @@ public class StorageFactory
 
         if (txCache != null) {
             //Sync this with the release code below
-            synchronized (requestTxLock) {
+            synchronized (txLock) {
                 if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
                     try {
                         txCache.put(CacheKeys.REQUEST_TRANSACTION, new TX(getTransactionManager()));
@@ -232,9 +230,13 @@ public class StorageFactory
     {
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
-        synchronized (requestTxLock) {
+        synchronized (txLock) {
             return txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
         }
+    }
+    public static TX getCurrentScopeTx() throws IOException
+    {
+        return R.requestContext().isActive() ? getCurrentRequestTx() : getCurrentThreadTx();
     }
     public static void releaseCurrentRequestTx(boolean forceRollback) throws IOException
     {
@@ -246,7 +248,7 @@ public class StorageFactory
 
             //don't release anything if no tx is active
             if (tx != null) {
-                synchronized (requestTxLock) {
+                synchronized (txLock) {
                     try {
                         tx.close(forceRollback);
                     }
@@ -278,21 +280,23 @@ public class StorageFactory
      */
     public static TX createCurrentThreadTx(TX.Listener listener, long timeoutMillis) throws IOException
     {
-        TX retVal = currentThreadTx.get();
+        synchronized (txLock) {
+            TX retVal = currentThreadTx.get();
 
-        if (retVal == null) {
-            try {
-                currentThreadTx.set(retVal = new TX(getTransactionManager(), listener, timeoutMillis));
+            if (retVal == null) {
+                try {
+                    currentThreadTx.set(retVal = new TX(getTransactionManager(), listener, timeoutMillis));
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while booting up a thread transaction", e);
+                }
             }
-            catch (Exception e) {
-                throw new IOException("Exception caught while booting up a thread transaction", e);
+            else {
+                throw new IOException("Can't create thread transaction because there's an active one already; you should release that one first.");
             }
-        }
-        else {
-            throw new IOException("Can't create thread transaction because there's an active one already; you should release that one first.");
-        }
 
-        return retVal;
+            return retVal;
+        }
     }
     public static TX createCurrentThreadTx() throws IOException
     {
@@ -308,27 +312,29 @@ public class StorageFactory
     }
     public static void releaseCurrentThreadTx(boolean forceRollback) throws IOException
     {
-        TX transaction = currentThreadTx.get();
+        synchronized (txLock) {
+            TX transaction = currentThreadTx.get();
 
-        if (transaction != null) {
-            try {
-                transaction.close(forceRollback);
+            if (transaction != null) {
+                try {
+                    transaction.close(forceRollback);
+                }
+                catch (Throwable e) {
+                    //we can't just swallow the exception; something's wrong and we should report it to the user
+                    throw new IOException("I was unable to close a thread transaction. I'm adding the exception below;", e);
+                }
+                finally {
+                    currentThreadTx.remove();
+                }
             }
-            catch (Throwable e) {
-                //we can't just swallow the exception; something's wrong and we should report it to the user
-                throw new IOException("I was unable to close a thread transaction. I'm adding the exception below;", e);
+            else {
+                throw new IOException("Can't release the current thread transaction because there's none active");
             }
-            finally {
-                currentThreadTx.remove();
-            }
-        }
-        else {
-            throw new IOException("Can't release the current thread transaction because there's none active");
         }
     }
     public static XASession getCurrentXDiskTx() throws IOException
     {
-        TX tx = R.requestContext().isActive() ? getCurrentRequestTx() : getCurrentThreadTx();
+        TX tx = getCurrentScopeTx();
 
         if (tx == null) {
             throw new IOException("We're not in an active transaction context, so I can't instance an XDisk session inside the current transaction scope");
@@ -339,7 +345,7 @@ public class StorageFactory
                 if (tx.getXdiskSession() == null) {
                     try {
                         //boot a new xadisk, register it and save it in our wrapper
-                        tx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
+                        tx.setAndRegisterXdiskSession(getXADiskTransactionManager().createSessionForXATransaction());
                     }
                     catch (Exception e) {
                         throw new IOException("Exception caught while booting up XADisk transaction during request; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
@@ -350,9 +356,9 @@ public class StorageFactory
             return tx.getXdiskSession();
         }
     }
-    public static XAFileSystem getPageStoreTransactionManager() throws IOException
+    public static XAFileSystem getXADiskTransactionManager() throws IOException
     {
-        synchronized (pageStoreTxManagerLock) {
+        synchronized (xadiskTxManagerLock) {
             if (!cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 URI dir = Settings.instance().getPagesStoreJournalDir();
                 if (dir != null) {
@@ -380,7 +386,7 @@ public class StorageFactory
     }
     public static boolean rebootPageStoreTransactionManager()
     {
-        synchronized (pageStoreTxManagerLock) {
+        synchronized (xadiskTxManagerLock) {
             boolean retVal = false;
 
             if (cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
@@ -391,7 +397,7 @@ public class StorageFactory
                     xafs.shutdown();
 
                     //uniform reboot
-                    getPageStoreTransactionManager();
+                    getXADiskTransactionManager();
 
                     retVal = true;
                 }
@@ -406,18 +412,9 @@ public class StorageFactory
     public static Configuration getPageStoreFileSystemConfig() throws IOException
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS_CONFIG)) {
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG,
+                                                     HdfsUtils.createHdfsConfig(Settings.instance().getPagesStoreUri(), null, Settings.instance().getPagesHdfsProperties()));
 
-            URI pageStorePath = Settings.instance().getPagesStorePath();
-            if (StringUtils.isEmpty(pageStorePath.getScheme())) {
-                //make sure we have a schema
-                pageStorePath = URI.create(DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + ":" + pageStorePath.getSchemeSpecificPart());
-                Logger.info("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + "'://' prefix to use the local transactional file system; " +
-                            pageStorePath.toString());
-            }
-
-            Configuration hadoopConfig = HdfsUtils.createHdfsConfig(pageStorePath, DEFAULT_PAGES_TX_FILESYSTEM, null, Settings.instance().getPagesHdfsProperties());
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG, hadoopConfig);
         }
 
         return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG);
@@ -428,8 +425,11 @@ public class StorageFactory
             if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
                 FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
-                //boot the XADisk instance too (probably still null here, good place to doIsValid them together)
-                getPageStoreTransactionManager();
+                //TODO should we move this to the LOCAL_TX implementations?
+                if (StorageFactory.needsXADisk(fileContext)) {
+                    //boot the XADisk instance too (probably still null here, good place to boot them together)
+                    getXADiskTransactionManager();
+                }
 
                 //instance the root folder if needed
                 //TODO: commented out because we're not in a transaction here
@@ -444,21 +444,11 @@ public class StorageFactory
 
         return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS);
     }
-    public static Configuration getPageViewFileSystemConfig() throws IOException
+    public static Configuration getPageViewFileSystemConfig()
     {
         if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG)) {
-
-            URI pageViewPath = Settings.instance().getPagesViewPath();
-            if (StringUtils.isEmpty(pageViewPath.getScheme())) {
-                //make sure we have a schema
-                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + ":" + pageViewPath.getSchemeSpecificPart());
-                Logger.warn("The page view path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "'://' prefix to use the local file system; " +
-                            pageViewPath.toString());
-            }
-
-            Configuration hadoopConfig = HdfsUtils.createHdfsConfig(pageViewPath, DEFAULT_PAGES_VIEW_FILESYSTEM, null, Settings.instance().getPagesHdfsProperties());
-
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, hadoopConfig);
+            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG,
+                                                     HdfsUtils.createHdfsConfig(Settings.instance().getPagesViewUri(), null, Settings.instance().getPagesHdfsProperties()));
         }
 
         return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG);
@@ -472,6 +462,11 @@ public class StorageFactory
         }
 
         return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS);
+    }
+    public static boolean needsXADisk(FileContext fileContext)
+    {
+        String schema = fileContext.getDefaultFileSystem().getUri().getScheme();
+        return schema.equals(FileSystems.LOCAL_TX.getScheme()) || schema.equals(FileSystems.LOCAL_TX_CHROOT.getScheme());
     }
 
     //-----PROTECTED METHODS-----

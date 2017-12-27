@@ -20,17 +20,16 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.TikaMimeType;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.FileVisitor;
 import java.security.SecureRandom;
@@ -186,12 +185,11 @@ public class HdfsUtils
      * Create a new HDFS configuration for the supplied arguments.
      *
      * @param uri             the URI of the file system
-     * @param impl            the implementation of the file system (or null if no specific extra implementation is needed by the URI)
      * @param proxyUser       the hadoop proxy user or null to skip proxyuser configuration
      * @param extraProperties a map of all extra properties that will be loaded in (can be null too)
      * @return
      */
-    public static Configuration createHdfsConfig(URI uri, HdfsImplDef impl, String proxyUser, Map<String, String> extraProperties)
+    public static Configuration createHdfsConfig(URI uri, String proxyUser, Map<String, String> extraProperties)
     {
         Configuration retVal = new Configuration(true);
 
@@ -204,6 +202,7 @@ public class HdfsUtils
 
         // Register our custom FS (if we use it) so it can be found by HDFS
         // Note: below we have a chance to override this again with the conf
+        HdfsImplDef impl = FileSystems.forScheme(uri.getScheme());
         if (impl != null) {
             if (impl.getScheme().equals(uri.getScheme())) {
                 // Old code, for backward reference
@@ -215,7 +214,7 @@ public class HdfsUtils
                 }
             }
             else {
-                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an setRollbackOnly; " + uri);
+                Logger.warn("Watch out: you supplied a HDFS filesystem, but the passed URI doesn't use it, this is probably an error; " + uri);
             }
         }
 
@@ -257,6 +256,57 @@ public class HdfsUtils
 
         return retVal;
     }
+    /**
+     * This was copied over from org.apache.hadoop.fs.FileUtil.copy() and changed to accommodate for FileContext instead of FileSystem
+     */
+    public static boolean copy(FileContext srcFS, Path src, FileContext dstFS, Path dst, boolean deleteSource, boolean overwrite, Configuration conf) throws IOException
+    {
+        dst = checkDest(src.getName(), dstFS, dst, overwrite);
+
+        FileStatus srcStatus = srcFS.getFileStatus(src);
+        if (srcStatus.isDirectory()) {
+            checkDependencies(srcFS, src, dstFS, dst);
+            try {
+                dstFS.mkdir(dst, FsPermission.getDirDefault(), true);
+            }
+            catch (FileAlreadyExistsException e) {
+                return false;
+            }
+            RemoteIterator<FileStatus> contents = srcFS.listStatus(src);
+            while (contents.hasNext()) {
+                Path path = contents.next().getPath();
+                copy(srcFS, path, dstFS, new Path(dst, path.getName()), deleteSource, overwrite, conf);
+            }
+        }
+        else {
+            InputStream in = null;
+            OutputStream out = null;
+            try {
+                in = srcFS.open(src);
+
+                EnumSet<CreateFlag> opts = EnumSet.of(CreateFlag.CREATE);
+                if (overwrite) {
+                    opts.add(CreateFlag.OVERWRITE);
+                }
+                out = dstFS.create(dst, opts, Options.CreateOpts.createParent());
+                org.apache.hadoop.io.IOUtils.copyBytes(in, out, conf, true);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            finally {
+                IOUtils.closeQuietly(out);
+                IOUtils.closeQuietly(in);
+            }
+        }
+        if (deleteSource) {
+            return srcFS.delete(src, true);
+        }
+        else {
+            return true;
+        }
+
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -291,6 +341,43 @@ public class HdfsUtils
     private static Configuration getConf()
     {
         return new Configuration();
+    }
+    /**
+     * Equivalent of org.apache.hadoop.fs.FileUtil.checkDest() but with FileContext
+     */
+    private static Path checkDest(String srcName, FileContext dstFS, Path dst, boolean overwrite) throws IOException
+    {
+        if (dstFS.util().exists(dst)) {
+            FileStatus sdst = dstFS.getFileStatus(dst);
+            if (sdst.isDirectory()) {
+                if (null == srcName) {
+                    throw new IOException("Target " + dst + " is a directory");
+                }
+                return checkDest(null, dstFS, new Path(dst, srcName), overwrite);
+            }
+            else if (!overwrite) {
+                throw new IOException("Target " + dst + " already exists");
+            }
+        }
+        return dst;
+    }
+    /**
+     * Equivalent of org.apache.hadoop.fs.FileUtil.checkDependencies() but with FileContext
+     */
+    private static void checkDependencies(FileContext srcFS, Path src, FileContext dstFS, Path dst) throws IOException
+    {
+        if (srcFS == dstFS) {
+            String srcq = src.makeQualified(srcFS.getDefaultFileSystem().getUri(), srcFS.getWorkingDirectory()).toString() + Path.SEPARATOR;
+            String dstq = dst.makeQualified(dstFS.getDefaultFileSystem().getUri(), dstFS.getWorkingDirectory()).toString() + Path.SEPARATOR;
+            if (dstq.startsWith(srcq)) {
+                if (srcq.length() == dstq.length()) {
+                    throw new IOException("Cannot copy " + src + " to itself.");
+                }
+                else {
+                    throw new IOException("Cannot copy " + src + " to its subdirectory " + dst);
+                }
+            }
+        }
     }
 
     //-----INNER CLASSES------

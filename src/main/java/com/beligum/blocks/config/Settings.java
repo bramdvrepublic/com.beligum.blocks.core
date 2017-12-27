@@ -20,6 +20,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
+import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrMapper;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
 import com.google.common.collect.ImmutableMap;
@@ -181,7 +183,15 @@ public class Settings
     {
         return R.configuration().getContextConfig().resolveLocalRoot(CONTEXT_DEFAULT_PAGES_DIR, true);
     }
-    public URI getPagesStorePath()
+    public String getPagesFileSystemScheme()
+    {
+        return R.configuration().getString("blocks.core.pages.filesystem", null);
+    }
+    public String getPagesReadOnlyFileSystemScheme()
+    {
+        return R.configuration().getString("blocks.core.pages.filesystem-ro", null);
+    }
+    public URI getPagesStoreUri()
     {
         if (this.cachedPagesStorePath == null) {
             String dir = R.configuration().getString("blocks.core.pages.store-path");
@@ -202,17 +212,14 @@ public class Settings
             }
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
-                //make sure we have a schema
-                this.cachedPagesStorePath = URI.create(StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() + ":" + this.cachedPagesStorePath.getSchemeSpecificPart());
-                Logger.info("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM.getScheme() +
-                            "://' prefix to use the local transactional file system; " +
-                            this.cachedPagesStorePath.toString());
+                this.cachedPagesStorePath = this.buildDefaultPagesUri(this.cachedPagesStorePath, false);
+                Logger.info("The pages store URI wasn't set explicitly or doesn't have a schema, auto-fixing it; " + this.cachedPagesStorePath.toString());
             }
         }
 
         return this.cachedPagesStorePath;
     }
-    public URI getPagesViewPath()
+    public URI getPagesViewUri()
     {
         if (this.cachedPagesViewPath == null) {
             String dir = R.configuration().getString("blocks.core.pages.view-path", null);
@@ -227,16 +234,11 @@ public class Settings
 
                 this.cachedPagesViewPath = URI.create(dir);
             }
-            else {
-                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + ":" + this.getPagesStorePath().getSchemeSpecificPart());
-                Logger.info("No pages view store path configured, trying to build a local view path based on the pages store path; " + this.cachedPagesViewPath);
-            }
 
             //make sure we have a schema
-            if (StringUtils.isEmpty(this.cachedPagesViewPath.getScheme())) {
-                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + ":" + this.cachedPagesViewPath.getSchemeSpecificPart());
-                Logger.info("The view store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM.getScheme() + "://' prefix to use the local file system; " +
-                            this.cachedPagesViewPath.toString());
+            if (this.cachedPagesViewPath == null || StringUtils.isEmpty(this.cachedPagesViewPath.getScheme())) {
+                this.cachedPagesViewPath = this.buildDefaultPagesUri(this.getPagesStoreUri(), true);
+                Logger.info("The pages view URI wasn't set explicitly or doesn't have a schema, auto-fixing it; " + this.cachedPagesViewPath.toString());
             }
         }
 
@@ -321,12 +323,10 @@ public class Settings
     public Map<String, String> getPagesHdfsProperties()
     {
         if (this.cachedHdfsProperties == null) {
-            this.cachedHdfsProperties = new HashMap<String, String>();
+            this.cachedHdfsProperties = new HashMap<>();
             List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(PAGES_HDFS_PROPERTIES_KEY);
             for (HierarchicalConfiguration property : properties) {
-                String propertyKey = property.getString("name");
-                String propertyValue = property.getString("value");
-                this.cachedHdfsProperties.put(propertyKey, propertyValue);
+                this.cachedHdfsProperties.put(property.getString("name"), property.getString("value"));
             }
         }
 
@@ -377,4 +377,24 @@ public class Settings
     }
 
     //-----PRIVATE METHODS-----
+    private URI buildDefaultPagesUri(URI tempUri, boolean readOnly)
+    {
+        //first, we try to select as good as possible, but if we don't have a specific read-only fs,
+        //we try to revert to the general default (read/write) fs.
+        String scheme = readOnly ? this.getPagesReadOnlyFileSystemScheme() : this.getPagesFileSystemScheme();
+        if (readOnly && StringUtils.isEmpty(scheme)) {
+            scheme = this.getPagesFileSystemScheme();
+        }
+
+        HdfsImplDef confFs = FileSystems.forScheme(scheme);
+        if (confFs == null) {
+            confFs = readOnly ? StorageFactory.DEFAULT_PAGES_VIEW_FILESYSTEM : StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM;
+            //same as before: if we don't have a configured default for read-only, revert to the read-write version
+            if (readOnly && confFs == null) {
+                confFs = StorageFactory.DEFAULT_PAGES_TX_FILESYSTEM;
+            }
+        }
+
+        return confFs == null ? null : UriBuilder.fromUri(tempUri).scheme(confFs.getScheme()).build();
+    }
 }

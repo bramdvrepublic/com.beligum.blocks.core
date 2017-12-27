@@ -18,11 +18,24 @@ package com.beligum.blocks.filesystem.hdfs.impl;
 
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by bram on 1/14/17.
  */
 public class FileSystems
 {
+    private static Map<String, HdfsImplDef> registeredFs = new HashMap<>();
+    public static void register(HdfsImplDef hdfsImplDef)
+    {
+        registeredFs.put(hdfsImplDef.getScheme(), hdfsImplDef);
+    }
+    public static HdfsImplDef forScheme(String scheme)
+    {
+        return scheme == null ? null : registeredFs.get(scheme);
+    }
+
     public static final HdfsImplDef LOCAL = new HdfsImplDef(LocalReadWriteFS.SCHEME, LocalReadWriteFS.class);
     public static final HdfsImplDef LOCAL_CHROOT = new HdfsImplDef(ChRootedLocalReadWriteFS.SCHEME, ChRootedLocalReadWriteFS.class);
     public static final HdfsImplDef LOCAL_RO = new HdfsImplDef(LocalReadOnlyFS.SCHEME, LocalReadOnlyFS.class);

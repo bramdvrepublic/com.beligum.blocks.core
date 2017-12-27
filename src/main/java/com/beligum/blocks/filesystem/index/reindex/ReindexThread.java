@@ -66,23 +66,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Created by bram on 15/04/17.
  */
-public class ReindexThread extends Thread
+public class ReindexThread extends Thread implements LongRunningThread
 {
     //-----CONSTANTS-----
-    public interface Listener
-    {
-        void reindexingStarted();
-
-        void reindexingEnded();
-    }
-
     //this is the folder that will hold all temp files for all reindexing tasks
-    private static final String TEMP_FOLDER_NAME = "reindex";
+    public static final String TEMP_REINDEX_FOLDER_NAME = "reindex";
     private static final String SQL_TABLE_NAME = "resource";
     private static final String SQL_COLUMN_ID_NAME = "id";
     private static final String SQL_COLUMN_TYPE_NAME = "rdfClassCurie";
     private static final String SQL_COLUMN_URI_NAME = "absUri";
     private static final String SQL_COLUMN_STAMP_NAME = "stamp";
+    private static final String TASK_PARAM_DELIM = ";";
 
     private static final int MAX_NUM_THREADS = Runtime.getRuntime().availableProcessors();
 
@@ -92,6 +86,7 @@ public class ReindexThread extends Thread
     private final String filter;
     private final int depth;
     private Class<? extends ReindexTask> reindexTaskClass;
+    private final Map<String, String> params;
     private Integer fixedNumThreads;
     private final Listener listener;
     private long startStamp;
@@ -104,7 +99,7 @@ public class ReindexThread extends Thread
 
     //-----CONSTRUCTORS-----
     public ReindexThread(final List<String> folders, Set<RdfClass> classes, final String filter, final int depth, ResourceRepository repository, final Class<? extends ReindexTask> reindexTaskClass,
-                         final Integer fixedNumThreads, final Listener listener) throws IOException
+                         final List<String> params, final Integer fixedNumThreads, final Listener listener) throws IOException
     {
         this.folders = folders;
         this.classes = classes;
@@ -112,6 +107,21 @@ public class ReindexThread extends Thread
         this.depth = depth;
         this.repository = repository;
         this.reindexTaskClass = reindexTaskClass;
+        this.params = new HashMap<>();
+        if (params != null) {
+            for (String p : params) {
+                String[] keyVal = p.split(TASK_PARAM_DELIM);
+                if (keyVal.length != 2) {
+                    throw new IOException("Encountered invalid task parameter; it should have a key/value delimited by '" + TASK_PARAM_DELIM + "' and formatted like this: 'key" + TASK_PARAM_DELIM +
+                                          "value'; " + p);
+                }
+                else {
+                    //let's not trim or do any cleanup
+                    this.params.put(keyVal[0], keyVal[1]);
+                }
+            }
+        }
+
         this.fixedNumThreads = fixedNumThreads;
         if (this.fixedNumThreads != null) {
             if (this.fixedNumThreads > MAX_NUM_THREADS) {
@@ -119,7 +129,7 @@ public class ReindexThread extends Thread
                 this.fixedNumThreads = MAX_NUM_THREADS;
             }
 
-            Logger.info("Capping reindex execution threads to "+this.fixedNumThreads);
+            Logger.info("Capping reindex execution threads to " + this.fixedNumThreads);
         }
         this.listener = listener;
         this.startStamp = System.currentTimeMillis();
@@ -128,7 +138,7 @@ public class ReindexThread extends Thread
 
         //build a SQLite database in the temp folder that will hold all files to reindex, ordered by type,
         //Note: we don't add the start stamp to the file name anymore, so we can resume a broken reindex session
-        this.dbFile = R.configuration().getContextConfig().getLocalTempDir().resolve(TEMP_FOLDER_NAME).resolve("db_reindex.db");
+        this.dbFile = R.configuration().getContextConfig().getLocalTempDir().resolve(TEMP_REINDEX_FOLDER_NAME).resolve("db_reindex.db");
         //an existing file means we're resuming an old session
         this.resumed = Files.exists(this.dbFile);
         //make sure the parent exists
@@ -150,7 +160,7 @@ public class ReindexThread extends Thread
                 Logger.info("Launching a new reindexation task of " + this.reindexTaskClass.getSimpleName() + ".");
             }
             if (this.listener != null) {
-                this.listener.reindexingStarted();
+                this.listener.longRunningThreadStarted();
             }
 
             //we'll have one big connection during the entire session
@@ -196,8 +206,9 @@ public class ReindexThread extends Thread
                 Logger.error("Error while shutting down long-running transaction of page reindexation", e);
             }
 
+            long pageNum = -1;
             try {
-                long pageNum = this.getDatabaseSize();
+                pageNum = this.getDatabaseSize();
 
                 //all db work is done, we can safely close it now
                 this.dbConnection.close();
@@ -215,21 +226,30 @@ public class ReindexThread extends Thread
             }
             finally {
                 this.dbFile = null;
+
+                //boot the task class once more to signal we're all done
+                try {
+                    this.reindexTaskClass.newInstance().finished(cancelThread.get(), pageNum);
+                }
+                catch (Exception e) {
+                    Logger.error("Error while signalling the task class we're all done", e);
+                }
             }
 
             Logger.info("Reindexing " + (cancelThread.get() ? "cancelled" : "completed") + " in " +
                         DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
 
             if (this.listener != null) {
-                this.listener.reindexingEnded();
+                this.listener.longRunningThreadEnded();
             }
         }
     }
-
+    @Override
     public long getStartStamp()
     {
         return startStamp;
     }
+    @Override
     public synchronized void cancel()
     {
         this.cancelThread.set(true);
@@ -761,7 +781,7 @@ public class ReindexThread extends Thread
                                             "Statistics: \n" +
                                             "  - class: " + this.rdfClass + "\n" +
                                             "  - progress: " + taskCounter + "/" + maxPages + " (" + (int) (pctDone * 100) + "%)\n" +
-                                            "  - time running: " + DurationFormatUtils.formatDuration(timeDiffMillis, "H:mm:ss") +
+                                            "  - time running: " + DurationFormatUtils.formatDuration(timeDiffMillis, "H:mm:ss") + "\n" +
                                             "  - est. time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
                                             "");
 
@@ -787,15 +807,17 @@ public class ReindexThread extends Thread
                                 }
 
                                 //start a new transaction
-                                transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
+
+                                //there's something wrong with the TX handling...
+                                transaction = StorageFactory.createCurr entThreadTx(this, Sync.ONE_DAY);
                                 indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getMainPageIndexer().connect(transaction),
                                                                                                       StorageFactory.getTriplestoreIndexer().connect(transaction));
                             }
 
                             //Logger.info("Submitting reindexation of " + publicUri);
                             ReindexTask reindexTask = reindexTaskClass.newInstance();
-                            reindexTask.init(URI.create(resultSet.getString(SQL_COLUMN_URI_NAME)), repository, indexConnectionsOption, deleteQueries, SQL_TABLE_NAME, SQL_COLUMN_ID_NAME,
-                                             resultSet.getLong(SQL_COLUMN_ID_NAME), reindexCounter, cancelThread);
+                            reindexTask.create(URI.create(resultSet.getString(SQL_COLUMN_URI_NAME)), repository, indexConnectionsOption, params, deleteQueries, SQL_TABLE_NAME, SQL_COLUMN_ID_NAME,
+                                               resultSet.getLong(SQL_COLUMN_ID_NAME), reindexCounter, cancelThread);
                             reindexExecutor.submit(reindexTask);
 
                             taskCounter++;

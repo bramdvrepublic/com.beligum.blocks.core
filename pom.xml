@@ -595,6 +595,12 @@
             <version>60.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.8.11.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>

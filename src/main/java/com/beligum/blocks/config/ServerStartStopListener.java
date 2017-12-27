@@ -30,10 +30,8 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
-import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 
 import javax.transaction.TransactionManager;
 import java.io.IOException;
@@ -68,14 +66,6 @@ public class ServerStartStopListener implements ServerLifecycleListener
             //we might as well pre-load the templates here
             TemplateCache.instance();
 
-            //this will boot the xadisk transaction manager (and possibly do a restore)
-            try {
-                StorageFactory.getPageStoreTransactionManager();
-            }
-            catch (Exception e) {
-                throw new RuntimeIOException("Unable to boot the page store transaction manager during starup, this is bad and I can't proceed", e);
-            }
-
             //boot up all the static RDF fields
             RdfFactory.assertInitialized();
         }
@@ -91,8 +81,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
             //don't boot it up if it's not there
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 try {
-                    XAFileSystem xafs = StorageFactory.getPageStoreTransactionManager();
-                    xafs.shutdown();
+                    StorageFactory.getXADiskTransactionManager().shutdown();
                 }
                 catch (IOException e) {
                     Logger.error("Exception caught while shutting down XADisk", e);

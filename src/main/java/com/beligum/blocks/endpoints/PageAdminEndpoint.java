@@ -27,9 +27,7 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.index.reindex.PageReindexTask;
-import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
-import com.beligum.blocks.filesystem.index.reindex.ReindexThread;
+import com.beligum.blocks.filesystem.index.reindex.*;
 import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -76,17 +74,17 @@ public class PageAdminEndpoint
     private static Format ERROR_STAMP_FORMATTER = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
 
     //-----VARIABLES-----
-    private static Object currentIndexAllLock = new Object();
-    private static ReindexThread currentIndexAllThread = null;
+    private static Object longRunningThreadLock = new Object();
+    private static LongRunningThread longRunningThread = null;
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
     public static void endAllAsyncTasksNow()
     {
-        synchronized (currentIndexAllLock) {
-            if (currentIndexAllThread != null) {
-                currentIndexAllThread.cancel();
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread != null) {
+                longRunningThread.cancel();
             }
         }
     }
@@ -277,8 +275,8 @@ public class PageAdminEndpoint
     {
         Response.ResponseBuilder retVal = null;
 
-        synchronized (currentIndexAllLock) {
-            if (currentIndexAllThread == null) {
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread == null) {
                 Page page = R.resourceManager().get(uri, MimeTypes.HTML, Page.class);
                 if (page == null) {
                     throw new NotFoundException("Page not found; " + uri);
@@ -286,15 +284,15 @@ public class PageAdminEndpoint
 
                 //Note: transaction handling is done through the global XA transaction
                 //Note: the page index must be indexed first, because it's used to search the translations during triplestore indexing!
-                getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
-                getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).update(page);
+                getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
+                getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
 
                 retVal = Response.ok("Index of item successfull; " + uri);
             }
             else {
                 retVal =
                                 Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
-                                            ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+                                            ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
             }
         }
 
@@ -309,6 +307,7 @@ public class PageAdminEndpoint
                              @QueryParam("filter") String filter,
                              @QueryParam("depth") Integer depth,
                              @QueryParam("task") String task,
+                             @QueryParam("param") List<String> param,
                              @QueryParam("threads") Integer threads)
                     throws Exception
     {
@@ -325,8 +324,8 @@ public class PageAdminEndpoint
             classCurie = Lists.newArrayList();
         }
 
-        synchronized (currentIndexAllLock) {
-            if (currentIndexAllThread == null) {
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread == null) {
                 final Map<String, Class<? extends ReindexTask>> taskMappings = ImmutableMap.<String, Class<? extends ReindexTask>>builder()
                                 .put("pageReindex", PageReindexTask.class)
                                 .put("pageFix", PageFixTask.class)
@@ -367,22 +366,22 @@ public class PageAdminEndpoint
                     if (allClassesOk) {
                         //will register itself in the static variable
                         //Note: the PageRepository is not very kosher, but it works
-                        currentIndexAllThread = new ReindexThread(folder, rdfClasses, filter, depth, new PageRepository(), taskClass, threads, new ReindexThread.Listener()
+                        longRunningThread = new ReindexThread(folder, rdfClasses, filter, depth, new PageRepository(), taskClass, param, threads, new ReindexThread.Listener()
                         {
                             @Override
-                            public void reindexingStarted()
+                            public void longRunningThreadStarted()
                             {
                             }
                             @Override
-                            public void reindexingEnded()
+                            public void longRunningThreadEnded()
                             {
-                                synchronized (currentIndexAllLock) {
-                                    currentIndexAllThread = null;
+                                synchronized (longRunningThreadLock) {
+                                    longRunningThread = null;
                                 }
                             }
                         });
 
-                        currentIndexAllThread.start();
+                        longRunningThread.start();
 
                         retVal = Response.ok("Launched new reindexation thread with" +
                                              " folder " + Arrays.toString(folder.toArray()) + "," +
@@ -400,7 +399,7 @@ public class PageAdminEndpoint
             }
             else {
                 retVal = Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " +
-                                     ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+                                     ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
             }
         }
 
@@ -417,8 +416,8 @@ public class PageAdminEndpoint
     //        synchronized (currentIndexAllLock) {
     //        if (currentIndexAllThread == null) {
     //            try {
-    //                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
-    //                StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()).deleteAll();
+    //                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
+    //                StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
     //            }
     //            finally {
     //                //simulate a transaction commit for each action or we'll end up with errors.
@@ -447,9 +446,9 @@ public class PageAdminEndpoint
     {
         Response.ResponseBuilder retVal = null;
 
-        synchronized (currentIndexAllLock) {
-            if (currentIndexAllThread != null) {
-                currentIndexAllThread.cancel();
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread != null) {
+                longRunningThread.cancel();
                 retVal = Response.ok("Reindex all process cancelled");
             }
             else {
@@ -467,12 +466,50 @@ public class PageAdminEndpoint
     {
         Response.ResponseBuilder retVal = null;
 
-        synchronized (currentIndexAllLock) {
-            if (currentIndexAllThread != null) {
-                retVal = Response.ok("Reindex all process currently running and started at " + ERROR_STAMP_FORMATTER.format(currentIndexAllThread.getStartStamp()));
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread != null) {
+                retVal = Response.ok("Reindex all process currently running and started at " + ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
             }
             else {
                 retVal = Response.ok("No reindex all process currently running.");
+            }
+        }
+
+        return retVal.build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/import")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response importPages(@QueryParam("db") String db) throws Exception
+    {
+        Response.ResponseBuilder retVal = null;
+
+        synchronized (longRunningThreadLock) {
+            if (longRunningThread == null) {
+                longRunningThread = new PageImportThread(db, new LongRunningThread.Listener()
+                {
+                    @Override
+                    public void longRunningThreadStarted()
+                    {
+                    }
+                    @Override
+                    public void longRunningThreadEnded()
+                    {
+                        synchronized (longRunningThreadLock) {
+                            longRunningThread = null;
+                        }
+                    }
+                });
+
+                longRunningThread.start();
+
+                retVal = Response.ok("Launched new page import thread with" +
+                                     " db " + db);
+            }
+            else {
+                retVal = Response.ok("Can't start an import session because there's a long-running process running that was launched on " +
+                                     ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
             }
         }
 

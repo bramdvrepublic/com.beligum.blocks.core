@@ -23,7 +23,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ReleaseFilter;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
-import com.beligum.blocks.filesystem.index.ifaces.IndexConnection;
+import com.beligum.blocks.filesystem.index.ifaces.XAClosableResource;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
 import javax.transaction.Status;
@@ -32,8 +32,8 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This is actually a wrapper around a central JTA transaction, but with some additional functionality
@@ -51,13 +51,14 @@ public class TX implements AutoCloseable
     public interface Listener
     {
         void transactionTimedOut(TX transaction);
+
         void transactionStatusChanged(TX transaction, int oldStatus, int newStatus);
     }
 
     //-----VARIABLES-----
     private TransactionManager transactionManager;
     private Transaction jtaTransaction;
-    private Set<XAResource> registeredResources;
+    private Map<String, XAResource> registeredResources;
     private XASession xdiskSession;
 
     //-----CONSTRUCTORS-----
@@ -87,32 +88,32 @@ public class TX implements AutoCloseable
             if (this.jtaTransaction instanceof BitronixTransaction) {
                 BitronixTransaction btxTx = (BitronixTransaction) this.jtaTransaction;
 
-//                if (listener != null) {
-                    btxTx.addTransactionStatusChangeListener(new TransactionStatusChangeListener()
+                //                if (listener != null) {
+                btxTx.addTransactionStatusChangeListener(new TransactionStatusChangeListener()
+                {
+                    @Override
+                    public void statusChanged(int oldStatus, int newStatus)
                     {
-                        @Override
-                        public void statusChanged(int oldStatus, int newStatus)
-                        {
-                            //Logger.debug("Transaction " + jtaTransaction.hashCode() + " changed status from " + Decoder.decodeStatus(oldStatus)+" to "+Decoder.decodeStatus(newStatus));
+                        //Logger.debug("Transaction " + jtaTransaction.hashCode() + " changed status from " + Decoder.decodeStatus(oldStatus)+" to "+Decoder.decodeStatus(newStatus));
 
-                            if (listener != null) {
-                                listener.transactionStatusChanged(TX.this, oldStatus, newStatus);
+                        if (listener != null) {
+                            listener.transactionStatusChanged(TX.this, oldStatus, newStatus);
 
-                                //catch this specific case internally to make the callback API a little easier to work with
-                                if (oldStatus == Status.STATUS_ACTIVE && btxTx.timedOut()) {
-                                    listener.transactionTimedOut(TX.this);
-                                }
+                            //catch this specific case internally to make the callback API a little easier to work with
+                            if (oldStatus == Status.STATUS_ACTIVE && btxTx.timedOut()) {
+                                listener.transactionTimedOut(TX.this);
                             }
                         }
-                    });
-//                }
+                    }
+                });
+                //                }
             }
             else {
                 throw new IllegalStateException("Encountered an unimplemented transaction object; this shouldn't happen; " + this.jtaTransaction);
             }
 
             //start out with an empty set of sub-transactions
-            this.registeredResources = new HashSet<>();
+            this.registeredResources = new HashMap<>();
         }
         catch (Exception e) {
             throw new IOException("Error while starting a new transaction", e);
@@ -130,9 +131,10 @@ public class TX implements AutoCloseable
         }
     }
     /**
-     * Attach an XAResource to the current TX session
+     * Attach an XAResource to the current TX session.
+     * Note that the name should be a id, identifying the resource, so we can check if it has been registered before or not
      */
-    public synchronized void registerResource(XAResource xaResource) throws IOException
+    public synchronized void registerResource(String resourceName, XAResource xaResource) throws IOException
     {
         try {
             final CustomBitronixResourceProducer bitronixProducer = StorageFactory.getBitronixResourceProducer();
@@ -159,11 +161,23 @@ public class TX implements AutoCloseable
             // will be consistent with the transaction's outcome, meaning that either all will commit or all with rollback.
             this.jtaTransaction.enlistResource(xaResource);
 
-            this.registeredResources.add(xaResource);
+            if (resourceName == null) {
+                throw new NullPointerException("Can't register an XAResource without a name");
+            }
+            else if (this.registeredResources.containsKey(resourceName)) {
+                Logger.error("XAResource with name '" + resourceName + "' already registered in this transaction, not registering it again!");
+            }
+            else {
+                this.registeredResources.put(resourceName, xaResource);
+            }
         }
         catch (Exception e) {
             throw new IOException("Error occurred while registering sub-transaction", e);
         }
+    }
+    public synchronized XAResource getRegisteredResource(String resourceName)
+    {
+        return this.registeredResources.get(resourceName);
     }
     /**
      * Return the registered XADisk instance for this request or null if none was attached (yet)
@@ -178,7 +192,8 @@ public class TX implements AutoCloseable
     public synchronized void setAndRegisterXdiskSession(XASession xdiskSession) throws Exception
     {
         this.xdiskSession = xdiskSession;
-        this.registerResource(xdiskSession.getXAResource());
+        //Note: it shouldn't be possible to register an xdisk session twice
+        this.registerResource("xdisk", xdiskSession.getXAResource());
     }
     /**
      * Modify this transaction such that the only possible outcome of the transaction is to roll back the transaction.
@@ -293,14 +308,14 @@ public class TX implements AutoCloseable
      */
     private void doClose() throws Exception
     {
-        IOException lastError = null;
+        Exception lastError = null;
 
-        for (XAResource r : this.registeredResources) {
-            if (r instanceof IndexConnection) {
+        for (XAResource r : this.registeredResources.values()) {
+            if (r instanceof XAClosableResource) {
                 try {
-                    ((IndexConnection) r).close();
+                    ((XAClosableResource) r).close();
                 }
-                catch (IOException e) {
+                catch (Exception e) {
                     Logger.error("Error while closing an index connection in request transaction close; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
                     lastError = e;
                 }
@@ -333,7 +348,7 @@ public class TX implements AutoCloseable
         // with the TMFAIL flag, because committing the transaction would lead to unknown effects on the data; this
         // could lead to corrupt data
         if (this.registeredResources != null && this.jtaTransaction != null) {
-            for (XAResource r : this.registeredResources) {
+            for (XAResource r : this.registeredResources.values()) {
                 try {
                     this.jtaTransaction.delistResource(r, flag);
                 }

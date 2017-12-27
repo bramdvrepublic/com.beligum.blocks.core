@@ -20,6 +20,8 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.BlobImpl;
+import com.beligum.blocks.filesystem.hdfs.impl.sql.MiniConnectionPoolManager;
+import com.beligum.blocks.filesystem.hdfs.impl.sql.sqlite.SqlXAResource;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
 import org.apache.commons.io.IOUtils;
@@ -29,7 +31,10 @@ import org.apache.hadoop.fs.local.LocalConfigKeys;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.Progressable;
+import org.sqlite.JDBC;
+import org.sqlite.javax.SQLiteConnectionPoolDataSource;
 
+import javax.transaction.xa.XAResource;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,9 +54,12 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     public static final String SCHEME = NAME.getScheme();
     public static final String DEFAULT_FILENAME_EXT = "db";
 
+    private static final SupportedDriver DRIVER = SupportedDriver.SQLITE;
+    private static final String TX_RESOURCE_NAME = "SqlFS";
+
+    private static final int CONNECTION_POOL_SIZE = 5;
     private static final int DEFAULT_PORT = -1;
     private static final String DEFAULT_DATABASE_FILENAME = "data." + DEFAULT_FILENAME_EXT;
-    private static final String JDBC_SCHEME = "jdbc:sqlite";
     private static final String SQL_TABLE_NAME = "filesystem";
 
     private static final String SQL_COLUMN_PATH_NAME = "path";
@@ -73,6 +81,15 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     private static final String DEFAULT_GROUPNAME = null;
     private static final short DEFAULT_REPLICATION = 1;
     private static final boolean DEFAULT_VERIFY_CHECKSUM = false;
+
+    private enum SupportedDriver
+    {
+        SQLITE();
+
+        SupportedDriver()
+        {
+        }
+    }
 
     private enum FileType
     {
@@ -110,8 +127,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     private final URI uri;
     private java.nio.file.Path dbFile;
     private boolean resumed;
-    private Connection dbConnection;
-    protected XAttrResolver xAttrResolver;
+    private MiniConnectionPoolManager connectionPoolManager;
+    private XAttrResolver xAttrResolver;
 
     //-----CONSTRUCTORS-----
     /**
@@ -143,7 +160,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return LocalConfigKeys.getServerDefaults();
     }
     @Override
-    public FSDataOutputStream createInternal(Path f, EnumSet<CreateFlag> flag, FsPermission absolutePermission, int bufferSize, short replication, long blockSize, Progressable progress,
+    public synchronized FSDataOutputStream createInternal(Path f, EnumSet<CreateFlag> flag, FsPermission absolutePermission, int bufferSize, short replication, long blockSize, Progressable progress,
                                              Options.ChecksumOpt checksumOpt, boolean createParent)
                     throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnsupportedFileSystemException, UnresolvedLinkException, IOException
     {
@@ -151,6 +168,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         FSDataOutputStream retVal = null;
         boolean success = false;
         try {
@@ -171,7 +189,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 // parent does exist - go ahead with create of file.
             }
 
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             boolean overwrite = flag.contains(CreateFlag.OVERWRITE);
             boolean append = flag.contains(CreateFlag.APPEND);
             boolean create = flag.contains(CreateFlag.CREATE);
@@ -196,7 +214,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     throw new IOException("Cannot append to a diretory (=" + f + " )");
                 }
                 retVal =
-                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(this.dbConnection, f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
+                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
                                                        this.statistics);
                 success = true;
             }
@@ -208,13 +226,13 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
                 Path parent = f.getParent();
                 //Note: since mkdir() throws an exception if the dir already exists, we need to check it
-                if (parent != null && !this.exists(parent)) {
+                if (parent != null && !this.exists(dbConnection, parent)) {
                     this.mkdir(parent, absolutePermission, true);
                 }
 
                 retVal =
                                 new FSDataOutputStream(
-                                                new BufferedOutputStream(new SQLOutputStream(this.dbConnection, f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
+                                                new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
                                                 this.statistics);
                 success = true;
             }
@@ -234,23 +252,24 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal;
     }
     @Override
-    public void mkdir(Path dir, FsPermission permission, boolean createParent) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized void mkdir(Path dir, FsPermission permission, boolean createParent) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(dir);
 
+        Connection dbConnection = getDbConnection();
         try {
             Path parentDir = dir.getParent();
             boolean parentExists = false;
             if (parentDir != null) {
-                parentExists = this.exists(parentDir);
+                parentExists = this.exists(dbConnection, parentDir);
                 if (parentExists && !this.getFileStatus(parentDir).isDirectory()) {
                     throw new ParentNotDirectoryException("Parent path is not a directory: " + parentDir);
                 }
             }
 
-            boolean exists = this.exists(dir);
+            boolean exists = this.exists(dbConnection, dir);
             if (exists && !this.getFileStatus(dir).isDirectory()) {
                 throw new FileNotFoundException("Destination exists and is not a directory: " + dir);
             }
@@ -260,7 +279,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             }
 
             if (!exists) {
-                this.doInsert(this.dbConnection, dir, null, FileType.DIRECTORY, permission);
+                this.doInsert(dbConnection, dir, null, FileType.DIRECTORY, permission);
             }
         }
         catch (SQLException e) {
@@ -272,7 +291,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
     }
     @Override
-    public boolean delete(Path f, boolean recursive) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized boolean delete(Path f, boolean recursive) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
@@ -280,13 +299,14 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         boolean retVal;
 
+        Connection dbConnection = getDbConnection();
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            retVal = this.doDelete(this.dbConnection, f, recursive) > 0;
+            retVal = this.doDelete(dbConnection, f, recursive) > 0;
         }
         catch (SQLException e) {
             throw new IOException("Error while deleting " + f, e);
@@ -298,21 +318,22 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal;
     }
     @Override
-    public FSDataInputStream open(Path f, int bufferSize) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized FSDataInputStream open(Path f, int bufferSize) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         FSDataInputStream retVal = null;
         boolean success = false;
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(this.dbConnection, f), bufferSize));
+            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(dbConnection, f), bufferSize));
             success = true;
         }
         catch (SQLException e) {
@@ -330,22 +351,23 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal;
     }
     @Override
-    public boolean setReplication(Path f, short replication) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized boolean setReplication(Path f, short replication) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         boolean retVal = false;
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                             " SET " + SQL_COLUMN_REPLICATION_NAME + "=?" +
-                                                                             " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+            try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                        " SET " + SQL_COLUMN_REPLICATION_NAME + "=?" +
+                                                                        " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                 stmt.setShort(1, replication);
                 stmt.setString(2, pathToSql(f));
                 retVal = stmt.executeUpdate() == 1;
@@ -361,15 +383,16 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal;
     }
     @Override
-    public void renameInternal(Path src, Path dst) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnresolvedLinkException, IOException
+    public synchronized void renameInternal(Path src, Path dst) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(src);
 
+        Connection dbConnection = getDbConnection();
         int retVal;
         try {
-            boolean exists = this.exists(src);
+            boolean exists = this.exists(dbConnection, src);
             if (!exists) {
                 throw new FileNotFoundException("File " + src + " not found");
             }
@@ -379,9 +402,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 String pathName = pathToSql(src);
                 String pathNameRec = pathName + Path.SEPARATOR;
 
-                try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                                 " SET " + SQL_COLUMN_PATH_NAME + "=? || " + this.getSqlSubstrFunction(SQL_COLUMN_PATH_NAME, "?") +
-                                                                                 " WHERE " + SQL_COLUMN_PATH_NAME + "=? OR " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ?")) {
+                try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                            " SET " + SQL_COLUMN_PATH_NAME + "=? || " + this.getSqlSubstrFunction(SQL_COLUMN_PATH_NAME, "?") +
+                                                                            " WHERE " + SQL_COLUMN_PATH_NAME + "=? OR " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ?")) {
                     stmt.setString(1, pathToSql(dst));
                     stmt.setInt(2, pathName.length() + 1);
                     stmt.setString(3, pathName);
@@ -392,9 +415,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 }
             }
             else {
-                try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                                 " SET " + SQL_COLUMN_PATH_NAME + "=?" +
-                                                                                 " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+                try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                            " SET " + SQL_COLUMN_PATH_NAME + "=?" +
+                                                                            " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                     stmt.setString(1, pathToSql(dst));
                     stmt.setString(2, pathToSql(src));
 
@@ -410,21 +433,22 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public void setPermission(Path f, FsPermission permission) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized void setPermission(Path f, FsPermission permission) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                             " SET " + SQL_COLUMN_PERMISSION_NAME + "=?" +
-                                                                             " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+            try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                        " SET " + SQL_COLUMN_PERMISSION_NAME + "=?" +
+                                                                        " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                 stmt.setShort(1, permission.toShort());
                 stmt.setString(2, pathToSql(f));
             }
@@ -437,21 +461,22 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public void setOwner(Path f, String username, String groupname) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized void setOwner(Path f, String username, String groupname) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                             " SET " + SQL_COLUMN_USERNAME_NAME + "=?, " + SQL_COLUMN_GROUPNAME_NAME + "=?" +
-                                                                             " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+            try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                        " SET " + SQL_COLUMN_USERNAME_NAME + "=?, " + SQL_COLUMN_GROUPNAME_NAME + "=?" +
+                                                                        " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                 stmt.setString(1, username);
                 stmt.setString(2, groupname);
                 stmt.setString(3, pathToSql(f));
@@ -465,21 +490,22 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public void setTimes(Path f, long mtime, long atime) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized void setTimes(Path f, long mtime, long atime) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            try (PreparedStatement stmt = this.dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
-                                                                             " SET " + SQL_COLUMN_MTIME_NAME + "=?, " + SQL_COLUMN_ATIME_NAME + "=?" +
-                                                                             " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+            try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
+                                                                        " SET " + SQL_COLUMN_MTIME_NAME + "=?, " + SQL_COLUMN_ATIME_NAME + "=?" +
+                                                                        " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                 stmt.setLong(1, mtime);
                 stmt.setLong(2, atime);
                 stmt.setString(3, pathToSql(f));
@@ -493,40 +519,41 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public FileChecksum getFileChecksum(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized FileChecksum getFileChecksum(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         //TODO
         return null;
     }
     @Override
-    public FileStatus getFileStatus(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized FileStatus getFileStatus(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
+        Connection dbConnection = getDbConnection();
         FileStatus retVal = null;
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
             final String CONTENT_LENGTH_NAME = "length";
-            try (PreparedStatement stmt = this.dbConnection.prepareStatement("SELECT " +
-                                                                             SQL_COLUMN_PATH_NAME + "," +
-                                                                             SQL_COLUMN_FILETYPE_NAME + "," +
-                                                                             SQL_COLUMN_REPLICATION_NAME + "," +
-                                                                             SQL_COLUMN_BLOCKSIZE_NAME + "," +
-                                                                             SQL_COLUMN_MTIME_NAME + "," +
-                                                                             SQL_COLUMN_ATIME_NAME + "," +
-                                                                             SQL_COLUMN_PERMISSION_NAME + "," +
-                                                                             SQL_COLUMN_USERNAME_NAME + "," +
-                                                                             SQL_COLUMN_GROUPNAME_NAME + "," +
-                                                                             //this will report bytes
-                                                                             this.getSqlByteLengthFunction() + "(" + SQL_COLUMN_CONTENT_NAME + ") AS " + CONTENT_LENGTH_NAME +
-                                                                             " FROM " + SQL_TABLE_NAME +
-                                                                             " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+            try (PreparedStatement stmt = dbConnection.prepareStatement("SELECT " +
+                                                                        SQL_COLUMN_PATH_NAME + "," +
+                                                                        SQL_COLUMN_FILETYPE_NAME + "," +
+                                                                        SQL_COLUMN_REPLICATION_NAME + "," +
+                                                                        SQL_COLUMN_BLOCKSIZE_NAME + "," +
+                                                                        SQL_COLUMN_MTIME_NAME + "," +
+                                                                        SQL_COLUMN_ATIME_NAME + "," +
+                                                                        SQL_COLUMN_PERMISSION_NAME + "," +
+                                                                        SQL_COLUMN_USERNAME_NAME + "," +
+                                                                        SQL_COLUMN_GROUPNAME_NAME + "," +
+                                                                        //this will report bytes
+                                                                        this.getSqlByteLengthFunction(SQL_COLUMN_CONTENT_NAME) + " AS " + CONTENT_LENGTH_NAME +
+                                                                        " FROM " + SQL_TABLE_NAME +
+                                                                        " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
                 stmt.setString(1, pathToSql(f));
 
                 ResultSet resultSet = stmt.executeQuery();
@@ -556,7 +583,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal;
     }
     @Override
-    public BlockLocation[] getFileBlockLocations(Path f, long start, long len) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized BlockLocation[] getFileBlockLocations(Path f, long start, long len) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         //TODO
         //        checkPath(f);
@@ -587,7 +614,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return new BlockLocation[0];
     }
     @Override
-    public FsStatus getFsStatus() throws AccessControlException, FileNotFoundException, IOException
+    public synchronized FsStatus getFsStatus() throws AccessControlException, FileNotFoundException, IOException
     {
         //TODO this is a bit weird because I don't know what to reply...
         long capacity = Long.MAX_VALUE;
@@ -596,15 +623,17 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return new FsStatus(capacity, used, capacity - used);
     }
     @Override
-    public FileStatus[] listStatus(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized FileStatus[] listStatus(Path f) throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
         List<FileStatus> retVal = new ArrayList<>();
+
+        Connection dbConnection = getDbConnection();
         try {
-            boolean exists = this.exists(f);
+            boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
@@ -622,20 +651,20 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                                   "  AND " + this.getSqlInstrFunction("SUBSTR(" + SQL_COLUMN_PATH_NAME + ", ?)", "'" + Path.SEPARATOR + "'") + "=0";
 
                 final String CONTENT_LENGTH_NAME = "length";
-                try (PreparedStatement stmt = this.dbConnection.prepareStatement("SELECT " +
-                                                                                 SQL_COLUMN_PATH_NAME + "," +
-                                                                                 SQL_COLUMN_FILETYPE_NAME + "," +
-                                                                                 SQL_COLUMN_REPLICATION_NAME + "," +
-                                                                                 SQL_COLUMN_BLOCKSIZE_NAME + "," +
-                                                                                 SQL_COLUMN_MTIME_NAME + "," +
-                                                                                 SQL_COLUMN_ATIME_NAME + "," +
-                                                                                 SQL_COLUMN_PERMISSION_NAME + "," +
-                                                                                 SQL_COLUMN_USERNAME_NAME + "," +
-                                                                                 SQL_COLUMN_GROUPNAME_NAME + "," +
-                                                                                 //this will report bytes
-                                                                                 this.getSqlByteLengthFunction() + "(" + SQL_COLUMN_CONTENT_NAME + ") AS " + CONTENT_LENGTH_NAME +
-                                                                                 " FROM " + SQL_TABLE_NAME +
-                                                                                 " WHERE " + whereSql)) {
+                try (PreparedStatement stmt = dbConnection.prepareStatement("SELECT " +
+                                                                            SQL_COLUMN_PATH_NAME + "," +
+                                                                            SQL_COLUMN_FILETYPE_NAME + "," +
+                                                                            SQL_COLUMN_REPLICATION_NAME + "," +
+                                                                            SQL_COLUMN_BLOCKSIZE_NAME + "," +
+                                                                            SQL_COLUMN_MTIME_NAME + "," +
+                                                                            SQL_COLUMN_ATIME_NAME + "," +
+                                                                            SQL_COLUMN_PERMISSION_NAME + "," +
+                                                                            SQL_COLUMN_USERNAME_NAME + "," +
+                                                                            SQL_COLUMN_GROUPNAME_NAME + "," +
+                                                                            //this will report bytes
+                                                                            this.getSqlByteLengthFunction(SQL_COLUMN_CONTENT_NAME) + " AS " + CONTENT_LENGTH_NAME +
+                                                                            " FROM " + SQL_TABLE_NAME +
+                                                                            " WHERE " + whereSql)) {
 
                     stmt.setInt(1, pathNameRec.length() + 1);
                     stmt.setString(2, pathNameRec);
@@ -669,29 +698,29 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         return retVal.toArray(new FileStatus[retVal.size()]);
     }
     @Override
-    public void setVerifyChecksum(boolean verifyChecksum) throws AccessControlException, IOException
+    public synchronized void setVerifyChecksum(boolean verifyChecksum) throws AccessControlException, IOException
     {
         //NOOP
     }
     @Override
-    public void close() throws IOException
+    public synchronized void close() throws IOException
     {
         if (this.closeGuard.compareAndSet(false, true)) {
-            if (this.dbConnection != null) {
+            if (this.connectionPoolManager != null) {
                 try {
-                    this.dbConnection.close();
+                    this.connectionPoolManager.dispose();
                 }
                 catch (SQLException e) {
                     Logger.error("Error while closing the SQL connection while shutting down the HDFS SQL filesystem; " + this.getUri(), e);
                 }
                 finally {
-                    this.dbConnection = null;
+                    this.connectionPoolManager = null;
                 }
             }
         }
     }
     @Override
-    public byte[] getXAttr(Path path, String name) throws IOException
+    public synchronized byte[] getXAttr(Path path, String name) throws IOException
     {
         if (this.xAttrResolver != null) {
             return this.xAttrResolver.getXAttr(path, name);
@@ -701,7 +730,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public Map<String, byte[]> getXAttrs(Path path) throws IOException
+    public synchronized Map<String, byte[]> getXAttrs(Path path) throws IOException
     {
         if (this.xAttrResolver != null) {
             return this.xAttrResolver.getXAttrs(path);
@@ -711,7 +740,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public Map<String, byte[]> getXAttrs(Path path, List<String> names) throws IOException
+    public synchronized Map<String, byte[]> getXAttrs(Path path, List<String> names) throws IOException
     {
         if (this.xAttrResolver != null) {
             return this.xAttrResolver.getXAttrs(path, names);
@@ -721,7 +750,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
     }
     @Override
-    public void register(XAttrResolver xAttrResolver)
+    public synchronized void register(XAttrResolver xAttrResolver)
     {
         if (this.xAttrResolver != null) {
             Logger.warn("Overwriting an existing XAttrResolver, this is probably a mistake; " + this.xAttrResolver);
@@ -749,11 +778,6 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
      */
     private void leaveBusy()
     {
-        // No-op.
-    }
-    private TX getTransaction() throws IOException
-    {
-        return StorageFactory.getCurrentRequestTx();
     }
     private void initialize(URI name, Configuration cfg) throws IOException
     {
@@ -765,63 +789,85 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             //that's implemented by this class. In the future, we might consider changing it to "sql:xxx" with the same dialect, but for now,
             //we'll only support one: SQLite
 
-            //start off with the path only, since we'll create a SQLite file URI
-            this.dbFile = Paths.get(this.getUri().getPath());
-            //an existing file means we're resuming an old session
-            this.resumed = Files.exists(this.dbFile);
-            //Note that we're probably always passed a folder, but let's support both
-            if (this.resumed) {
-                if (Files.isDirectory(this.dbFile)) {
-                    this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
+            switch (DRIVER) {
+                case SQLITE:
+
+                    //start off with the path only, since we'll create a SQLite file URI
+                    this.dbFile = Paths.get(this.getUri().getPath());
+                    //an existing file means we're resuming an old session
+                    this.resumed = Files.exists(this.dbFile);
+                    //Note that we're probably always passed a folder, but let's support both
+                    if (this.resumed) {
+                        if (Files.isDirectory(this.dbFile)) {
+                            this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
+                        }
+                    }
+                    else {
+                        //here, we need to choose between using the supplied name as a file or a dir,
+                        //let us use the extension to decide between both: if it ends with .db, it's a file, otherwise,
+                        //it's a folder where we'll create a new file
+                        if (!this.dbFile.endsWith("." + DEFAULT_FILENAME_EXT)) {
+                            this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
+                        }
+                    }
+
+                    //let's double-check
+                    if (Files.exists(this.dbFile) && !Files.isRegularFile(this.dbFile)) {
+                        throw new IOException("The SQL connection URL path should point to a regular file; " + this.dbFile);
+                    }
+
+                    //make sure the parent exists
+                    Files.createDirectories(this.dbFile.getParent());
+
+                    //See for docs:
+                    // https://gbatumbya.wordpress.com/tag/sqlite/
+                    // that led to:
+                    // http://www.source-code.biz/miniconnectionpoolmanager/
+                    // https://sourceforge.net/p/sqlite-connpool/home/Home/
+                    // but eventually, I used:
+                    // https://bitbucket.org/cwdesautels/nexj-express-sqlite-adapter/src/sqlite/src/nexj/core/persistence/sql/pseudoxa
+                    //
+                    // Note that this doesn't really do the hard XA work; that part is implemented in getDbConnection()
+                    SQLiteConnectionPoolDataSource dataSource = new SQLiteConnectionPoolDataSource();
+                    dataSource.setUrl(JDBC.PREFIX + this.dbFile);
+                    //set the write-ahead log journal mode (needed for XA transaction support?)
+                    dataSource.setJournalMode("WAL");
+                    dataSource.getConfig().setBusyTimeout("10000");
+
+                    this.connectionPoolManager = new MiniConnectionPoolManager(dataSource, CONNECTION_POOL_SIZE);
+
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+            }
+
+            try (Connection dbConnection = this.connectionPoolManager.getConnection()) {
+
+                //create the main table if it doesn't exist
+                ResultSet rs = dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
+                if (!rs.next()) {
+                    try (Statement stmt = dbConnection.createStatement()) {
+                        stmt.executeUpdate("CREATE TABLE " + SQL_TABLE_NAME + " " +
+                                           "(" + SQL_COLUMN_PATH_NAME + " TEXT PRIMARY KEY NOT NULL," +
+                                           " " + SQL_COLUMN_CONTENT_NAME + " BLOB NOT NULL," +
+                                           " " + SQL_COLUMN_FILETYPE_NAME + " SMALLINT NOT NULL," +
+                                           " " + SQL_COLUMN_PERMISSION_NAME + " INTEGER NOT NULL," +
+                                           " " + SQL_COLUMN_USERNAME_NAME + " TEXT," +
+                                           " " + SQL_COLUMN_GROUPNAME_NAME + " TEXT," +
+                                           //SQLite: The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value,
+                                           //so it's safe to use INTEGER for LONG
+                                           " " + SQL_COLUMN_MTIME_NAME + " BIGINT NOT NULL," +
+                                           " " + SQL_COLUMN_ATIME_NAME + " BIGINT NOT NULL," +
+                                           " " + SQL_COLUMN_REPLICATION_NAME + " SMALLINT NOT NULL," +
+                                           " " + SQL_COLUMN_BLOCKSIZE_NAME + " BIGINT NOT NULL," +
+                                           " " + SQL_COLUMN_VERIFY_NAME + " BOOLEAN NOT NULL," +
+                                           " " + SQL_COLUMN_CHECKSUM_ID_NAME + " INTEGER," +
+                                           " " + SQL_COLUMN_CHECKSUM_SIZE_NAME + " INTEGER" +
+                                           ");");
+                    }
                 }
+
             }
-            else {
-                //here, we need to choose between using the supplied name as a file or a dir,
-                //let us use the extension to decide between both: if it ends with .db, it's a file, otherwise,
-                //it's a folder where we'll create a new file
-                if (!this.dbFile.endsWith("." + DEFAULT_FILENAME_EXT)) {
-                    this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
-                }
-            }
-
-            //let's double-check
-            if (Files.exists(this.dbFile) && !Files.isRegularFile(this.dbFile)) {
-                throw new IOException("The SQL connection URL path should point to a regular file; " + this.dbFile);
-            }
-
-            //make sure the parent exists
-            Files.createDirectories(this.dbFile.getParent());
-
-            this.dbConnection = DriverManager.getConnection(JDBC_SCHEME + ":" + this.dbFile);
-
-            //create the main table if it doesn't exist
-            ResultSet rs = this.dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
-            if (!rs.next()) {
-                try (Statement stmt = this.dbConnection.createStatement()) {
-                    stmt.executeUpdate("CREATE TABLE " + SQL_TABLE_NAME + " " +
-                                       "(" + SQL_COLUMN_PATH_NAME + " TEXT PRIMARY KEY NOT NULL," +
-                                       " " + SQL_COLUMN_CONTENT_NAME + " " + (isBlobSupported() ? "BLOB" : "BLOB") + "," +
-                                       " " + SQL_COLUMN_FILETYPE_NAME + " SMALLINT NOT NULL," +
-                                       " " + SQL_COLUMN_PERMISSION_NAME + " INTEGER NOT NULL," +
-                                       " " + SQL_COLUMN_USERNAME_NAME + " TEXT," +
-                                       " " + SQL_COLUMN_GROUPNAME_NAME + " TEXT," +
-                                       //SQLite: The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value,
-                                       //so it's safe to use INTEGER for LONG
-                                       " " + SQL_COLUMN_MTIME_NAME + " BIGINT NOT NULL," +
-                                       " " + SQL_COLUMN_ATIME_NAME + " BIGINT NOT NULL," +
-                                       " " + SQL_COLUMN_REPLICATION_NAME + " SMALLINT NOT NULL," +
-                                       " " + SQL_COLUMN_BLOCKSIZE_NAME + " BIGINT NOT NULL," +
-                                       " " + SQL_COLUMN_VERIFY_NAME + " BOOLEAN NOT NULL," +
-                                       " " + SQL_COLUMN_CHECKSUM_ID_NAME + " INTEGER," +
-                                       " " + SQL_COLUMN_CHECKSUM_SIZE_NAME + " INTEGER" +
-                                       ");");
-                }
-            }
-
-            //            RequestContext requestContext = R.requestContext();
-            //            if (requestContext != null) {
-            //                requestContext.registerClosable(this);
-            //            }
 
             booted = true;
         }
@@ -837,51 +883,101 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             leaveBusy();
         }
     }
+    private Connection getDbConnection() throws IOException
+    {
+        Connection retVal = null;
+
+        TX tx = StorageFactory.getCurrentScopeTx();
+        if (tx == null) {
+            throw new IOException("We're not in an active transaction context, so I can't instance an XA database connection inside the current transaction scope");
+        }
+        else {
+            XAResource xaResource = tx.getRegisteredResource(TX_RESOURCE_NAME);
+            try {
+                if (xaResource == null) {
+                    //Note that setAutoCommit(false) is set in SqlXAResource
+                    tx.registerResource(TX_RESOURCE_NAME, xaResource = new SqlXAResource(this.connectionPoolManager.getConnection()));
+                }
+
+                retVal = ((SqlXAResource) xaResource).getConnectionRef();
+            }
+            catch (SQLException e) {
+                throw new IOException("Error while fetching SQL connection from the connection pool", e);
+            }
+        }
+
+        return retVal;
+    }
     private void checkAccess(Path f) throws AccessControlException
     {
         //TODO
     }
-    private boolean exists(Path f) throws SQLException
+    private boolean exists(Connection dbConnection, Path f) throws SQLException
     {
         boolean retVal = false;
 
-        try (PreparedStatement stmt = this.dbConnection.prepareStatement("SELECT COUNT(*) FROM " + SQL_TABLE_NAME +
-                                                                         " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
+        try (PreparedStatement stmt = dbConnection.prepareStatement("SELECT COUNT(*) FROM " + SQL_TABLE_NAME +
+                                                                    " WHERE " + SQL_COLUMN_PATH_NAME + "=?")) {
             stmt.setString(1, pathToSql(f));
             retVal = stmt.executeQuery().getLong(1) > 0;
         }
 
         return retVal;
     }
-    private boolean isBlobSupported()
+    private boolean isStreamingBlobSupported()
     {
-        //JDBC driver has no support
-        return false;
+        switch (DRIVER) {
+            case SQLITE:
+                //JDBC driver has no support
+                return false;
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
     private String getSqlSubstrFunction(String column, String startNum)
     {
-        //For SQLite it's "SUBSTR", for MySQL and SQL Server, it's "SUBSTRING"
-        return "SUBSTR(" + column + "," + startNum + ")";
+        switch (DRIVER) {
+            case SQLITE:
+                return "SUBSTR(" + column + "," + startNum + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
     private String getSqlSubstrFunction(String column, String startNum, String lengthNum)
     {
-        //For SQLite it's "SUBSTR", for MySQL and SQL Server, it's "SUBSTRING"
-        return "SUBSTR(" + column + "," + startNum + "," + lengthNum + ")";
+        switch (DRIVER) {
+            case SQLITE:
+                return "SUBSTR(" + column + "," + startNum + "," + lengthNum + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
     private String getSqlLeftFunction(String column, String charNum)
     {
-        //For SQLite it's "SUBSTR", for MySQL and SQL Server, it's "LEFT"
-        return "SUBSTR(" + column + ",0," + charNum + ")";
+        switch (DRIVER) {
+            case SQLITE:
+                return "SUBSTR(" + column + ",0," + charNum + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
-    private String getSqlByteLengthFunction()
+    private String getSqlByteLengthFunction(String column)
     {
-        //For SQLite and MySQL, it's "LENGTH", for SQL Server, it's "DATALENGTH"
-        return "LENGTH";
+        switch (DRIVER) {
+            case SQLITE:
+                return "LENGTH(" + column + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
     private String getSqlInstrFunction(String column, String search)
     {
-        //For SQLite and MySQL, it's "INSTR", for SQL Server, it's "CHARINDEX"
-        return "INSTR(" + column + "," + search + ")";
+        switch (DRIVER) {
+            case SQLITE:
+                return "INSTR(" + column + "," + search + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
+        }
     }
     private String pathToSql(Path f)
     {
@@ -889,7 +985,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     }
     private void doSetBlob(PreparedStatement stmt, int parameterIndex, Blob blob) throws SQLException, IOException
     {
-        if (this.isBlobSupported()) {
+        if (this.isStreamingBlobSupported()) {
             stmt.setBlob(parameterIndex, blob);
         }
         else {
@@ -1021,7 +1117,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             //see https://docs.oracle.com/javase/tutorial/jdbc/basics/blob.html
             boolean success = false;
             try {
-                if (isBlobSupported()) {
+                if (isStreamingBlobSupported()) {
                     //Note: we don't use the streaming blob API (this.blob.setBinaryStream()) to make the implementation below a bit easier,
                     // in regard to the 'fake' Blob implementation below, but if performance would be bad, we should look into this...
                     this.blob = dbConnection.createBlob();
@@ -1105,7 +1201,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
                     ResultSet rs = stmt.executeQuery();
                     if (rs.next()) {
-                        if (isBlobSupported()) {
+                        if (isStreamingBlobSupported()) {
                             this.blob = rs.getBlob(1);
                         }
                         else {

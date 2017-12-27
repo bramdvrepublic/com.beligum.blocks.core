@@ -45,11 +45,11 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     //-----CONSTANTS-----
     //this is the default number of maximum search results that will be returned when no specific value is passed
     public static final int DEFAULT_MAX_SEARCH_RESULTS = 1000;
+    private static final String TX_RESOURCE_NAME = "LucenePageIndexConnection";
 
     //-----VARIABLES-----
     private LucenePageIndexer pageIndexer;
     private TX transaction;
-    private boolean registeredTransaction;
     private boolean active;
 
     //-----CONSTRUCTORS-----
@@ -57,7 +57,6 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     {
         this.pageIndexer = pageIndexer;
         this.transaction = transaction;
-        this.registeredTransaction = false;
         this.active = true;
     }
 
@@ -129,7 +128,6 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         this.pageIndexer = null;
         this.transaction = null;
-        this.registeredTransaction = false;
         this.active = false;
     }
     @Override
@@ -269,14 +267,14 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             this.pageIndexer.getIndexWriter().prepareCommit();
         }
     }
     @Override
     protected void commit() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             this.pageIndexer.getIndexWriter().commit();
 
             //mark all readers and searchers to reload
@@ -286,7 +284,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void rollback() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             this.pageIndexer.getIndexWriter().rollback();
         }
     }
@@ -297,6 +295,10 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     }
 
     //-----PRIVATE METHODS-----
+    private boolean isRegistered()
+    {
+        return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
+    }
     private synchronized void assertActive() throws IOException
     {
         if (!this.active) {
@@ -310,10 +312,9 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         }
         else {
             //only need to do it once (at the beginning of a method using a tx)
-            if (!this.registeredTransaction) {
+            if (!this.isRegistered()) {
                 //attach this connection to the transaction manager
-                this.transaction.registerResource(this);
-                this.registeredTransaction = true;
+                this.transaction.registerResource(TX_RESOURCE_NAME, this);
             }
         }
     }

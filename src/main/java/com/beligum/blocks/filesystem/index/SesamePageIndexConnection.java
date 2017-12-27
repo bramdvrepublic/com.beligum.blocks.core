@@ -76,10 +76,11 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         SINGLE_TERM_QUERY
     }
 
+    private static final String TX_RESOURCE_NAME = "SesamePageIndexConnection";
+
     //-----VARIABLES-----
     private SesamePageIndexer pageIndexer;
     private TX transaction;
-    private boolean registeredTransaction;
     private SailRepositoryConnection connection;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
@@ -90,7 +91,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     {
         this.pageIndexer = pageIndexer;
         this.transaction = transaction;
-        this.registeredTransaction = false;
 
         try {
             this.connection = pageIndexer.getRDFRepository().getConnection();
@@ -272,7 +272,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
             this.connection = null;
         }
 
-        this.registeredTransaction = false;
         this.transaction = null;
     }
     //    Commented out because the Lucene Sail is disabled for now...
@@ -494,7 +493,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             //Note: see connection.commit() for the nitty-gritty of where I got this from
             this.connection.getSailConnection().flush();
             this.connection.getSailConnection().prepare();
@@ -503,14 +502,14 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void commit() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             this.connection.getSailConnection().commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.registeredTransaction) {
+        if (this.isRegistered()) {
             this.connection.getSailConnection().rollback();
         }
     }
@@ -521,6 +520,10 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     }
 
     //-----PRIVATE METHODS-----
+    private boolean isRegistered()
+    {
+        return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
+    }
     private synchronized void assertActive() throws IOException
     {
         if (!this.active) {
@@ -534,10 +537,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
         else {
             //only need to do it once (at the beginning of a method using a tx)
-            if (!this.registeredTransaction) {
+            if (!this.isRegistered()) {
                 //attach this connection to the transaction manager
-                this.transaction.registerResource(this);
-                this.registeredTransaction = true;
+                this.transaction.registerResource(TX_RESOURCE_NAME, this);
             }
         }
     }

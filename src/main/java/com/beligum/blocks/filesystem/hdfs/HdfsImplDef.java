@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.filesystem.hdfs;
 
+import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import org.apache.hadoop.fs.AbstractFileSystem;
 
 /**
@@ -34,6 +35,8 @@ public class HdfsImplDef
     {
         this.scheme = scheme;
         this.impl = impl;
+
+        FileSystems.register(this);
     }
 
     //-----PUBLIC METHODS-----

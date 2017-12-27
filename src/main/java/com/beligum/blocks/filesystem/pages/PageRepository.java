@@ -138,7 +138,7 @@ public class PageRepository extends AbstractResourceRepository
     public ResourceIterator getAll(boolean readOnly, URI startFolder, ResourceFilter filter, Integer maxDepth) throws IOException, UnsupportedOperationException
     {
         //this should be synced with the constructors of ReadOnlyPage and ReadWritePage
-        URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
+        URI rootPath = readOnly ? Settings.instance().getPagesViewUri() : Settings.instance().getPagesStoreUri();
 
         URI startPath = rootPath;
         if (startFolder != null) {
@@ -167,7 +167,7 @@ public class PageRepository extends AbstractResourceRepository
         //Note: when saving a new page, this will be null
         Page oldPage = R.resourceManager().get(pageSource.getUri(), MimeTypes.HTML, Page.class);
 
-        if (options.length > 0) {
+        if (options != null && options.length > 0) {
             throw new IllegalArgumentException("Unsupported option passed; " + ArrayUtils.toString(options));
         }
 
@@ -246,8 +246,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //we need to reuse the connection or we'll run into trouble when deleting multiple translations
-        PageIndexConnection mainPageIndexer = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx());
-        PageIndexConnection triplestoreIndexer = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx());
+        PageIndexConnection mainPageIndexer = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx());
+        PageIndexConnection triplestoreIndexer = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx());
 
         //first, delete the translations, then delete the first one
         if (deleteAllTranslations) {
@@ -285,10 +285,10 @@ public class PageRepository extends AbstractResourceRepository
 
         //fallback to regular request-scoped transactions if nothing special was passed
         if (mainPageConnection == null) {
-            mainPageConnection = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx());
+            mainPageConnection = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx());
         }
         if (triplestoreConnection == null) {
-            triplestoreConnection = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx());
+            triplestoreConnection = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx());
         }
 
         Page page = resource.unwrap(Page.class);
@@ -405,7 +405,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void index(Page page) throws IOException
     {
-        this.index(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()));
+        this.index(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
     private void index(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
@@ -416,7 +416,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void unindex(Page page) throws IOException
     {
-        this.unindex(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentRequestTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentRequestTx()));
+        this.unindex(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
     private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {

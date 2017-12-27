@@ -23,6 +23,7 @@ import com.beligum.base.utils.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -33,9 +34,13 @@ public abstract class ReindexTask implements Runnable
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private static boolean init = false;
+    private static Object lock = new Object();
+
     private URI resourceUri;
     private ResourceRepository repository;
     private ResourceRepository.IndexOption indexConnectionsOption;
+    private Map<String, String> params;
     private List<String> deleteQueries;
     private String dbTableName;
     private String dbIdColumn;
@@ -46,17 +51,28 @@ public abstract class ReindexTask implements Runnable
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public void init(URI resourceUri, ResourceRepository repository, ResourceRepository.IndexOption indexConnectionsOption, List<String> deleteQueries, String dbTableName, String dbIdColumn, long dbId, long[] reindexCounter, AtomicBoolean cancelThread)
+    public void create(URI resourceUri, ResourceRepository repository, ResourceRepository.IndexOption indexConnectionsOption, Map<String, String> params, List<String> deleteQueries,
+                       String dbTableName, String dbIdColumn, long dbId, long[] reindexCounter, AtomicBoolean cancelThread) throws IOException
     {
         this.resourceUri = resourceUri;
         this.repository = repository;
         this.indexConnectionsOption = indexConnectionsOption;
+        this.params = params;
         this.deleteQueries = deleteQueries;
         this.dbTableName = dbTableName;
         this.dbIdColumn = dbIdColumn;
         this.dbId = dbId;
         this.reindexCounter = reindexCounter;
         this.cancelThread = cancelThread;
+
+        if (!init) {
+            synchronized (lock) {
+                if (!init) {
+                    this.init(this.params);
+                    init = true;
+                }
+            }
+        }
     }
     @Override
     public void run()
@@ -86,8 +102,41 @@ public abstract class ReindexTask implements Runnable
         }
     }
 
+    /**
+     * This method will be called by the ReindexThread when all work is done
+     * and offers subclasses the possibility to close everything down gracefully.
+     */
+    public void finished(boolean cancelled, long tasksRemaining)
+    {
+        if (init) {
+            synchronized (lock) {
+                if (init) {
+                    this.cleanup(cancelled == false && tasksRemaining == 0);
+                    init = false;
+                }
+            }
+        }
+    }
+
     //-----PROTECTED METHODS-----
+    /**
+     * Do the logic that needs to be done for this resource
+     */
     protected abstract void runTaskFor(Resource resource, ResourceRepository.IndexOption indexConnectionsOption) throws IOException;
+
+    /**
+     * This is guaranteed to be called only once during a reindexation session, passing the parameters that were passed to the task.
+     */
+    protected void init(Map<String, String> params) throws IOException
+    {
+    }
+
+    /**
+     * This is guaranteed to be called only once during a reindexation session, passing success or not.
+     */
+    protected void cleanup(boolean success)
+    {
+    }
 
     //-----PRIVATE METHODS-----
 

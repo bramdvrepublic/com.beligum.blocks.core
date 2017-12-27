@@ -58,6 +58,8 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     //-----CONSTANTS-----
     private static final ValueFactory RDF_FACTORY = SimpleValueFactory.getInstance();
     private static DatatypeFactory DATATYPE_FACTORY;
+    private static final String ANONYMOUS_NAME = "anonymous";
+    private static final String ANONYMOUS_USERNAME = ANONYMOUS_NAME;
 
     //instead of adding the LogEntry to the general ontology class, we decided to put it here,
     // because it has little to do with the mapping of the general/public ontologies,
@@ -193,17 +195,17 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         //Note: external IRIs always need to be absolute
         IRI entryId = this.toIRI(RdfTools.createAbsoluteResourceId(RdfLogWriter.LogEntry));
 
-        String creatorFirstName = pageEntry.getCreator().getFirstName();
+        String creatorFirstName = pageEntry.getCreator() == null ? null : pageEntry.getCreator().getFirstName();
         if (creatorFirstName == null) {
             creatorFirstName = "";
         }
-        String creatorLastName = pageEntry.getCreator().getLastName();
+        String creatorLastName = pageEntry.getCreator() == null ? null : pageEntry.getCreator().getLastName();
         if (creatorLastName == null) {
             creatorLastName = "";
         }
         String creatorName = (creatorFirstName + " " + creatorLastName).trim();
         if (StringUtils.isEmpty(creatorName)) {
-            creatorName = "anonymous";
+            creatorName = ANONYMOUS_NAME;
         }
 
         //this heading matches the filenames of the HISTORY folder entries
@@ -225,7 +227,8 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         //but was replaced by the more uniform 'username' property during the ontology cleanup.
         //See https://github.com/republic-of-reinvention/com.stralo.site/issues/13
         //this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
-        this.logStatement(entryId, RdfLogWriter.username, pageEntry.getCreator().getSubject().getPrincipal());
+        String username = pageEntry.getCreator() != null && pageEntry.getCreator().getSubject() != null ? pageEntry.getCreator().getSubject().getPrincipal() : ANONYMOUS_USERNAME;
+        this.logStatement(entryId, RdfLogWriter.username, username);
 
         //length is always > 0
         String[] software = this.buildSoftwareId();
