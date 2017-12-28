@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.hdfs.impl.fs;
+package com.beligum.blocks.filesystem.hdfs.impl.local;
 
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FSDataOutputStream;

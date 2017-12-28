@@ -308,7 +308,7 @@ public class SqlXAResource implements XAClosableResource
         return m_connection;
     }
     /**
-     * (b) added
+     * (b) added for TX closing support
      */
     @Override
     public void close() throws IOException

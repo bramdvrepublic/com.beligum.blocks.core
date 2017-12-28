@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * Author: Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland<br>
  * Multi-licensed: EPL / LGPL / MPL.
  */
-public class MiniConnectionPoolManager
+public class MiniConnectionPoolManager implements ConnectionPoolManager
 {
 
     private ConnectionPoolDataSource dataSource;

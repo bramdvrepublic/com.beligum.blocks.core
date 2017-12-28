@@ -20,7 +20,9 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.BlobImpl;
+import com.beligum.blocks.filesystem.hdfs.impl.sql.ConnectionPoolManager;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.MiniConnectionPoolManager;
+import com.beligum.blocks.filesystem.hdfs.impl.sql.TxConnection;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.sqlite.SqlXAResource;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
@@ -53,14 +55,16 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     public static final URI NAME = URI.create("sql:///");
     public static final String SCHEME = NAME.getScheme();
     public static final String DEFAULT_FILENAME_EXT = "db";
+    public static final String DEFAULT_DATABASE_FILENAME = "data." + DEFAULT_FILENAME_EXT;
 
-    private static final SupportedDriver DRIVER = SupportedDriver.SQLITE;
-    private static final String TX_RESOURCE_NAME = "SqlFS";
+    public static final String ENABLE_TX_SUPPORT_CONFIG = "blocks.core.fs.sql.txDisabled";
 
-    private static final int CONNECTION_POOL_SIZE = 5;
-    private static final int DEFAULT_PORT = -1;
-    private static final String DEFAULT_DATABASE_FILENAME = "data." + DEFAULT_FILENAME_EXT;
-    private static final String SQL_TABLE_NAME = "filesystem";
+    protected static final SupportedDriver DRIVER = SupportedDriver.SQLITE;
+    protected static final String TX_RESOURCE_NAME = "SqlFS";
+
+    protected static final int DEFAULT_CONNECTION_POOL_SIZE = 5;
+    protected static final int DEFAULT_PORT = -1;
+    protected static final String SQL_TABLE_NAME = "filesystem";
 
     private static final String SQL_COLUMN_PATH_NAME = "path";
     //Note: "data" and "type" are probably reserved, let's avoid them
@@ -125,9 +129,13 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     private final URI uri;
+    private final boolean readOnly;
+    private boolean enableTxSupport;
     private java.nio.file.Path dbFile;
     private boolean resumed;
-    private MiniConnectionPoolManager connectionPoolManager;
+    private ConnectionPoolManager roConnectionPoolManager;
+    private ConnectionPoolManager rwConnectionPoolManager;
+    private Connection notxRwConnection;
     private XAttrResolver xAttrResolver;
 
     //-----CONSTRUCTORS-----
@@ -136,9 +144,14 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
      */
     public SqlFS(final URI uri, final Configuration conf) throws IOException, URISyntaxException
     {
-        super(uri, SCHEME, false, DEFAULT_PORT);
+        this(uri, conf, false);
+    }
+    protected SqlFS(final URI uri, final Configuration conf, final boolean readOnly) throws IOException, URISyntaxException
+    {
+        super(uri, uri.getScheme(), false, DEFAULT_PORT);
 
         this.uri = uri;
+        this.readOnly = readOnly;
 
         this.initialize(uri, conf);
     }
@@ -161,17 +174,19 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     }
     @Override
     public synchronized FSDataOutputStream createInternal(Path f, EnumSet<CreateFlag> flag, FsPermission absolutePermission, int bufferSize, short replication, long blockSize, Progressable progress,
-                                             Options.ChecksumOpt checksumOpt, boolean createParent)
+                                                          Options.ChecksumOpt checksumOpt, boolean createParent)
                     throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnsupportedFileSystemException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         FSDataOutputStream retVal = null;
         boolean success = false;
         try {
+            dbConnection = this.getReadWriteDbConnection("createInternal");
+
             // Default impl assumes that permissions do not matter
             // calling the regular create is good enough.
             // FSs that implement permissions should override this.
@@ -214,7 +229,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     throw new IOException("Cannot append to a diretory (=" + f + " )");
                 }
                 retVal =
-                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
+                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
                                                        this.statistics);
                 success = true;
             }
@@ -232,7 +247,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
                 retVal =
                                 new FSDataOutputStream(
-                                                new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
+                                                new BufferedOutputStream(new SQLOutputStream(f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
                                                 this.statistics);
                 success = true;
             }
@@ -246,20 +261,25 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 IOUtils.closeQuietly(retVal);
             }
 
+            this.releaseConnection("createInternal", dbConnection);
+
             leaveBusy();
         }
 
         return retVal;
     }
     @Override
-    public synchronized void mkdir(Path dir, FsPermission permission, boolean createParent) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, UnresolvedLinkException, IOException
+    public synchronized void mkdir(Path dir, FsPermission permission, boolean createParent)
+                    throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(dir);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadWriteDbConnection("mkdir");
+
             Path parentDir = dir.getParent();
             boolean parentExists = false;
             if (parentDir != null) {
@@ -286,6 +306,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while executing mkdir for " + dir, e);
         }
         finally {
+            this.releaseConnection("mkdir", dbConnection);
             this.leaveBusy();
         }
 
@@ -299,8 +320,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         boolean retVal;
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadWriteDbConnection("delete");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -312,6 +335,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while deleting " + f, e);
         }
         finally {
+            this.releaseConnection("delete", dbConnection);
             this.leaveBusy();
         }
 
@@ -324,16 +348,18 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         FSDataInputStream retVal = null;
         boolean success = false;
         try {
+            dbConnection = this.getReadOnlyDbConnection("open");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(dbConnection, f), bufferSize));
+            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(f), bufferSize));
             success = true;
         }
         catch (SQLException e) {
@@ -343,6 +369,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             // Close if failed during stream creation.
             if (!success && retVal != null) {
                 IOUtils.closeQuietly(retVal);
+            }
+
+            if (!success) {
+                this.releaseConnection("open", dbConnection);
             }
 
             this.leaveBusy();
@@ -357,9 +387,11 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         boolean retVal = false;
         try {
+            dbConnection = this.getReadWriteDbConnection("setReplication");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -377,21 +409,25 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while setting replication for " + f, e);
         }
         finally {
+            this.releaseConnection("setReplication", dbConnection);
             this.leaveBusy();
         }
 
         return retVal;
     }
     @Override
-    public synchronized void renameInternal(Path src, Path dst) throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnresolvedLinkException, IOException
+    public synchronized void renameInternal(Path src, Path dst)
+                    throws AccessControlException, FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException, UnresolvedLinkException, IOException
     {
         this.enterBusy();
 
         this.checkAccess(src);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         int retVal;
         try {
+            dbConnection = this.getReadWriteDbConnection("renameInternal");
+
             boolean exists = this.exists(dbConnection, src);
             if (!exists) {
                 throw new FileNotFoundException("File " + src + " not found");
@@ -429,6 +465,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while renaming " + src + " to " + dst, e);
         }
         finally {
+            this.releaseConnection("renameInternal", dbConnection);
             this.leaveBusy();
         }
     }
@@ -439,8 +476,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadWriteDbConnection("setPermission");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -457,6 +496,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while changing permission for " + f, e);
         }
         finally {
+            this.releaseConnection("setPermission", dbConnection);
             this.leaveBusy();
         }
     }
@@ -467,8 +507,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadWriteDbConnection("setOwner");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -486,6 +528,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while changing owner data for " + f, e);
         }
         finally {
+            this.releaseConnection("setOwner", dbConnection);
             this.leaveBusy();
         }
     }
@@ -496,8 +539,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadWriteDbConnection("setTimes");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -515,6 +560,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while changing times for " + f, e);
         }
         finally {
+            this.releaseConnection("setTimes", dbConnection);
             this.leaveBusy();
         }
     }
@@ -531,9 +577,11 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         this.checkAccess(f);
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         FileStatus retVal = null;
         try {
+            dbConnection = this.getReadOnlyDbConnection("getFileStatus");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -577,6 +625,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while getting file status for " + f, e);
         }
         finally {
+            this.releaseConnection("getFileStatus", dbConnection);
             this.leaveBusy();
         }
 
@@ -631,8 +680,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         List<FileStatus> retVal = new ArrayList<>();
 
-        Connection dbConnection = getDbConnection();
+        Connection dbConnection = null;
         try {
+            dbConnection = this.getReadOnlyDbConnection("listStatus");
+
             boolean exists = this.exists(dbConnection, f);
             if (!exists) {
                 throw new FileNotFoundException("File " + f + " not found");
@@ -692,6 +743,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("Error while listing status for " + f, e);
         }
         finally {
+            this.releaseConnection("listStatus", dbConnection);
             this.leaveBusy();
         }
 
@@ -706,15 +758,48 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     public synchronized void close() throws IOException
     {
         if (this.closeGuard.compareAndSet(false, true)) {
-            if (this.connectionPoolManager != null) {
+
+            if (this.notxRwConnection != null) {
                 try {
-                    this.connectionPoolManager.dispose();
+                    this.notxRwConnection.close();
                 }
                 catch (SQLException e) {
-                    Logger.error("Error while closing the SQL connection while shutting down the HDFS SQL filesystem; " + this.getUri(), e);
+                    Logger.error("Error while closing the cached notx rw connection;", e);
                 }
                 finally {
-                    this.connectionPoolManager = null;
+                    this.notxRwConnection = null;
+                }
+            }
+
+            if (this.rwConnectionPoolManager != null) {
+                try {
+                    this.rwConnectionPoolManager.dispose();
+                    int activeConn = this.rwConnectionPoolManager.getActiveConnections();
+                    if (activeConn > 0) {
+                        Logger.error("Still got " + activeConn + " left after closing up the RW connection pool manager, hope this is ok...");
+                    }
+                }
+                catch (SQLException e) {
+                    Logger.error("Error while closing the RW connection pool manager; " + this.getUri(), e);
+                }
+                finally {
+                    this.rwConnectionPoolManager = null;
+                }
+            }
+
+            if (this.roConnectionPoolManager != null) {
+                try {
+                    this.roConnectionPoolManager.dispose();
+                    int activeConn = this.roConnectionPoolManager.getActiveConnections();
+                    if (activeConn > 0) {
+                        Logger.error("Still got " + activeConn + " left after closing up the RO connection pool manager, hope this is ok...");
+                    }
+                }
+                catch (SQLException e) {
+                    Logger.error("Error while closing the RO connection pool manager; " + this.getUri(), e);
+                }
+                finally {
+                    this.roConnectionPoolManager = null;
                 }
             }
         }
@@ -785,10 +870,12 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         boolean booted = false;
         try {
+
+            this.enableTxSupport = cfg.getBoolean(ENABLE_TX_SUPPORT_CONFIG, true);
+
             //The public scheme name is "sql", but internally, we'll replace it by "jdbc:xxx", where "xxx" is the specific SQL dialect
             //that's implemented by this class. In the future, we might consider changing it to "sql:xxx" with the same dialect, but for now,
             //we'll only support one: SQLite
-
             switch (DRIVER) {
                 case SQLITE:
 
@@ -796,7 +883,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     this.dbFile = Paths.get(this.getUri().getPath());
                     //an existing file means we're resuming an old session
                     this.resumed = Files.exists(this.dbFile);
-                    //Note that we're probably always passed a folder, but let's support both
+                    //let's support both files and folders as URI
                     if (this.resumed) {
                         if (Files.isDirectory(this.dbFile)) {
                             this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
@@ -805,8 +892,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     else {
                         //here, we need to choose between using the supplied name as a file or a dir,
                         //let us use the extension to decide between both: if it ends with .db, it's a file, otherwise,
-                        //it's a folder where we'll create a new file
-                        if (!this.dbFile.endsWith("." + DEFAULT_FILENAME_EXT)) {
+                        //it's a folder in which we'll create a new file
+                        if (!this.dbFile.toString().endsWith("." + DEFAULT_FILENAME_EXT)) {
                             this.dbFile = this.dbFile.resolve(DEFAULT_DATABASE_FILENAME);
                         }
                     }
@@ -828,45 +915,60 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     // https://bitbucket.org/cwdesautels/nexj-express-sqlite-adapter/src/sqlite/src/nexj/core/persistence/sql/pseudoxa
                     //
                     // Note that this doesn't really do the hard XA work; that part is implemented in getDbConnection()
-                    SQLiteConnectionPoolDataSource dataSource = new SQLiteConnectionPoolDataSource();
-                    dataSource.setUrl(JDBC.PREFIX + this.dbFile);
-                    //set the write-ahead log journal mode (needed for XA transaction support?)
-                    dataSource.setJournalMode("WAL");
-                    dataSource.getConfig().setBusyTimeout("10000");
+                    String dataSourceUrl = JDBC.PREFIX + this.dbFile;
+                    SQLiteConnectionPoolDataSource roDataSource = new SQLiteConnectionPoolDataSource();
+                    roDataSource.setUrl(dataSourceUrl);
+                    //Don't explicitly set this, it bugged (causes the wal file to be not deleted on cleanup)
+                    //roDataSource.setReadOnly(true);
 
-                    this.connectionPoolManager = new MiniConnectionPoolManager(dataSource, CONNECTION_POOL_SIZE);
+                    //Note: read this: https://sqlite.org/faq.html#q5
+                    //this means we can't have two filesystems open and writing to the SQLite database at the same time,
+                    //but we CAN have two of them reading from a SQLite database at the same time.
+                    //--> that's why we decided to split up the connections into a ro pool and one rw; see below
+                    this.roConnectionPoolManager = new MiniConnectionPoolManager(roDataSource, DEFAULT_CONNECTION_POOL_SIZE);
+
+                    if (!this.readOnly) {
+                        SQLiteConnectionPoolDataSource rwDataSource = new SQLiteConnectionPoolDataSource();
+                        rwDataSource.setUrl(dataSourceUrl);
+                        //set the write-ahead log journal mode (needed for XA transaction support?)
+                        //Got it from the MiniConnectionPoolManager docs page: http://www.source-code.biz/miniconnectionpoolmanager/
+                        rwDataSource.setJournalMode("WAL");
+                        rwDataSource.getConfig().setBusyTimeout("10000");
+                        this.rwConnectionPoolManager = new MiniConnectionPoolManager(rwDataSource, 1);
+                    }
 
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported driver; " + DRIVER);
             }
 
-            try (Connection dbConnection = this.connectionPoolManager.getConnection()) {
+            if (!this.readOnly) {
+                try (Connection dbConnection = this.rwConnectionPoolManager.getConnection()) {
 
-                //create the main table if it doesn't exist
-                ResultSet rs = dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
-                if (!rs.next()) {
-                    try (Statement stmt = dbConnection.createStatement()) {
-                        stmt.executeUpdate("CREATE TABLE " + SQL_TABLE_NAME + " " +
-                                           "(" + SQL_COLUMN_PATH_NAME + " TEXT PRIMARY KEY NOT NULL," +
-                                           " " + SQL_COLUMN_CONTENT_NAME + " BLOB NOT NULL," +
-                                           " " + SQL_COLUMN_FILETYPE_NAME + " SMALLINT NOT NULL," +
-                                           " " + SQL_COLUMN_PERMISSION_NAME + " INTEGER NOT NULL," +
-                                           " " + SQL_COLUMN_USERNAME_NAME + " TEXT," +
-                                           " " + SQL_COLUMN_GROUPNAME_NAME + " TEXT," +
-                                           //SQLite: The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value,
-                                           //so it's safe to use INTEGER for LONG
-                                           " " + SQL_COLUMN_MTIME_NAME + " BIGINT NOT NULL," +
-                                           " " + SQL_COLUMN_ATIME_NAME + " BIGINT NOT NULL," +
-                                           " " + SQL_COLUMN_REPLICATION_NAME + " SMALLINT NOT NULL," +
-                                           " " + SQL_COLUMN_BLOCKSIZE_NAME + " BIGINT NOT NULL," +
-                                           " " + SQL_COLUMN_VERIFY_NAME + " BOOLEAN NOT NULL," +
-                                           " " + SQL_COLUMN_CHECKSUM_ID_NAME + " INTEGER," +
-                                           " " + SQL_COLUMN_CHECKSUM_SIZE_NAME + " INTEGER" +
-                                           ");");
+                    //create the main table if it doesn't exist
+                    ResultSet rs = dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
+                    if (!rs.next()) {
+                        try (Statement stmt = dbConnection.createStatement()) {
+                            stmt.executeUpdate("CREATE TABLE " + SQL_TABLE_NAME + " " +
+                                               "(" + SQL_COLUMN_PATH_NAME + " TEXT PRIMARY KEY NOT NULL," +
+                                               " " + SQL_COLUMN_CONTENT_NAME + " BLOB NOT NULL," +
+                                               " " + SQL_COLUMN_FILETYPE_NAME + " SMALLINT NOT NULL," +
+                                               " " + SQL_COLUMN_PERMISSION_NAME + " INTEGER NOT NULL," +
+                                               " " + SQL_COLUMN_USERNAME_NAME + " TEXT," +
+                                               " " + SQL_COLUMN_GROUPNAME_NAME + " TEXT," +
+                                               //SQLite: The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value,
+                                               //so it's safe to use INTEGER for LONG
+                                               " " + SQL_COLUMN_MTIME_NAME + " BIGINT NOT NULL," +
+                                               " " + SQL_COLUMN_ATIME_NAME + " BIGINT NOT NULL," +
+                                               " " + SQL_COLUMN_REPLICATION_NAME + " SMALLINT NOT NULL," +
+                                               " " + SQL_COLUMN_BLOCKSIZE_NAME + " BIGINT NOT NULL," +
+                                               " " + SQL_COLUMN_VERIFY_NAME + " BOOLEAN NOT NULL," +
+                                               " " + SQL_COLUMN_CHECKSUM_ID_NAME + " INTEGER," +
+                                               " " + SQL_COLUMN_CHECKSUM_SIZE_NAME + " INTEGER" +
+                                               ");");
+                        }
                     }
                 }
-
             }
 
             booted = true;
@@ -883,7 +985,15 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             leaveBusy();
         }
     }
-    private Connection getDbConnection() throws IOException
+    private Connection getReadOnlyDbConnection(String method) throws IOException
+    {
+        return this.enableTxSupport ? getDbConnectionTX(this.roConnectionPoolManager) : getDbConnectionNOTX(this.roConnectionPoolManager);
+    }
+    private Connection getReadWriteDbConnection(String method) throws IOException
+    {
+        return this.enableTxSupport ? this.getDbConnectionTX(this.rwConnectionPoolManager) : getDbConnectionNOTX(this.rwConnectionPoolManager);
+    }
+    private Connection getDbConnectionTX(ConnectionPoolManager connectionPoolManager) throws IOException
     {
         Connection retVal = null;
 
@@ -896,23 +1006,62 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             try {
                 if (xaResource == null) {
                     //Note that setAutoCommit(false) is set in SqlXAResource
-                    tx.registerResource(TX_RESOURCE_NAME, xaResource = new SqlXAResource(this.connectionPoolManager.getConnection()));
+                    //Note that we wrap the connection in a simple wrapper only to be able to detect it in releaseConnection()
+                    tx.registerResource(TX_RESOURCE_NAME, xaResource = new SqlXAResource(new TxConnection(connectionPoolManager.getConnection())));
                 }
 
                 retVal = ((SqlXAResource) xaResource).getConnectionRef();
             }
             catch (SQLException e) {
-                throw new IOException("Error while fetching SQL connection from the connection pool", e);
+                throw new IOException("Error while fetching TX SQL connection from the connection pool", e);
             }
         }
 
         return retVal;
     }
+    private Connection getDbConnectionNOTX(ConnectionPoolManager connectionPoolManager) throws IOException
+    {
+        Connection retVal;
+
+        try {
+            if (connectionPoolManager == this.rwConnectionPoolManager) {
+                if (this.notxRwConnection == null) {
+                    this.notxRwConnection = connectionPoolManager.getConnection();
+                }
+                retVal = this.notxRwConnection;
+            }
+            else {
+                retVal = connectionPoolManager.getConnection();
+            }
+        }
+        catch (SQLException e) {
+            throw new IOException("Error while fetching NOTX SQL connection from the connection pool", e);
+        }
+
+        return retVal;
+    }
+    private void releaseConnection(String method, Connection connection)
+    {
+        //note that a TxConnection is closed at the end of the TX
+        if (connection != null && !(connection instanceof TxConnection)) {
+            try {
+                if (this.notxRwConnection != null && connection == this.notxRwConnection) {
+                    //NOOP, this is only closed in close()
+                }
+                else {
+                    connection.close();
+                }
+            }
+            catch (SQLException e) {
+                Logger.error("Error while releasing SQL connection; " + connection, e);
+            }
+        }
+    }
     private void checkAccess(Path f) throws AccessControlException
     {
         //TODO
     }
-    private boolean exists(Connection dbConnection, Path f) throws SQLException
+    private boolean exists(Connection dbConnection, Path f) throws SQLException, IOException
     {
         boolean retVal = false;
 
@@ -1102,10 +1251,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         private Blob blob;
         private OutputStream blobStream;
 
-        private SQLOutputStream(Connection dbConnection, Path f, boolean exists, boolean append, boolean overwrite, FsPermission permission, long blockSize, Options.ChecksumOpt checksumOpt)
+        private SQLOutputStream(Path f, boolean exists, boolean append, boolean overwrite, FsPermission permission, long blockSize, Options.ChecksumOpt checksumOpt)
                         throws IOException
         {
-            this.dbConnection = dbConnection;
+            this.dbConnection = getReadWriteDbConnection("SQLOutputStream");
             this.path = f;
             this.exists = exists;
             this.append = append;
@@ -1143,10 +1292,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         @Override
         public void close() throws IOException
         {
-            this.blobStream.close();
-
             //process the results
             try {
+                this.blobStream.close();
+
                 if (this.append) {
                     doAppend(this.dbConnection, this.path, this.blob);
                 }
@@ -1159,6 +1308,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             }
             catch (SQLException e) {
                 throw new IOException("Error while writing data for " + this.path, e);
+            }
+            finally {
+                releaseConnection("SQLOutputStream", this.dbConnection);
             }
         }
         @Override
@@ -1186,9 +1338,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         private InputStream blobInputStream;
         private long position;
 
-        public SQLInputStream(Connection dbConnection, Path f) throws IOException
+        public SQLInputStream(Path f) throws IOException
         {
-            this.dbConnection = dbConnection;
+            this.dbConnection = getReadOnlyDbConnection("SQLInputStream");
             this.path = f;
 
             //see https://docs.oracle.com/javase/tutorial/jdbc/basics/blob.html
@@ -1259,7 +1411,12 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         @Override
         public void close() throws IOException
         {
-            this.blobInputStream.close();
+            try {
+                this.blobInputStream.close();
+            }
+            finally {
+                releaseConnection("SQLInputStream", this.dbConnection);
+            }
         }
         @Override
         public boolean markSupported()

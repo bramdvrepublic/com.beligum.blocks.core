@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.hdfs.impl.fs;
+package com.beligum.blocks.filesystem.hdfs.impl.local;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;

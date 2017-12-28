@@ -39,6 +39,7 @@ import com.github.dexecutor.core.task.TaskProvider;
 import net.sf.ehcache.concurrent.Sync;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
+import org.sqlite.SQLiteDataSource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -164,7 +165,13 @@ public class ReindexThread extends Thread implements LongRunningThread
             }
 
             //we'll have one big connection during the entire session
-            this.dbConnection = DriverManager.getConnection(this.dbConnectionUrl);
+            //Note: solution below is much faster
+            //this.dbConnection = DriverManager.getConnection(this.dbConnectionUrl);
+            SQLiteDataSource dataSource = new SQLiteDataSource();
+            dataSource.setUrl(this.dbConnectionUrl);
+            dataSource.setJournalMode("WAL");
+            dataSource.getConfig().setBusyTimeout("10000");
+            this.dbConnection = dataSource.getConnection();
 
             //check if the page table exists and create it if not
             this.createPageTable();
@@ -775,7 +782,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 long timeDiffMillis = System.currentTimeMillis() - startStamp;
                                 float pctDone = taskCounter / (float) maxPages;
                                 float pctLeft = 1.0f - pctDone;
-                                long estimatedMillisLeft = (long) (timeDiffMillis * pctLeft);
+                                long estimatedMillisLeft = (long) (timeDiffMillis / pctDone * pctLeft);
 
                                 Logger.info("Max transaction limit reached; finishing, committing and booting a new one.\n" +
                                             "Statistics: \n" +
@@ -790,7 +797,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 //we need to recreate it or the next submit will complain the executor is terminated.
                                 reindexExecutor = createBlockingExecutor(nThreads, queueSize);
 
-                                //close the active transaction
+                                //commit and close the active transaction
                                 StorageFactory.releaseCurrentThreadTx(false);
                                 transaction = null;
                                 txBatchCounter = 0;
@@ -807,9 +814,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 }
 
                                 //start a new transaction
-
-                                //there's something wrong with the TX handling...
-                                transaction = StorageFactory.createCurr entThreadTx(this, Sync.ONE_DAY);
+                                transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
                                 indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getMainPageIndexer().connect(transaction),
                                                                                                       StorageFactory.getTriplestoreIndexer().connect(transaction));
                             }

@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.filesystem.hdfs.impl;
 
-import com.beligum.blocks.filesystem.hdfs.impl.fs.TransactionalRawLocalFileSystem;
+import com.beligum.blocks.filesystem.hdfs.impl.local.TransactionalRawLocalFileSystem;
 import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;

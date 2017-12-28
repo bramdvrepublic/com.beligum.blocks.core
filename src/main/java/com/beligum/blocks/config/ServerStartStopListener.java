@@ -30,6 +30,7 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
+import org.apache.hadoop.fs.FileContext;
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
 
@@ -98,6 +99,30 @@ public class ServerStartStopListener implements ServerLifecycleListener
                     Logger.error("Exception caught while shutting down indexer; " + indexer, e);
                 }
                 indexIter.remove();
+            }
+
+            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
+                try {
+                    FileContext pageViewFs = StorageFactory.getPageViewFileSystem();
+                    if (pageViewFs.getDefaultFileSystem() instanceof AutoCloseable) {
+                        ((AutoCloseable) pageViewFs.getDefaultFileSystem()).close();
+                    }
+                }
+                catch (Exception e) {
+                    Logger.error("Error while shutting down page store filesystem", e);
+                }
+            }
+
+            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
+                try {
+                    FileContext pageStoreFs = StorageFactory.getPageStoreFileSystem();
+                    if (pageStoreFs.getDefaultFileSystem() instanceof AutoCloseable) {
+                        ((AutoCloseable) pageStoreFs.getDefaultFileSystem()).close();
+                    }
+                }
+                catch (Exception e) {
+                    Logger.error("Error while shutting down page store filesystem", e);
+                }
             }
 
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {

@@ -26,10 +26,7 @@ import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProduce
 import com.beligum.blocks.filesystem.index.ifaces.XAClosableResource;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import javax.transaction.*;
 import javax.transaction.xa.XAResource;
 import java.io.IOException;
 import java.util.HashMap;
@@ -214,17 +211,17 @@ public class TX implements AutoCloseable
     {
         try {
             if (forceRollback || this.getStatus() != Status.STATUS_ACTIVE) {
-                this.rollback();
+                this.doRollback();
             }
             else {
                 //this is the general case: try to commit and (try to) rollback on setRollbackOnly
                 try {
-                    this.commit();
+                    this.doCommit();
                 }
                 catch (Throwable e) {
                     try {
                         Logger.error("Caught exception while committing transaction, trying to rollback instead", e);
-                        this.rollback();
+                        this.doRollback();
                     }
                     catch (Throwable e1) {
                         Logger.error("Caught exception while rolling back a transaction after a failed commit; this is bad", e);
@@ -250,7 +247,7 @@ public class TX implements AutoCloseable
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private int getStatus() throws Exception
+    private int getStatus() throws SystemException
     {
         return this.jtaTransaction == null ? Status.STATUS_UNKNOWN : this.jtaTransaction.getStatus();
     }
@@ -259,7 +256,7 @@ public class TX implements AutoCloseable
      *
      * @see ReleaseFilter
      */
-    private void commit() throws Exception
+    private void doCommit() throws IOException
     {
         //From the PDF mentioned above:
         // commit: same as TransactionManager.commit(). This method should not be called randomly: first, every XAResource
@@ -283,7 +280,7 @@ public class TX implements AutoCloseable
      *
      * @see ReleaseFilter
      */
-    private void rollback() throws Exception
+    private void doRollback() throws IOException
     {
         //From the PDF mentioned above:
         // rollback: same as TransactionManager.rollback(). As with commit, this method should not be called randomly:
@@ -306,16 +303,16 @@ public class TX implements AutoCloseable
      *
      * @see ReleaseFilter
      */
-    private void doClose() throws Exception
+    private void doClose() throws IOException
     {
-        Exception lastError = null;
+        IOException lastError = null;
 
         for (XAResource r : this.registeredResources.values()) {
             if (r instanceof XAClosableResource) {
                 try {
                     ((XAClosableResource) r).close();
                 }
-                catch (Exception e) {
+                catch (IOException e) {
                     Logger.error("Error while closing an index connection in request transaction close; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
                     lastError = e;
                 }
