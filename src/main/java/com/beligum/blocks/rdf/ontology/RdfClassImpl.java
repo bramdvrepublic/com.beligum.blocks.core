@@ -19,6 +19,7 @@ package com.beligum.blocks.rdf.ontology;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceIndexer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -26,6 +27,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -45,6 +47,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     protected RdfQueryEndpoint queryEndpoint;
     private Set<RdfProperty> properties;
     private ResourceIndexer resourceIndexer;
+    private Set<RdfClass> superClasses;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -81,20 +84,53 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         RdfQueryEndpoint queryEndpoint,
                         ResourceIndexer resourceIndexer)
     {
+        this(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint, resourceIndexer, null);
+    }
+    public RdfClassImpl(String name,
+                        RdfVocabulary vocabulary,
+                        MessagesFileEntry title,
+                        MessagesFileEntry label,
+                        URI[] isSameAs,
+                        boolean isPublic,
+                        RdfQueryEndpoint queryEndpoint,
+                        ResourceIndexer resourceIndexer,
+                        RdfClass... superClasses)
+    {
         super(isPublic);
 
         this.name = name;
         this.vocabulary = vocabulary;
+        if (this.vocabulary == null) {
+            throw new RdfInitializationException("Trying to create an RdfClass '" + this.name + "' without any vocabulary to connect to, can't continue because too much depends on this.");
+        }
+
         this.title = title;
         this.label = label;
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
         this.queryEndpoint = queryEndpoint;
-        this.properties = null;
         this.resourceIndexer = resourceIndexer;
         //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
         if (this.resourceIndexer == null) {
             this.resourceIndexer = new SimpleResourceIndexer();
+        }
+
+        this.properties = new HashSet<>();
+
+        this.superClasses = new HashSet<>();
+        if (superClasses != null) {
+            for (RdfClass c : superClasses) {
+                //we save the relationship and add all properties of the superclasses to this class
+                this.superClasses.add(c);
+                for (RdfProperty p : c.getProperties()) {
+                    if (this.properties.contains(p)) {
+                        throw new RdfInitializationException("RDFClass " + this + " inherits from " + c + ", but the property " + p + " would overwrite an existing property, can't continue.");
+                    }
+                    else {
+                        this.properties.add(p);
+                    }
+                }
+            }
         }
 
         //only add ourself to the selected vocabulary if we are a pure class
@@ -177,9 +213,18 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         return properties;
     }
     @Override
-    public void setProperties(Set<RdfProperty> properties)
+    public void addProperties(RdfProperty... properties)
     {
-        this.properties = properties;
+        if (properties != null) {
+            for (RdfProperty p : properties) {
+                if (this.properties.contains(p)) {
+                    throw new RdfInitializationException("Can't add property " + p + " to class " + this + " because it would overwrite and existing property, can't continue.");
+                }
+                else {
+                    this.properties.add(p);
+                }
+            }
+        }
     }
     @Override
     public ResourceIndexer getResourceIndexer()
@@ -196,5 +241,21 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     public String toString()
     {
         return "" + this.getCurieName();
+    }
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof RdfClassImpl)) return false;
+
+        RdfClassImpl rdfClass = (RdfClassImpl) o;
+
+        //I guess we can assume two classes (or properties) with the same CURIE to be equal, right?
+        return getCurieName() != null ? getCurieName().equals(rdfClass.getCurieName()) : rdfClass.getCurieName() == null;
+    }
+    @Override
+    public int hashCode()
+    {
+        return getCurieName() != null ? getCurieName().hashCode() : 0;
     }
 }

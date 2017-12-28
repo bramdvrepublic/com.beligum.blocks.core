@@ -154,7 +154,7 @@ public interface RdfClass extends RdfResource
      * This was because there was a cyclic static initialization dependency while creating the objects: terms relied on classes which relied on terms (to initialize this set).
      */
     @JsonIgnore
-    void setProperties(Set<RdfProperty> properties);
+    void addProperties(RdfProperty... properties);
 
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>

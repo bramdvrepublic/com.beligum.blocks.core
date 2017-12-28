@@ -23,11 +23,10 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.RdfClassImpl;
 import com.beligum.blocks.rdf.ontology.RdfPropertyImpl;
-import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
+import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.utils.RdfTools;
-import com.google.common.collect.Sets;
 import gen.com.beligum.blocks.core.messages.blocks.ontology;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -154,14 +153,14 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
                                                                            false);
 
     static {
-        LogEntry.setProperties(Sets.newHashSet(RdfLogWriter.type,
-                                               RdfLogWriter.subject,
-                                               RdfLogWriter.title,
-                                               RdfLogWriter.description,
-                                               RdfLogWriter.createdAt,
-                                               RdfLogWriter.username,
-                                               RdfLogWriter.software,
-                                               RdfLogWriter.softwareVersion));
+        LogEntry.addProperties(RdfLogWriter.type,
+                               RdfLogWriter.subject,
+                               RdfLogWriter.title,
+                               RdfLogWriter.description,
+                               RdfLogWriter.createdAt,
+                               RdfLogWriter.username,
+                               RdfLogWriter.software,
+                               RdfLogWriter.softwareVersion);
 
         try {
             DATATYPE_FACTORY = DatatypeFactory.newInstance();

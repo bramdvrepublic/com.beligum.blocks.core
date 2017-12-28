@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.util.Progressable;
 import org.sqlite.JDBC;
+import org.sqlite.SQLiteConfig;
 import org.sqlite.javax.SQLiteConnectionPoolDataSource;
 
 import javax.transaction.xa.XAResource;
@@ -60,7 +61,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     public static final String ENABLE_TX_SUPPORT_CONFIG = "blocks.core.fs.sql.txDisabled";
 
     protected static final SupportedDriver DRIVER = SupportedDriver.SQLITE;
-    protected static final String TX_RESOURCE_NAME = "SqlFS";
+    protected static final String TX_RW_RESOURCE_NAME = "SqlFSrw";
+    protected static final String TX_RO_RESOURCE_NAME = "SqlFSro";
 
     protected static final int DEFAULT_CONNECTION_POOL_SIZE = 5;
     protected static final int DEFAULT_PORT = -1;
@@ -934,6 +936,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         //Got it from the MiniConnectionPoolManager docs page: http://www.source-code.biz/miniconnectionpoolmanager/
                         rwDataSource.setJournalMode("WAL");
                         rwDataSource.getConfig().setBusyTimeout("10000");
+                        //I assume immediate transactions is more the behavior what we expect from our TX handling
+                        //for details, see https://sqlite.org/lang_transaction.html
+                        rwDataSource.setTransactionMode(SQLiteConfig.TransactionMode.IMMEDIATE.name());
                         this.rwConnectionPoolManager = new MiniConnectionPoolManager(rwDataSource, 1);
                     }
 
@@ -1002,12 +1007,15 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("We're not in an active transaction context, so I can't instance an XA database connection inside the current transaction scope");
         }
         else {
-            XAResource xaResource = tx.getRegisteredResource(TX_RESOURCE_NAME);
+            //I guess it makes sense to attach both the rw and ro connections to the transaction because it's where we expect them to be released
+            String resourceName = connectionPoolManager == this.rwConnectionPoolManager ? TX_RW_RESOURCE_NAME : TX_RO_RESOURCE_NAME;
+
             try {
+                XAResource xaResource = tx.getRegisteredResource(resourceName);
                 if (xaResource == null) {
                     //Note that setAutoCommit(false) is set in SqlXAResource
                     //Note that we wrap the connection in a simple wrapper only to be able to detect it in releaseConnection()
-                    tx.registerResource(TX_RESOURCE_NAME, xaResource = new SqlXAResource(new TxConnection(connectionPoolManager.getConnection())));
+                    tx.registerResource(resourceName, xaResource = new SqlXAResource(new TxConnection(connectionPoolManager.getConnection())));
                 }
 
                 retVal = ((SqlXAResource) xaResource).getConnectionRef();
