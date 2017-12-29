@@ -25,6 +25,7 @@ import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.RdfClassImpl;
+import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
 import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang3.StringUtils;
@@ -50,9 +51,9 @@ public class RdfEndpoint
 {
     //-----CONSTANTS-----
     //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
-    we need to solve this...
+    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
     public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
-                                                                null,
+                                                                LocalVocabulary.INSTANCE,
                                                                 core.Entries.rdfClassAllTitle,
                                                                 core.Entries.rdfClassAllLabel,
                                                                 new URI[] {},

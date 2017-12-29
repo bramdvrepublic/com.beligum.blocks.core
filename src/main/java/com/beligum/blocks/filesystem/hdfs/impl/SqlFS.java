@@ -236,7 +236,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     throw new IOException("Cannot append to a diretory (=" + f + " )");
                 }
                 retVal =
-                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
+                                new FSDataOutputStream(new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, true, overwrite, null, blockSize, checksumOpt), bufferSize),
                                                        this.statistics);
                 success = true;
             }
@@ -254,7 +254,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
                 retVal =
                                 new FSDataOutputStream(
-                                                new BufferedOutputStream(new SQLOutputStream(f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
+                                                new BufferedOutputStream(new SQLOutputStream(dbConnection, f, exists, false, overwrite, absolutePermission, blockSize, checksumOpt), bufferSize),
                                                 this.statistics);
                 success = true;
             }
@@ -264,11 +264,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
         finally {
             // Close if failed during stream creation.
-            if (!success && retVal != null) {
+            if (!success) {
                 IOUtils.closeQuietly(retVal);
+                this.releaseConnection("createInternal", dbConnection);
             }
-
-            this.releaseConnection("createInternal", dbConnection);
 
             leaveBusy();
         }
@@ -366,7 +365,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 throw new FileNotFoundException("File " + f + " not found");
             }
 
-            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(f), bufferSize));
+            retVal = new FSDataInputStream(new BufferedFSInputStream(new SQLInputStream(dbConnection, f), bufferSize));
             success = true;
         }
         catch (SQLException e) {
@@ -374,11 +373,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         }
         finally {
             // Close if failed during stream creation.
-            if (!success && retVal != null) {
-                IOUtils.closeQuietly(retVal);
-            }
-
             if (!success) {
+                IOUtils.closeQuietly(retVal);
                 this.releaseConnection("open", dbConnection);
             }
 
@@ -1051,8 +1047,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     }
     private Connection getReadOnlyDbConnection(String method) throws IOException
     {
-        //I assume a read-only connection never needs need a transaction, right?
-        return getDbConnectionNOTX(true);
+        //Note: don't assume a read-only transaction should always return a read-only connection!
+        //      when there's a RW-transaction active, it should return the RW-connection so all subsequent
+        //      statement have access to the data in the transaction.
+        return this.enableTxSupport ? this.getDbConnectionTX(true) : getDbConnectionNOTX(true);
     }
     private Connection getReadWriteDbConnection(String method) throws IOException
     {
@@ -1071,30 +1069,47 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 //I guess it makes sense to attach both the rw and ro connections to the transaction because it's where we expect them to be released
                 String resourceName = readOnly ? TX_RO_RESOURCE_NAME : TX_RW_RESOURCE_NAME;
 
-                XAResource xaResource = tx.getRegisteredResource(resourceName);
-                if (xaResource == null) {
-                    //select the right connection
-                    Connection rawConn;
+                //we need to synchronize on the TX object to make all access to it's resource methods atomic
+                XAResource xaResource = null;
+                synchronized (tx) {
+
+                    //if there's a RW-transaction active, but a RO-transaction was requested,
+                    //we return the RW-transaction to make the entire transaction session consistent
                     if (readOnly) {
-                        if (this.roConnectionPoolManager != null) {
-                            rawConn = this.roConnectionPoolManager.getConnection();
-                        }
-                        else {
-                            rawConn = this.getCachedConnection(true);
-                        }
-                    }
-                    else {
-                        if (this.rwConnectionPoolManager != null) {
-                            rawConn = this.rwConnectionPoolManager.getConnection();
-                        }
-                        else {
-                            rawConn = this.getCachedConnection(false);
-                        }
+                        xaResource = tx.getRegisteredResource(TX_RW_RESOURCE_NAME);
                     }
 
-                    //Note that setAutoCommit(false) is set in SqlXAResource
-                    //Note that we wrap the connection in a simple wrapper only to be able to detect it in releaseConnection()
-                    tx.registerResource(resourceName, xaResource = new SqlXAResource(new TxConnection(rawConn)));
+                    //note that we can stop short and opt to return a non-transactional connection here if a RO connection is requested, but no RW-transaction is active
+
+                    //if it's still null, we follow our normal routine
+                    if (xaResource == null) {
+                        xaResource = tx.getRegisteredResource(resourceName);
+                    }
+
+                    if (xaResource == null) {
+                        //select the right connection
+                        Connection rawConn;
+                        if (readOnly) {
+                            if (this.roConnectionPoolManager != null) {
+                                rawConn = this.roConnectionPoolManager.getConnection();
+                            }
+                            else {
+                                rawConn = this.getCachedConnection(true);
+                            }
+                        }
+                        else {
+                            if (this.rwConnectionPoolManager != null) {
+                                rawConn = this.rwConnectionPoolManager.getConnection();
+                            }
+                            else {
+                                rawConn = this.getCachedConnection(false);
+                            }
+                        }
+
+                        //Note that setAutoCommit(false) is set in SqlXAResource
+                        //Note that we wrap the connection in a simple wrapper only to be able to detect it in releaseConnection()
+                        tx.registerResource(resourceName, xaResource = new SqlXAResource(new TxConnection(rawConn)));
+                    }
                 }
 
                 retVal = ((SqlXAResource) xaResource).getConnectionRef();
@@ -1364,10 +1379,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         private Blob blob;
         private OutputStream blobStream;
 
-        private SQLOutputStream(Path f, boolean exists, boolean append, boolean overwrite, FsPermission permission, long blockSize, Options.ChecksumOpt checksumOpt)
+        private SQLOutputStream(Connection dbConnection, Path f, boolean exists, boolean append, boolean overwrite, FsPermission permission, long blockSize, Options.ChecksumOpt checksumOpt)
                         throws IOException
         {
-            this.dbConnection = getReadWriteDbConnection("SQLOutputStream");
+            this.dbConnection = dbConnection;
             this.path = f;
             this.exists = exists;
             this.append = append;
@@ -1382,7 +1397,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 if (isStreamingBlobSupported()) {
                     //Note: we don't use the streaming blob API (this.blob.setBinaryStream()) to make the implementation below a bit easier,
                     // in regard to the 'fake' Blob implementation below, but if performance would be bad, we should look into this...
-                    this.blob = dbConnection.createBlob();
+                    this.blob = this.dbConnection.createBlob();
                 }
                 else {
                     this.blob = new BlobImpl();
@@ -1451,9 +1466,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         private InputStream blobInputStream;
         private long position;
 
-        public SQLInputStream(Path f) throws IOException
+        public SQLInputStream(Connection dbConnection, Path f) throws IOException
         {
-            this.dbConnection = getReadOnlyDbConnection("SQLInputStream");
+            this.dbConnection = dbConnection;
             this.path = f;
 
             //see https://docs.oracle.com/javase/tutorial/jdbc/basics/blob.html
