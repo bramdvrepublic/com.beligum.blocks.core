@@ -162,7 +162,8 @@ public class TX implements AutoCloseable
                 throw new NullPointerException("Can't register an XAResource without a name");
             }
             else if (this.registeredResources.containsKey(resourceName)) {
-                Logger.error("XAResource with name '" + resourceName + "' already registered in this transaction, not registering it again!");
+                //this probably means there's a synchronization problem, don't continue
+                throw new IOException("XAResource with name '" + resourceName + "' already registered in this transaction, not registering it again!");
             }
             else {
                 this.registeredResources.put(resourceName, xaResource);

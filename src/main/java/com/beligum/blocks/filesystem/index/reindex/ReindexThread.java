@@ -784,10 +784,11 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 float pctLeft = 1.0f - pctDone;
                                 long estimatedMillisLeft = (long) (timeDiffMillis / pctDone * pctLeft);
 
-                                Logger.info("Max transaction limit reached; finishing, committing and booting a new one.\n" +
+                                Logger.info("Max transaction limit reached, flushing.\n" +
                                             "Statistics: \n" +
                                             "  - class: " + this.rdfClass + "\n" +
                                             "  - progress: " + taskCounter + "/" + maxPages + " (" + (int) (pctDone * 100) + "%)\n" +
+                                            "  - avg. speed: " + (int) (taskCounter / (timeDiffMillis / 1000.0)) + " pages/sec\n" +
                                             "  - time running: " + DurationFormatUtils.formatDuration(timeDiffMillis, "H:mm:ss") + "\n" +
                                             "  - est. time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
                                             "");

@@ -17,19 +17,30 @@
 package com.beligum.blocks.filesystem.hdfs.impl.sql;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
-public class TxConnection extends WrappedConnection
+public class AlwaysOpenConnection extends WrappedConnection
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+
     //-----CONSTRUCTORS-----
-    public TxConnection(Connection wrappedConnection)
+    public AlwaysOpenConnection(Connection wrappedConnection)
     {
         super(wrappedConnection);
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public void close() throws SQLException
+    {
+        //Explicit NOOP: close with forceClose() if you really want to close
+    }
+    public void forceClose() throws SQLException
+    {
+        super.close();
+    }
 
     //-----PROTECTED METHODS-----
 

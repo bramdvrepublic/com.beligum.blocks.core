@@ -50,6 +50,7 @@ public class RdfEndpoint
 {
     //-----CONSTANTS-----
     //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
+    we need to solve this...
     public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
                                                                 null,
                                                                 core.Entries.rdfClassAllTitle,

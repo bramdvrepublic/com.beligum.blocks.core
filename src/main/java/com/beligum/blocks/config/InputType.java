@@ -43,6 +43,7 @@ public enum InputType
     Color(core.Entries.INPUT_TYPE_COLOR),
     Uri(core.Entries.INPUT_TYPE_URI),
     Resource(core.Entries.INPUT_TYPE_RESOURCE),
+    Object(core.Entries.INPUT_TYPE_OBJECT),
     ;
 
     /**

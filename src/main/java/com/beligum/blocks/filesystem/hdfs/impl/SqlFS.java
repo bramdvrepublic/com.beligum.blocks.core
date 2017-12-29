@@ -21,7 +21,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.BlobImpl;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.ConnectionPoolManager;
-import com.beligum.blocks.filesystem.hdfs.impl.sql.MiniConnectionPoolManager;
+import com.beligum.blocks.filesystem.hdfs.impl.sql.AlwaysOpenConnection;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.TxConnection;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.sqlite.SqlXAResource;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
@@ -136,8 +136,13 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     private java.nio.file.Path dbFile;
     private boolean resumed;
     private ConnectionPoolManager roConnectionPoolManager;
+    private SQLiteConnectionPoolDataSource roDatasource;
     private ConnectionPoolManager rwConnectionPoolManager;
-    private Connection notxRwConnection;
+    private SQLiteConnectionPoolDataSource rwDatasource;
+    private Connection cachedRoConnection;
+    private Object cachedRoConnectionLock = new Object();
+    private Connection cachedRwConnection;
+    private Object cachedRwConnectionLock = new Object();
     private XAttrResolver xAttrResolver;
 
     //-----CONSTRUCTORS-----
@@ -438,6 +443,11 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             if (this.getFileStatus(src).isDirectory()) {
 
                 String pathName = pathToSql(src);
+                if (pathName.equals(Path.SEPARATOR)) {
+                    throw new IOException("Can't rename the root directory");
+                }
+
+                //Note: root exception doesn't count here; see check above
                 String pathNameRec = pathName + Path.SEPARATOR;
 
                 try (PreparedStatement stmt = dbConnection.prepareStatement("UPDATE " + SQL_TABLE_NAME +
@@ -697,10 +707,12 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             boolean isDir = this.getFileStatus(f).isDirectory();
             if (isDir) {
                 String pathName = pathToSql(f);
-                String pathNameRec = pathName + Path.SEPARATOR;
+                String pathNameRec = pathName.equals(Path.SEPARATOR) ? pathName : pathName + Path.SEPARATOR;
 
-                //we search for all paths that start with "path/" and don't have a "/" in the part after that
-                String whereSql = this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ? " +
+                //Note that we can't include the path itself, which would be the case if we query the root path "/"
+                String whereSql = SQL_COLUMN_PATH_NAME + "<>?" +
+                                  //we search for all paths that start with "path/" and don't have a "/" in the part after that
+                                  " AND " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ? " +
                                   "  AND " + this.getSqlInstrFunction("SUBSTR(" + SQL_COLUMN_PATH_NAME + ", ?)", "'" + Path.SEPARATOR + "'") + "=0";
 
                 final String CONTENT_LENGTH_NAME = "length";
@@ -719,9 +731,10 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                                                                             " FROM " + SQL_TABLE_NAME +
                                                                             " WHERE " + whereSql)) {
 
-                    stmt.setInt(1, pathNameRec.length() + 1);
-                    stmt.setString(2, pathNameRec);
-                    stmt.setInt(3, pathNameRec.length() + 1);
+                    stmt.setString(1, pathName);
+                    stmt.setInt(2, pathNameRec.length() + 1);
+                    stmt.setString(3, pathNameRec);
+                    stmt.setInt(4, pathNameRec.length() + 1);
 
                     ResultSet resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
@@ -761,36 +774,49 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     {
         if (this.closeGuard.compareAndSet(false, true)) {
 
-            if (this.notxRwConnection != null) {
-                try {
-                    this.notxRwConnection.close();
-                }
-                catch (SQLException e) {
-                    Logger.error("Error while closing the cached notx rw connection;", e);
-                }
-                finally {
-                    this.notxRwConnection = null;
+            synchronized (this.cachedRoConnectionLock) {
+                if (this.cachedRoConnection != null) {
+                    try {
+                        if (this.cachedRoConnection instanceof AlwaysOpenConnection) {
+                            Logger.info("Closing ro connection of SqlFS");
+                            ((AlwaysOpenConnection) this.cachedRoConnection).forceClose();
+                        }
+                        else {
+                            this.cachedRoConnection.close();
+                        }
+                    }
+                    catch (SQLException e) {
+                        Logger.error("Error while closing the cached ro connection;", e);
+                    }
+                    finally {
+                        this.cachedRoConnection = null;
+                    }
                 }
             }
 
-            if (this.rwConnectionPoolManager != null) {
-                try {
-                    this.rwConnectionPoolManager.dispose();
-                    int activeConn = this.rwConnectionPoolManager.getActiveConnections();
-                    if (activeConn > 0) {
-                        Logger.error("Still got " + activeConn + " left after closing up the RW connection pool manager, hope this is ok...");
+            synchronized (this.cachedRwConnectionLock) {
+                if (this.cachedRwConnection != null) {
+                    try {
+                        if (this.cachedRwConnection instanceof AlwaysOpenConnection) {
+                            Logger.info("Closing rw connection of SqlFS");
+                            ((AlwaysOpenConnection) this.cachedRwConnection).forceClose();
+                        }
+                        else {
+                            this.cachedRwConnection.close();
+                        }
                     }
-                }
-                catch (SQLException e) {
-                    Logger.error("Error while closing the RW connection pool manager; " + this.getUri(), e);
-                }
-                finally {
-                    this.rwConnectionPoolManager = null;
+                    catch (SQLException e) {
+                        Logger.error("Error while closing the cached rw connection;", e);
+                    }
+                    finally {
+                        this.cachedRwConnection = null;
+                    }
                 }
             }
 
             if (this.roConnectionPoolManager != null) {
                 try {
+                    Logger.info("Closing ro connection pool of SqlFS");
                     this.roConnectionPoolManager.dispose();
                     int activeConn = this.roConnectionPoolManager.getActiveConnections();
                     if (activeConn > 0) {
@@ -802,6 +828,23 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 }
                 finally {
                     this.roConnectionPoolManager = null;
+                }
+            }
+
+            if (this.rwConnectionPoolManager != null) {
+                try {
+                    Logger.info("Closing rw connection pool of SqlFS");
+                    this.rwConnectionPoolManager.dispose();
+                    int activeConn = this.rwConnectionPoolManager.getActiveConnections();
+                    if (activeConn > 0) {
+                        Logger.error("Still got " + activeConn + " left after closing up the RW connection pool manager, hope this is ok...");
+                    }
+                }
+                catch (SQLException e) {
+                    Logger.error("Error while closing the RW connection pool manager; " + this.getUri(), e);
+                }
+                finally {
+                    this.rwConnectionPoolManager = null;
                 }
             }
         }
@@ -923,11 +966,17 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     //Don't explicitly set this, it bugged (causes the wal file to be not deleted on cleanup)
                     //roDataSource.setReadOnly(true);
 
+                    //save it for later use
+                    this.roDatasource = roDataSource;
+
                     //Note: read this: https://sqlite.org/faq.html#q5
                     //this means we can't have two filesystems open and writing to the SQLite database at the same time,
                     //but we CAN have two of them reading from a SQLite database at the same time.
                     //--> that's why we decided to split up the connections into a ro pool and one rw; see below
-                    this.roConnectionPoolManager = new MiniConnectionPoolManager(roDataSource, DEFAULT_CONNECTION_POOL_SIZE);
+                    //Note: while this bought us some flexibility, sometimes a lot of connections come it at once (eg; during reindexing or during recursive calls)
+                    //where the connection pool would get saturated anyway (resulting in blocking behavior and a TimeoutException). To get around this,
+                    //we decided to start from scratch and make things simple by implementing only one ro and one rw connection and see from there.
+                    //this.roConnectionPoolManager = new MiniConnectionPoolManager(roDataSource, DEFAULT_CONNECTION_POOL_SIZE);
 
                     if (!this.readOnly) {
                         SQLiteConnectionPoolDataSource rwDataSource = new SQLiteConnectionPoolDataSource();
@@ -938,8 +987,16 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         rwDataSource.getConfig().setBusyTimeout("10000");
                         //I assume immediate transactions is more the behavior what we expect from our TX handling
                         //for details, see https://sqlite.org/lang_transaction.html
+                        //--> it goes hand in hand with our support for only one rw transaction; for now, if another transaction would be required
+                        //while the main rw is already in a transaction, an exception will be thrown. If this would happen frequently,
+                        //we should implement a back-off-and-retry system with a maximum timeout fallback.
                         rwDataSource.setTransactionMode(SQLiteConfig.TransactionMode.IMMEDIATE.name());
-                        this.rwConnectionPoolManager = new MiniConnectionPoolManager(rwDataSource, 1);
+
+                        //save it for later use
+                        this.rwDatasource = rwDataSource;
+
+                        //see remark above for roConnectionPoolManager why this is commented out
+                        //this.rwConnectionPoolManager = new MiniConnectionPoolManager(rwDataSource, 1);
                     }
 
                     break;
@@ -948,7 +1005,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             }
 
             if (!this.readOnly) {
-                try (Connection dbConnection = this.rwConnectionPoolManager.getConnection()) {
+
+                //one-time quick and dirty, autocommitting connection to bootstrap the database structure
+                try (Connection dbConnection = this.rwConnectionPoolManager != null ? this.rwConnectionPoolManager.getConnection() : this.rwDatasource.getConnection()) {
 
                     //create the main table if it doesn't exist
                     ResultSet rs = dbConnection.getMetaData().getTables(null, null, SQL_TABLE_NAME, null);
@@ -992,13 +1051,14 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     }
     private Connection getReadOnlyDbConnection(String method) throws IOException
     {
-        return this.enableTxSupport ? getDbConnectionTX(this.roConnectionPoolManager) : getDbConnectionNOTX(this.roConnectionPoolManager);
+        //I assume a read-only connection never needs need a transaction, right?
+        return getDbConnectionNOTX(true);
     }
     private Connection getReadWriteDbConnection(String method) throws IOException
     {
-        return this.enableTxSupport ? this.getDbConnectionTX(this.rwConnectionPoolManager) : getDbConnectionNOTX(this.rwConnectionPoolManager);
+        return this.enableTxSupport ? this.getDbConnectionTX(false) : getDbConnectionNOTX(false);
     }
-    private Connection getDbConnectionTX(ConnectionPoolManager connectionPoolManager) throws IOException
+    private Connection getDbConnectionTX(boolean readOnly) throws IOException
     {
         Connection retVal = null;
 
@@ -1007,15 +1067,34 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
             throw new IOException("We're not in an active transaction context, so I can't instance an XA database connection inside the current transaction scope");
         }
         else {
-            //I guess it makes sense to attach both the rw and ro connections to the transaction because it's where we expect them to be released
-            String resourceName = connectionPoolManager == this.rwConnectionPoolManager ? TX_RW_RESOURCE_NAME : TX_RO_RESOURCE_NAME;
-
             try {
+                //I guess it makes sense to attach both the rw and ro connections to the transaction because it's where we expect them to be released
+                String resourceName = readOnly ? TX_RO_RESOURCE_NAME : TX_RW_RESOURCE_NAME;
+
                 XAResource xaResource = tx.getRegisteredResource(resourceName);
                 if (xaResource == null) {
+                    //select the right connection
+                    Connection rawConn;
+                    if (readOnly) {
+                        if (this.roConnectionPoolManager != null) {
+                            rawConn = this.roConnectionPoolManager.getConnection();
+                        }
+                        else {
+                            rawConn = this.getCachedConnection(true);
+                        }
+                    }
+                    else {
+                        if (this.rwConnectionPoolManager != null) {
+                            rawConn = this.rwConnectionPoolManager.getConnection();
+                        }
+                        else {
+                            rawConn = this.getCachedConnection(false);
+                        }
+                    }
+
                     //Note that setAutoCommit(false) is set in SqlXAResource
                     //Note that we wrap the connection in a simple wrapper only to be able to detect it in releaseConnection()
-                    tx.registerResource(resourceName, xaResource = new SqlXAResource(new TxConnection(connectionPoolManager.getConnection())));
+                    tx.registerResource(resourceName, xaResource = new SqlXAResource(new TxConnection(rawConn)));
                 }
 
                 retVal = ((SqlXAResource) xaResource).getConnectionRef();
@@ -1027,20 +1106,12 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         return retVal;
     }
-    private Connection getDbConnectionNOTX(ConnectionPoolManager connectionPoolManager) throws IOException
+    private Connection getDbConnectionNOTX(boolean readOnly) throws IOException
     {
         Connection retVal;
 
         try {
-            if (connectionPoolManager == this.rwConnectionPoolManager) {
-                if (this.notxRwConnection == null) {
-                    this.notxRwConnection = connectionPoolManager.getConnection();
-                }
-                retVal = this.notxRwConnection;
-            }
-            else {
-                retVal = connectionPoolManager.getConnection();
-            }
+            retVal = this.getCachedConnection(readOnly);
         }
         catch (SQLException e) {
             throw new IOException("Error while fetching NOTX SQL connection from the connection pool", e);
@@ -1048,12 +1119,44 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
         return retVal;
     }
+    private Connection getCachedConnection(boolean readOnly) throws SQLException
+    {
+        Connection retVal;
+
+        if (readOnly) {
+            if (this.cachedRoConnection == null) {
+                synchronized (this.cachedRoConnectionLock) {
+                    if (this.cachedRoConnection == null) {
+                        this.cachedRoConnection = this.roConnectionPoolManager != null ? this.roConnectionPoolManager.getConnection() : new AlwaysOpenConnection(this.roDatasource.getConnection());
+                    }
+                }
+            }
+
+            retVal = this.cachedRoConnection;
+        }
+        else {
+            if (this.cachedRwConnection == null) {
+                synchronized (this.cachedRwConnectionLock) {
+                    if (this.cachedRwConnection == null) {
+                        this.cachedRwConnection = this.rwConnectionPoolManager != null ? this.rwConnectionPoolManager.getConnection() : new AlwaysOpenConnection(this.rwDatasource.getConnection());
+                    }
+                }
+            }
+
+            retVal = this.cachedRwConnection;
+        }
+
+        return retVal;
+    }
     private void releaseConnection(String method, Connection connection)
     {
-        //note that a TxConnection is closed at the end of the TX
+        //note that a TxConnection is closed at the end of the TX, not here
         if (connection != null && !(connection instanceof TxConnection)) {
             try {
-                if (this.notxRwConnection != null && connection == this.notxRwConnection) {
+                if (this.cachedRoConnection != null && connection == this.cachedRoConnection) {
+                    //NOOP, this is only closed in close()
+                }
+                else if (this.cachedRwConnection != null && connection == this.cachedRwConnection) {
                     //NOOP, this is only closed in close()
                 }
                 else {
@@ -1138,6 +1241,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     }
     private String pathToSql(Path f)
     {
+        //Note that toUri() will always remove the trailing slash after a folder name (except for root),
+        //so this should always returns paths without a trailing slash
         return f.toUri().getPath();
     }
     private void doSetBlob(PreparedStatement stmt, int parameterIndex, Blob blob) throws SQLException, IOException
@@ -1225,7 +1330,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
         int retVal;
 
         String pathName = pathToSql(path);
-        String pathNameRec = pathName + Path.SEPARATOR;
+        String pathNameRec = pathName.equals(Path.SEPARATOR) ? pathName : pathName + Path.SEPARATOR;
         String sql = "DELETE FROM " + SQL_TABLE_NAME +
                      " WHERE " + SQL_COLUMN_PATH_NAME + "=?";
         if (recursive) {
