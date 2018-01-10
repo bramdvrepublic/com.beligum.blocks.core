@@ -1003,7 +1003,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //check if there are extra actions (next to reset and clear)
             if (dropdownActions) {
-                var dropdownOptions = $('<ul class="dropdown-menu dropdown-menu-right"/>');
+                var dropdownOptions = $('<ul class="dropdown-menu role="menu" dropdown-menu-right"/>');
                 var firstLink = null;
                 var firstLinkCaption = null;
                 $.each(dropdownActions, function (key, value)
@@ -1185,7 +1185,58 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">' + BlocksMessages.comboboxEmptySelection + '</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
 
             // Create values inside selectbox and see which one to select
-            dropdown.append($('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>'));
+            dropdown.append($('<ul class="dropdown-menu" role="menu" aria-labelledby="' + id + '"/>'));
+
+            //add keyboard prefix search to standard bootstrap dropdown
+            //for inspiration, see https://stackoverflow.com/questions/21474213/selecting-bootstrap-dropdown-value-by-key-press
+            dropdown.bind('keydown', function (event)
+            {
+                var dropdown = $(this);
+                var keyChar = String.fromCharCode(event.keyCode).toLowerCase();
+
+                //this part adds functionality for longer prefixes when they're typed fast enough (<0.5sec)
+                //note: for IE8 timestamp support, see https://stackoverflow.com/questions/221294/how-do-you-get-a-timestamp-in-javascript
+                var timeStampInMs = window.performance && window.performance.now && window.performance.timing && window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
+                var lastTimeStampInMs = dropdown.data('keydown-stamp');
+                if (lastTimeStampInMs && (timeStampInMs - lastTimeStampInMs) < 500) {
+                    var lastPrefix = dropdown.data('keydown-prefix');
+                    if (lastPrefix) {
+                        keyChar = lastPrefix + keyChar;
+                    }
+                }
+                dropdown.data('keydown-stamp', timeStampInMs);
+                dropdown.data('keydown-prefix', keyChar);
+
+                var selectedItems = $(this).find('a').filter(function ()
+                {
+                    return $(this).text().toLowerCase().indexOf(keyChar) === 0;
+                });
+
+                //this part adds functionality to cycle through the
+                var f = $(selectedItems).is(':focus');
+                if (f) {
+                    selectedItems = $('a:focus').parent().nextAll().find('a').filter(function ()
+                    {
+                        return $(this).text().toLowerCase().indexOf(keyChar) === 0;
+                    }).first();
+
+                    if (selectedItems.length == 0) {
+                        selectedItems = $(this).find('a').filter(function ()
+                        {
+                            return $(this).text().toLowerCase().indexOf(keyChar) === 0;
+                        });
+                    }
+                }
+
+                selectedItems.first().focus();
+            });
+
+            //this will make sure the selected item is in the middle of the dropdown every time the menu is re-opened,
+            //even if the menu has been scrolled to another item
+            dropdown.on('shown.bs.dropdown', function ()
+            {
+                $(this).find('.active').first().find('a').focus();
+            });
 
             //call it once (can be called again)
             //we externalized this method to be able to load the data lazily when an async json call completed
@@ -1221,7 +1272,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var title = c.name;
                 //note: this can be activated if you want subtitles
                 var subtitle = null/*c.value*/;
-                var a = $('<a data-value="' + c.value + '">' + title + (subtitle ? '<small>' + subtitle + '</small>' : '') + '</a>').appendTo(li);
+                //Note: the href enables keyboard navigation
+                var a = $('<a href="javascript:void(0)" data-value="' + c.value + '">' + title + (subtitle ? '<small>' + subtitle + '</small>' : '') + '</a>').appendTo(li);
 
                 var clickHandler = function (event, manualElement)
                 {
@@ -1284,9 +1336,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param switchStateCallback
          * @param onLabel
          * @param offLabel
+         * @param startDisabled This option was added to introduce an 'empty' or 'unset' state: only when the control is clicked once, the 'off' state is triggered
          * @returns {*|jQuery|HTMLElement}
          */
-        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel)
+        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel, startDisabled)
         {
 
             if (!onLabel) {
@@ -1328,6 +1381,27 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     switchStateCallback(!newState, newState);
                 }
             });
+
+            //start disabled and enable on click
+            if (startDisabled) {
+                //This is a bit of a hack: we find the wrapping toggle container (the one that actually receives and handles the events)
+                // and we attach a click listener to enable the toggle widget on first click (and swallow the event)
+                //Note that we can't use the built-in 'disable' features because disabled elements don't fire events,
+                // so we simulate that disabledness
+                var toggleBtn = input.closest('.toggle');
+                //simulation, see css
+                toggleBtn.addClass(BlocksConstants.DISABLED_DUMMY_CLASS);
+                toggleBtn.one('click', function (e)
+                {
+                    e.stopPropagation();
+                    toggleBtn.removeClass(BlocksConstants.DISABLED_DUMMY_CLASS);
+                    //send out the current state to the change listener
+                    if (switchStateCallback) {
+                        var newState = input.prop('checked');
+                        switchStateCallback(null, newState);
+                    }
+                });
+            }
 
             return formGroup;
         },
@@ -1405,6 +1479,25 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     {
                         Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
                     });
+            });
+            input.on("change keyup", function (event)
+            {
+                //if the input is cleared, we wipe the resource
+                if (!input.val()) {
+                    //signal the setter function to reset the tag (with data==null)
+                    setterFunction(element, null);
+                }
+            });
+
+            //show/hide the spinner when busy
+            var inputActions = $('<div class="input-group-addon invisible"><i class="fa fa-spinner fa-pulse fa-fw"></i></div>').appendTo(inputGroup);
+            input.on('typeahead:asyncrequest', function ()
+            {
+                inputActions.removeClass('invisible');
+            });
+            input.on('typeahead:asynccancel typeahead:asyncreceive', function ()
+            {
+                inputActions.addClass('invisible');
             });
 
             ////init and attach the change listener
@@ -1495,6 +1588,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 input.val('');
                 input.change();
                 input.focus();
+
+                if (setterFunction) {
+                    setterFunction(input.val());
+                }
             });
             inputActions.append('&#160;');
 
@@ -1541,9 +1638,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     // null if there were no matches. So the first ()-capture is at [1]
                     var rgb = oldVal.match(/^rgba?[\s]*\([\s]*(\d+)[\s]*,[\s]*(\d+)[\s]*,[\s]*(\d+)[\s]*/i);
                     oldVal = (rgb && rgb.length === 4) ? "#" +
-                        ("0" + parseInt(rgb[1],10).toString(16)).slice(-2) +
-                        ("0" + parseInt(rgb[2],10).toString(16)).slice(-2) +
-                        ("0" + parseInt(rgb[3],10).toString(16)).slice(-2) : DEFAULT_VALUE;
+                        ("0" + parseInt(rgb[1], 10).toString(16)).slice(-2) +
+                        ("0" + parseInt(rgb[2], 10).toString(16)).slice(-2) +
+                        ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) : DEFAULT_VALUE;
                 }
             }
             input.val(oldVal);

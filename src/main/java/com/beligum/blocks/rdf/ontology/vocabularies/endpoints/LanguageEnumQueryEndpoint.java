@@ -18,6 +18,7 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.ibm.icu.util.ULocale;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import java.util.Map;
 public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
 {
     //-----CONSTANTS-----
+    private static final String UNKNOWN_LANGUAGE_CODE = "und";
 
     //-----VARIABLES-----
     private static Map<String, EnumAutocompleteSuggestion> languageSuggestions;
@@ -37,18 +39,6 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
     public LanguageEnumQueryEndpoint(RdfClass resourceType)
     {
         super(resourceType);
-
-        //we can make the languageSuggestions static and save some space because it won't change across instances anyway
-        if (languageSuggestions==null) {
-            languageSuggestions = new LinkedHashMap<>();
-            //we switched from the built-in java list to the list of the more complete ICU4J project
-            //String[] allLangs = Locale.getISOLanguages();
-            String[] allLangs = ULocale.getISOLanguages();
-            for (String lang : allLangs) {
-                LanguageEnumSuggestion sugg = new LanguageEnumSuggestion(ULocale.forLanguageTag(lang).toLocale());
-                languageSuggestions.put(sugg.getValue(), sugg);
-            }
-        }
     }
 
     //-----PUBLIC METHODS-----
@@ -57,24 +47,54 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
     @Override
     protected Map<String, EnumAutocompleteSuggestion> getSuggestions()
     {
+        //we can make the languageSuggestions static and save some space because it won't change across instances anyway
+        if (languageSuggestions == null) {
+            languageSuggestions = new LinkedHashMap<>();
+            //we switched from the built-in java list to the list of the more complete ICU4J project
+            //String[] allLangs = Locale.getISOLanguages();
+
+            for (String langCode : ULocale.getISOLanguages()) {
+                //we'll generally won't allow the unknown language in the selection
+                if (!langCode.equals(UNKNOWN_LANGUAGE_CODE)) {
+                    LanguageEnumSuggestion sugg = new LanguageEnumSuggestion(langCode);
+                    String engName = sugg.getTitleFor(Locale.ENGLISH);
+                    //Note: we'll do a little filtering: the language's name must exist in english
+                    //and it's name can't be the same as the language code (which is returned by getDisplayLanguage() when no such entry is present in the DB)
+                    //this is a good reference, but not all translations have been added to ICU(4j) so it seems
+                    //http://www.loc.gov/standards/iso639-2/php/code_list.php
+                    if (!StringUtils.isEmpty(engName) && !engName.equals(langCode)) {
+                        languageSuggestions.put(langCode, sugg);
+                    }
+                }
+            }
+        }
+
         return languageSuggestions;
     }
 
     //-----PRIVATE METHODS-----
     public class LanguageEnumSuggestion extends SimpleEnumSuggestion
     {
-        private Locale locale;
+        private static final String EMPTY_TITLE_RETVAL = "?????";
+        private ULocale locale;
 
-        public LanguageEnumSuggestion(Locale locale)
+        public LanguageEnumSuggestion(String isoCode)
         {
-            this.locale = locale;
-            this.value = locale.getLanguage();
+            this.locale = new ULocale(isoCode);
+            this.value = isoCode;
         }
 
         @Override
         public String getTitleFor(Locale lang)
         {
-            return this.locale.getDisplayLanguage(lang);
+            String retVal = this.locale.getDisplayLanguage(ULocale.forLocale(lang));
+
+            //this shouldn't happen, but it did in case of the und lang, so let's catch it
+            if (StringUtils.isEmpty(retVal)) {
+                retVal = EMPTY_TITLE_RETVAL;
+            }
+
+            return retVal;
         }
     }
 }

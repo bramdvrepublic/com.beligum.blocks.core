@@ -15,11 +15,11 @@
  */
 
 span.twitter-typeahead {
+
   width: 100%;
 
   .tt-menu,
-  .tt-dropdown-menu
-   {
+  .tt-dropdown-menu {
     &:extend(.dropdown-menu);
   }
 
@@ -37,14 +37,14 @@ span.twitter-typeahead {
     height: @input-height-base;
     .tt-menu,
     .tt-dropdown-menu {
-      top:32px !important;
+      top: 32px !important;
     }
     &:not(:first-child):not(:last-child) {
       .form-control {
         border-radius: 0;
-      } 
+      }
     }
-   &:first-child {
+    &:first-child {
       .form-control {
         border-top-left-radius: @input-border-radius;
         border-bottom-left-radius: @input-border-radius;
@@ -60,13 +60,13 @@ span.twitter-typeahead {
         border-bottom-right-radius: @input-border-radius;
       }
     }
-     
+
   }
   .input-group.input-group-sm & {
     height: @input-height-small;
     .tt-menu,
     .tt-dropdown-menu {
-      top:@input-height-small !important;
+      top: @input-height-small !important;
     }
     .form-control {
       &:extend(.input-group-sm > .form-control);
@@ -76,10 +76,10 @@ span.twitter-typeahead {
     height: @input-height-large;
     .tt-menu,
     .tt-dropdown-menu {
-      top:@input-height-large !important;
+      top: @input-height-large !important;
     }
     .form-control {
       &:extend(.input-group-lg > .form-control);
     }
-    } 
+  }
 }

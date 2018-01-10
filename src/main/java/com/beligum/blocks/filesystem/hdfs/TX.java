@@ -84,8 +84,6 @@ public class TX implements AutoCloseable
 
             if (this.jtaTransaction instanceof BitronixTransaction) {
                 BitronixTransaction btxTx = (BitronixTransaction) this.jtaTransaction;
-
-                //                if (listener != null) {
                 btxTx.addTransactionStatusChangeListener(new TransactionStatusChangeListener()
                 {
                     @Override
@@ -103,7 +101,6 @@ public class TX implements AutoCloseable
                         }
                     }
                 });
-                //                }
             }
             else {
                 throw new IllegalStateException("Encountered an unimplemented transaction object; this shouldn't happen; " + this.jtaTransaction);
