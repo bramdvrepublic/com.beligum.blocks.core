@@ -27,7 +27,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -115,9 +115,10 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
             this.resourceIndexer = new SimpleResourceIndexer();
         }
 
-        this.properties = new HashSet<>();
+        //makes sense the properties are returned in the same order they are added, no?
+        this.properties = new LinkedHashSet<>();
 
-        this.superClasses = new HashSet<>();
+        this.superClasses = new LinkedHashSet<>();
         if (superClasses != null) {
             for (RdfClass c : superClasses) {
                 //we save the relationship and add all properties of the superclasses to this class

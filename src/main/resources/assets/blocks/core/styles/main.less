@@ -567,23 +567,32 @@ ul.@{BLOCK_ACTIONS_CLASS} {
               .inline-input-buttons();
             }
 
-            //this is the loading-spinner addon right of an autocomplete input box
-            .twitter-typeahead + .input-group-addon {
-              position: absolute;
-              right: 0px;
-              top: 0px;
-              bottom: 0px;
-              z-index: 3;
+            .twitter-typeahead {
 
-              width: auto;
-              background-color: transparent;
-              border: none;
+              //this is the loading-spinner addon right of an autocomplete input box
+              & + .input-group-addon {
+                position: absolute;
+                right: 0px;
+                top: 0px;
+                bottom: 0px;
+                z-index: 3;
 
-              //this will align the icon vertically
-              line-height: inherit;
-              .fa {
-                line-height: inherit
+                width: auto;
+                background-color: transparent;
+                border: none;
+
+                //this will align the icon vertically
+                line-height: inherit;
+                .fa {
+                  line-height: inherit
+                }
               }
+
+              //don't give the input a 'disabled' look, it's not user friendly
+              input.typeahead.tt-hint {
+                background-color: transparent;
+              }
+
             }
           }
 
@@ -592,6 +601,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           .checkbox,
           .@{RADIO_GROUP_CLASS},
           .@{COLOR_GROUP_CLASS},
+          .@{TOGGLE_GROUP_CLASS},
           .list-group {
             @textAlign: left;
             @formAlign: right;
@@ -631,6 +641,32 @@ ul.@{BLOCK_ACTIONS_CLASS} {
               .btn-reset {
                 color: #333;
                 .opacity(0.5);
+              }
+            }
+
+            &.@{TOGGLE_GROUP_CLASS} {
+
+              //small hack to enable simulated 'disabled state' for bootstrap toggle
+              &.disabled {
+                &, .btn, label {
+                  .opacity(0.65);
+                  .box-shadow(none);
+                  //by forcing the bgColor, nothing lights up on hover
+                  background-color: #ffffff;
+                }
+                .btn-reset {
+                  display: none;
+                }
+              }
+
+              //position the trashcan next to the button
+              .toggle {
+                display: inline-block;
+              }
+              .btn-reset {
+                color: #333;
+                .opacity(0.5);
+                padding-top: 6px;
               }
             }
 
@@ -762,17 +798,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
               background-color: transparent;
             }
           }
-
-          //small hack to enable simulated 'disabled state' for bootstrap toggle
-          [data-toggle="toggle"].@{DISABLED_DUMMY_CLASS} {
-            &, .btn, label {
-              .opacity(0.65);
-              .box-shadow(none);
-              //by forcing the bgColor, nothing lights up on hover
-              background-color: #ffffff;
-            }
-          }
-
         }
 
         //general class used for the container of a panel actions buttons

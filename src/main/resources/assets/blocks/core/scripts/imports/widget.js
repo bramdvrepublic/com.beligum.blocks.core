@@ -482,7 +482,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return retVal;
         },
 
-        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener)
+        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener, addEmptyEntry)
         {
             var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
                 [{
@@ -510,6 +510,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
 
                     var comboEntries = [];
+
+                    if (addEmptyEntry) {
+                        comboEntries.push({
+                            name: BlocksMessages.comboboxEmptySelection,
+                            value: ''
+                        });
+                    }
+
                     $.each(data, function (idx, entry)
                     {
                         //note: null values aren't handled very well, force-switch to empty string
@@ -630,7 +638,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * confirm: value only changes when user confirms
          * fileSelect: user can only select file from server
          * pageSelect: user can select a page url from the sitemap
-         * */
+         */
         addValueAttribute: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
         {
             var selectedFilePath = element.attr(attribute);
@@ -949,8 +957,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             input.on("change keyup focus", function (event)
             {
                 inputGroup.addClass('focus');
+                var val = input.val();
 
-                if (input.val() == null || input.val() == '') {
+                if (val == null || val == '') {
                     clearBtn.removeClass("show");
                 }
                 else {
@@ -958,7 +967,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
 
                 if (resetBtn) {
-                    if (input.val() === input.attr(Widget.OLD_VAL_ATTR)) {
+                    if (val === input.attr(Widget.OLD_VAL_ATTR)) {
                         resetBtn.removeClass("show");
                     }
                     else {
@@ -971,7 +980,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
 
                 if (event.type !== "focus" && !confirm && setterFunction) {
-                    setterFunction(input.val());
+                    setterFunction(val);
                 }
             });
             input.on("blur", function (event)
@@ -1341,7 +1350,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel, startDisabled)
         {
-
             if (!onLabel) {
                 onLabel = BlocksMessages.toggleLabelOn;
             }
@@ -1355,7 +1363,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             // Create checkboxes for each value
             var id = Commons.generateId();
             var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
-            var input = $('<input id="' + id + '" type="checkbox">').appendTo(formGroup);
+            var toggleGroup = $('<div class="' + BlocksConstants.TOGGLE_GROUP_CLASS + '" />').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="checkbox">').appendTo(toggleGroup);
 
             //init the toggle api
             input.bootstrapToggle({
@@ -1390,16 +1399,43 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 // so we simulate that disabledness
                 var toggleBtn = input.closest('.toggle');
                 //simulation, see css
-                toggleBtn.addClass(BlocksConstants.DISABLED_DUMMY_CLASS);
-                toggleBtn.one('click', function (e)
+                toggleGroup.addClass('disabled');
+
+                var activate = function (e)
                 {
-                    e.stopPropagation();
-                    toggleBtn.removeClass(BlocksConstants.DISABLED_DUMMY_CLASS);
+                    toggleGroup.removeClass('disabled');
                     //send out the current state to the change listener
                     if (switchStateCallback) {
-                        var newState = input.prop('checked');
-                        switchStateCallback(null, newState);
+                        switchStateCallback(null, input.prop('checked'));
                     }
+
+                    //needs to come last
+                    e.stopPropagation();
+                };
+
+                toggleBtn.one('click', activate);
+
+                //if we start disabled, we must offer the user a way to go back
+                var reset = $('<a href="javascript:void(0);" class="btn btn-link btn-xs btn-reset"><i class="fa fa-trash-o"></a>').appendTo(toggleGroup);
+                reset.click(function (e)
+                {
+                    toggleGroup.addClass('disabled');
+
+                    var oldState = input.prop('checked');
+                    if (initState) {
+                        input.bootstrapToggle('on');
+                    }
+                    else {
+                        input.bootstrapToggle('off');
+                    }
+
+                    //send out the current state to the change listener
+                    if (switchStateCallback) {
+                        switchStateCallback(oldState, null);
+                    }
+
+                    //reactivate the event listener
+                    toggleBtn.one('click', activate);
                 });
             }
 
