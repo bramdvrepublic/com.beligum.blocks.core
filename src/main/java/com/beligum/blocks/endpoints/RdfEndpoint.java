@@ -104,6 +104,25 @@ public class RdfEndpoint
     }
 
     @GET
+    @Path("/properties/main")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRoles(ADMIN_ROLE_NAME)
+    public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
+    {
+        RdfProperty retVal = null;
+
+        if (resourceTypeCurie != null) {
+            RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            if (rdfClass != null) {
+                retVal = rdfClass.getMainProperty();
+            }
+        }
+
+        //we can't return null, json expects "null" instead
+        return Response.ok(retVal == null ? "null" : retVal).build();
+    }
+
+    @GET
     @Path("/resources/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(ADMIN_ROLE_NAME)

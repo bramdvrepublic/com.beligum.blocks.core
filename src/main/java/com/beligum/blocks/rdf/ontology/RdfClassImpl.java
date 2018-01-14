@@ -48,6 +48,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private Set<RdfProperty> properties;
     private ResourceIndexer resourceIndexer;
     private Set<RdfClass> superClasses;
+    private RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -133,6 +134,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                 }
             }
         }
+
+        this.mainProperty = null;
 
         //only add ourself to the selected vocabulary if we are a pure class
         if (this.vocabulary != null && this.getType().equals(Type.CLASS)) {
@@ -226,6 +229,21 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                 }
             }
         }
+    }
+    @Override
+    public void setMainProperty(RdfProperty property)
+    {
+        if (!this.properties.contains(property)) {
+            throw new RdfInitializationException("Can't set main property of class " + this + " to " + property + " because it's not a property of this class.");
+        }
+        else {
+            this.mainProperty = property;
+        }
+    }
+    @Override
+    public RdfProperty getMainProperty()
+    {
+        return this.mainProperty;
     }
     @Override
     public ResourceIndexer getResourceIndexer()

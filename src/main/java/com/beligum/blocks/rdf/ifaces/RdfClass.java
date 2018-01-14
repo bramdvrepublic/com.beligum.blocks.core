@@ -156,6 +156,18 @@ public interface RdfClass extends RdfResource
     @JsonIgnore
     void addProperties(RdfProperty... properties);
 
+    /**
+     * This method was added for inline object main property support: a main property of an inline object is
+     * the property that the object actually represents (the other properties being extra information, like title + title type)
+     */
+    @JsonIgnore
+    void setMainProperty(RdfProperty property);
+
+    /**
+     * The main property, see setMainProperty() for details
+     */
+    RdfProperty getMainProperty();
+
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>
     {
