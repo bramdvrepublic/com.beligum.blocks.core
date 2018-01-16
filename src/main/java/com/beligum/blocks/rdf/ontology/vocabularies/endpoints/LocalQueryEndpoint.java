@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
+import static com.beligum.blocks.caching.CacheKeys.RESOURCE_INDEX_TEMP_STORE;
+
 /**
  * Created by bram on 3/14/16.
  */
@@ -59,12 +61,54 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
     {
     }
 
+    //-----STATIC METHODS-----
+    /**
+     * Save the supplied index entry to a temporary request-scoped store to facilitate the storage of
+     * sub-resources while indexing their container parent resources (also see getResource()).
+     */
+    public static void saveIntermediateResource(PageIndexEntry indexEntry) throws IOException
+    {
+        Map<String, Map<String, PageIndexEntry>> intermediateResourceStore = (Map<String, Map<String, PageIndexEntry>>) R.cacheManager().getRequestCache().get(RESOURCE_INDEX_TEMP_STORE);
+        if (intermediateResourceStore == null) {
+            R.cacheManager().getRequestCache().put(RESOURCE_INDEX_TEMP_STORE, intermediateResourceStore = new LinkedHashMap<>());
+        }
+
+        Map<String, PageIndexEntry> storedResourceVariants = intermediateResourceStore.get(indexEntry.getResource());
+        if (storedResourceVariants == null) {
+            intermediateResourceStore.put(indexEntry.getResource(), storedResourceVariants = new HashMap<>());
+        }
+
+        if (storedResourceVariants.containsKey(indexEntry.getLanguage())) {
+            throw new IOException("Overwriting intermediate resource for language " + indexEntry.getLanguage() + ", can't continue because this is probably an error; " + indexEntry.getResource());
+        }
+        else {
+            storedResourceVariants.put(indexEntry.getLanguage(), indexEntry);
+        }
+    }
+    /**
+     * The inverse of saveIntermediateResource()
+     */
+    public static PageIndexEntry searchIntermediateResource(String relativeResourceUri, String language) throws IOException
+    {
+        PageIndexEntry retVal = null;
+
+        Map<String, Map<String, PageIndexEntry>> intermediateResourceStore = (Map<String, Map<String, PageIndexEntry>>) R.cacheManager().getRequestCache().get(RESOURCE_INDEX_TEMP_STORE);
+        if (intermediateResourceStore != null) {
+            Map<String, PageIndexEntry> storedResourceVariants = intermediateResourceStore.get(relativeResourceUri);
+            if (storedResourceVariants != null) {
+                retVal = storedResourceVariants.get(language);
+            }
+        }
+
+        return retVal;
+    }
+
+    //-----PUBLIC METHODS-----
     @Override
     public boolean isExternal()
     {
         return false;
     }
-    //-----PUBLIC METHODS-----
     @Override
     public Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
@@ -136,14 +180,25 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         ResourceInfo retVal = null;
 
         //resources are indexed with relative id's, so make sure the URI is relative
-        String resourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
+        String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
         org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
-        pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), resourceIdStr)), BooleanClause.Occur.SHOULD);
-        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), resourceIdStr)), BooleanClause.Occur.SHOULD);
+        //at least one of the id or resource should match (or both)
+        pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
+        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
 
         IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
         PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
+
+        //this is a bit of a hack and needs some explaining: while indexing a resource with sub-resources
+        //(eg. a Page containing an Object widget), we index the sub-resources before the page-resource,
+        //but when this method is called to lookup the sub-resources in that page, they're not committed to
+        //the index yet, that's why we created a temporary request-scoped store for them.
+        //See LucenePageIndexConnection.update()
+        if (selectedEntry == null) {
+            selectedEntry = searchIntermediateResource(relResourceIdStr, language.getLanguage());
+        }
+
         if (selectedEntry != null) {
             //we just wrap the index extry in a resource info wrapper
             retVal = new WrappedPageResourceInfo(selectedEntry);

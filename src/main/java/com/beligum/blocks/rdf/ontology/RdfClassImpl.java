@@ -20,8 +20,8 @@ import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.filesystem.index.entries.resources.ResourceIndexer;
-import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceIndexer;
+import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
+import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
@@ -46,7 +46,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     //we need to be able to set this from the RdfProperty interface (to make static initializing possible)
     protected RdfQueryEndpoint queryEndpoint;
     private Set<RdfProperty> properties;
-    private ResourceIndexer resourceIndexer;
+    private ResourceSummarizer resourceSummarizer;
     private Set<RdfClass> superClasses;
     private RdfProperty mainProperty;
 
@@ -83,9 +83,9 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         URI[] isSameAs,
                         boolean isPublic,
                         RdfQueryEndpoint queryEndpoint,
-                        ResourceIndexer resourceIndexer)
+                        ResourceSummarizer resourceSummarizer)
     {
-        this(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint, resourceIndexer, null);
+        this(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint, resourceSummarizer, null);
     }
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
@@ -94,7 +94,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         URI[] isSameAs,
                         boolean isPublic,
                         RdfQueryEndpoint queryEndpoint,
-                        ResourceIndexer resourceIndexer,
+                        ResourceSummarizer resourceSummarizer,
                         RdfClass... superClasses)
     {
         super(isPublic);
@@ -110,10 +110,10 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
         this.queryEndpoint = queryEndpoint;
-        this.resourceIndexer = resourceIndexer;
+        this.resourceSummarizer = resourceSummarizer;
         //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
-        if (this.resourceIndexer == null) {
-            this.resourceIndexer = new SimpleResourceIndexer();
+        if (this.resourceSummarizer == null) {
+            this.resourceSummarizer = new SimpleResourceSummarizer();
         }
 
         //makes sense the properties are returned in the same order they are added, no?
@@ -246,9 +246,9 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         return this.mainProperty;
     }
     @Override
-    public ResourceIndexer getResourceIndexer()
+    public ResourceSummarizer getResourceSummarizer()
     {
-        return resourceIndexer;
+        return resourceSummarizer;
     }
 
     //-----PROTECTED METHODS-----

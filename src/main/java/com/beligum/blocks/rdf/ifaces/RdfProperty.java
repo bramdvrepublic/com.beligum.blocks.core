@@ -66,11 +66,11 @@ public interface RdfProperty extends RdfClass
     void setEndpoint(RdfQueryEndpoint endpoint);
 
     /**
-     * This method gets called when this property is indexed by our custom (currently only Lucene) indexer.
+     * This method gets called when this property is being indexed by our custom (currently only Lucene) indexer.
      * It should call the right method on the indexer to index the property value as closely as possible.
      * @return the value-object as it was indexed
      */
-    RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException;
+    RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language) throws IOException;
 
     /**
      * Converts the supplied value to an object to be used during index lookups

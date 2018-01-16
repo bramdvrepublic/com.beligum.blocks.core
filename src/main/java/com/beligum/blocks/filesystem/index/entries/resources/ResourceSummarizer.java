@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.filesystem.index.entries.resources;
 
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.eclipse.rdf4j.model.Model;
 
 import java.net.URI;
@@ -26,7 +27,7 @@ import java.net.URI;
  *
  * Created by bram on 5/9/16.
  */
-public interface ResourceIndexer
+public interface ResourceSummarizer
 {
     //-----CONSTANTS-----
 
@@ -36,28 +37,29 @@ public interface ResourceIndexer
 
     //-----PUBLIC METHODS-----
     /**
-     * Parse the supplied model and return the generated index that was extracted from it
+     * Parse the supplied model and return the generated index that was extracted from it.
+     * Note that the type should be allowed to be empty.
      */
-    IndexedResource index(Model model);
+    SummarizedResource summarize(RdfClass type, Model model);
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    interface IndexedResource
+    interface SummarizedResource
     {
         String getTitle();
         String getDescription();
         URI getImage();
     }
-    class DefaultIndexedResource implements IndexedResource
+    class DefaultSummarizedResource implements SummarizedResource
     {
         private String title;
         private String description;
         private URI image;
 
-        public DefaultIndexedResource(String title, String description, URI image)
+        public DefaultSummarizedResource(String title, String description, URI image)
         {
             this.title = title;
             this.description = description;

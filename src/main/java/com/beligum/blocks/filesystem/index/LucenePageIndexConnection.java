@@ -17,18 +17,22 @@
 package com.beligum.blocks.filesystem.index;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.entries.pages.*;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
@@ -36,6 +40,7 @@ import org.apache.lucene.search.*;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.util.Set;
 
 /**
  * Created by bram on 2/22/16.
@@ -66,15 +71,14 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     {
         this.assertActive();
 
-        //since we treat all URIs as relative, we only take the path into account
-        TermQuery query = new TermQuery(AbstractPageIndexEntry.toLuceneId(StringFunctions.getRightOfDomain(key)));
+        TermQuery query = new TermQuery(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(key)));
         TopDocs topdocs = this.pageIndexer.getIndexSearcher().search(query, 1);
 
         if (topdocs.scoreDocs.length == 0) {
             return null;
         }
         else {
-            return SimplePageIndexEntry.fromLuceneDoc(this.pageIndexer.getIndexSearcher().doc(topdocs.scoreDocs[0].doc));
+            return LuceneDocFactory.INSTANCE.fromLuceneDoc(this.pageIndexer.getIndexSearcher().doc(topdocs.scoreDocs[0].doc));
         }
     }
     @Override
@@ -86,7 +90,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         Page page = resource.unwrap(Page.class);
 
         //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-        this.pageIndexer.getIndexWriter().deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
+        this.pageIndexer.getIndexWriter().deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(page)));
 
         //for debug
         //this.printLuceneIndex();
@@ -99,11 +103,38 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
-        DeepPageIndexEntry indexExtry = new DeepPageIndexEntry(page);
+        LuceneDocFactory luceneDocFactory = LuceneDocFactory.INSTANCE;
 
-        //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
-        // so we can do a clean commit/rollback on our own
-        this.pageIndexer.getIndexWriter().updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
+        //Note that this returns the models in the correct order for indexing (where main model comes last)
+        Set<PageModel> subModels = RdfTools.extractSubModels(page);
+
+        for (PageModel subModel : subModels) {
+
+            //first of all, we convert all sub-models of a page to a serializable index entry
+            PageIndexEntry indexEntry = subModel.toPageIndexEntry();
+
+            //now convert that index entry to a lucene-implementation specific
+            Term luceneId = luceneDocFactory.toLuceneId(indexEntry.getId());
+
+            //this will convert the index entry to a lucene doc, providing a number of fields we can expect,
+            //serialize and store the indexEntry in the index
+            Document luceneDoc = luceneDocFactory.toLuceneDoc(indexEntry);
+
+            //this will iterate the rdf model and additionally index individual statements
+            //trying to convert between RDF and lucene as good as possible.
+            //It will also add custom sorting and search-all fields.
+            luceneDocFactory.indexRdfModel(luceneDoc, subModel);
+
+            //now write our document to the index
+            this.pageIndexer.getIndexWriter().updateDocument(luceneId, luceneDoc);
+
+            // Store the sub-resources to an intermediate request scoped cache so the main
+            // resource can find them (they're not visible to the indexReader cause we haven't
+            // called commit() at this point)
+            if (subModels.size() > 1) {
+                LocalQueryEndpoint.saveIntermediateResource(indexEntry);
+            }
+        }
 
         //for debug
         //this.printLuceneIndex();

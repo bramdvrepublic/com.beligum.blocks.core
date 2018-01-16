@@ -17,14 +17,16 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on 2/26/16.
@@ -173,20 +175,5 @@ public class RdfFactory
 
             initialized = true;
         }
-    }
-    private static URI curieToFull(URI resourceTypeCurie)
-    {
-        //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
-        URI retVal = null;
-
-        RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
-        if (vocab != null) {
-            retVal = vocab.resolve(resourceTypeCurie.getPath());
-        }
-        else {
-            Logger.warn("Encountered unknown curie schema, returning null for; " + resourceTypeCurie);
-        }
-
-        return retVal;
     }
 }

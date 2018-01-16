@@ -17,6 +17,7 @@
 package com.beligum.blocks.filesystem.index.entries.resources;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -30,7 +31,7 @@ import java.util.Iterator;
 /**
  * Created by bram on 5/10/16.
  */
-public class SimpleResourceIndexer implements ResourceIndexer
+public class SimpleResourceSummarizer implements ResourceSummarizer
 {
     //-----CONSTANTS-----
 
@@ -43,7 +44,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
 
     //-----CONSTRUCTORS-----
     //making it private and using the INSTANCE method instead to have control over the static initialization order...
-    public SimpleResourceIndexer()
+    public SimpleResourceSummarizer()
     {
         this.initialized = false;
     }
@@ -53,15 +54,22 @@ public class SimpleResourceIndexer implements ResourceIndexer
      * Note: made synchronized to make it thread safe because of the single instance above
      */
     @Override
-    public synchronized IndexedResource index(Model model)
+    public synchronized SummarizedResource summarize(RdfClass type, Model model)
     {
         //Need to do this here or we'll run into trouble while initializing static members
         this.assertInit();
 
         String title = null;
+        String main = null;
         String text = null;
         String description = null;
         URI image = null;
+
+        //let's build in support for the main properties of our newly added sub-resources
+        IRI mainIri = null;
+        if (type != null && type.getMainProperty() != null) {
+            mainIri = SimpleValueFactory.getInstance().createIRI(type.getMainProperty().getFullName().toString());
+        }
 
         Iterator<Statement> iter = model.iterator();
         while (iter.hasNext()) {
@@ -81,6 +89,14 @@ public class SimpleResourceIndexer implements ResourceIndexer
                 }
                 else {
                     Logger.debug("Double " + textIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                }
+            }
+            else if (stmt.getPredicate().equals(mainIri)) {
+                if (main == null) {
+                    main = stmt.getObject().stringValue();
+                }
+                else {
+                    Logger.debug("Double " + mainIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(descriptionIri)) {
@@ -106,7 +122,12 @@ public class SimpleResourceIndexer implements ResourceIndexer
             description = text;
         }
 
-        return new DefaultIndexedResource(title, description, image);
+        //most of the time, for sub-resources, the title will be empty, so let's check if we have a main property value instead...
+        if (StringUtils.isEmpty(title)) {
+            title = main;
+        }
+
+        return new DefaultSummarizedResource(title, description, image);
     }
 
     //-----PROTECTED METHODS-----

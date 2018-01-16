@@ -22,6 +22,9 @@ import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import java.util.Locale;
 
 /**
+ * Instances of this class are the only values that get written to the index (in protobuf format),
+ * all the rest should be fetched from the triple store.
+ *
  * Created by bram on 2/23/16.
  */
 public interface PageIndexEntry extends IndexEntry

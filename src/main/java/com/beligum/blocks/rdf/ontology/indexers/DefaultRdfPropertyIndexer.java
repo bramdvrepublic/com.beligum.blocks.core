@@ -72,7 +72,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public RdfIndexer.IndexResult index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException
+    public RdfIndexer.IndexResult index(RdfIndexer indexer, URI resource, RdfProperty property, Value value, Locale language) throws IOException
     {
         RdfIndexer.IndexResult retVal = null;
 
@@ -173,7 +173,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 retVal = new RdfIndexer.IndexResult(val);
             }
             else {
-                throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject + "' because the property type is unimplemented; " +
+                throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource + "' because the property type is unimplemented; " +
                                       property.getDataType());
             }
         }
@@ -210,7 +210,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                         retVal = new RdfIndexer.IndexResult(uriValueStr, label);
                     }
                     catch (Exception e) {
-                        throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject +
+                        throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource +
                                               "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
                     }
                 }
@@ -224,13 +224,13 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                         resourceNeedingIndexation = UriBuilder.fromUri(resourceNeedingIndexation).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
                     }
 
-                    throw new NotIndexedException(subject, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject +
+                    throw new NotIndexedException(resource, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource +
                                                                                       "' because it's resource endpoint returned null");
                 }
             }
         }
         else {
-            throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + subject + "' because of an unsupported RDF type; " +
+            throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource + "' because of an unsupported RDF type; " +
                                   value.getClass());
         }
 

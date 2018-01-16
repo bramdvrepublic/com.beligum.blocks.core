@@ -130,9 +130,9 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         this.queryEndpoint = endpoint;
     }
     @Override
-    public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
+    public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language) throws IOException
     {
-        return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, subject, this, value, language);
+        return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, resource, this, value, language);
     }
     @Override
     public Object prepareIndexValue(String value, Locale language) throws IOException

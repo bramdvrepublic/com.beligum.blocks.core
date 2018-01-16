@@ -19,7 +19,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.entries.resources.ResourceIndexer;
+import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -143,11 +143,11 @@ public interface RdfClass extends RdfResource
     Set<RdfProperty> getProperties();
 
     /**
-     * An indexer that pulls out search-relevant information from this instance during indexing.
-     * If this is null, a generic SimpleResourceIndexer is used.
+     * A summarizer that pulls out search-relevant information from this instance during indexing.
+     * If this is null, a generic SimpleResourceSummarizer is used.
      */
     @JsonIgnore
-    ResourceIndexer getResourceIndexer();
+    ResourceSummarizer getResourceSummarizer();
 
     /**
      * Setter for the value above. Note that this was pulled out of the constructor and made public to allow us to set it in a separate mapping.

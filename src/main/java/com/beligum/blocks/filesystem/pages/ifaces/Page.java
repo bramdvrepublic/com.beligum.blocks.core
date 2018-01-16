@@ -43,6 +43,7 @@ public interface Page extends BlocksResource
 {
     /**
      * Returns the most naked form of this page; eg. stripped from all language params, it's file storage extension (or directory dummy filename, etc).
+     * This philosophy also dictates the domain is stripped from the address and thus the returned URI is relative.
      * This address is to be used to index this page (together with it's language, but separately).
      * This allows us to easily perform redirects eg. when a requested page doesn't exist for the requested path in the requested language, but does with another language.
      * For example, if the page /en/this/page exists, but the user requests /nl/this/page, we can easily lookup the second page using it's canonical address /this/page

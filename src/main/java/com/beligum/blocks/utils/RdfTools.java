@@ -16,14 +16,25 @@
 
 package com.beligum.blocks.utils;
 
+import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.filesystem.pages.PageModel;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.util.Models;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +42,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.beligum.base.server.R.configuration;
 import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_TZONE_CLASS;
@@ -43,10 +57,14 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_
  */
 public class RdfTools
 {
+    //-----CONSTANTS-----
     // Simpleflake generates a Long id, based on timestamp
     private static final SimpleFlake SIMPLE_FLAKE = new SimpleFlake();
     private static final URI ROOT = URI.create("/");
 
+    //-----VARIABLES-----
+
+    //-----PUBLIC METHODS-----
     /**
      * Create an absolute resource based on the resource endpoint and a type.
      * Generate a new id-value
@@ -98,6 +116,25 @@ public class RdfTools
             if (!relative.isAbsolute()) {
                 retVal = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + relative.toString());
             }
+        }
+
+        return retVal;
+    }
+
+    /**
+     * Converts a CURIE to a full URI
+     */
+    public static URI curieToFull(URI resourceTypeCurie)
+    {
+        //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
+        URI retVal = null;
+
+        RdfVocabulary vocab = RdfFactory.getVocabularyForPrefix(resourceTypeCurie.getScheme());
+        if (vocab != null) {
+            retVal = vocab.resolve(resourceTypeCurie.getPath());
+        }
+        else {
+            Logger.warn("Encountered unknown curie schema, returning null for; " + resourceTypeCurie);
         }
 
         return retVal;
@@ -220,6 +257,76 @@ public class RdfTools
     }
 
     /**
+     * This analyzes the RDF model of the page, detects and splits all sub-resource models,
+     * mapped by their subject IRI, meaning all returned resource models will have the same subject IRI.
+     * Note that since sub-object support was implemented for pages
+     * (since January 2018), a page can contain multiple resources.
+     * This method returns a sorted map, ready for indexation, meaning the sub-resources come before
+     * the main page resource (so sub-resource lookups will resolve).
+     */
+    public static Set<PageModel> extractSubModels(Page page) throws IOException
+    {
+        //Note: instead of implementing a custom sorted TreeMap, we'll use a simple LinkedHashMap
+        //that retain insertion order and postpone the insertion of the main resource (see below)
+        Set<PageModel> retVal = new LinkedHashSet<>();
+
+        Model pageRdfModel = page.readRdfModel();
+
+        //Note that page resources are relative, so make sure it's absolute
+        URI mainResource = URI.create(page.createAnalyzer().getHtmlAbout().value);
+        if (!mainResource.isAbsolute()) {
+            mainResource = R.configuration().getSiteDomain().resolve(mainResource);
+        }
+
+        PageModel mainModel = null;
+
+        //we iterate all different subjects in this page and filter out the ones we're not interested in,
+        //then "zoom-in" on the different sub-models
+        for (Resource subject : pageRdfModel.subjects()) {
+
+            //note that we need to filter out some general triples (like the "rdfa:usesVocabulary" statements)
+            //by ignoring all statements about the page itself; we're only interested in the resources this page is talking about
+            if (!subject.toString().equals(page.getPublicAbsoluteAddress().toString())) {
+
+                //"zoom-in" on the specific subject
+                Model subModel = pageRdfModel.filter(subject, null, null);
+                URI subResource = RdfTools.iriToUri((IRI) subject);
+
+                //while we're parsing the rdf graph, we might as well extract the type
+                Optional<IRI> typeOfIRI = Models.objectIRI(subModel.filter(subject, RDF.TYPE, null));
+                RdfClass subType = !typeOfIRI.isPresent() ? null : RdfFactory.getClassForResourceType(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
+
+                PageModel modelInfo = new PageModel(page, mainResource, subResource, subType, subModel);
+
+                //if we encounter the main resource, save it for later and insert it last so sub-resources come first
+                if (modelInfo.isMain()) {
+                    mainModel = modelInfo;
+                }
+                else {
+                    retVal.add(modelInfo);
+                }
+            }
+        }
+
+        if (mainModel != null) {
+            retVal.add(mainModel);
+        }
+
+        return retVal;
+    }
+
+    /**
+     * Converts an IRI to an URI
+     */
+    public static URI iriToUri(IRI iri)
+    {
+        return iri == null ? null : URI.create(iri.toString());
+    }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
+    /**
      * Small wrapper to make all absolute call pass through here
      */
     private static URI createAbsoluteResourceId(RdfClass entity, String id, boolean ontologyUniqueId)
@@ -255,6 +362,8 @@ public class RdfTools
 
         return uriBuilder;
     }
+
+    //-----INNER CLASSES-----
 
     /**
      * This is a convenient wrapper class that wraps the parsing of RDF resource URIs and caches it's result

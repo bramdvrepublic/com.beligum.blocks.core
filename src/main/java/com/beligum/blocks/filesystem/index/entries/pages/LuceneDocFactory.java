@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Republic of Reinvention bvba. All Rights Reserved.
+ * Copyright 2018 Republic of Reinvention bvba. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,18 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
+import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.utils.RdfTools;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.protobuf.ProtobufMapper;
+import com.fasterxml.jackson.dataformat.protobuf.schema.NativeProtobufSchema;
+import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema;
+import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchemaLoader;
+import com.fasterxml.jackson.dataformat.protobuf.schemagen.ProtobufSchemaGenerator;
 import com.google.common.base.Joiner;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -30,6 +38,7 @@ import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.eclipse.rdf4j.model.Statement;
 
@@ -41,12 +50,11 @@ import static com.beligum.blocks.filesystem.index.LucenePageIndexer.CUSTOM_FIELD
 import static com.beligum.blocks.filesystem.index.LucenePageIndexer.DEFAULT_FIELD_JOINER;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
-/**
- * Created by bram on 2/13/16.
- */
-public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndexer
+public class LuceneDocFactory
 {
     //-----CONSTANTS-----
+    public static LuceneDocFactory INSTANCE = new LuceneDocFactory();
+
     //interesting alternative guide if you ever need it: http://www.citrine.io/blog/2015/2/14/building-a-custom-analyzer-in-lucene
     private static Analyzer SORTFIELD_ANALYZER;
 
@@ -73,22 +81,100 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
     }
 
     //-----VARIABLES-----
-    private Document luceneDoc;
+    private final ProtobufSchema protobufSchema;
+    private final ObjectMapper objectMapper;
 
     //-----CONSTRUCTORS-----
-    public DeepPageIndexEntry(Page page) throws IOException
+    private LuceneDocFactory()
     {
-        super(page);
+        try {
+            //Note: order is important since createProtobufSchema() needs the objectMapper
+            objectMapper = new ProtobufMapper();
+            protobufSchema = ProtobufSchemaLoader.std.parse(this.createProtobufSchema(SimplePageIndexEntry.class));
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Error while initializing the Lucene document factory; this shouldn't happen", e);
+        }
+    }
 
-        this.luceneDoc = super.createLuceneDoc();
+    //-----PUBLIC METHODS-----
+    public Term toLuceneId(String id)
+    {
+        return new Term(IndexEntry.Field.id.name(), id);
+    }
+    /**
+     * This method deserializes the binary object stream data of a Lucene entry back to an instance of this class
+     */
+    public PageIndexEntry fromLuceneDoc(Document document) throws IOException
+    {
+        return getProtobufMapper().readerFor(SimplePageIndexEntry.class).with(getProtobufSchema()).readValue(document.getBinaryValue(PageIndexEntry.Field.object.name()).bytes);
+    }
+    /**
+     * This method converts this IndexEntry instance to a Lucene document (and ID)
+     * Note: never serialize this to the protobuf stored field
+     * Note 2: we updated the return value to map out the resource URI to document,
+     *         instead of a single Document to facilitate the new inline objects implementation
+     *         because pages can produce multiple (new) resources now.
+     */
+    public Document toLuceneDoc(PageIndexEntry indexEntry) throws IOException
+    {
+        Document retVal = new Document();
 
+        //note: StringField = un-analyzed + indexed
+        //      TextField = standard analyzed + indexed
+        //      StoredField = not indexed at all
+
+        //Note: we also need to insert the id of the doc even though it's an index
+        retVal.add(new StringField(IndexEntry.Field.id.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
+
+        //don't store it, we just add it to the index to be able to query the URI (again) more naturally
+        retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
+
+        if (indexEntry.getResource() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.resource.name(), indexEntry.getResource(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getTypeOf() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(), indexEntry.getTypeOf(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getTitle() != null) {
+            retVal.add(new TextField(IndexEntry.Field.title.name(), indexEntry.getTitle(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getLanguage() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.language.name(), indexEntry.getLanguage(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getCanonicalAddress() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), indexEntry.getCanonicalAddress(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getDescription() != null) {
+            retVal.add(new TextField(IndexEntry.Field.description.name(), indexEntry.getDescription(), org.apache.lucene.document.Field.Store.NO));
+        }
+        if (indexEntry.getImage() != null) {
+            retVal.add(new StringField(IndexEntry.Field.image.name(), indexEntry.getImage(), org.apache.lucene.document.Field.Store.NO));
+        }
+
+        //stores this entire object in the index (using Protocol Buffers)
+        //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
+        byte[] serializedObject = getProtobufMapper().writer(getProtobufSchema()).writeValueAsBytes(indexEntry);
+        retVal.add(new StoredField(PageIndexEntry.Field.object.name(), serializedObject));
+        //this is the old JSON-alternative
+        //retVal.add(new StoredField(PageIndexEntry.Field.object.name(), Json.write(indexEntry)));
+
+        return retVal;
+    }
+    /**
+     * Adds the RDF statements in the model to the lucene document, next to some general sort and search-all fields.
+     */
+    public Document indexRdfModel(Document document, PageModel subModel) throws IOException
+    {
         //makes sense to eliminate double values for the sort list as well, I think
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
         //no need to index double values, so let's use a set
         Set<String> allField = new LinkedHashSet<>();
 
+        RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
+
         //Note: we re-use the RDFmodel of the superclass so we don't read it twice
-        for (Statement stmt : this.rdfModel) {
+        for (Statement stmt : subModel.getSubModel()) {
 
             URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
             if (predicateCurie != null) {
@@ -96,16 +182,16 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                 if (predicate != null) {
 
                     //ask the RDF property to index itself to the lucene index
-                    RdfIndexer.IndexResult value = predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
+                    RdfIndexer.IndexResult value = predicate.indexValue(rdfIndexer, subModel.getSubResource(), stmt.getObject(), subModel.getPage().getLanguage());
 
                     //index it with the default analyzer so we can search it lowercase, without punctuation, etc...
                     allField.add(value.stringValue);
-                    this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
+                    rdfIndexer.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
 
                     //also index the raw value to the constant all field
                     String indexValueStr = value.indexValue.toString();
                     allField.add(indexValueStr);
-                    this.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL_VERBATIM, indexValueStr);
+                    rdfIndexer.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL_VERBATIM, indexValueStr);
 
                     Set<String> sortField = sortFieldMapping.get(predicate);
                     if (sortField == null) {
@@ -128,7 +214,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         //TODO this is a (shitty) temp workaround to solve Lucene's IllegalArgumentException when trying to index large text chunks.
         //According to http://stackoverflow.com/questions/24019868/utf8-encoding-is-longer-than-the-max-length-32766
         // we should index these fields (especially _all) with a different analyzer...
-        Iterator<IndexableField> fieldIter = this.luceneDoc.iterator();
+        Iterator<IndexableField> fieldIter = document.iterator();
         //found this here: SortedDocValuesWriter.addValue()
         final int MAX_FIELD_SIZE = BYTE_BLOCK_SIZE - 2;
         while (fieldIter.hasNext()) {
@@ -155,18 +241,42 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
             Set<String> sortField = sortFieldMapping.get(predicate);
             if (sortField != null && !sortField.isEmpty()) {
                 String sortValue = preprocessSortValue(Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(sortField));
-                this.luceneDoc.add(new SortedDocValuesField(key, new BytesRef(sortValue)));
+                document.add(new SortedDocValuesField(key, new BytesRef(sortValue)));
             }
 
             //index all field names so we can search for documents that do/don't have a certain field set
-            this.luceneDoc.add(new StringField(CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
+            document.add(new StringField(CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
         }
+
+        return document;
     }
 
-    //-----STATIC METHODS-----
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
+    private ProtobufSchema getProtobufSchema()
+    {
+        return protobufSchema;
+    }
+    private ObjectMapper getProtobufMapper()
+    {
+        return objectMapper;
+    }
+    //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
+    private String createProtobufSchema(Class<?> clazz) throws JsonMappingException
+    {
+        ObjectMapper mapper = getProtobufMapper();
+        ProtobufSchemaGenerator gen = new ProtobufSchemaGenerator();
+        mapper.acceptJsonFormatVisitor(clazz, gen);
+        ProtobufSchema schemaWrapper = gen.getGeneratedSchema();
+        NativeProtobufSchema nativeProtobufSchema = schemaWrapper.getSource();
+
+        return nativeProtobufSchema.toString();
+    }
+
     //see https://mail-archives.apache.org/mod_mbox/lucene-solr-user/201507.mbox/%3CCALvb29w7A6TZVEtiYajDZBPGik8JjQd2tAyo2JTskVrR_JdsuQ@mail.gmail.com%3E
     // and https://examples.javacodegeeks.com/core-java/apache/lucene/lucene-indexing-example-2/
-    public static String preprocessSortValue(String value) throws IOException
+    private String preprocessSortValue(String value) throws IOException
     {
         String retVal = value;
 
@@ -189,50 +299,4 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
 
         return retVal;
     }
-
-    //-----PUBLIC METHODS-----
-    @Override
-    public Document createLuceneDoc() throws IOException
-    {
-        return this.luceneDoc;
-    }
-    @Override
-    public void indexIntegerField(String fieldName, int value)
-    {
-        this.luceneDoc.add(new IntField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexLongField(String fieldName, long value)
-    {
-        this.luceneDoc.add(new LongField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexFloatField(String fieldName, float value)
-    {
-        this.luceneDoc.add(new FloatField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexDoubleField(String fieldName, double value)
-    {
-        this.luceneDoc.add(new DoubleField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexStringField(String fieldName, String value)
-    {
-        this.luceneDoc.add(new TextField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexConstantField(String fieldName, String value)
-    {
-        this.luceneDoc.add(new StringField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
-    }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-
-    //-----MANAGEMENT METHODS-----
-
-    //-----INNER CLASSES-----
-
 }

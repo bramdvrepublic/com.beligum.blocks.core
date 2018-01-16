@@ -118,7 +118,7 @@ public class LuceneIndexSearchResult extends AbstractIndexSearchResult
 
             if (this.hasNext()) {
                 try {
-                    retVal = SimplePageIndexEntry.fromLuceneDoc(this.indexSearcher.doc(this.results.scoreDocs[this.index].doc, INDEX_FIELDS_TO_LOAD));
+                    retVal = LuceneDocFactory.INSTANCE.fromLuceneDoc(this.indexSearcher.doc(this.results.scoreDocs[this.index].doc, INDEX_FIELDS_TO_LOAD));
                     this.index++;
                 }
                 catch (IOException e) {
