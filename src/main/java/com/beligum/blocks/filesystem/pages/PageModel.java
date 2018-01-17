@@ -45,6 +45,7 @@ public class PageModel
     private URI subResource;
     private RdfClass subType;
     private Model subModel;
+    private boolean isMain;
 
     //-----CONSTRUCTORS-----
     public PageModel(Page page, URI mainResource, URI subResource, RdfClass subType, Model subModel)
@@ -54,6 +55,8 @@ public class PageModel
         this.subResource = subResource;
         this.subType = subType;
         this.subModel = subModel;
+
+        this.isMain = this.mainResource.equals(this.subResource);
     }
 
     //-----PUBLIC METHODS-----
@@ -79,7 +82,7 @@ public class PageModel
     }
     public boolean isMain()
     {
-        return this.mainResource.equals(this.subResource);
+        return isMain;
     }
 
     /**
@@ -94,7 +97,11 @@ public class PageModel
         }
         else {
 
-            String id = this.isMain() ? SimplePageIndexEntry.generateId(this.getPage()) : SimplePageIndexEntry.generateId(this.getSubResource());
+            String id = this.generateId(this.isMain());
+
+            //Note: the whole point is that page resources don't have a parent, so if this is a main resource, set it to null
+            String parentId = this.isMain() ? null : this.generateId(true);
+
             URI resource = this.getSubResource();
             //Note that we index all addresses relatively, including the resource uri
             if (resource.isAbsolute()) {
@@ -128,7 +135,7 @@ public class PageModel
                 }
             }
 
-            retVal = new SimplePageIndexEntry(id, resource, type, title, lang, canonicalAddress, description, image);
+            retVal = new SimplePageIndexEntry(id, parentId, resource, type, title, lang, canonicalAddress, description, image);
         }
 
         return retVal;
@@ -137,5 +144,8 @@ public class PageModel
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-
+    private String generateId(boolean forMain)
+    {
+        return forMain ? SimplePageIndexEntry.generateId(this.getPage()) : SimplePageIndexEntry.generateId(this.getSubResource());
+    }
 }

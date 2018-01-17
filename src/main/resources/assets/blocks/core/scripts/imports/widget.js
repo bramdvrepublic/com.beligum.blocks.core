@@ -688,7 +688,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var setterFunction = function (val)
             {
                 return element.html($.trim(val));
-            }
+            };
 
             if (textarea) {
                 return this.createTextareaInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText);
@@ -1345,10 +1345,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param switchStateCallback
          * @param onLabel
          * @param offLabel
-         * @param startDisabled This option was added to introduce an 'empty' or 'unset' state: only when the control is clicked once, the 'off' state is triggered
+         * @param enableDisabled This option was added to introduce an 'empty' or 'unset' state: only when the control is clicked once, the 'off' state is triggered
+         *                       Note that to activate the disabled-state on creation, the initStateCallback() should return 'undefined'
          * @returns {*|jQuery|HTMLElement}
          */
-        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel, startDisabled)
+        createToggleButton: function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel, enableDisabled)
         {
             if (!onLabel) {
                 onLabel = BlocksMessages.toggleLabelOn;
@@ -1363,8 +1364,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             // Create checkboxes for each value
             var id = Commons.generateId();
             var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
-            var toggleGroup = $('<div class="' + BlocksConstants.TOGGLE_GROUP_CLASS + '" />').appendTo(formGroup);
-            var input = $('<input id="' + id + '" type="checkbox">').appendTo(toggleGroup);
+            var checkboxGroup = $('<div class="' + BlocksConstants.TOGGLE_GROUP_CLASS + '" />').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="checkbox">').appendTo(checkboxGroup);
 
             //init the toggle api
             input.bootstrapToggle({
@@ -1375,7 +1376,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //init state
             var initState = initStateCallback();
-            if (initState) {
+            var startDisabled = false;
+            if (enableDisabled && typeof initState === typeof undefined) {
+                startDisabled = true;
+                //let's always default to off in disabled state
+                input.bootstrapToggle('off');
+            }
+            else if (initState) {
                 input.bootstrapToggle('on');
             }
             else {
@@ -1392,18 +1399,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             });
 
             //start disabled and enable on click
-            if (startDisabled) {
+            if (enableDisabled) {
                 //This is a bit of a hack: we find the wrapping toggle container (the one that actually receives and handles the events)
                 // and we attach a click listener to enable the toggle widget on first click (and swallow the event)
                 //Note that we can't use the built-in 'disable' features because disabled elements don't fire events,
                 // so we simulate that disabledness
                 var toggleBtn = input.closest('.toggle');
-                //simulation, see css
-                toggleGroup.addClass('disabled');
 
                 var activate = function (e)
                 {
-                    toggleGroup.removeClass('disabled');
+                    checkboxGroup.removeClass('disabled');
                     //send out the current state to the change listener
                     if (switchStateCallback) {
                         switchStateCallback(null, input.prop('checked'));
@@ -1413,21 +1418,21 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     e.stopPropagation();
                 };
 
-                toggleBtn.one('click', activate);
+                if (startDisabled) {
+                    //simulation, see css
+                    checkboxGroup.addClass('disabled');
+                    toggleBtn.one('click', activate);
+                }
 
-                //if we start disabled, we must offer the user a way to go back
-                var reset = $('<a href="javascript:void(0);" class="btn btn-link btn-xs btn-reset"><i class="fa fa-trash-o"></a>').appendTo(toggleGroup);
+                //if we enable disabled, we must offer the user a way to go back
+                var reset = $('<a href="javascript:void(0);" class="btn btn-link btn-xs btn-reset"><i class="fa fa-trash-o"></a>').appendTo(checkboxGroup);
                 reset.click(function (e)
                 {
-                    toggleGroup.addClass('disabled');
+                    checkboxGroup.addClass('disabled');
 
                     var oldState = input.prop('checked');
-                    if (initState) {
-                        input.bootstrapToggle('on');
-                    }
-                    else {
-                        input.bootstrapToggle('off');
-                    }
+                    //we always default to off in disabled state
+                    input.bootstrapToggle('off');
 
                     //send out the current state to the change listener
                     if (switchStateCallback) {

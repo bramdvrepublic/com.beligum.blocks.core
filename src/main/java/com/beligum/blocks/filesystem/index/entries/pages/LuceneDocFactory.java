@@ -173,7 +173,6 @@ public class LuceneDocFactory
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
 
-        //Note: we re-use the RDFmodel of the superclass so we don't read it twice
         for (Statement stmt : subModel.getSubModel()) {
 
             URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));

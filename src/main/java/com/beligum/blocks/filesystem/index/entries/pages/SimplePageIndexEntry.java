@@ -34,20 +34,17 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private String parentId;
     private String resource;
     private String typeOf;
     private String language;
     private String canonicalAddress;
 
     //-----CONSTRUCTORS-----
-    //for serialization
-    private SimplePageIndexEntry() throws IOException
-    {
-        this((String) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null);
-    }
-    public SimplePageIndexEntry(String id, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
+    public SimplePageIndexEntry(String id, String parentId, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
     {
         this(id,
+             parentId,
              resource == null ? null : resource.toString(),
              typeOf == null ? null : typeOf.getCurieName().toString(),
              title,
@@ -56,11 +53,17 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
              description,
              image == null ? null : image.toString());
     }
-    private SimplePageIndexEntry(String id, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
+    //for serialization
+    private SimplePageIndexEntry() throws IOException
+    {
+        this((String) null, (String) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null);
+    }
+    private SimplePageIndexEntry(String id, String parentId, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
     {
         super(id);
 
         this.setResource(resource);
+        this.setParentId(parentId);
         this.setTypeOf(typeOfCurie);
         this.setTitle(title);
         this.setLanguage(language);
@@ -116,6 +119,15 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
 
     //-----PUBLIC METHODS-----
     @Override
+    public String getParentId()
+    {
+        return parentId;
+    }
+    private void setParentId(String parentId)
+    {
+        this.parentId = parentId;
+    }
+    @Override
     public String getResource()
     {
         return resource;
@@ -165,6 +177,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
                ", title='" + title + '\'' +
                ", language='" + language + '\'' +
                ", resource='" + resource + '\'' +
+               ", parentId='" + parentId + '\'' +
                '}';
     }
 }

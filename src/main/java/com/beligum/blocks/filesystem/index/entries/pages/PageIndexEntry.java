@@ -34,6 +34,7 @@ public interface PageIndexEntry extends IndexEntry
     enum Field implements IndexEntry.IndexEntryField
     {
         resource,
+        parentResource,
         typeOf,
         language,
         canonicalAddress,
@@ -45,6 +46,11 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * Only for sub-resources: the id of the parent index entry or null if this entry is not a sub-resource
+     */
+    String getParentId();
 
     /**
      * The string representation of the most basic resource URI (eg. for a public page, this is the low-level interconnecting "about" URI, not the public SEO-friendly one)

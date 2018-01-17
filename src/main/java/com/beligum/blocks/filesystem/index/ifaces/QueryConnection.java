@@ -19,7 +19,7 @@ package com.beligum.blocks.filesystem.index.ifaces;
 /**
  * Created by bram on 4/7/16.
  */
-public interface QueryConnection
+public interface QueryConnection extends IndexConnection
 {
     //-----CONSTANTS-----
 

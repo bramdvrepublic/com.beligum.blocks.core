@@ -118,17 +118,20 @@ public class ApplicationEndpoint
         // First, check if we're dealing with an external resource.
         // If it's associated endpoint wants to redirect to another URL (eg. when we use resources of an external ontology)
         // don't try to lookup the resource locally, but redirect there.
-        URI externalRedirectUri = null;
-        if (rdfResourceUri.isValid() && rdfResourceUri.isTyped()) {
-            RdfQueryEndpoint endpoint = rdfResourceUri.getResourceClass().getEndpoint();
-            if (endpoint != null) {
-                externalRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
+        URI resourceRedirectUri = null;
+        if (rdfResourceUri.isValid()) {
+            if (rdfResourceUri.isTyped()) {
+                RdfQueryEndpoint endpoint = rdfResourceUri.getResourceClass().getEndpoint();
+                if (endpoint != null) {
+                    resourceRedirectUri = endpoint.getExternalResourceId(requestedUri, optimalLocale);
+                }
             }
+
         }
 
         //if we found an external redirect URL, redirect there, otherwise continue
-        if (externalRedirectUri != null) {
-            retValBuilder = Response.seeOther(externalRedirectUri);
+        if (resourceRedirectUri != null) {
+            retValBuilder = Response.seeOther(resourceRedirectUri);
         }
         else {
             // Since we allow the user to instance pretty url's, it's mime type will not always be clear, so pass it on explicitly
@@ -176,19 +179,36 @@ public class ApplicationEndpoint
                 IndexSearchResult results = queryConnection.search(pageQuery, pageQuery.clauses().size() * R.configuration().getLanguages().size());
                 PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, optimalLocale);
 
-                //this detects if the above search matched on the resource uri (and not the sameAs) when we're editing pages
-                //it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
-                //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
-                //instance the translated page
-                if (selectedEntry != null && SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                    if (selectedEntry.getResource().equals(searchUri)) {
-                        selectedEntry = null;
+                //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
+                String selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getId();
+
+                //this detects if the above search matched on the resource uri (and not the sameAs)
+                if (selectedEntry != null && selectedEntry.getResource().equals(searchUri)) {
+
+                    //If we're dealing with a sub-resource, we need to change the address because:
+                    // 1) it doesn't really exist
+                    // 2) it would redirect forever because a sub-resource doesn't have a 'real' address
+                    //So we redirect to the parent's id
+                    //Also note that (unlike real resources, see check just below) we can't offer the user the choice to make this page,
+                    //because sub-resources are not supposed to have real pages; they only exist in the context of a parent page.
+                    if (selectedEntry.getParentId() != null) {
+                        selectedEntryAddress = selectedEntry.getParentId();
+                    }
+                    //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
+                    //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
+                    //instance the translated page
+                    else if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                        selectedEntryAddress = null;
                     }
                 }
 
-                if (selectedEntry != null) {
-                    //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                    retValBuilder = Response.seeOther(URI.create(selectedEntry.getId()));
+                //little protection against eternal redirects
+                if (selectedEntryAddress != null && selectedEntryAddress.equals(searchUri)) {
+                    selectedEntryAddress = null;
+                }
+
+                if (selectedEntryAddress != null) {
+                    retValBuilder = Response.seeOther(URI.create(selectedEntryAddress));
                 }
                 //here, we decided the page really doesn't exist and we'll try to do something about that
                 else {
@@ -218,10 +238,10 @@ public class ApplicationEndpoint
                         pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), optimalLocale.getLanguage())), BooleanClause.Occur.FILTER);
                         results = queryConnection.search(pageQuery, -1);
 
-                        selectedEntry = PageIndexEntry.selectBestForLanguage(results, optimalLocale);
-                        if (selectedEntry != null) {
+                        PageIndexEntry selectedEntry2 = PageIndexEntry.selectBestForLanguage(results, optimalLocale);
+                        if (selectedEntry2 != null) {
                             //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                            retValBuilder = Response.seeOther(URI.create(selectedEntry.getId()));
+                            retValBuilder = Response.seeOther(URI.create(selectedEntry2.getId()));
                         }
                     }
 

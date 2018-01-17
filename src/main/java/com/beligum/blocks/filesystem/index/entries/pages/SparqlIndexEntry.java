@@ -47,6 +47,11 @@ public class SparqlIndexEntry extends AbstractPageIndexEntry implements PageInde
         return null;
     }
     @Override
+    public String getParentId()
+    {
+        return null;
+    }
+    @Override
     public String getTypeOf()
     {
         return null;
