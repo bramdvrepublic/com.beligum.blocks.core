@@ -72,7 +72,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public RdfIndexer.IndexResult index(RdfIndexer indexer, URI resource, RdfProperty property, Value value, Locale language) throws IOException
+    public RdfIndexer.IndexResult index(RdfIndexer indexer, URI resource, RdfProperty property, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException
     {
         RdfIndexer.IndexResult retVal = null;
 
@@ -193,7 +193,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             RdfQueryEndpoint endpoint = dataType.getEndpoint();
             // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
             if (endpoint != null) {
-                ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language);
+                ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language, options);
                 if (resourceValue != null) {
                     //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                     try {

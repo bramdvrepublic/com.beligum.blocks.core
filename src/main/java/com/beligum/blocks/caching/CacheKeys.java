@@ -71,6 +71,4 @@ public enum CacheKeys implements CacheKey
     RDF_VOCABULARY_PREFIXES,
     //Application cache key that keeps a map to the discovered Rdf vocabularies-entries (classes and properties)
     RDF_VOCABULARY_ENTRIES,
-    //Request cache key that keeps a map of temporarily 'indexed' resources to make end meet during indexation of sub-resources
-    RESOURCE_INDEX_TEMP_STORE,
 }

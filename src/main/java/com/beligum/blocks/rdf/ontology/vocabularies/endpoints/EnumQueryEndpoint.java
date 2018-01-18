@@ -108,7 +108,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * pass a lookup for a resourceId: UriBuilder.fromPath(rawValue).build()
      */
     @Override
-    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
     {
         //Note: the getPath() converts special URI characters back to their native form
         return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);

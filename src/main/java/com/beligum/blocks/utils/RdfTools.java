@@ -42,10 +42,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.beligum.base.server.R.configuration;
 import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_TZONE_CLASS;
@@ -259,16 +259,17 @@ public class RdfTools
     /**
      * This analyzes the RDF model of the page, detects and splits all sub-resource models,
      * mapped by their subject IRI, meaning all returned resource models will have the same subject IRI.
+     * The returned map is indexed by id (of the subresource), so it's easily fetched from/compared to existing index entries.
      * Note that since sub-object support was implemented for pages
      * (since January 2018), a page can contain multiple resources.
      * This method returns a sorted map, ready for indexation, meaning the sub-resources come before
      * the main page resource (so sub-resource lookups will resolve).
      */
-    public static Set<PageModel> extractSubModels(Page page) throws IOException
+    public static Map<String, PageModel> extractSubModels(Page page) throws IOException
     {
         //Note: instead of implementing a custom sorted TreeMap, we'll use a simple LinkedHashMap
         //that retain insertion order and postpone the insertion of the main resource (see below)
-        Set<PageModel> retVal = new LinkedHashSet<>();
+        Map<String, PageModel> retVal = new LinkedHashMap<>();
 
         Model pageRdfModel = page.readRdfModel();
 
@@ -303,13 +304,13 @@ public class RdfTools
                     mainModel = modelInfo;
                 }
                 else {
-                    retVal.add(modelInfo);
+                    retVal.put(modelInfo.getId(), modelInfo);
                 }
             }
         }
 
         if (mainModel != null) {
-            retVal.add(mainModel);
+            retVal.put(mainModel.getId(), mainModel);
         }
 
         return retVal;

@@ -70,7 +70,7 @@ public interface RdfProperty extends RdfClass
      * It should call the right method on the indexer to index the property value as closely as possible.
      * @return the value-object as it was indexed
      */
-    RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language) throws IOException;
+    RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException;
 
     /**
      * Converts the supplied value to an object to be used during index lookups

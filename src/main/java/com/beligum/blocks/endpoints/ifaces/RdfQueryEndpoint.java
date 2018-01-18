@@ -61,10 +61,12 @@ public interface RdfQueryEndpoint
      * Searches the (fast) index of the specified type for the supplied query string.
      * Mainly used to feed client-side autocomplete boxes
      *
+     * @param resourceType if not-null, filter only these types
      * @param query the query (prefix) string we're searching for
      * @param queryType is the query a true (google-like) query or a (more restrictive) prefix-search (eg. for autocomplete-boxes) or just a (more restrictive) name search?
      * @param language the optional language to search for, may be null
      * @param maxResults the maximum results to return
+     * @param options unused (for now)
      * @return a list of maxResults size
      * @throws IOException
      */
@@ -73,12 +75,14 @@ public interface RdfQueryEndpoint
     /**
      * Gets the full value of the resource with the specified id-URI.
      *
+     * @param resourceType if not-null, filter only these types
      * @param resourceId the id of the resource
      * @param language the optional language we're searching a value for
+     * @param options eg. can be used to pass intermediate values that are not indexed yet, but should already resolve
      * @return the wrapped value with all possible fields indicating how to render this value (if may contain null values for some properties of AutocompleteValue)
      * @throws IOException
      */
-    ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException;
+    ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException;
 
     /**
      * Returns the RDF properties that are good candidates to find a human readable string representation of instances of the specified class.

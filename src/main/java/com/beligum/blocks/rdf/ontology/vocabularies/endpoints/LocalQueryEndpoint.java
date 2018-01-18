@@ -42,65 +42,57 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-import static com.beligum.blocks.caching.CacheKeys.RESOURCE_INDEX_TEMP_STORE;
-
 /**
  * Created by bram on 3/14/16.
  */
 public class LocalQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
+    public static class IntermediateResourcesOption implements SearchOption
+    {
+        private Map<String, Map<String, PageIndexEntry>> store;
+
+        public IntermediateResourcesOption()
+        {
+            this.store = new LinkedHashMap<>();
+        }
+
+        public void add(PageIndexEntry indexEntry) throws IOException
+        {
+            Map<String, PageIndexEntry> storedVariants = this.store.get(indexEntry.getResource());
+            if (storedVariants == null) {
+                this.store.put(indexEntry.getResource(), storedVariants = new HashMap<>());
+            }
+
+            if (storedVariants.containsKey(indexEntry.getLanguage())) {
+                throw new IOException("Overwriting intermediate resource for language " + indexEntry.getLanguage() + ", can't continue because this is probably an error; " + indexEntry.getResource());
+            }
+            else {
+                storedVariants.put(indexEntry.getLanguage(), indexEntry);
+            }
+        }
+
+        public PageIndexEntry get(String relativeResourceUri, String language)
+        {
+            PageIndexEntry retVal = null;
+
+            Map<String, PageIndexEntry> storedResourceVariants = this.store.get(relativeResourceUri);
+            if (storedResourceVariants != null) {
+                retVal = storedResourceVariants.get(language);
+            }
+
+            return retVal;
+        }
+    }
+
+    //-----VARIABLES-----
     //Note: don't make this static; it messes with the RdfFactory initialization
     //Also: don't initialize it in the constructor; it suffers from the same problem
     private RdfProperty[] cachedLabelProps;
 
-    //-----VARIABLES-----
-
     //-----CONSTRUCTORS-----
     public LocalQueryEndpoint()
     {
-    }
-
-    //-----STATIC METHODS-----
-    /**
-     * Save the supplied index entry to a temporary request-scoped store to facilitate the storage of
-     * sub-resources while indexing their container parent resources (also see getResource()).
-     */
-    public static void saveIntermediateResource(PageIndexEntry indexEntry) throws IOException
-    {
-        Map<String, Map<String, PageIndexEntry>> intermediateResourceStore = (Map<String, Map<String, PageIndexEntry>>) R.cacheManager().getRequestCache().get(RESOURCE_INDEX_TEMP_STORE);
-        if (intermediateResourceStore == null) {
-            R.cacheManager().getRequestCache().put(RESOURCE_INDEX_TEMP_STORE, intermediateResourceStore = new LinkedHashMap<>());
-        }
-
-        Map<String, PageIndexEntry> storedResourceVariants = intermediateResourceStore.get(indexEntry.getResource());
-        if (storedResourceVariants == null) {
-            intermediateResourceStore.put(indexEntry.getResource(), storedResourceVariants = new HashMap<>());
-        }
-
-        if (storedResourceVariants.containsKey(indexEntry.getLanguage())) {
-            throw new IOException("Overwriting intermediate resource for language " + indexEntry.getLanguage() + ", can't continue because this is probably an error; " + indexEntry.getResource());
-        }
-        else {
-            storedResourceVariants.put(indexEntry.getLanguage(), indexEntry);
-        }
-    }
-    /**
-     * The inverse of saveIntermediateResource()
-     */
-    public static PageIndexEntry searchIntermediateResource(String relativeResourceUri, String language) throws IOException
-    {
-        PageIndexEntry retVal = null;
-
-        Map<String, Map<String, PageIndexEntry>> intermediateResourceStore = (Map<String, Map<String, PageIndexEntry>>) R.cacheManager().getRequestCache().get(RESOURCE_INDEX_TEMP_STORE);
-        if (intermediateResourceStore != null) {
-            Map<String, PageIndexEntry> storedResourceVariants = intermediateResourceStore.get(relativeResourceUri);
-            if (storedResourceVariants != null) {
-                retVal = storedResourceVariants.get(language);
-            }
-        }
-
-        return retVal;
     }
 
     //-----PUBLIC METHODS-----
@@ -175,7 +167,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
     {
         ResourceInfo retVal = null;
 
@@ -193,10 +185,27 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         //this is a bit of a hack and needs some explaining: while indexing a resource with sub-resources
         //(eg. a Page containing an Object widget), we index the sub-resources before the page-resource,
         //but when this method is called to lookup the sub-resources in that page, they're not committed to
-        //the index yet, that's why we created a temporary request-scoped store for them.
+        //the index yet, that's why we created a temporary store for them.
         //See LucenePageIndexConnection.update()
         if (selectedEntry == null) {
-            selectedEntry = searchIntermediateResource(relResourceIdStr, language.getLanguage());
+            IntermediateResourcesOption intermediateResourcesOption = null;
+
+            if (options != null ) {
+                for (SearchOption option : options) {
+                    //for now, this is the only option we support here
+                    if (option instanceof IntermediateResourcesOption) {
+                        intermediateResourcesOption = (IntermediateResourcesOption) option;
+                        break;
+                    }
+                    else {
+                        throw new IOException("Encountered unsupported/unimplemented option, this shouldn't happen; "+option);
+                    }
+                }
+            }
+
+            if (intermediateResourcesOption != null) {
+                selectedEntry = intermediateResourcesOption.get(relResourceIdStr, language.getLanguage());
+            }
         }
 
         if (selectedEntry != null) {

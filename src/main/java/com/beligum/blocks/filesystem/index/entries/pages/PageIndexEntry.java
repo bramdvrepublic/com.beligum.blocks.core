@@ -33,8 +33,8 @@ public interface PageIndexEntry extends IndexEntry
     //note: sync these with the getter names below (and the setters of the implementations)
     enum Field implements IndexEntry.IndexEntryField
     {
+        parentId,
         resource,
-        parentResource,
         typeOf,
         language,
         canonicalAddress,

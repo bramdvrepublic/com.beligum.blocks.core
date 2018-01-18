@@ -18,6 +18,7 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
@@ -130,6 +131,9 @@ public class LuceneDocFactory
         //don't store it, we just add it to the index to be able to query the URI (again) more naturally
         retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
 
+        if (indexEntry.getParentId() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.parentId.name(), indexEntry.getParentId(), org.apache.lucene.document.Field.Store.NO));
+        }
         if (indexEntry.getResource() != null) {
             retVal.add(new StringField(PageIndexEntry.Field.resource.name(), indexEntry.getResource(), org.apache.lucene.document.Field.Store.NO));
         }
@@ -164,7 +168,7 @@ public class LuceneDocFactory
     /**
      * Adds the RDF statements in the model to the lucene document, next to some general sort and search-all fields.
      */
-    public Document indexRdfModel(Document document, PageModel subModel) throws IOException
+    public Document indexRdfModel(Document document, PageModel subModel, RdfQueryEndpoint.SearchOption... options) throws IOException
     {
         //makes sense to eliminate double values for the sort list as well, I think
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
@@ -181,7 +185,7 @@ public class LuceneDocFactory
                 if (predicate != null) {
 
                     //ask the RDF property to index itself to the lucene index
-                    RdfIndexer.IndexResult value = predicate.indexValue(rdfIndexer, subModel.getSubResource(), stmt.getObject(), subModel.getPage().getLanguage());
+                    RdfIndexer.IndexResult value = predicate.indexValue(rdfIndexer, subModel.getSubResource(), stmt.getObject(), subModel.getPage().getLanguage(), options);
 
                     //index it with the default analyzer so we can search it lowercase, without punctuation, etc...
                     allField.add(value.stringValue);

@@ -40,6 +40,7 @@ public class PageModel
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private String id;
     private Page page;
     private URI mainResource;
     private URI subResource;
@@ -57,9 +58,14 @@ public class PageModel
         this.subModel = subModel;
 
         this.isMain = this.mainResource.equals(this.subResource);
+        this.id = this.generateId(this.isMain());
     }
 
     //-----PUBLIC METHODS-----
+    public String getId()
+    {
+        return id;
+    }
     public Page getPage()
     {
         return page;

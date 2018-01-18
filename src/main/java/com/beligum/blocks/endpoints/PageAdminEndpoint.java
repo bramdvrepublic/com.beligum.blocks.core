@@ -336,7 +336,7 @@ public class PageAdminEndpoint
                 }
 
                 //if we didn't use a shortcut name, try to parse the supplied string to a class
-                if (taskClass == null) {
+                if (taskClass == null && task != null) {
                     try {
                         taskClass = (Class<? extends ReindexTask>) Class.forName(task);
                     }

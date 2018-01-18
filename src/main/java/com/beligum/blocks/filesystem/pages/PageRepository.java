@@ -272,6 +272,7 @@ public class PageRepository extends AbstractResourceRepository
         PageIndexConnection triplestoreConnection = null;
         if (options.length > 0) {
             for (IndexOption option : options) {
+                //for now, this is the only option we support here
                 if (option instanceof PageIndexConnectionOption) {
                     PageIndexConnectionOption o = (PageIndexConnectionOption) option;
                     mainPageConnection = o.mainPageConnection;

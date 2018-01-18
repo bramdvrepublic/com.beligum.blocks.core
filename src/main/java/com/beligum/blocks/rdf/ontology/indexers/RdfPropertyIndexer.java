@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf.ontology.indexers;
 
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Value;
@@ -42,7 +43,7 @@ public interface RdfPropertyIndexer
      * @return the value-object as it was indexed
      * @see com.beligum.blocks.rdf.ifaces.RdfProperty
      */
-    RdfIndexer.IndexResult index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException;
+    RdfIndexer.IndexResult index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException;
 
     /**
      * Converts the supplied value to an object to be used during index lookups
