@@ -24,8 +24,16 @@ import java.io.Serializable;
 public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
+
     interface IndexEntryField
     {
+        /**
+         * This value is used to index "core" Fields (eg. the ones explicitly implementing IndexEntryField) to support
+         * an easy means to search for null fields (eg. search for all fields NOT having this field). Analogue to:
+         * https://www.elastic.co/guide/en/elasticsearch/reference/2.1/null-value.html
+         */
+        String NULL_VALUE = "NULL";
+
         //since all implementations are enums, this will be implemented by the default enum name() method
         String name();
     }

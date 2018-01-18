@@ -114,8 +114,8 @@ public class LuceneDocFactory
      * This method converts this IndexEntry instance to a Lucene document (and ID)
      * Note: never serialize this to the protobuf stored field
      * Note 2: we updated the return value to map out the resource URI to document,
-     *         instead of a single Document to facilitate the new inline objects implementation
-     *         because pages can produce multiple (new) resources now.
+     * instead of a single Document to facilitate the new inline objects implementation
+     * because pages can produce multiple (new) resources now.
      */
     public Document toLuceneDoc(PageIndexEntry indexEntry) throws IOException
     {
@@ -131,30 +131,37 @@ public class LuceneDocFactory
         //don't store it, we just add it to the index to be able to query the URI (again) more naturally
         retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
 
-        if (indexEntry.getParentId() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.parentId.name(), indexEntry.getParentId(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getResource() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.resource.name(), indexEntry.getResource(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getTypeOf() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(), indexEntry.getTypeOf(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getTitle() != null) {
-            retVal.add(new TextField(IndexEntry.Field.title.name(), indexEntry.getTitle(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getLanguage() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.language.name(), indexEntry.getLanguage(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getCanonicalAddress() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), indexEntry.getCanonicalAddress(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getDescription() != null) {
-            retVal.add(new TextField(IndexEntry.Field.description.name(), indexEntry.getDescription(), org.apache.lucene.document.Field.Store.NO));
-        }
-        if (indexEntry.getImage() != null) {
-            retVal.add(new StringField(IndexEntry.Field.image.name(), indexEntry.getImage(), org.apache.lucene.document.Field.Store.NO));
-        }
+        retVal.add(new StringField(PageIndexEntry.Field.parentId.name(),
+                                   indexEntry.getParentId() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getParentId(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new StringField(PageIndexEntry.Field.resource.name(),
+                                   indexEntry.getResource() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getResource(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(),
+                                   indexEntry.getTypeOf() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getTypeOf(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new TextField(IndexEntry.Field.title.name(),
+                                 indexEntry.getTitle() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getTitle(),
+                                 org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new StringField(PageIndexEntry.Field.language.name(),
+                                   indexEntry.getLanguage() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getLanguage(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(),
+                                   indexEntry.getCanonicalAddress() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getCanonicalAddress(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new TextField(IndexEntry.Field.description.name(),
+                                 indexEntry.getDescription() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getDescription(),
+                                 org.apache.lucene.document.Field.Store.NO));
+
+        retVal.add(new StringField(IndexEntry.Field.image.name(),
+                                   indexEntry.getImage() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getImage(),
+                                   org.apache.lucene.document.Field.Store.NO));
 
         //stores this entire object in the index (using Protocol Buffers)
         //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
