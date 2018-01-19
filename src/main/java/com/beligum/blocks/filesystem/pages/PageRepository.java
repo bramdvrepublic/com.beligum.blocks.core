@@ -422,7 +422,7 @@ public class PageRepository extends AbstractResourceRepository
     private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
-        //Note: we must delete the triplestore before the page index because the page index is used to calculate translations!
+        //Note: we must delete the triplestore before the page index because the page index is used to calculate translations and subresources!
         triplestoreIndexer.delete(page);
         pageIndexer.delete(page);
     }

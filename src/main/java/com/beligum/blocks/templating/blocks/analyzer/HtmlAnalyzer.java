@@ -63,6 +63,7 @@ public class HtmlAnalyzer
     private AttributeRef htmlPrefixes;
     private Locale htmlLocale;
     private String title;
+    private Set<URI> subResources;
     private boolean analyzedShallow;
     private boolean analyzedDeep;
 
@@ -143,6 +144,12 @@ public class HtmlAnalyzer
         this.assertAnalyzedDeep();
 
         return title;
+    }
+    public Set<URI> getSubResources() throws IOException
+    {
+        this.assertAnalyzedDeep();
+
+        return subResources;
     }
 
     //-----PROTECTED METHODS-----
@@ -253,6 +260,7 @@ public class HtmlAnalyzer
 
         //save some additional variables that were detected during normalizing
         this.title = normalizer.getTitle();
+        this.subResources = normalizer.getSubResources();
 
         this.analyzedDeep = true;
     }

@@ -61,8 +61,8 @@ public abstract class PageSource extends AbstractSource implements Source
      * simplicity (eg. it's the only one of the two that's present in RDFa Lite).
      * --> End of discussion, switched to @about because it's the right thing
      */
-    public static final String HTML_ROOT_SUBJECT_ATTR = "about";
-    public static final String HTML_ROOT_TYPEOF_ATTR = "typeof";
+    public static final String HTML_ROOT_SUBJECT_ATTR = HtmlParser.RDF_ABOUT_ATTR;
+    public static final String HTML_ROOT_TYPEOF_ATTR = HtmlParser.RDF_TYPEOF_ATTR;
     public static final String HTML_ROOT_VOCAB_ATTR = HtmlParser.RDF_VOCAB_ATTR;
     public static final String HTML_ROOT_PREFIX_ATTR = HtmlParser.RDF_PREFIX_ATTR;
     public static final String HTML_TITLE_ELEMENT = "title";

@@ -33,6 +33,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -59,7 +60,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
     private boolean active;
 
     //-----CONSTRUCTORS-----
-    public LucenePageIndexConnection(LucenePageIndexer pageIndexer, TX transaction) throws IOException
+    public LucenePageIndexConnection(LucenePageIndexer pageIndexer, TX transaction)
     {
         this.pageIndexer = pageIndexer;
         this.transaction = transaction;
@@ -90,8 +91,15 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
+        IndexWriter indexWriter = this.pageIndexer.getIndexWriter();
+
+        //first, delete all existing sub-resources
+        for (IndexEntry existingSubResource : this.getIndexedSubresourcesOf(page)) {
+            indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(existingSubResource.getId()));
+        }
+
         //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-        this.pageIndexer.getIndexWriter().deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(page)));
+        indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(page)));
 
         //for debug
         //this.printLuceneIndex();
@@ -104,6 +112,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
+        IndexWriter indexWriter = this.pageIndexer.getIndexWriter();
         LuceneDocFactory luceneDocFactory = LuceneDocFactory.INSTANCE;
 
         //Note that this returns the models in the correct order for indexing (where main model comes last)
@@ -112,18 +121,10 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             throw new IOException("Page (sub) model generation yielded an empty set; this shouldn't happen since it should always contain at least one model: the main one");
         }
 
-        //First, we will check if we need to delete existing index sub-resources
-        // (because the some existing fact-entry could have been deleted from the page)
-        BooleanQuery query = new BooleanQuery();
-        //Note: the main page index entry doesn't have a parentId, so this will only select sub-resources
-        query.add(new TermQuery(new Term(PageIndexEntry.Field.parentId.name(), SimplePageIndexEntry.generateId(page))), BooleanClause.Occur.MUST);
-        //this one is probably not necessary since the id of the parent should be unique, but let's add it to be sure.
-        query.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), page.getLanguage().getLanguage())), BooleanClause.Occur.MUST);
-        IndexSearchResult existingSubResources = this.search(query, DEFAULT_MAX_SEARCH_RESULTS);
         //delete all previously existing entries that don't exist anymore
-        for (IndexEntry existingSubResource : existingSubResources) {
+        for (IndexEntry existingSubResource : this.getIndexedSubresourcesOf(page)) {
             if (!subModels.containsKey(existingSubResource.getId())) {
-                this.pageIndexer.getIndexWriter().deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(existingSubResource.getId()));
+                indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(existingSubResource.getId()));
             }
         }
 
@@ -151,7 +152,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             luceneDocFactory.indexRdfModel(luceneDoc, subModel, intermediateStore);
 
             //now write our document to the index
-            this.pageIndexer.getIndexWriter().updateDocument(luceneId, luceneDoc);
+            indexWriter.updateDocument(luceneId, luceneDoc);
 
             // Store the sub-resources to an intermediate store so the main
             // resource can find them (they're not visible to the indexReader cause we haven't
@@ -373,5 +374,17 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
                 this.transaction.registerResource(TX_RESOURCE_NAME, this);
             }
         }
+    }
+    private IndexSearchResult getIndexedSubresourcesOf(Page page) throws IOException
+    {
+        //First, we will check if we need to delete existing index sub-resources
+        // (because the some existing fact-entry could have been deleted from the page)
+        BooleanQuery query = new BooleanQuery();
+        //Note: the main page index entry doesn't have a parentId, so this will only select sub-resources
+        query.add(new TermQuery(new Term(PageIndexEntry.Field.parentId.name(), SimplePageIndexEntry.generateId(page))), BooleanClause.Occur.MUST);
+        //this one is probably not necessary since the id of the parent should be unique, but let's add it to be sure.
+        query.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), page.getLanguage().getLanguage())), BooleanClause.Occur.MUST);
+
+        return this.search(query, DEFAULT_MAX_SEARCH_RESULTS);
     }
 }

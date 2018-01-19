@@ -75,6 +75,10 @@ public class HtmlTag implements HtmlTemplate.SubstitionReferenceRenderer
     {
         return this.startTag.getElement().getContent().toString();
     }
+    public String getAttributeValue(String attributeName)
+    {
+        return this.startTag.getAttributeValue(attributeName);
+    }
     public boolean equalsStartTag(Segment tag)
     {
         return this.startTag.equals(tag);

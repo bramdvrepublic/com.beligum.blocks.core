@@ -50,6 +50,9 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_PROPERTY_ATTR;
+
 /**
  * Created by bram on 5/13/15.
  */
@@ -713,9 +716,9 @@ public abstract class HtmlTemplate
         Iterator<Element> iter = metas.iterator();
         while (retVal == null && iter.hasNext()) {
             Element element = iter.next();
-            String propertyVal = element.getAttributeValue("property");
+            String propertyVal = element.getAttributeValue(RDF_PROPERTY_ATTR);
             if (propertyVal != null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX + property.toString())) {
-                retVal = element.getAttributeValue("content");
+                retVal = element.getAttributeValue(RDF_CONTENT_ATTR);
 
                 if (eatItUp) {
                     output.remove(element);

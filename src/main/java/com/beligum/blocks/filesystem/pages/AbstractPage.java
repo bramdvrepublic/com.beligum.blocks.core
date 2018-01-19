@@ -34,6 +34,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
@@ -180,13 +181,18 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     @Override
     public Map<Locale, Page> getTranslations() throws IOException
     {
+        return this.getTranslations(this.createAnalyzer());
+    }
+    @Override
+    public Map<Locale, Page> getTranslations(HtmlAnalyzer analyzer) throws IOException
+    {
         Map<Locale, Page> retVal = new LinkedHashMap<>();
 
         Locale thisLang = this.getLanguage();
         Map<String, Locale> siteLanguages = R.configuration().getLanguages();
 
         //We read the resource uri from disk. Note that resource URIs don't have languages set
-        URI resourceNoLangUri = UriBuilder.fromUri(this.createAnalyzer().getHtmlAbout().value).build();
+        URI resourceNoLangUri = UriBuilder.fromUri(analyzer.getHtmlAbout().value).build();
 
         //Now, we'll search the index for all pages with this resource URI
         //Note that resource URIs are the only way to effectively get translations. We can't rely
@@ -206,6 +212,16 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         }
 
         return retVal;
+    }
+    @Override
+    public Iterable<URI> getSubResources() throws IOException
+    {
+        return this.getSubResources(this.createAnalyzer());
+    }
+    @Override
+    public Iterable<URI> getSubResources(HtmlAnalyzer analyzer) throws IOException
+    {
+        return analyzer.getSubResources();
     }
 
     //-----PROTECTED METHODS-----

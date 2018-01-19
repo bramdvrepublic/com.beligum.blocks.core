@@ -27,8 +27,14 @@ import net.htmlparser.jericho.StartTag;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_PROPERTY_ATTR;
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_RESOURCE_ATTR;
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_TYPEOF_ATTR;
 
 /**
  * Created by bram on 1/26/17.
@@ -41,11 +47,13 @@ public class HtmlNormalizer
     //-----VARIABLES-----
     private Source source;
     private String title;
+    private Set<URI> subResources;
 
     //-----CONSTRUCTORS-----
     public HtmlNormalizer(Source source)
     {
         this.source = source;
+        this.subResources = new LinkedHashSet<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -75,6 +83,10 @@ public class HtmlNormalizer
     public String getTitle()
     {
         return title;
+    }
+    public Set<URI> getSubResources()
+    {
+        return subResources;
     }
 
     //-----PROTECTED METHODS-----
@@ -166,6 +178,8 @@ public class HtmlNormalizer
     private void extractMetaData(HtmlTag htmlTag)
     {
         this.extractTitle(htmlTag);
+        this.extractSubResources(htmlTag);
+
         //        this.extractReferences(htmlTag);
     }
     /**
@@ -178,6 +192,19 @@ public class HtmlNormalizer
             if (!StringUtils.isEmpty(this.title)) {
                 this.title = this.title.trim();
             }
+        }
+    }
+    /**
+     * Check if this tag has a sub-resource attribute set and save it's value if it is.
+     */
+    private void extractSubResources(HtmlTag htmlTag)
+    {
+        String typeofAttr = htmlTag.getAttributeValue(RDF_TYPEOF_ATTR);
+        String resourceAttr = htmlTag.getAttributeValue(RDF_RESOURCE_ATTR);
+        String propertyAttr = htmlTag.getAttributeValue(RDF_PROPERTY_ATTR);
+
+        if (!StringUtils.isEmpty(typeofAttr) && !StringUtils.isEmpty(propertyAttr) && !StringUtils.isEmpty(resourceAttr)) {
+            this.subResources.add(URI.create(resourceAttr));
         }
     }
 

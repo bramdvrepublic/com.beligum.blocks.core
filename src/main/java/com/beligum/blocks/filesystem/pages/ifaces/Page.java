@@ -143,8 +143,22 @@ public interface Page extends BlocksResource
     Map<Locale, Page> getTranslations() throws IOException;
 
     /**
+     * Same method as above, but allows us to re-use an existing analyzer
+     */
+    Map<Locale, Page> getTranslations(HtmlAnalyzer htmlAnalyzer) throws IOException;
+
+    /**
+     * Returns all sub-resource URIs of this page
+     */
+    Iterable<URI> getSubResources() throws IOException;
+
+    /**
+     * Same method as above, but allows us to re-use an existing analyzer
+     */
+    Iterable<URI> getSubResources(HtmlAnalyzer htmlAnalyzer) throws IOException;
+
+    /**
      * Creates a read/write variant of this page if needed (just returns itself if it's a read/write page)
      */
     ReadWritePage getReadWriteVariant() throws IOException;
-
 }

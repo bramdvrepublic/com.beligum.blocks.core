@@ -32,6 +32,7 @@ import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
@@ -179,12 +180,15 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         Page page = resource.unwrap(Page.class);
 
+        //we'll create one analyzer, so we can re-use it instead of re-creating it for all uses
+        HtmlAnalyzer pageAnalyzer = page.createAnalyzer();
+
         //we'll be deleting all the triples in the model of the page,
         //except the ones that are present in another language.
         //Note that by relying on the entries of the triple store itself (instead of reading in the page model from disk)
         // we ensure all occurrences of this page in the DB will be deleted, regardless of what is present in the proxy model
-        Model pageModel = this.queryModel(page, false);
-        for (Page p : page.getTranslations().values()) {
+        Model pageModel = this.queryModel(page, pageAnalyzer, false);
+        for (Page p : page.getTranslations(pageAnalyzer).values()) {
             Model model = p.readRdfModel();
             if (model != null) {
                 pageModel.removeAll(model);
@@ -566,9 +570,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         return retVal;
     }
     /**
-     * Note: untested (saved for future reference)
+     * Search all relevant triples that have something to do with a certain page (only used for deletion for now)
      */
-    private Model queryModel(Page page, boolean excludeTranslations) throws IOException
+    private Model queryModel(Page page, HtmlAnalyzer pageAnalyzer, boolean excludeTranslations) throws IOException
     {
         IRI publicPageIri = this.connection.getValueFactory().createIRI(page.getPublicAbsoluteAddress().toString());
         //note that RDF requires absolute urls
@@ -595,6 +599,22 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
                     }
                 }
             }
+        }
+
+        //Since we support sub-resources, we need to add all sub-resource triples as well
+        //Note that we can do this a couple of ways: by querying the index, by analyzing the html, ...
+        //Because the index is also queried to find the translations, we opted for the fastest method
+        //and use the index to find all sub-resources for this page.
+        for (URI subResourceUri : page.getSubResources(pageAnalyzer)) {
+            if (!subResourceUri.isAbsolute()) {
+                subResourceUri = R.configuration().getSiteDomain().resolve(subResourceUri);
+            }
+            IRI subResourceIri = this.connection.getValueFactory().createIRI(subResourceUri.toString());
+
+            //this will search the store for all references TO our sub resource (generally only yielding one result that links the parent and the sub together)
+            model.addAll(QueryResults.asModel(this.connection.getStatements(null, null, subResourceIri)));
+            //search for all information IN our sub resource
+            model.addAll(QueryResults.asModel(this.connection.getStatements(subResourceIri, null, null)));
         }
 
         return model;

@@ -41,6 +41,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
+import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
 import static java.time.ZoneOffset.UTC;
 
 /**
@@ -160,7 +161,6 @@ public class PageFixTask extends ReindexTask
                             //This is the class that is always there, regardless of the inputType and
                             // is actually FACT_ENTRY_PROPERTY_CLASS
                             final String generalClass = "property";
-                            final String contentAttr = "content";
 
                             try {
                                 //TODO this doesn't account for the GMT flag!
@@ -168,7 +168,7 @@ public class PageFixTask extends ReindexTask
                                     || (rdfProperty.getDataType().equals(XSD.TIME) && !classes.contains(InputType.Time.getConstant()))
                                     || (rdfProperty.getDataType().equals(XSD.DATE_TIME) && !classes.contains(InputType.DateTime.getConstant()))) {
 
-                                    Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(contentAttr));
+                                    Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
                                     String newHtml = AbstractImportEndpoint.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
                                     output.replace(factElement, new Source(newHtml));
 

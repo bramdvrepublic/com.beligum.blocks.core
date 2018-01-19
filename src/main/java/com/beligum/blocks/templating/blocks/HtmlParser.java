@@ -63,6 +63,10 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     public static final String NON_RDF_PROPERTY_ATTR = "data-property";
 
     public static final String RDF_VOCAB_ATTR = "vocab";
+    public static final String RDF_TYPEOF_ATTR = "typeof";
+    public static final String RDF_ABOUT_ATTR = "about";
+    public static final String RDF_RESOURCE_ATTR = "resource";
+    public static final String RDF_CONTENT_ATTR = "content";
     public static final String RDF_PREFIX_ATTR = "prefix";
     public static final String HTML_ROOT_ELEM = "html";
     public static final String WEBCOMPONENTS_TEMPLATE_ELEM = "template";
