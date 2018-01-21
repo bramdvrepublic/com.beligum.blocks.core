@@ -17,7 +17,9 @@
 package com.beligum.blocks.filesystem.index.entries.resources;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -27,6 +29,8 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.net.URI;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Created by bram on 5/10/16.
@@ -61,14 +65,27 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
 
         String title = null;
         String main = null;
+        String label = null;
         String text = null;
         String description = null;
         URI image = null;
 
         //let's build in support for the main properties of our newly added sub-resources
         IRI mainIri = null;
-        if (type != null && type.getMainProperty() != null) {
-            mainIri = SimpleValueFactory.getInstance().createIRI(type.getMainProperty().getFullName().toString());
+        Set<IRI> labelIris = new LinkedHashSet<>();
+        if (type != null) {
+            if (type.getMainProperty() != null) {
+                mainIri = SimpleValueFactory.getInstance().createIRI(type.getMainProperty().getFullName().toString());
+            }
+            RdfQueryEndpoint typeEndpoint = type.getEndpoint();
+            if (typeEndpoint != null) {
+                RdfProperty[] labelCandidates = typeEndpoint.getLabelCandidates(type);
+                if (labelCandidates != null) {
+                    for (RdfProperty labelProp : labelCandidates) {
+                        labelIris.add(SimpleValueFactory.getInstance().createIRI(labelProp.getFullName().toString()));
+                    }
+                }
+            }
         }
 
         Iterator<Statement> iter = model.iterator();
@@ -115,6 +132,15 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
                     Logger.debug("Double " + imageIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
+
+            if (labelIris.contains(stmt.getPredicate())) {
+                if (label == null) {
+                    label = stmt.getObject().stringValue();
+                }
+                else {
+                    Logger.debug("Double label candidate found for " + stmt.getSubject() + "; only using first.");
+                }
+            }
         }
 
         //a description property has precedence over a general 'text', but only if it's not empty
@@ -125,6 +151,11 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
         //most of the time, for sub-resources, the title will be empty, so let's check if we have a main property value instead...
         if (StringUtils.isEmpty(title)) {
             title = main;
+        }
+
+        //this is a last-option check and a possibility to link the main property, label candidate and title concepts together
+        if (StringUtils.isEmpty(title)) {
+            title = label;
         }
 
         return new DefaultSummarizedResource(title, description, image);

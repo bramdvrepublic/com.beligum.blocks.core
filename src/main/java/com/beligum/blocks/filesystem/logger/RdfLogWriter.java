@@ -224,7 +224,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
 
         //This is legacy code to show this URI was logged in earlier versions of Stralo,
         //but was replaced by the more uniform 'username' property during the ontology cleanup.
-        //See https://github.com/republic-of-reinvention/com.stralo.site/issues/13
+        //See https://github.com/republic-of-reinvention/com.stralo.framework/issues/13
         //this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
         String username = pageEntry.getCreator() != null && pageEntry.getCreator().getSubject() != null ? pageEntry.getCreator().getSubject().getPrincipal() : ANONYMOUS_USERNAME;
         this.logStatement(entryId, RdfLogWriter.username, username);

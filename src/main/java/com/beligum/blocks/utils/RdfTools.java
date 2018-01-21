@@ -348,7 +348,7 @@ public class RdfTools
      * Note: the ontologyUniqueId flag indicates the id is (always) unique to the entire ontology
      * if it is, we're can resolve a resource using only this id
      * if it's not, we need additional information to resolve the resource (eg. coming from a SQL primary key or linking to an external ontology)
-     * see this discussion https://github.com/republic-of-reinvention/com.stralo.site/issues/15
+     * see this discussion https://github.com/republic-of-reinvention/com.stralo.framework/issues/15
      */
     private static UriBuilder createResourceIdPath(UriBuilder uriBuilder, RdfClass entity, String id, boolean ontologyUniqueId)
     {
@@ -369,7 +369,7 @@ public class RdfTools
     /**
      * This is a convenient wrapper class that wraps the parsing of RDF resource URIs and caches it's result
      * A resource URI has form /resource/<id> or /resource/<class>/<id>
-     * For details, see https://github.com/republic-of-reinvention/com.stralo.site/issues/15
+     * For details, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/15
      */
     public static class RdfResourceUri
     {
