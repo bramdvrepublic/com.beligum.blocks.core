@@ -174,38 +174,44 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         //resources are indexed with relative id's, so make sure the URI is relative
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
-        org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
-        //at least one of the id or resource should match (or both)
-        pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
-        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
-
-        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
-        PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
+        //we'll wrap this one in a ResourceInfo
+        PageIndexEntry selectedEntry = null;
 
         //this is a bit of a hack and needs some explaining: while indexing a resource with sub-resources
         //(eg. a Page containing an Object widget), we index the sub-resources before the page-resource,
         //but when this method is called to lookup the sub-resources in that page, they're not committed to
         //the index yet, that's why we created a temporary store for them.
         //See LucenePageIndexConnection.update()
-        if (selectedEntry == null) {
-            IntermediateResourcesOption intermediateResourcesOption = null;
+        //Update: note that this needs to be checked first because it's possible we're re-saving (updating) an existing sub-resource
+        //that's already present in the index (with the old values), resulting in a valid hit. This means, if the options contain
+        //a hit for this resourceId, we should expect it's in a more updated state and return that instead of the indexed one.
+        IntermediateResourcesOption intermediateResourcesOption = null;
 
-            if (options != null ) {
-                for (SearchOption option : options) {
-                    //for now, this is the only option we support here
-                    if (option instanceof IntermediateResourcesOption) {
-                        intermediateResourcesOption = (IntermediateResourcesOption) option;
-                        break;
-                    }
-                    else {
-                        throw new IOException("Encountered unsupported/unimplemented option, this shouldn't happen; "+option);
-                    }
+        if (options != null) {
+            for (SearchOption option : options) {
+                //for now, this is the only option we support here
+                if (option instanceof IntermediateResourcesOption) {
+                    intermediateResourcesOption = (IntermediateResourcesOption) option;
+                    break;
+                }
+                else {
+                    throw new IOException("Encountered unsupported/unimplemented option, this shouldn't happen; " + option);
                 }
             }
+        }
 
-            if (intermediateResourcesOption != null) {
-                selectedEntry = intermediateResourcesOption.get(relResourceIdStr, language.getLanguage());
-            }
+        if (intermediateResourcesOption != null) {
+            selectedEntry = intermediateResourcesOption.get(relResourceIdStr, language.getLanguage());
+        }
+
+        if (selectedEntry == null) {
+            org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
+            //at least one of the id or resource should match (or both)
+            pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
+            pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
+
+            IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
+            selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }
 
         if (selectedEntry != null) {
