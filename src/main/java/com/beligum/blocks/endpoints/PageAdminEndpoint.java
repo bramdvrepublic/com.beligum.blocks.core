@@ -49,8 +49,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -122,6 +121,15 @@ public class PageAdminEndpoint
             else {
                 throw new InternalServerErrorException(core.Entries.newPageNoDataError.toString());
             }
+
+            //makes the map non-immutable so we can remove the 'internal' params
+            MultivaluedMap<String, String> extraParams = new MultivaluedHashMap<>();
+            extraParams.putAll(R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
+            extraParams.remove(NEW_PAGE_URL_PARAM);
+            extraParams.remove(NEW_PAGE_TEMPLATE_PARAM);
+            extraParams.remove(NEW_PAGE_COPY_URL_PARAM);
+            extraParams.remove(NEW_PAGE_COPY_LINK_PARAM);
+            R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name(), extraParams);
 
             //redirect to the requested page with the flash cache filled in
             return Response.seeOther(new URI(pageUrl)).build();

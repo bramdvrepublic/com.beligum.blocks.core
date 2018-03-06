@@ -22,6 +22,7 @@ import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
@@ -54,6 +55,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -314,10 +317,12 @@ public class ApplicationEndpoint
                                 String newPageTemplateName = null;
                                 String newPageCopyUrl = null;
                                 Boolean newPageCopyLink = false;
+                                MultivaluedMap<String, String> newPageExtraParams = new MultivaluedHashMap<>();
                                 if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
                                     newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
                                     newPageCopyUrl = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
                                     newPageCopyLink = (Boolean) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
+                                    newPageExtraParams = (MultivaluedMap<String, String>) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name());
                                 }
 
                                 //OPTION 5: there's a template-selection in the flash cache (we came from the page-selection page)
@@ -328,6 +333,9 @@ public class ApplicationEndpoint
                                     if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
                                         Template newPageInstance =
                                                         R.resourceManager().newTemplate(new StringSource(requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, optimalLocale));
+
+                                        //transfer the passed-in extra params into the template context
+                                        this.transferExtraParams(newPageInstance.getContext(), newPageExtraParams);
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -352,6 +360,8 @@ public class ApplicationEndpoint
                                         //we need to pull the normalized html through the template engine for this to work
                                         Template copyTemplate = R.resourceManager().newTemplate(copyPage);
 
+                                        //note: extra params are inserted in the copy, not here
+
                                         //activate blocks mode for the old template so we copy everything, not just the public html
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
 
@@ -370,6 +380,9 @@ public class ApplicationEndpoint
                                         try (InputStream is = html.newInputStream()) {
                                             template = R.resourceManager().newTemplate(new StringSource(requestedUri, IOUtils.toString(is), MimeTypes.HTML, optimalLocale));
                                         }
+
+                                        //transfer the passed-in extra params into the template context
+                                        this.transferExtraParams(template.getContext(), newPageExtraParams);
 
                                         //this will allow the blocks javascript/css to be included
                                         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
@@ -507,5 +520,25 @@ public class ApplicationEndpoint
         }
 
         return retVal;
+    }
+    private void transferExtraParams(TemplateContext context, MultivaluedMap<String, String> newPageExtraParams)
+    {
+        for (Map.Entry<String, List<String>> param : newPageExtraParams.entrySet()) {
+            if (param.getValue() != null && !param.getValue().isEmpty()) {
+                if (param.getValue().size() > 1) {
+                    context.set(param.getKey(), param.getValue());
+                }
+                //let's convert single-valued lists to their object couterparts, it's more natural
+                else if (param.getValue().size() == 1) {
+                    context.set(param.getKey(), param.getValue().get(0));
+                }
+            }
+            //there might be some interest in params being set, without it containing any value...
+            //also, since params come in through the text of the URL, we opted to set empty ones as empty
+            //strings instead of null
+            else {
+                context.set(param.getKey(), "");
+            }
+        }
     }
 }
