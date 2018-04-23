@@ -81,6 +81,7 @@ public class PageExportTask extends ReindexTask
 
             URI exportFsUri = UriBuilder.fromUri(dbFile.toUri()).scheme(FileSystems.SQL.getScheme()).build();
             exportFileContextConfig = HdfsUtils.createHdfsConfig(exportFsUri, null, new HashMap<>());
+            //we won't be needing transaction support, we want full speed
             exportFileContextConfig.setBoolean(SqlFS.ENABLE_TX_SUPPORT_CONFIG, false);
             exportFileContext = StorageFactory.createFileContext(exportFileContextConfig);
 

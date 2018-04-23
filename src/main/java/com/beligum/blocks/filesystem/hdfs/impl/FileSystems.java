@@ -42,5 +42,6 @@ public class FileSystems
     public static final HdfsImplDef LOCAL_RO_CHROOT = new HdfsImplDef(ChRootedLocalReadOnlyFS.SCHEME, ChRootedLocalReadOnlyFS.class);
     public static final HdfsImplDef LOCAL_TX = new HdfsImplDef(LocalTransactionalFS.SCHEME, LocalTransactionalFS.class);
     public static final HdfsImplDef LOCAL_TX_CHROOT = new HdfsImplDef(ChRootedLocalTransactionalFS.SCHEME, ChRootedLocalTransactionalFS.class);
+    public static final HdfsImplDef SQL_V1 = new HdfsImplDef(SqlFS_v1.SCHEME, SqlFS_v1.class);
     public static final HdfsImplDef SQL = new HdfsImplDef(SqlFS.SCHEME, SqlFS.class);
 }

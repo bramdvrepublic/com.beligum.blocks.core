@@ -457,7 +457,7 @@ public class PageAdminEndpoint
         synchronized (longRunningThreadLock) {
             if (longRunningThread != null) {
                 longRunningThread.cancel();
-                retVal = Response.ok("Reindex all process cancelled");
+                retVal = Response.ok("Reindex all process cancellation requested");
             }
             else {
                 retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
@@ -485,44 +485,6 @@ public class PageAdminEndpoint
 
         return retVal.build();
     }
-
-//    @GET
-//    @javax.ws.rs.Path("/import")
-//    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-//    public Response importPages(@QueryParam("db") String db) throws Exception
-//    {
-//        Response.ResponseBuilder retVal = null;
-//
-//        synchronized (longRunningThreadLock) {
-//            if (longRunningThread == null) {
-//                longRunningThread = new PageImportThread(db, new LongRunningThread.Listener()
-//                {
-//                    @Override
-//                    public void longRunningThreadStarted()
-//                    {
-//                    }
-//                    @Override
-//                    public void longRunningThreadEnded()
-//                    {
-//                        synchronized (longRunningThreadLock) {
-//                            longRunningThread = null;
-//                        }
-//                    }
-//                });
-//
-//                longRunningThread.start();
-//
-//                retVal = Response.ok("Launched new page import thread with" +
-//                                     " db " + db);
-//            }
-//            else {
-//                retVal = Response.ok("Can't start an import session because there's a long-running process running that was launched on " +
-//                                     ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
-//            }
-//        }
-//
-//        return retVal.build();
-//    }
 
     //-----PROTECTED METHODS-----
 

@@ -431,7 +431,7 @@ public class ReindexThread extends Thread implements LongRunningThread
 
         return pageCounter;
     }
-    private ExecutorService executeDatabaseTasks() throws SQLException
+    private ExecutorService executeDatabaseTasks() throws SQLException, IOException
     {
         //count the number of classes in the db to create the executor
         int numClasses;
@@ -471,7 +471,13 @@ public class ReindexThread extends Thread implements LongRunningThread
             while (resultSet.next()) {
                 //Note: the type is the literal html string in the typeof="" attribute of a RDFa HTML page,
                 //so it needs parsing
-                RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME)));
+                URI rdfClassUri = URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME));
+                RdfClass rdfClass = RdfFactory.getClassForResourceType(rdfClassUri);
+                //this is bad. It means we'll encounter a NPE later on because we don't have dependency information,
+                //so let's quit now with some additional debug information
+                if (rdfClass == null) {
+                    throw new IOException("Can't seem to find the RDF class for URI "+rdfClassUri);
+                }
 
                 //see if we need to process this class; if the list is empty (no specific class to reindex selected) or it's in there.
                 boolean selectClass = true;
