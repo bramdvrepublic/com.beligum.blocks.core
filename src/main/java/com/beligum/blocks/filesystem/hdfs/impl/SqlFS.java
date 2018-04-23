@@ -722,7 +722,8 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 String pathNameRec = pathName.equals(Path.SEPARATOR) ? pathName : pathName + Path.SEPARATOR;
 
                 //Note that we can't include the path itself, which would be the case if we query the root path "/"
-                String whereSql = this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?") +
+                String whereSql = SQL_COLUMN_PATH_NAME + "<>?" +
+                                  " AND " + this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?") +
                                   " AND NOT " + this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?");
 
                 try (PreparedStatement stmt = dbConnection.prepareStatement("SELECT " +
@@ -739,8 +740,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                                                                             " FROM " + SQL_META_TABLE_NAME +
                                                                             " WHERE " + whereSql)) {
 
-                    stmt.setString(1, pathNameRec + "*");
-                    stmt.setString(2, pathNameRec + "*/*");
+                    stmt.setString(1, pathName);
+                    stmt.setString(2, pathNameRec + "*");
+                    stmt.setString(3, pathNameRec + "*/*");
 
                     ResultSet resultSet = stmt.executeQuery();
                     while (resultSet.next()) {

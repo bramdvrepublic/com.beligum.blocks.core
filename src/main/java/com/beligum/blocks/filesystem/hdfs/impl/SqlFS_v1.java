@@ -711,13 +711,14 @@ public class SqlFS_v1 extends AbstractFileSystem implements Closeable, XAttrFS
 
                 //Old code, before optimization during switch to v2 (April 2018)
                 //Note that we can't include the path itself, which would be the case if we query the root path "/"
-//                String whereSql = SQL_COLUMN_PATH_NAME + "<>?" +
-//                                  //we search for all paths that start with "path/" and don't have a "/" in the part after that
-//                                  " AND " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ? " +
-//                                  "  AND " + this.getSqlInstrFunction("SUBSTR(" + SQL_COLUMN_PATH_NAME + ", ?)", "'" + Path.SEPARATOR + "'") + "=0";
+                //                String whereSql = SQL_COLUMN_PATH_NAME + "<>?" +
+                //                                  //we search for all paths that start with "path/" and don't have a "/" in the part after that
+                //                                  " AND " + this.getSqlLeftFunction(SQL_COLUMN_PATH_NAME, "?") + " = ? " +
+                //                                  "  AND " + this.getSqlInstrFunction("SUBSTR(" + SQL_COLUMN_PATH_NAME + ", ?)", "'" + Path.SEPARATOR + "'") + "=0";
 
                 //New code
-                String whereSql = this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?") +
+                String whereSql = SQL_COLUMN_PATH_NAME + "<>?" +
+                                  " AND " + this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?") +
                                   " AND NOT " + this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?");
 
                 final String CONTENT_LENGTH_NAME = "length";
@@ -743,8 +744,9 @@ public class SqlFS_v1 extends AbstractFileSystem implements Closeable, XAttrFS
                     //                    stmt.setInt(4, pathNameRec.length() + 1);
 
                     //New code
-                    stmt.setString(1, pathNameRec + "*");
-                    stmt.setString(2, pathNameRec + "*/*");
+                    stmt.setString(1, pathName);
+                    stmt.setString(2, pathNameRec + "*");
+                    stmt.setString(3, pathNameRec + "*/*");
 
                     ResultSet resultSet = stmt.executeQuery();
                     while (resultSet.next()) {
