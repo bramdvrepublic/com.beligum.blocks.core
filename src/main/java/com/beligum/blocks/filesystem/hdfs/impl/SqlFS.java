@@ -1032,6 +1032,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         // WAL mode only performs fsync on checkpoint operation, which reduces overhead
                         // It should make it possible to run with synchronous set to NORMAL with less
                         // of a performance impact.
+                        //
+                        //and from the sqlite manual:
+                        // Many applications choose NORMAL when in WAL mode.
                         rwDataSource.setSynchronous("NORMAL");
 
                         //save it for later use

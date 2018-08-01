@@ -15,6 +15,9 @@
  */
 
 /**
+ * Please note we don't want to move this file to the blocks-imports-block project because that would mean the standard "delete" button (etc.)
+ * may be made optional. We chose to 'extend' this config with the blocks-imports-block project instead (contrary to the blocks-imports-row/column projects).
+ *
  * Created by wouter on 17/07/15.
  */
 base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Layouter", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Layouter, Commons, All)
