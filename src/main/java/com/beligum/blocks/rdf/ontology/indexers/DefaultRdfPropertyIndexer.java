@@ -299,6 +299,9 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      || property.getDataType().equals(RDF.LANGSTRING)) {
                 retVal = value;
             }
+            else if (property.getDataType().equals(XSD.LANGUAGE)) {
+                retVal = value;
+            }
             else if (property.getDataType().equals(RDF.HTML)) {
                 retVal = StringFunctions.htmlToPlaintextRFC3676(value);
             }

@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.config;
 
+import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.SystemPropertyFactory;
 
 import java.net.URI;
@@ -50,6 +51,10 @@ public class BlocksSystemPropertyFactory implements SystemPropertyFactory
 
         //TransactionManager transactionManager = StorageFactory.getTransactionManager();
         //if (transactionManager.getClass().getCanonicalName().contains("bitronix")) {
+
+        //by default, bitronics uses the local hostname to identify this JVM, but since we'll run multiple instances on the same machine, that's not okay, let's add the port
+        retVal.put("bitronix.tm.serverId", R.configuration().getHttpConfig().getHttpServerHostname() + ":" + R.configuration().getHttpConfig().getHttpServerPort());
+
         URI txRootPath = settings.getPagesRootPath().resolve(Settings.PAGES_DEFAULT_TRANSACTIONS_FOLDER + "/");
         retVal.put("bitronix.tm.journal.disk.logPart1Filename", txRootPath.resolve("btm1.tlog").getPath());
         retVal.put("bitronix.tm.journal.disk.logPart2Filename", txRootPath.resolve("btm2.tlog").getPath());

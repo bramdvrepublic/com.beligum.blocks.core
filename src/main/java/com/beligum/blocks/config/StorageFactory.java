@@ -81,7 +81,7 @@ public class StorageFactory
      * an asynchronous thread, so all child-threads spawned from the main async thread will
      * share the same transaction.
      * Note: I assume the access to the contents of this variable is thread safe, right?
-     *       --> the access yes, but we still need to synchronize the glue code, see below.
+     * --> the access yes, but we still need to synchronize the glue code, see below.
      */
     private static final ThreadLocal<TX> currentThreadTx = new InheritableThreadLocal();
 
