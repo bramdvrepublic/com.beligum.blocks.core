@@ -265,7 +265,7 @@ public class RdfTools
      * This method returns a sorted map, ready for indexation, meaning the sub-resources come before
      * the main page resource (so sub-resource lookups will resolve).
      */
-    public static Map<String, PageModel> extractSubModels(Page page) throws IOException
+    public static Map<String, PageModel> extractRdfModels(Page page) throws IOException
     {
         //Note: instead of implementing a custom sorted TreeMap, we'll use a simple LinkedHashMap
         //that retain insertion order and postpone the insertion of the main resource (see below)
@@ -285,17 +285,22 @@ public class RdfTools
         //then "zoom-in" on the different sub-models
         for (Resource subject : pageRdfModel.subjects()) {
 
-            //note that we need to filter out some general triples (like the "rdfa:usesVocabulary" statements)
-            //by ignoring all statements about the page itself; we're only interested in the resources this page is talking about
-            if (!subject.toString().equals(page.getPublicAbsoluteAddress().toString())) {
+            //"zoom-in" on the specific subject
+            Model subModel = pageRdfModel.filter(subject, null, null);
+            URI subResource = RdfTools.iriToUri((IRI) subject);
 
-                //"zoom-in" on the specific subject
-                Model subModel = pageRdfModel.filter(subject, null, null);
-                URI subResource = RdfTools.iriToUri((IRI) subject);
+            //while we're parsing the rdf graph, we might as well extract the type
+            Optional<IRI> typeOfIRI = Models.objectIRI(subModel.filter(subject, RDF.TYPE, null));
 
-                //while we're parsing the rdf graph, we might as well extract the type
-                Optional<IRI> typeOfIRI = Models.objectIRI(subModel.filter(subject, RDF.TYPE, null));
-                RdfClass subType = !typeOfIRI.isPresent() ? null : RdfFactory.getClassForResourceType(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
+            //We'll assume we need at least a type present. This used to filter out subjects like this:
+            //if (!subject.toString().equals(page.getPublicAbsoluteAddress().toString())) {
+            //but that still resulted in submodels without a type (throwing exeptions later on).
+            //Note that this filters out some general triples (like the "rdfa:usesVocabulary" statements).
+            //The general rule is: we ignore all statements about the page itself; we're only interested in the resources this page is talking about
+            //and the checking of a type seems to be a good measure
+            if (typeOfIRI.isPresent()) {
+
+                RdfClass subType = RdfFactory.getClassForResourceType(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
 
                 PageModel modelInfo = new PageModel(page, mainResource, subResource, subType, subModel);
 

@@ -116,7 +116,7 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         LuceneDocFactory luceneDocFactory = LuceneDocFactory.INSTANCE;
 
         //Note that this returns the models in the correct order for indexing (where main model comes last)
-        Map<String, PageModel> subModels = RdfTools.extractSubModels(page);
+        Map<String, PageModel> subModels = RdfTools.extractRdfModels(page);
         if (subModels.isEmpty()) {
             throw new IOException("Page (sub) model generation yielded an empty set; this shouldn't happen since it should always contain at least one model: the main one");
         }
@@ -232,7 +232,13 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
                     }
 
                     tempResults = sort == null ? indexSearcher.searchAfter(last, luceneQuery, maxResultSize) : indexSearcher.searchAfter(last, luceneQuery, maxResultSize, sort);
-                    last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
+                    if (tempResults.scoreDocs.length > 0) {
+                        last = tempResults.scoreDocs[tempResults.scoreDocs.length - 1];
+                    }
+                    //no point in keep searching when we don't have any results any more
+                    else {
+                        keepSearching = false;
+                    }
                 }
             }
 
