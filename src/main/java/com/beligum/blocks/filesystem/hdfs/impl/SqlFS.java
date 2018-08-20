@@ -460,8 +460,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         stmt.setString(1, pathToSql(dst));
                         stmt.setInt(2, pathName.length() + 1);
                         stmt.setString(3, pathName);
-                        stmt.setInt(4, pathNameRec.length() + 1);
-                        stmt.setString(5, pathNameRec);
+                        stmt.setString(4, pathNameRec);
 
                         retVal = stmt.executeUpdate();
                     }

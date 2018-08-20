@@ -64,12 +64,12 @@ public class LuceneIndexSearchResult extends AbstractIndexSearchResult
     @Override
     public Integer size()
     {
-        return this.results.scoreDocs.length;
+        return this.results != null && this.results.scoreDocs != null ? this.results.scoreDocs.length : 0;
     }
     @Override
     public Integer getTotalHits()
     {
-        return this.results.totalHits;
+        return this.results != null ? this.results.totalHits : 0;
     }
     @Override
     public Iterator<IndexEntry> iterator()
