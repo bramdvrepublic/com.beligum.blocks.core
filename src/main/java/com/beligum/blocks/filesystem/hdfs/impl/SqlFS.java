@@ -445,8 +445,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                 }
 
                 //Note: root exception doesn't count here; see check above
-                String pathNameRec = pathName + Path.SEPARATOR;
+                String pathNameRec = pathName.equals(Path.SEPARATOR) ? pathName : pathName + Path.SEPARATOR;
 
+                //Note: || is the concat operator in sqlite, see https://www.sqlite.org/lang_expr.html
                 String partTwoSubquery = " SET " + SQL_COLUMN_PATH_NAME + "=? || " + this.getSqlSubstrFunction(SQL_COLUMN_PATH_NAME, "?") +
                                          " WHERE " + SQL_COLUMN_PATH_NAME + "=? OR " + this.getSqlGlobFunction(SQL_COLUMN_PATH_NAME, "?");
 
@@ -460,7 +461,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         stmt.setString(1, pathToSql(dst));
                         stmt.setInt(2, pathName.length() + 1);
                         stmt.setString(3, pathName);
-                        stmt.setString(4, pathNameRec);
+                        stmt.setString(4, pathNameRec + "*");
 
                         retVal = stmt.executeUpdate();
                     }
