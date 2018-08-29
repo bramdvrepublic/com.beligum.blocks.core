@@ -174,18 +174,22 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 }
 
                 if (pierceThrough) {
+                    //cut developers some slack, can't count the times I had to debug a
+                    //link and ended up here...
+                    Logger.info("Clicked on a link that had pierce-through set", e);
+
                     if (newLocation) {
                         window.location = newLocation;
                     }
                 }
                 else {
-                    e.preventDefault();
                     Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
                 }
 
+                //See http://api.jquery.com/on/
                 //Returning false from an event handler will automatically call
                 // event.stopPropagation() and event.preventDefault().
-                return !pierceThrough;
+                return pierceThrough;
             });
 
             // Get old sidebar width from cookie

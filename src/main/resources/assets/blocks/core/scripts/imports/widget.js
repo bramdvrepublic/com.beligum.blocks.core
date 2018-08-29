@@ -56,7 +56,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                 }
                 else {
-                    throw Logger.error("Could not instantiate widget because the 'tags' option (an array containing the tags you want this widget to be registered to) was missing or wrong has the type.", selectors);
+                    throw Logger.error("Could not instantiate widget because the 'tags' option (an array containing the tags you want this widget to be registered to) was missing or has the wrong type.", selectors);
                 }
             },
 
@@ -1012,7 +1012,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             //check if there are extra actions (next to reset and clear)
             if (dropdownActions) {
-                var dropdownOptions = $('<ul class="dropdown-menu role="menu" dropdown-menu-right"/>');
+                var dropdownOptions = $('<ul class="dropdown-menu dropdown-menu-right" role="menu"/>');
                 var firstLink = null;
                 var firstLinkCaption = null;
                 $.each(dropdownActions, function (key, value)

@@ -116,7 +116,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             var isPropertyInBlock = !e.block.element.is(e.element);
             var blockTitle = isPropertyInBlock ? 'property' : 'block';
             if (widget) {
-                blockTitle = widget.getWindowName();
+                //all the rest is already lower case, make it uniform no matter what
+                blockTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : widget.getWindowName();
             }
 
             var windowTitle = title;

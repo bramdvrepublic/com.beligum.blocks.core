@@ -130,7 +130,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
   .defaultBorder() {
 
-    border: 1px dotted rgba(100, 100, 100, 0.8);
+    border: 1px dashed fadeout(@brand-primary, 50%);
 
     &.left {
       border-left: none;
@@ -155,12 +155,12 @@ body.@{BODY_EDIT_MODE_CLASS} {
   cursor: pointer;
 
   &.@{OVERLAY_HOVER_CLASS} {
-    box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.5);
-    border: none;
+    .box-shadow(0px 0px 10px @brand-primary);
+    border: 1px solid fadeout(@brand-primary, 50%);
 
     //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
     &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
-      box-shadow: none;
+      .box-shadow(none);
       .defaultBorder();
     }
   }
@@ -280,11 +280,15 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
 // Class put when a property is content-editable and active
 // so when cvan set the outline we want for this property
 .@{PROPERTY_EDIT_CLASS} {
-  outline: 1px dotted rgba(100, 100, 100, 0.8);
+  outline: 3px dashed fadeout(@brand-primary, 50%);
 }
 
-[property]:focus {
-  outline: 1px dotted rgba(100, 100, 100, 0.8);
+[property]:focus,
+[data-property]:focus {
+  //disabling this (for now) because the outline above already seems to do the trick
+  //and this only draws double lines...
+  //outline: 1px dotted rgba(100, 100, 100, 0.8);
+  outline: none;
 }
 
 .@{PREVENT_SELECTION_CLASS} {
@@ -354,6 +358,11 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   top: 0px;
   right: 0px;
   bottom: 0px;
+  //this makes sure the sidebar is always 'over' the surface blocks (see @blockOverlayZ),
+  //which makes sense, because the content of the surface blocks (the html)
+  //will also be under the sidebar. Otherwise, the dotted lines hover over the sidebar
+  //and this doesn't make sense.
+  z-index: @zindex-navbar;
   padding-left: @resizerWidth;
   .drop-shadow(-1px, 0px, 4px, 0.4);
   background-color: @bgColor;
@@ -374,8 +383,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
     border-left: 1px solid darken(@controlBgColor, 40%);
     border-right: 1px solid darken(@controlBgColor, 15%);
-
-    z-index: 3;
   }
 
   .popover {
