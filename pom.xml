@@ -22,7 +22,7 @@
     <parent>
         <groupId>com.beligum</groupId>
         <artifactId>parent-web-open</artifactId>
-        <version>2.0.0</version>
+        <version>2.1.0</version>
     </parent>
 
     <groupId>com.beligum.blocks</groupId>
@@ -61,12 +61,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.5.4-SNAPSHOT</version>
+            <version>0.5.5-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.3.1</version>
+            <version>0.3.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>

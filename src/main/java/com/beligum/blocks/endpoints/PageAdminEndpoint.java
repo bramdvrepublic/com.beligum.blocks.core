@@ -143,33 +143,44 @@ public class PageAdminEndpoint
     @GET
     @Path("/blocks")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response getBlocks()
+    public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplate)
     {
+        RdfClass typeOf = null;
+        if (!StringUtils.isEmpty(typeOfStr)) {
+            typeOf = RdfFactory.getClassForResourceType(typeOfStr);
+        }
+
+        Template template = new_block.get().getNewTemplate();
+
+        //build a list of all blocks that are accessible from this template and remote page
         TemplateCache cache = TemplateCache.instance();
         List<Map<String, String>> templates = new ArrayList<>();
-        for (HtmlTemplate template : cache.values()) {
-            if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+        for (HtmlTemplate htmlTemplate : cache.values()) {
+            if (!(htmlTemplate instanceof PageTemplate) && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
 
-                ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
-                                .put(Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName())
-                                .put(Entries.NEW_BLOCK_TITLE.getValue(), template.getTitle());
+                //don't include the blocks where we have them disabled for the page template
+                if (pageTemplate == null || !htmlTemplate.isDisabledForTemplate(pageTemplate)) {
 
-                if (!StringUtils.isEmpty(template.getDescription())) {
-                    map.put(Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getDescription());
+                    ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
+                                    .put(Entries.NEW_BLOCK_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))
+                                    .put(Entries.NEW_BLOCK_TITLE.getValue(), template.getContext().evaluate(htmlTemplate.getTitle()));
+
+                    if (!StringUtils.isEmpty(htmlTemplate.getDescription())) {
+                        map.put(Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getContext().evaluate(htmlTemplate.getDescription()));
+                    }
+
+                    if (!StringUtils.isEmpty(htmlTemplate.getIcon())) {
+                        map.put(Entries.NEW_BLOCK_ICON.getValue(), template.getContext().evaluate(htmlTemplate.getIcon()));
+                    }
+
+                    templates.add(map.build());
                 }
-
-                if (!StringUtils.isEmpty(template.getIcon())) {
-                    map.put(Entries.NEW_BLOCK_ICON.getValue(), template.getIcon());
-                }
-
-                templates.add(map.build());
             }
         }
 
         //sort the blocks by title
         Collections.sort(templates, new MapComparator(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue()));
 
-        Template template = new_block.get().getNewTemplate();
         template.set(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TEMPLATES.getValue(), templates);
 
         return Response.ok(template).build();

@@ -49,9 +49,11 @@ public class TemplateCache
     private static String[] INVISIBLE_START_FOLDERS = { RESOURCES_IMPORTS_FOLDER };
 
     //-----VARIABLES-----
+    private static Object initMutex = new Object();
     private Map<String, HtmlTemplate> nameMapping;
     private Map<String, HtmlTemplate> relativePathMapping;
-    private List<HtmlTemplate> pageTemplates;
+    private Set<HtmlTemplate> pageTemplates;
+    private Set<HtmlTemplate> disabledTemplates;
 
     //NOTE see resetCache() if you add variables here
     private String cachedSpacedTagNames;
@@ -63,8 +65,9 @@ public class TemplateCache
     private TemplateCache()
     {
         this.nameMapping = new HashMap<>();
-        this.relativePathMapping = new HashMap<>();
-        this.pageTemplates = new ArrayList<>();
+        this.relativePathMapping = new LinkedHashMap<>();
+        this.pageTemplates = new LinkedHashSet<>();
+        this.disabledTemplates = new LinkedHashSet<>();
 
         this.resetCache();
     }
@@ -72,12 +75,16 @@ public class TemplateCache
     {
         TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
         if (retVal == null) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
-            try {
-                searchAllTemplates(retVal);
-            }
-            catch (Exception e) {
-                Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+            synchronized (initMutex) {
+                if (retVal == null) {
+                    R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
+                    try {
+                        searchAllTemplates(retVal);
+                    }
+                    catch (Exception e) {
+                        Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+                    }
+                }
             }
         }
 
@@ -97,7 +104,7 @@ public class TemplateCache
     {
         return StringUtils.isEmpty(templateRelativePath) ? null : this.relativePathMapping.get(templateRelativePath);
     }
-    public List<HtmlTemplate> getPageTemplates()
+    public Set<HtmlTemplate> getPageTemplates()
     {
         return this.pageTemplates;
     }
@@ -131,6 +138,17 @@ public class TemplateCache
     public boolean containsKeyByRelativePath(String key)
     {
         return this.relativePathMapping.containsKey(key);
+    }
+    public void disable(HtmlTemplate template)
+    {
+        //let's track disabled templates
+        this.disabledTemplates.add(template);
+
+        this.nameMapping.values().remove(template);
+        this.relativePathMapping.values().remove(template);
+        this.pageTemplates.remove(template);
+
+        this.resetCache();
     }
     public void clear()
     {

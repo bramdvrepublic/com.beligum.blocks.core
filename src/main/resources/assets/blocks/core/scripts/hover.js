@@ -200,11 +200,11 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
             }
         }
 
-        // if we clicked on the block (or made it look like that) and that block has exactly one property
+        // if we clicked on the block (or made it look like that) and that block has a property (or more) as a direct child
         // it makes sense to fall through and select the element holding that property
         if (clickedElement.is(block.element)) {
-            var directProperties = clickedElement.find('> [property], [data-property]');
-            if (directProperties.length == 1) {
+            var directProperties = clickedElement.find('> [property], > [data-property]');
+            if (directProperties.length > 0) {
                 clickedElement = directProperties;
             }
         }

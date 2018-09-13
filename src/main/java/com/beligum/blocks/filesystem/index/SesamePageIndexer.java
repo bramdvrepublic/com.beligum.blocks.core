@@ -87,47 +87,49 @@ public class SesamePageIndexer implements PageIndexer
     }
     public SailRepository getRDFRepository() throws IOException
     {
-        synchronized (this.repositoryLock) {
-            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
+            synchronized (this.repositoryLock) {
+                if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
 
-                try {
-                    final java.nio.file.Path tsDir = Paths.get(Settings.instance().getPageTripleStoreFolder());
-                    if (!Files.exists(tsDir)) {
-                        Files.createDirectories(tsDir);
+                    try {
+                        final java.nio.file.Path tsDir = Paths.get(Settings.instance().getPageTripleStoreFolder());
+                        if (!Files.exists(tsDir)) {
+                            Files.createDirectories(tsDir);
+                        }
+
+                        //instance the repository for the linked data
+                        final java.nio.file.Path dataDir = tsDir.resolve(DATA_SUBDIR);
+                        if (!Files.exists(dataDir)) {
+                            Files.createDirectories(dataDir);
+                        }
+                        NativeStore dataRepo = new NativeStore(dataDir.toFile());
+
+                        //                    Works, but disabled because we implemented our own (and because we frequently had "AlreadyClosedException, Lucene Index is now corrupt")
+                        //                    //instance the repository for the lucene index
+                        //                    LuceneSail indexRepo = new LuceneSail();
+                        //                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
+                        //                    if (!Files.exists(indexDir)) {
+                        //                        Files.createDirectories(indexDir);
+                        //                    }
+                        //                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, indexDir.toFile().getAbsolutePath());
+                        //                    //link both together
+                        //                    indexRepo.setBaseSail(dataRepo);
+                        //                    build and init the main, wrapped repository
+                        //                    SailRepository mainRepo = new SailRepository(indexRepo);
+
+                        SailRepository mainRepo = new SailRepository(dataRepo);
+                        mainRepo.initialize();
+
+                        R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, mainRepo);
                     }
-
-                    //instance the repository for the linked data
-                    final java.nio.file.Path dataDir = tsDir.resolve(DATA_SUBDIR);
-                    if (!Files.exists(dataDir)) {
-                        Files.createDirectories(dataDir);
+                    catch (RepositoryException e) {
+                        throw new IOException("Error while initializing the sesame page indexer", e);
                     }
-                    NativeStore dataRepo = new NativeStore(dataDir.toFile());
-
-//                    Works, but disabled because we implemented our own (and because we frequently had "AlreadyClosedException, Lucene Index is now corrupt")
-//                    //instance the repository for the lucene index
-//                    LuceneSail indexRepo = new LuceneSail();
-//                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
-//                    if (!Files.exists(indexDir)) {
-//                        Files.createDirectories(indexDir);
-//                    }
-//                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, indexDir.toFile().getAbsolutePath());
-//                    //link both together
-//                    indexRepo.setBaseSail(dataRepo);
-//                    build and init the main, wrapped repository
-//                    SailRepository mainRepo = new SailRepository(indexRepo);
-
-                    SailRepository mainRepo = new SailRepository(dataRepo);
-                    mainRepo.initialize();
-
-                    R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, mainRepo);
-                }
-                catch (RepositoryException e) {
-                    throw new IOException("Error while initializing the sesame page indexer", e);
                 }
             }
-
-            return (SailRepository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
         }
+
+        return (SailRepository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
     }
 
     //-----PROTECTED METHODS-----

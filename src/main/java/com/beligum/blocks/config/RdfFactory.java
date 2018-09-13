@@ -17,10 +17,12 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -76,9 +78,26 @@ public class RdfFactory
 
         return retVal;
     }
+    public static RdfClass getClassForResourceType(String resourceTypeCurieStr)
+    {
+        RdfClass retVal = null;
+
+        if (!StringUtils.isEmpty(resourceTypeCurieStr)) {
+            try {
+                retVal = getClassForResourceType(URI.create(resourceTypeCurieStr));
+            }
+            catch (Exception e) {
+                Logger.debug("Couldn't parse the supplied resource type curie to a valid URI", e);
+            }
+        }
+
+        return retVal;
+    }
     public static RdfClass getClassForResourceType(URI resourceTypeCurie)
     {
-        return (RdfClass) getForResourceType(resourceTypeCurie);
+        RdfResource retVal = getForResourceType(resourceTypeCurie);
+
+        return retVal != null && retVal instanceof RdfClass ? (RdfClass) retVal : null;
     }
     public static RdfResource getForResourceType(URI resourceTypeCurie)
     {

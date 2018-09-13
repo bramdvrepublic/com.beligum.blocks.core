@@ -72,7 +72,7 @@ public class StorageFactory
     private static final Object triplestoreIndexerLock = new Object();
     private static final Object transactionManagerLock = new Object();
     private static final Object xadiskTxManagerLock = new Object();
-    private static final Object txLock = new Object();
+    private static final Object currentThreadTxLock = new Object();
     private static final Object pageStoreFsLock = new Object();
     private static final Object pageViewFsLock = new Object();
 
@@ -216,19 +216,22 @@ public class StorageFactory
 
         if (txCache != null) {
             //Sync this with the release code below
-            if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
-                synchronized (txLock) {
-                    if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
-                        try {
-                            txCache.put(CacheKeys.REQUEST_TRANSACTION, new TX(getTransactionManager()));
-                        }
-                        catch (Exception e) {
-                            throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
-                        }
+            //Note: we lock on the txCache object, otherwise all requests would wait on each other,
+            //      and that's a bit overkill. However, because of how the tx is released in releaseCurrentRequestTx(),
+            //      we might probably improve this behavior in the future by implementing reentrant locking.
+            //      For now, this is probably okay.
+            synchronized (txCache) {
+                if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
+                    try {
+                        txCache.put(CacheKeys.REQUEST_TRANSACTION, new TX(getTransactionManager()));
                     }
-
-                    retVal = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+                    catch (Exception e) {
+                        throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                    }
                 }
+
+                //make sure to include this in the synchronized block or a release might get in the way
+                retVal = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
             }
         }
 
@@ -240,9 +243,9 @@ public class StorageFactory
 
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
-        if (txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
-            synchronized (txLock) {
-                retVal = txCache != null && txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
+        if (txCache != null) {
+            synchronized (txCache) {
+                retVal = txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
             }
         }
 
@@ -258,11 +261,13 @@ public class StorageFactory
 
         //happens when the server hasn't started up yet or we're not in a request context
         if (txCache != null) {
-            TX tx = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+            //sync on the cache object, also see getCurrentRequestTx() for details
+            synchronized (txCache) {
 
-            //don't release anything if no tx is active
-            if (tx != null) {
-                synchronized (txLock) {
+                TX tx = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+
+                //don't release anything if no tx is active
+                if (tx != null) {
                     try {
                         tx.close(forceRollback);
                     }
@@ -294,7 +299,7 @@ public class StorageFactory
      */
     public static TX createCurrentThreadTx(TX.Listener listener, long timeoutMillis) throws IOException
     {
-        synchronized (txLock) {
+        synchronized (currentThreadTxLock) {
             TX retVal = currentThreadTx.get();
 
             if (retVal == null) {
@@ -326,7 +331,7 @@ public class StorageFactory
     }
     public static void releaseCurrentThreadTx(boolean forceRollback) throws IOException
     {
-        synchronized (txLock) {
+        synchronized (currentThreadTxLock) {
             TX transaction = currentThreadTx.get();
 
             if (transaction != null) {

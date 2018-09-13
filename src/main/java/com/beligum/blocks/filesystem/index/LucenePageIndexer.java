@@ -190,63 +190,75 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public synchronized void shutdown()
     {
-        synchronized (this.searcherLock) {
-            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-                IndexSearcher indexSearcher = (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
-                try (IndexReader indexReader = indexSearcher.getIndexReader()) {
-                    indexReader.close();
-                }
-                catch (Exception e) {
-                    Logger.error("Exception caught while closing Lucene reader", e);
-                }
-                finally {
-                    R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+            synchronized (this.searcherLock) {
+                if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+                    IndexSearcher indexSearcher = (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+                    try (IndexReader indexReader = indexSearcher.getIndexReader()) {
+                        indexReader.close();
+                    }
+                    catch (Exception e) {
+                        Logger.error("Exception caught while closing Lucene reader", e);
+                    }
+                    finally {
+                        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
+                    }
                 }
             }
         }
 
-        synchronized (this.writerLock) {
-            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
-                try (IndexWriter indexWriter = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER)) {
-                    indexWriter.close();
-                }
-                catch (Exception e) {
-                    Logger.error("Exception caught while closing Lucene writer", e);
-                }
-                finally {
-                    R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_WRITER);
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+            synchronized (this.writerLock) {
+                if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+                    try (IndexWriter indexWriter = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER)) {
+                        indexWriter.close();
+                    }
+                    catch (Exception e) {
+                        Logger.error("Exception caught while closing Lucene writer", e);
+                    }
+                    finally {
+                        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_WRITER);
+                    }
                 }
             }
         }
     }
     public IndexSearcher getIndexSearcher() throws IOException
     {
-        synchronized (this.searcherLock) {
-            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-                IndexReader indexReader = DirectoryReader.open(FSDirectory.open(this.indexFolder));
-                IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+            synchronized (this.searcherLock) {
+                if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+                    IndexReader indexReader = DirectoryReader.open(FSDirectory.open(this.indexFolder));
+                    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
-                R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
+                    R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
+                }
             }
-
-            return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
         }
+
+        return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
     public IndexWriter getIndexWriter() throws IOException
     {
-        synchronized (this.writerLock) {
-            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
-                R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, buildNewLuceneIndexWriter(this.indexFolder));
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+            synchronized (this.writerLock) {
+                if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+                    R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, buildNewLuceneIndexWriter(this.indexFolder));
+                }
             }
-
-            //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
-            IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
-            if (retVal == null || !retVal.isOpen()) {
-                R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = buildNewLuceneIndexWriter(this.indexFolder));
-            }
-
-            return retVal;
         }
+
+        //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
+        IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
+        if (retVal == null || !retVal.isOpen()) {
+            synchronized (this.writerLock) {
+                if (retVal == null || !retVal.isOpen()) {
+                    R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = buildNewLuceneIndexWriter(this.indexFolder));
+                }
+            }
+        }
+
+        return retVal;
     }
     public void indexChanged()
     {

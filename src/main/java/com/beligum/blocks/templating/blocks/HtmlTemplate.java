@@ -24,6 +24,7 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
@@ -126,7 +127,10 @@ public abstract class HtmlTemplate
     protected Iterable<Element> externalStyleElements;
     protected MetaDisplayType displayType;
     protected Element rootElement;
+    protected Set<String> disabledTemplates;
     protected List<SubstitionReference> normalizationSubstitutions;
+
+    protected List<HtmlRdfPropertyRef> rdfPropertyRefs;
 
     //this will enable us to save the 'inheritance tree'
     protected HtmlTemplate superTemplate;
@@ -251,6 +255,9 @@ public abstract class HtmlTemplate
         //once we have the final html saved, we'll parse it again to mark the template variables for normalization,
         // calculate a standardized version for comparison, etc.
         this.parseHtml();
+
+        //by default, this template is not disabled inside any page template
+        this.disabledTemplates = new LinkedHashSet<>();
     }
 
     //-----PUBLIC STATIC METHODS-----
@@ -648,6 +655,18 @@ public abstract class HtmlTemplate
     {
         return this.normalizationSubstitutions;
     }
+    public void addDisabledTemplate(String templateName)
+    {
+        this.disabledTemplates.add(templateName);
+    }
+    public void addDisabledTemplates(Collection<String> templateNames)
+    {
+        this.disabledTemplates.addAll(templateNames);
+    }
+    public boolean isDisabledForTemplate(String templateName)
+    {
+        return this.disabledTemplates.contains(templateName);
+    }
 
     //-----PROTECTED METHODS-----
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
@@ -952,7 +971,7 @@ public abstract class HtmlTemplate
     /**
      * Post-parse the html of this template to save variable selectors, standardize html, etc.
      */
-    private void parseHtml()
+    private void parseHtml() throws Exception
     {
         //Note that JSoup wraps all html in a <html><head></head><body></body>[inserted]</html> container...
         Document templateHtml = Jsoup.parseBodyFragment(this.createNewHtmlInstance(true).toString());
@@ -991,7 +1010,7 @@ public abstract class HtmlTemplate
 
             //(4) check if the element is a template
             //Note that we can't use isTemplateInstanceTag() here because this is called
-            //*during* template caching building, so we'll add a semi-check and postpone
+            //*during* template cache building, so we'll add a semi-check and postpone
             //to the parsing in the substitution
             if (e.tagName().contains("-")) {
                 phase2.add(new CollapseTemplateInstance(this.cssSelector(e), e));
@@ -999,6 +1018,47 @@ public abstract class HtmlTemplate
         }
         //now add all phase 2 substitutions at the end of the existing list so we're sure they're executed after phase 1
         this.normalizationSubstitutions.addAll(phase2);
+
+
+        /*
+        // This is a bit stupid to iterate the DOM another time, but the written Jericho code to detect RDF properties
+        // doens't match the JSoup API above, so I've chosen the quick way out and re-used existing code to re-iterate
+        // TODO: not done yet, needs more work and more thinking through...
+        this.rdfPropertyRefs = new ArrayList<>();
+        Element renderedRootElement = this.getRootElement();
+
+        //this will hold the RDF context while we parse our html elements
+        HtmlRdfContext rdfContext = new HtmlRdfContext(HtmlRdfContext.getDefaultRdfVocab());
+
+        //initialize the context with the root element attributes
+        rdfContext.updateContext(renderedRootElement.getStartTag());
+
+        for (Iterator<Segment> nodeIterator = renderedRootElement.getNodeIterator(); nodeIterator.hasNext(); ) {
+            Segment nodeSegment = nodeIterator.next();
+            if (nodeSegment instanceof StartTag) {
+                StartTag startTag = (StartTag) nodeSegment;
+
+                Attributes attributes = startTag.getAttributes();
+                if (attributes != null) {
+
+                    rdfContext.updateContext(startTag);
+
+                    Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
+                    if (propertyAttr != null) {
+                        String rawPropValue = propertyAttr.getValue().trim();
+                        String renderedPropValue = R.resourceManager().newTemplate(new StringSource(rawPropValue, MimeTypes.HTML, R.i18n().getOptimalLocale())).render();
+                        String normalizedPropValue = rdfContext.normalizeProperty(startTag, renderedPropValue);
+
+                        this.rdfPropertyRefs.add(new HtmlRdfPropertyRef(startTag, normalizedPropValue));
+                    }
+                }
+            }
+            else if (nodeSegment instanceof EndTag) {
+                EndTag endTag = (EndTag) nodeSegment;
+                rdfContext.updateContext(endTag);
+            }
+        }
+        */
     }
     /**
      * This is the exact same code as org.jsoup.nodes.Element.cssSelector() but with the id and classes commented out

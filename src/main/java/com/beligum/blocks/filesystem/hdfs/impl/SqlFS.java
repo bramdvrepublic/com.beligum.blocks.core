@@ -783,42 +783,46 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
     {
         if (this.closeGuard.compareAndSet(false, true)) {
 
-            synchronized (this.cachedRoConnectionLock) {
-                if (this.cachedRoConnection != null) {
-                    try {
-                        if (this.cachedRoConnection instanceof AlwaysOpenConnection) {
-                            Logger.info("Closing ro connection of SqlFS");
-                            ((AlwaysOpenConnection) this.cachedRoConnection).forceClose();
+            if (this.cachedRoConnection != null) {
+                synchronized (this.cachedRoConnectionLock) {
+                    if (this.cachedRoConnection != null) {
+                        try {
+                            if (this.cachedRoConnection instanceof AlwaysOpenConnection) {
+                                Logger.info("Closing ro connection of SqlFS");
+                                ((AlwaysOpenConnection) this.cachedRoConnection).forceClose();
+                            }
+                            else {
+                                this.cachedRoConnection.close();
+                            }
                         }
-                        else {
-                            this.cachedRoConnection.close();
+                        catch (SQLException e) {
+                            Logger.error("Error while closing the cached ro connection;", e);
                         }
-                    }
-                    catch (SQLException e) {
-                        Logger.error("Error while closing the cached ro connection;", e);
-                    }
-                    finally {
-                        this.cachedRoConnection = null;
+                        finally {
+                            this.cachedRoConnection = null;
+                        }
                     }
                 }
             }
 
-            synchronized (this.cachedRwConnectionLock) {
-                if (this.cachedRwConnection != null) {
-                    try {
-                        if (this.cachedRwConnection instanceof AlwaysOpenConnection) {
-                            Logger.info("Closing rw connection of SqlFS");
-                            ((AlwaysOpenConnection) this.cachedRwConnection).forceClose();
+            if (this.cachedRwConnection != null) {
+                synchronized (this.cachedRwConnectionLock) {
+                    if (this.cachedRwConnection != null) {
+                        try {
+                            if (this.cachedRwConnection instanceof AlwaysOpenConnection) {
+                                Logger.info("Closing rw connection of SqlFS");
+                                ((AlwaysOpenConnection) this.cachedRwConnection).forceClose();
+                            }
+                            else {
+                                this.cachedRwConnection.close();
+                            }
                         }
-                        else {
-                            this.cachedRwConnection.close();
+                        catch (SQLException e) {
+                            Logger.error("Error while closing the cached rw connection;", e);
                         }
-                    }
-                    catch (SQLException e) {
-                        Logger.error("Error while closing the cached rw connection;", e);
-                    }
-                    finally {
-                        this.cachedRwConnection = null;
+                        finally {
+                            this.cachedRwConnection = null;
+                        }
                     }
                 }
             }

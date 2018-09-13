@@ -27,13 +27,12 @@
                             #foreach($template in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES])
                                 <a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_PARAM=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])"
                                    class="list-group-item">
-                                ## Note: we need the extra evaluate to support dynamic titles (eg. $MESSAGES.bla.bla)
                                     <div class="preview">
-                                        <i class="fa #if($template.icon)#evaluate($template.icon)#{else}fa-list-alt#end"></i>
+                                        <i class="fa #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
                                     </div>
                                     <div class="caption">
-                                        <span class="title">#evaluate($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TITLE])</span>
-                                        <span class="description">#evaluate($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_DESCRIPTION])</span>
+                                        <span class="title">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TITLE]</span>
+                                        <span class="description">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_DESCRIPTION]</span>
                                     </div>
                                 </a>
                             #end

@@ -154,6 +154,17 @@ public abstract class PageSource extends AbstractSource implements Source
         return uriBuilder.build();
     }
     /**
+     * Same as method above, but with the raw values in a MultivaluedMap that are to be transferred (or not) to a uriBuilder
+     */
+    public static void transferCleanedQueryParams(UriBuilder uriBuilder, MultivaluedMap<String, String> queryParams)
+    {
+        for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
+            if (SUPPORTED_QUERY_PARAMS.contains(param.getKey())) {
+                uriBuilder.replaceQueryParam(param.getKey(), param.getValue());
+            }
+        }
+    }
+    /**
      * Note that by default this will return _X_HTML
      */
     @Override

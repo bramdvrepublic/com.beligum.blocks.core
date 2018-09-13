@@ -26,6 +26,7 @@ import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
@@ -204,7 +205,37 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
         //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
         Sort sort = null;
         if (sortField != null) {
-            sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortReversed));
+            SortField.Type luceneSortField = SortField.Type.STRING;
+
+            //TODO this doesn't work yet because we index everything as a string
+//            if (sortField.getDataType().equals(XSD.INT)
+//             || sortField.getDataType().equals(XSD.INTEGER)
+//             || sortField.getDataType().equals(XSD.NEGATIVE_INTEGER)
+//             || sortField.getDataType().equals(XSD.UNSIGNED_INT)
+//             || sortField.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
+//             || sortField.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
+//             || sortField.getDataType().equals(XSD.POSITIVE_INTEGER)
+//             || sortField.getDataType().equals(XSD.SHORT)
+//             || sortField.getDataType().equals(XSD.UNSIGNED_SHORT)
+//             || sortField.getDataType().equals(XSD.BYTE)
+//             || sortField.getDataType().equals(XSD.UNSIGNED_BYTE)) {
+//                luceneSortField = SortField.Type.INT;
+//            }
+//            else if (sortField.getDataType().equals(XSD.LONG)
+//            || sortField.getDataType().equals(XSD.UNSIGNED_LONG)) {
+//                luceneSortField = SortField.Type.LONG;
+//            }
+//            else if (sortField.getDataType().equals(XSD.FLOAT)) {
+//                luceneSortField = SortField.Type.FLOAT;
+//            }
+//            else if (sortField.getDataType().equals(XSD.DOUBLE)
+//                     //this is doubtful, but let's take the largest one
+//                     // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
+//                     || sortField.getDataType().equals(XSD.DECIMAL)) {
+//                luceneSortField = SortField.Type.DOUBLE;
+//            }
+
+            sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), luceneSortField, sortReversed));
 
             //found this here, I suppose we need to call this to allow very specific sort fields?
             //  https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/HEAD/root/projects/solr4/source/java/org/alfresco/solr/query/AlfrescoReRankQParserPlugin.java

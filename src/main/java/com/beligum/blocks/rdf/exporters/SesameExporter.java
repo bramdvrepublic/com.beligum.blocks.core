@@ -52,7 +52,7 @@ public class SesameExporter extends AbstractExporter
             writer.startRDF();
 
             //export the namespaces as well
-            for (Namespace nextNamespace : ((Model)model).getNamespaces()) {
+            for (Namespace nextNamespace : model.getNamespaces()) {
                 writer.handleNamespace(nextNamespace.getPrefix(), nextNamespace.getName());
             }
 
@@ -73,10 +73,16 @@ public class SesameExporter extends AbstractExporter
     private RDFFormat translateFormat(Format exportFormat) throws IOException
     {
         switch (exportFormat) {
-            case JSONLD:
-                return RDFFormat.JSONLD;
             case NTRIPLES:
                 return RDFFormat.NTRIPLES;
+            case RDF_XML:
+                return RDFFormat.RDFXML;
+            case JSONLD:
+                return RDFFormat.JSONLD;
+            case TURTLE:
+                return RDFFormat.TURTLE;
+            case N3:
+                return RDFFormat.N3;
             default:
                 throw new IOException("Unsupported exporter format detected; "+exportFormat);
         }

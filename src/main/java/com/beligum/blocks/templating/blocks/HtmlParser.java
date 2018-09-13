@@ -30,6 +30,7 @@ import com.beligum.blocks.templating.blocks.directives.ResourceUriDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
+import gen.com.beligum.blocks.core.constants.blocks.core;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -71,7 +72,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     public static final String HTML_ROOT_ELEM = "html";
     public static final String WEBCOMPONENTS_TEMPLATE_ELEM = "template";
     //the prefix data- makes sure we're W3C compliant
-    public static final String HTML_ROOT_TEMPLATE_ATTR = "data-template";
+    public static final String HTML_ROOT_TEMPLATE_ATTR = core.Entries.HTML_ROOT_TEMPLATE_ATTR.getValue();
     public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
 
     //used this: http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value

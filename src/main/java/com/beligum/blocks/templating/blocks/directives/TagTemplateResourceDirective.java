@@ -20,6 +20,7 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.templating.blocks.TemplateResources;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -72,18 +73,19 @@ public class TagTemplateResourceDirective extends Directive
                 boolean added = false;
                 String element = TagTemplateDirectiveUtils.readValue(context, node);
 
+                TemplateResources contextResources = TemplateResourcesDirective.getContextResources(context);
                 switch (type) {
                     case inlineStyles:
-                        added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(element, (StringWriter) writer, print, joinHint, enableDynamicFingerprinting);
+                        added = contextResources.addInlineStyle(element, (StringWriter) writer, print, joinHint, enableDynamicFingerprinting);
                         break;
                     case externalStyles:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(element, (StringWriter) writer, urlArgument, print, joinHint, enableDynamicFingerprinting);
+                        added = contextResources.addExternalStyle(element, (StringWriter) writer, urlArgument, print, joinHint, enableDynamicFingerprinting);
                         break;
                     case inlineScripts:
-                        added = TemplateResourcesDirective.getContextResources(context).addInlineScript(element, (StringWriter) writer, print, joinHint, enableDynamicFingerprinting);
+                        added = contextResources.addInlineScript(element, (StringWriter) writer, print, joinHint, enableDynamicFingerprinting);
                         break;
                     case externalScripts:
-                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(element, (StringWriter) writer, urlArgument, print, joinHint, enableDynamicFingerprinting);
+                        added = contextResources.addExternalScript(element, (StringWriter) writer, urlArgument, print, joinHint, enableDynamicFingerprinting);
                         break;
                     default:
                         throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");

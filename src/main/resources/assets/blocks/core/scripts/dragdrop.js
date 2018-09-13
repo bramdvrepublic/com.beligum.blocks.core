@@ -96,7 +96,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         }
         //we're dragging a new block
         else if (currentDraggedBlock == null) {
-            dragging = true
+            dragging = true;
             Hover.getFocusedBlock().createAllDropspots();
             Hover.removeResizeHandles();
             createDropPointerElement();
@@ -243,7 +243,20 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 var boxDialog;
                 //Note: the inner div will be replaced when the new load() content comes in
                 var box = $('<div><div style="padding: 20px;">' + BlocksMessages.newBlockLoading + '</div></div>');
-                box.load(BlocksConstants.GET_BLOCKS_ENDPOINT, function (response, status, xhr)
+
+                var html = $('html');
+                var endpointUrlParams = '';
+                var currentTypeof = html.attr('typeof');
+                if (currentTypeof) {
+                    endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
+                    endpointUrlParams += BlocksConstants.GET_BLOCKS_TYPEOF_PARAM + '=' + encodeURIComponent(currentTypeof);
+                }
+                var pageTemplate = html.attr(BlocksConstants.HTML_ROOT_TEMPLATE_ATTR);
+                if (pageTemplate) {
+                    endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
+                    endpointUrlParams += BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM + '=' + encodeURIComponent(pageTemplate);
+                }
+                box.load(BlocksConstants.GET_BLOCKS_ENDPOINT + endpointUrlParams, function (response, status, xhr)
                 {
                     if (status == "error") {
                         Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);

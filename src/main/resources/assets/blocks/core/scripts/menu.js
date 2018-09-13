@@ -435,6 +435,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         //clear special classes for disabling selection of text when the sidebar is open (will be reset later)
         DOM.enableTextSelection();
+        //same reason as above; make sure this doesn't get saved accidentally
+        DOM.enableContextMenu();
 
         //create a new node out of the full page html
         var savePage = $("html").clone();

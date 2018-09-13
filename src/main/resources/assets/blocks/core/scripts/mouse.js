@@ -206,6 +206,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (active) {
             // check for left mouse click
             if (event.which == 1) {
+
                 var creatingNew = false;
 
                 // this variable will more or less controls if we're dragging a new block or not,
@@ -225,6 +226,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 }
 
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
+                //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button
+                // and because of this class being activated, the mouseUp event is never received...
                 $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 //we're attempting to dnd an existing block
@@ -390,7 +393,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         var s, t;
         s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-        t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+        t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
 
         if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
             // Collision detected

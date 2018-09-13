@@ -19,31 +19,63 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by bram on 2/20/16.
  */
 public enum Format
 {
     //-----CONSTANTS-----
-    RDFA(MimeTypes.HTML),
-    JSONLD(MimeTypes.JSONLD),
-    RDF_XML(MimeTypes.RDF_XML),
-    NTRIPLES(MimeTypes.NTRIPLES)
+    RDFA(MimeTypes.HTML, MimeTypes.HTML),
+    JSONLD(MimeTypes.JSONLD, MimeTypes.JSON),
+    RDF_XML(MimeTypes.RDF_XML, MimeTypes.XML),
+    NTRIPLES(MimeTypes.NTRIPLES, MimeTypes.PLAINTEXT),
+    TURTLE(MimeTypes.TURTLE, MimeTypes.PLAINTEXT),
+    N3(MimeTypes.N3, MimeTypes.PLAINTEXT),
     ;
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
+    /**
+     * This is the mime type that designates this RDF format
+     */
     private final MimeType mimeType;
-    Format(MimeType mimeType)
+
+    /**
+     * This is the mime type that the real serialization of data uses
+     */
+    private final MimeType contentType;
+
+    private static Map<String, Format> mimeTypeMap;
+
+    Format(MimeType mimeType, MimeType contentType)
     {
         this.mimeType = mimeType;
+        this.contentType = contentType;
     }
 
     //-----PUBLIC METHODS-----
     public MimeType getMimeType()
     {
         return mimeType;
+    }
+    public MimeType getContentType()
+    {
+        return contentType;
+    }
+    public static Format fromMimeType(String mimeType)
+    {
+        if (mimeTypeMap == null) {
+            mimeTypeMap = new HashMap<>();
+            for (Format f : Format.values()) {
+                mimeTypeMap.put(f.getMimeType().toString(), f);
+            }
+        }
+
+        return mimeTypeMap.get(mimeType);
     }
 
     //-----PROTECTED METHODS-----
