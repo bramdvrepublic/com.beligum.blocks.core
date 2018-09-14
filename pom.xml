@@ -27,7 +27,7 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
-    <version>0.4.9-SNAPSHOT</version>
+    <version>0.5.0</version>
     <packaging>jar</packaging>
 
     <url>http://www.beligum.com</url>
@@ -61,12 +61,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.5.5-SNAPSHOT</version>
+            <version>0.6.0</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.3.2-SNAPSHOT</version>
+            <version>0.4.0</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
