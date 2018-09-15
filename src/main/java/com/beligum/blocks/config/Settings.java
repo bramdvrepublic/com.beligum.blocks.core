@@ -43,9 +43,15 @@ public class Settings
 {
     public static final String RESOURCE_ENDPOINT = "/resource/";
 
-    private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
-    private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
-    private static final String TRANSACTION_TIMEOUT_KEY = "blocks.core.transactions.timeout";
+    private static final String COMMON_PREFIX = "blocks.core";
+    private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
+    private static final String RDF_PREFIX = COMMON_PREFIX + ".rdf";
+    private static final String ONTOLOGY_PREFIX = RDF_PREFIX + ".ontology";
+
+    private static final String TRANSACTIONS_PROPERTIES_KEY = COMMON_PREFIX + ".transactions.properties.property";
+    private static final String TRANSACTION_MANAGER_KEY = COMMON_PREFIX + ".transactions.transaction-manager";
+    private static final String TRANSACTION_TIMEOUT_KEY = COMMON_PREFIX + ".transactions.timeout";
+
     //one minute; this is the same values as the default of bitronix.tm.timer.defaultTransactionTimeout
     private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 60 * 1000;//1 minute
     private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder().build();
@@ -54,7 +60,7 @@ public class Settings
     //this constant wil be used from the blocks-media module, but is defined here to group the subdirs together a little bit...
     public static final String CONTEXT_DEFAULT_MEDIA_DIR = "media";
 
-    private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
+    private static final String PAGES_HDFS_PROPERTIES_KEY = PAGES_PREFIX + ".hdfs.properties.property";
     private static final String PAGES_DEFAULT_FILE_EXT = ".html";
     private static final String PAGES_DEFAULT_LOCK_FILE_EXT = ".lock";
     private static final String PAGES_DEFAULT_INDEX_FOLDER = "index";
@@ -99,16 +105,7 @@ public class Settings
     }
     public boolean hasBlocksCoreConfig()
     {
-        return R.configuration().getMaxIndex("blocks.core") >= 0;
-    }
-    /**
-     * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
-     * If true, a redirect to the /def-lang/... is forced, otherwise, the language of the browser is first tried to see
-     * if it's supported by this site's languages.
-     */
-    public boolean getForceRedirectToDefaultLocale()
-    {
-        return R.configuration().getBoolean("blocks.core.pages.force-default-locale", false);
+        return R.configuration().getMaxIndex(COMMON_PREFIX) >= 0;
     }
     public Class<? extends TransactionManager> getTransactionManagerClass()
     {
@@ -155,7 +152,7 @@ public class Settings
     public boolean getDeleteLocksOnStartup()
     {
         if (this.cachedDeleteLocksOnStartup == null) {
-            this.cachedDeleteLocksOnStartup = R.configuration().getBoolean("blocks.core.resources.delete-locks-on-startup", true);
+            this.cachedDeleteLocksOnStartup = R.configuration().getBoolean(COMMON_PREFIX + ".resources.delete-locks-on-startup", true);
         }
 
         return this.cachedDeleteLocksOnStartup;
@@ -185,16 +182,16 @@ public class Settings
     }
     public String getPagesFileSystemScheme()
     {
-        return R.configuration().getString("blocks.core.pages.filesystem", null);
+        return R.configuration().getString(PAGES_PREFIX + ".filesystem", null);
     }
     public String getPagesReadOnlyFileSystemScheme()
     {
-        return R.configuration().getString("blocks.core.pages.filesystem-ro", null);
+        return R.configuration().getString(PAGES_PREFIX + ".filesystem-ro", null);
     }
     public URI getPagesStoreUri()
     {
         if (this.cachedPagesStorePath == null) {
-            String dir = R.configuration().getString("blocks.core.pages.store-path");
+            String dir = R.configuration().getString(PAGES_PREFIX + ".store-path");
 
             if (!StringUtils.isEmpty(dir)) {
                 Logger.warn("Using custom pages data dir; " + dir);
@@ -222,7 +219,7 @@ public class Settings
     public URI getPagesViewUri()
     {
         if (this.cachedPagesViewPath == null) {
-            String dir = R.configuration().getString("blocks.core.pages.view-path", null);
+            String dir = R.configuration().getString(PAGES_PREFIX + ".view-path", null);
 
             if (!StringUtils.isEmpty(dir)) {
                 Logger.warn("Using custom pages view path; " + dir);
@@ -247,7 +244,7 @@ public class Settings
     public URI getPagesStoreJournalDir()
     {
         if (this.cachedPagesStoreJournalDir == null) {
-            String dir = R.configuration().getString("blocks.core.pages.journal-dir", null);
+            String dir = R.configuration().getString(PAGES_PREFIX + ".journal-dir", null);
 
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
             if (dir != null) {
@@ -270,7 +267,7 @@ public class Settings
     public URI getPageMainIndexFolder()
     {
         if (this.cachedPagesMainIndexDir == null) {
-            String dir = R.configuration().getString("blocks.core.pages.main-index.dir", null);
+            String dir = R.configuration().getString(PAGES_PREFIX + ".main-index.dir", null);
 
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
             if (dir != null) {
@@ -293,7 +290,7 @@ public class Settings
     public URI getPageTripleStoreFolder()
     {
         if (this.cachedPagesTripleStoreDir == null) {
-            String dir = R.configuration().getString("blocks.core.pages.triple-store.dir", null);
+            String dir = R.configuration().getString(PAGES_PREFIX + ".triple-store.dir", null);
 
             if (dir != null) {
                 Logger.warn("Using custom pages triple store dir; " + dir);
@@ -314,11 +311,11 @@ public class Settings
     }
     public String getPagesStoreJournalId()
     {
-        return R.configuration().getString("blocks.core.pages.journal-id", DEFAULT_XADISK_INSTANCE_ID);
+        return R.configuration().getString(PAGES_PREFIX + ".journal-id", DEFAULT_XADISK_INSTANCE_ID);
     }
     public long getPagesStoreJournalBootTimeout()
     {
-        return R.configuration().getLong("blocks.core.pages.journal-boot-timeout", DEFAULT_XADISK_BOOT_TIMEOUT);
+        return R.configuration().getLong(PAGES_PREFIX + ".journal-boot-timeout", DEFAULT_XADISK_BOOT_TIMEOUT);
     }
     public Map<String, String> getPagesHdfsProperties()
     {
@@ -338,7 +335,7 @@ public class Settings
     public String getPagesFileExtension()
     {
         if (this.cachedPagesFileExtension == null) {
-            this.cachedPagesFileExtension = R.configuration().getString("blocks.core.pages.file-ext", PAGES_DEFAULT_FILE_EXT);
+            this.cachedPagesFileExtension = R.configuration().getString(PAGES_PREFIX + ".file-ext", PAGES_DEFAULT_FILE_EXT);
         }
 
         return this.cachedPagesFileExtension;
@@ -349,15 +346,24 @@ public class Settings
     public String getPagesLockFileExtension()
     {
         if (this.cachedPagesLockFileExtension == null) {
-            this.cachedPagesLockFileExtension = R.configuration().getString("blocks.core.pages.lock-file-ext", PAGES_DEFAULT_LOCK_FILE_EXT);
+            this.cachedPagesLockFileExtension = R.configuration().getString(PAGES_PREFIX + ".lock-file-ext", PAGES_DEFAULT_LOCK_FILE_EXT);
         }
 
         return this.cachedPagesLockFileExtension;
     }
+    /**
+     * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
+     * If true, a redirect to the /def-lang/... is forced, otherwise, the language of the browser is first tried to see
+     * if it's supported by this site's languages.
+     */
+    public boolean getForceRedirectToDefaultLocale()
+    {
+        return R.configuration().getBoolean(PAGES_PREFIX + ".force-default-locale", false);
+    }
     public URI getRdfOntologyUri()
     {
         if (!this.triedRdfOntologyUri) {
-            String uri = R.configuration().getString("blocks.core.rdf.ontology.uri");
+            String uri = R.configuration().getString(ONTOLOGY_PREFIX + ".uri");
             if (!StringUtils.isEmpty(uri)) {
                 try {
                     this.cachedRdfOntologyUri = URI.create(uri);
@@ -373,7 +379,7 @@ public class Settings
     }
     public String getRdfOntologyPrefix()
     {
-        return R.configuration().getString("blocks.core.rdf.ontology.prefix");
+        return R.configuration().getString(ONTOLOGY_PREFIX + ".prefix");
     }
 
     //-----PRIVATE METHODS-----

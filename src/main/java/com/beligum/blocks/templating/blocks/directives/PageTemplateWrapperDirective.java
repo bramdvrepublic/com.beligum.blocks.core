@@ -208,7 +208,11 @@ public class PageTemplateWrapperDirective extends Directive
 
                         //for now, we don't register inline styles/scripts, but before we start a new pack,
                         // we need to output any saved up assets here to maintain correct order
-                        this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
+                        // Note that the asset pack can be empty, in which case we would register an empty URL
+                        //that will throw an error later on
+                        if (!currentAssetPack.isEmpty()) {
+                            this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
+                        }
                         //reset the hash
                         hash = R.fingerprintHash();
                         lastType = res.getType();
@@ -223,7 +227,9 @@ public class PageTemplateWrapperDirective extends Directive
 
                         //we only join consecutive types; break, register and reset if we encounter a non-consecutive type
                         if (!lastType.equals(res.getType())) {
-                            this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
+                            if (!currentAssetPack.isEmpty()) {
+                                this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
+                            }
 
                             //reset the hash
                             hash = R.fingerprintHash();
