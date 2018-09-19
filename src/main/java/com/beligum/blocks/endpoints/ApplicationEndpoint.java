@@ -60,11 +60,18 @@ public class ApplicationEndpoint
 
         //if we need to redirect away, send a 303
         if (requestRouter.needsRedirection() && requestRouter.getTargetUri() != null) {
+
             retVal = Response.seeOther(requestRouter.getTargetUri());
 
             //if we're redirecting straight away, but we have some entities in the flash cache, we'll propagate them again,
             //otherwise we would lose eg. feedback messages (eg. when a successful login redirects automatically from "/" to "/en/")
             R.cacheManager().getFlashCache().resurrect();
+        }
+        //if we got a valid RDF type query parameter, return RDF instead,
+        //but if RDFA was requested (it's also in the supported formats), keep on serving html
+        else if (requestRouter.getTargetRdfType() != null && !requestRouter.getTargetRdfType().equals(Format.RDFA)) {
+
+            retVal = Response.ok(new PageRdfResource(requestRouter.getRequestedPage(), requestRouter.getTargetRdfType()));
         }
         //if we found a page, create the template and check if we have permission to edit it
         else if (requestRouter.getRequestedPage() != null) {
@@ -85,6 +92,7 @@ public class ApplicationEndpoint
     }
     @GET
     @Path("/{path:.*}")
+    //Sync this with com.beligum.blocks.rdf.ifaces.Format
     @Produces({ "application/rdf+xml",
                 "application/n-triples",
                 "application/ld+json",
@@ -92,7 +100,7 @@ public class ApplicationEndpoint
                 "text/n3",
               }
     )
-    public Response getNTriples(@PathParam("path") String rawPath)
+    public Response getPageRdf(@PathParam("path") String rawPath, @HeaderParam(HttpHeaders.ACCEPT) String acceptHeader)
     {
         RequestRouter requestRouter = new RequestRouter();
 
@@ -106,18 +114,21 @@ public class ApplicationEndpoint
         }
         else {
             if (requestRouter.getRequestedPage() != null) {
-                //having a page is not enough, the requested RDF format (mime type) needs to be
-                //supported as well, so we'll iterate all acceptable media types and try to convert them
-                //to supported RDF formats, stopping once we found one that matches
-                Format rdfFormat = null;
-                for (MediaType m : R.requestContext().getJaxRsRequest().getAcceptableMediaTypes()) {
-                    //note that we strip the possible parameters and charset from the media type
-                    //and reconstruct the mimetype from its parts so the match is as broad as possible
-                    rdfFormat = Format.fromMimeType(m.getType() + "/" + m.getSubtype());
-                    if (rdfFormat != null) {
-                        break;
-                    }
-                }
+
+                Format rdfFormat = Format.fromMimeType(acceptHeader);
+
+                //this is the old version, before the header was added to the method definition
+                //                //having a page is not enough, the requested RDF format (mime type) needs to be
+                //                //supported as well, so we'll iterate all acceptable media types and try to convert them
+                //                //to supported RDF formats, stopping once we found one that matches
+                //                for (MediaType m : R.requestContext().getJaxRsRequest().getAcceptableMediaTypes()) {
+                //                    //note that we strip the possible parameters and charset from the media type
+                //                    //and reconstruct the mimetype from its parts so the match is as broad as possible
+                //                    rdfFormat = Format.fromMimeType(m.getType() + "/" + m.getSubtype());
+                //                    if (rdfFormat != null) {
+                //                        break;
+                //                    }
+                //                }
 
                 if (rdfFormat != null) {
                     retVal = Response.ok(new PageRdfResource(requestRouter.getRequestedPage(), rdfFormat));

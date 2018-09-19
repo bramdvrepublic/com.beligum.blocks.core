@@ -19,6 +19,7 @@ package com.beligum.blocks.rdf.sources;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
@@ -36,6 +37,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 import org.jsoup.select.Elements;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import java.io.*;
@@ -74,7 +76,8 @@ public abstract class PageSource extends AbstractSource implements Source
      * All other ones will be removed from the URI during postparse.
      */
     public static final Set<String> SUPPORTED_QUERY_PARAMS = Sets.newHashSet(
-                    I18nFactory.LANG_QUERY_PARAM
+                    I18nFactory.LANG_QUERY_PARAM,
+                    ResourceRequest.TYPE_QUERY_PARAM
     );
 
     //-----VARIABLES-----
@@ -154,15 +157,21 @@ public abstract class PageSource extends AbstractSource implements Source
         return uriBuilder.build();
     }
     /**
-     * Same as method above, but with the raw values in a MultivaluedMap that are to be transferred (or not) to a uriBuilder
+     * Same as method above, but with the raw values in a MultivaluedMap that are to be transferred (or not) to a uriBuilder.
+     * The cleaned query params are also returned in a MultivaluedMap
      */
-    public static void transferCleanedQueryParams(UriBuilder uriBuilder, MultivaluedMap<String, String> queryParams)
+    public static MultivaluedMap<String, String> transferCleanedQueryParams(UriBuilder uriBuilder, MultivaluedMap<String, String> queryParams)
     {
+        MultivaluedMap<String, String> retVal = new MultivaluedHashMap<>();
+
         for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
             if (SUPPORTED_QUERY_PARAMS.contains(param.getKey())) {
-                uriBuilder.replaceQueryParam(param.getKey(), param.getValue());
+                uriBuilder.replaceQueryParam(param.getKey(), param.getValue().toArray());
+                retVal.addAll(param.getKey(), param.getValue());
             }
         }
+
+        return retVal;
     }
     /**
      * Note that by default this will return _X_HTML

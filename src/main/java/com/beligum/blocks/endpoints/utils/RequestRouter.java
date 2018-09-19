@@ -2,11 +2,13 @@ package com.beligum.blocks.endpoints.utils;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
@@ -17,6 +19,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.rdf.sources.PageSourceCopy;
@@ -30,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.new_page;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Term;
@@ -47,6 +51,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.*;
 
 /**
@@ -92,9 +97,19 @@ public class RequestRouter
     private URI requestedUri;
 
     /**
+     * The requested query parameters that are acceptable
+     */
+    private MultivaluedMap<String, String> queryParameters;
+
+    /**
      * The target URI this request resolved to (might need a redirection)
      */
     private URI targetUri;
+
+    /**
+     * The translation of a possible type query parameter to a (supported) RDF format or null if not present/supported.
+     */
+    private Format rdfType;
 
     /**
      * The RDF resource information, extracted from the requested URI
@@ -150,6 +165,7 @@ public class RequestRouter
         // --- The basic steps
         this.doRequestUriCleaning();
         this.doRdfResourceDetection();
+        this.doRdfTypeDetection();
         this.doResolvePage();
 
         // --- The additional edge cases
@@ -182,6 +198,10 @@ public class RequestRouter
     public URI getTargetUri()
     {
         return this.targetUri;
+    }
+    public Format getTargetRdfType()
+    {
+        return this.rdfType;
     }
     public Page getRequestedPage()
     {
@@ -233,9 +253,28 @@ public class RequestRouter
             //Note: the reason this works while creating a page (eg. the page_url and page_class_name query params),
             //      is because that callback is caught by the /admin/page/template endpoint and those parameters
             //      are in the flash cache once this request comes in.
-            PageSource.transferCleanedQueryParams(uriBuilder, R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
+            this.queryParameters = PageSource.transferCleanedQueryParams(uriBuilder, R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
 
             this.requestedUri = uriBuilder.build();
+        }
+    }
+    /**
+     * Check if a type query parameter was passed, so we need to redirect away to a supporting
+     * method.
+     */
+    private void doRdfTypeDetection()
+    {
+        if (this.assertUnfinished()) {
+            if (this.queryParameters.containsKey(ResourceRequest.TYPE_QUERY_PARAM)) {
+                //let's check if the passed type is a supported RDF type
+                Format rdfFormat = Format.fromMimeType(this.queryParameters.getFirst(ResourceRequest.TYPE_QUERY_PARAM));
+                if (rdfFormat != null) {
+                    this.rdfType = rdfFormat;
+                    //Important: don't do this because it would cache this rdf version as the regular page
+                    //remove the type from the requested URI now we've saved it
+                    //this.requestedUri = UriBuilder.fromUri(this.requestedUri).replaceQueryParam(ResourceRequest.TYPE_QUERY_PARAM, null).build();
+                }
+            }
         }
     }
     /**

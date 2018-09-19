@@ -25,8 +25,7 @@
                             <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
                         #else
                             #foreach($template in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES])
-                                <a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_PARAM=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])"
-                                   class="list-group-item">
+                                <a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_PARAM=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
                                     <div class="preview">
                                         <i class="fa #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
                                     </div>
