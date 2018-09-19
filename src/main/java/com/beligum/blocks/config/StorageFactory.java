@@ -20,8 +20,12 @@ import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.resource.ResourceRegistrar;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.cache.Cache;
+import com.beligum.base.cache.CacheBiFunction;
+import com.beligum.base.cache.CacheFunction;
 import com.beligum.base.cache.CacheKey;
+import com.beligum.base.resources.ifaces.AutoLock;
 import com.beligum.base.server.R;
+import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
@@ -40,6 +44,7 @@ import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
+import org.glassfish.jersey.server.monitoring.RequestEvent;
 import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
@@ -47,6 +52,7 @@ import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
 import javax.transaction.TransactionManager;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -68,13 +74,7 @@ public class StorageFactory
     public static final HdfsImplDef DEFAULT_PAGES_VIEW_FILESYSTEM = FileSystems.LOCAL_RO_CHROOT;
 
     //-----VARIABLES-----
-    private static final Object mainPageIndexerLock = new Object();
-    private static final Object triplestoreIndexerLock = new Object();
-    private static final Object transactionManagerLock = new Object();
-    private static final Object xadiskTxManagerLock = new Object();
     private static final Object currentThreadTxLock = new Object();
-    private static final Object pageStoreFsLock = new Object();
-    private static final Object pageViewFsLock = new Object();
 
     /**
      * An inheritable thread local is needed if we want to support executor services launched from
@@ -100,17 +100,17 @@ public class StorageFactory
     }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            synchronized (mainPageIndexerLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-                    PageIndexer indexer = new LucenePageIndexer();
-                    getIndexerRegistry().add(indexer);
-                    cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
-                }
-            }
-        }
+        return (PageIndexer) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.MAIN_PAGE_INDEX, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                PageIndexer indexer = new LucenePageIndexer();
+                getIndexerRegistry().add(indexer);
 
-        return (PageIndexer) cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
+                return indexer;
+            }
+        });
     }
     public static LuceneQueryConnection getMainPageQueryConnection() throws IOException
     {
@@ -119,17 +119,17 @@ public class StorageFactory
     }
     public static PageIndexer getTriplestoreIndexer() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            synchronized (triplestoreIndexerLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-                    PageIndexer indexer = new SesamePageIndexer();
-                    getIndexerRegistry().add(indexer);
-                    cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
-                }
-            }
-        }
+        return (PageIndexer) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRIPLESTORE_PAGE_INDEX, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                PageIndexer indexer = new SesamePageIndexer();
+                getIndexerRegistry().add(indexer);
 
-        return (PageIndexer) cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
+                return indexer;
+            }
+        });
     }
     public static SparqlQueryConnection getTriplestoreQueryConnection() throws IOException
     {
@@ -138,68 +138,67 @@ public class StorageFactory
     }
     public static TransactionManager getTransactionManager() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
-            synchronized (transactionManagerLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
-                    try {
-                        Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
-                        if (extraProperties != null) {
-                            for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
-                                System.setProperty(entry.getKey(), entry.getValue());
+        return (TransactionManager) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                try {
+                    Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
+                    if (extraProperties != null) {
+                        for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                            System.setProperty(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    //atomikos
+                    //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
+
+                    //bitronix
+                    //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
+                    //workaround is to instance a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
+                    //or to set the JVM system properties.
+                    //DONE: this is implemented now, see BlocksSystemPropertyFactory
+                    //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+
+                    TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
+
+                    //Register our custom producer
+                    //Note that the unregister method is called from SimpleXAResourceProducer.close(), hope that's ok
+                    ResourceRegistrar.register(new SimpleXAResourceProducer());
+
+                    //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
+                    //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
+                    //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
+                    // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
+                    //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
+                    //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
+                    //Fix above so we can reactivate the setting
+                    //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
+                    //DONE: this is implemented now, see BlocksSystemPropertyFactory
+                    //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+
+                    //tweak the log level if we're using atomikos (old code)
+                    if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
+                        ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
+                        if (atomikosLogger != null) {
+                            //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
+                            if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
+                                //atomikosLogger.setLevel(Level.WARN);
                             }
                         }
-
-                        //atomikos
-                        //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
-
-                        //bitronix
-                        //This doesn't work because Hibernate picks up Bitronix during startup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
-                        //workaround is to instance a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
-                        //or to set the JVM system properties.
-                        //DONE: this is implemented now, see BlocksSystemPropertyFactory
-                        //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
-
-                        TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
-
-                        //Register our custom producer
-                        //Note that the unregister method is called from SimpleXAResourceProducer.close(), hope that's ok
-                        ResourceRegistrar.register(new SimpleXAResourceProducer());
-
-                        //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
-                        //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
-                        //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
-                        // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
-                        //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
-                        //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
-                        //Fix above so we can reactivate the setting
-                        //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
-                        //DONE: this is implemented now, see BlocksSystemPropertyFactory
-                        //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
-
-                        //tweak the log level if we're using atomikos (old code)
-                        if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
-                            ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
-                            if (atomikosLogger != null) {
-                                //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
-                                if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
-                                    //atomikosLogger.setLevel(Level.WARN);
-                                }
-                            }
-                            else {
-                                throw new IOException("Error while configuring Atomikos logger; couldn't find the logger");
-                            }
+                        else {
+                            throw new IOException("Error while configuring Atomikos logger; couldn't find the logger");
                         }
+                    }
 
-                        cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
-                    }
-                    catch (Exception e) {
-                        throw new IOException("Exception caught while booting up the transaction manager", e);
-                    }
+                    return transactionManager;
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while booting up the transaction manager", e);
                 }
             }
-        }
-
-        return (TransactionManager) cacheManager().getApplicationCache().get(CacheKeys.TRANSACTION_MANAGER);
+        });
     }
     public static CustomBitronixResourceProducer getBitronixResourceProducer() throws IOException
     {
@@ -215,24 +214,32 @@ public class StorageFactory
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
         if (txCache != null) {
-            //Sync this with the release code below
-            //Note: we lock on the txCache object, otherwise all requests would wait on each other,
-            //      and that's a bit overkill. However, because of how the tx is released in releaseCurrentRequestTx(),
-            //      we might probably improve this behavior in the future by implementing reentrant locking.
-            //      For now, this is probably okay.
-            synchronized (txCache) {
-                if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
+            retVal = (TX) cacheManager().getRequestCache().getAndPutIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, Object>()
+            {
+                @Override
+                public Object apply(CacheKey cacheKey) throws IOException
+                {
                     try {
-                        txCache.put(CacheKeys.REQUEST_TRANSACTION, new TX(getTransactionManager()));
+                        TX tx = new TX(getTransactionManager());
+
+                        //make sure the TX gets closed at the end of the request
+                        R.requestContext().registerClosable(new RequestCloseable()
+                        {
+                            @Override
+                            public void close(RequestEvent event) throws Exception
+                            {
+                                releaseCurrentRequestTx(
+                                                event == null || event.getContainerResponse() == null || event.getContainerResponse().getStatus() >= Response.Status.BAD_REQUEST.getStatusCode());
+                            }
+                        });
+
+                        return tx;
                     }
                     catch (Exception e) {
                         throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
                     }
                 }
-
-                //make sure to include this in the synchronized block or a release might get in the way
-                retVal = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
-            }
+            });
         }
 
         return retVal;
@@ -244,7 +251,7 @@ public class StorageFactory
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
         if (txCache != null) {
-            synchronized (txCache) {
+            try (AutoLock lock = txCache.acquireReadLock(CacheKeys.REQUEST_TRANSACTION)) {
                 retVal = txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
             }
         }
@@ -261,37 +268,39 @@ public class StorageFactory
 
         //happens when the server hasn't started up yet or we're not in a request context
         if (txCache != null) {
-            //sync on the cache object, also see getCurrentRequestTx() for details
-            synchronized (txCache) {
 
-                TX tx = (TX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+            txCache.removeIfPresent(CacheKeys.REQUEST_TRANSACTION, new CacheBiFunction<CacheKey, Object, Object>()
+            {
+                @Override
+                public Void apply(CacheKey cacheKey, Object value) throws IOException
+                {
+                    TX tx = (TX) value;
 
-                //don't release anything if no tx is active
-                if (tx != null) {
-                    try {
-                        tx.close(forceRollback);
-                    }
-                    catch (Throwable e) {
-                        //don't wait for the next reboot before trying to revert to a clean state; try it now
-                        //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                        if (!StorageFactory.rebootPageStoreTransactionManager()) {
-                            throw new IOException(
-                                            "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
-                                            e);
+                    //don't release anything if no tx is active
+                    if (tx != null) {
+                        try {
+                            tx.close(forceRollback);
                         }
-                        else {
-                            //we can't just swallow the exception; something's wrong and we should report it to the user
-                            throw new IOException(
-                                            "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
-                                            e);
+                        catch (Throwable e) {
+                            //don't wait for the next reboot before trying to revert to a clean state; try it now
+                            //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
+                            if (!StorageFactory.rebootPageStoreTransactionManager()) {
+                                throw new IOException(
+                                                "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
+                                                e);
+                            }
+                            else {
+                                //we can't just swallow the exception; something's wrong and we should report it to the user
+                                throw new IOException(
+                                                "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
+                                                e);
+                            }
                         }
                     }
-                    finally {
-                        //make sure we only do this once
-                        txCache.remove(CacheKeys.REQUEST_TRANSACTION);
-                    }
+
+                    return null;
                 }
-            }
+            });
         }
     }
     /**
@@ -377,58 +386,65 @@ public class StorageFactory
     }
     public static XAFileSystem getXADiskTransactionManager() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-            synchronized (xadiskTxManagerLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-                    URI dir = Settings.instance().getPagesStoreJournalDir();
-                    if (dir != null) {
-                        Path journalDir = Paths.get(dir);
-                        if (!Files.exists(journalDir)) {
-                            Files.createDirectories(journalDir);
-                        }
+        return (XAFileSystem) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                //by default, we return nothing
+                Object retVal = CacheFunction.SKIP;
 
-                        StandaloneFileSystemConfiguration cfg = new StandaloneFileSystemConfiguration(journalDir.toFile().getAbsolutePath(), Settings.instance().getPagesStoreJournalId());
-                        //cfg.setTransactionTimeout(Settings.instance().getSubTransactionTimeoutSeconds());
+                URI dir = Settings.instance().getPagesStoreJournalDir();
+                if (dir != null) {
+                    Path journalDir = Paths.get(dir);
+                    if (!Files.exists(journalDir)) {
+                        Files.createDirectories(journalDir);
+                    }
 
-                        XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(cfg);
-                        try {
-                            xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
-                            cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
-                        }
-                        catch (InterruptedException e) {
-                            throw new IOException("Error occurred while booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
-                        }
+                    StandaloneFileSystemConfiguration cfg = new StandaloneFileSystemConfiguration(journalDir.toFile().getAbsolutePath(), Settings.instance().getPagesStoreJournalId());
+                    //cfg.setTransactionTimeout(Settings.instance().getSubTransactionTimeoutSeconds());
+
+                    XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(cfg);
+                    try {
+                        xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
+                        retVal = xafs;
+                    }
+                    catch (InterruptedException e) {
+                        throw new IOException("Error occurred while booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
                     }
                 }
-            }
-        }
 
-        return (XAFileSystem) cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+                return retVal;
+            }
+        });
     }
     public static boolean rebootPageStoreTransactionManager()
     {
-        synchronized (xadiskTxManagerLock) {
-            boolean retVal = false;
+        boolean retVal = false;
 
-            if (cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-                XAFileSystem xafs = (XAFileSystem) cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
-                //setting it here will ensure it's null internally, even if the next shutdown fails
-                cacheManager().getApplicationCache().remove(CacheKeys.XADISK_FILE_SYSTEM);
-                try {
+        try {
+            retVal = (boolean) cacheManager().getApplicationCache().removeIfPresent(CacheKeys.XADISK_FILE_SYSTEM, new CacheBiFunction<CacheKey, Object, Object>()
+            {
+                @Override
+                public Object apply(CacheKey cacheKey, Object value) throws IOException
+                {
+                    XAFileSystem xafs = (XAFileSystem) value;
+
                     xafs.shutdown();
 
                     //uniform reboot
                     getXADiskTransactionManager();
 
-                    retVal = true;
+                    //return true if we reach this
+                    return true;
                 }
-                catch (IOException e) {
-                    Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
-                }
-            }
-
-            return retVal;
+            });
         }
+        catch (IOException e) {
+            Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
+        }
+
+        return retVal;
     }
     public static Configuration getPageStoreFileSystemConfig() throws IOException
     {
@@ -442,51 +458,51 @@ public class StorageFactory
     }
     public static FileContext getPageStoreFileSystem() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
-            synchronized (pageStoreFsLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
-                    FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
+        return (FileContext) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
-                    //TODO should we move this to the LOCAL_TX implementations?
-                    if (StorageFactory.needsXADisk(fileContext)) {
-                        //boot the XADisk instance too (probably still null here, good place to boot them together)
-                        getXADiskTransactionManager();
-                    }
-
-                    //instance the root folder if needed
-                    //TODO: commented out because we're not in a transaction here
-                    //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
-                    //            if (!fileContext.util().exists(root)) {
-                    //                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
-                    //            }
-
-                    cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS, fileContext);
+                //TODO should we move this to the LOCAL_TX implementations?
+                if (StorageFactory.needsXADisk(fileContext)) {
+                    //boot the XADisk instance too (probably still null here, good place to boot them together)
+                    getXADiskTransactionManager();
                 }
+
+                //instance the root folder if needed
+                //TODO: commented out because we're not in a transaction here
+                //            org.apache.hadoop.fs.Path root = new org.apache.hadoop.fs.Path("/");
+                //            if (!fileContext.util().exists(root)) {
+                //                fileContext.mkdir(root, FsPermission.getDirDefault(), true);
+                //            }
+
+                return fileContext;
             }
-        }
-
-        return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS);
+        });
     }
-    public static Configuration getPageViewFileSystemConfig()
+    public static Configuration getPageViewFileSystemConfig() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG)) {
-            cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG,
-                                                     HdfsUtils.createHdfsConfig(Settings.instance().getPagesViewUri(), null, Settings.instance().getPagesHdfsProperties()));
-        }
-
-        return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG);
+        return (Configuration) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                return HdfsUtils.createHdfsConfig(Settings.instance().getPagesViewUri(), null, Settings.instance().getPagesHdfsProperties());
+            }
+        });
     }
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
-            synchronized (pageViewFsLock) {
-                if (!cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
-                    cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS, StorageFactory.createFileContext(getPageViewFileSystemConfig()));
-                }
+        return (FileContext) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, Object>()
+        {
+            @Override
+            public Object apply(CacheKey cacheKey) throws IOException
+            {
+                return StorageFactory.createFileContext(getPageViewFileSystemConfig());
             }
-        }
-
-        return (FileContext) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS);
+        });
     }
     public static boolean needsXADisk(FileContext fileContext)
     {
@@ -495,13 +511,22 @@ public class StorageFactory
     }
 
     //-----PROTECTED METHODS-----
-    protected static synchronized Set<Indexer> getIndexerRegistry()
+    protected static Set<Indexer> getIndexerRegistry()
     {
-        if (!cacheManager().getApplicationCache().containsKey(CacheKeys.REGISTERED_INDEXERS)) {
-            cacheManager().getApplicationCache().put(CacheKeys.REGISTERED_INDEXERS, new HashSet<>());
+        try {
+            return (Set<Indexer>) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Object>()
+            {
+                @Override
+                public Object apply(CacheKey cacheKey) throws IOException
+                {
+                    return new HashSet<>();
+                }
+            });
         }
-
-        return (Set<Indexer>) cacheManager().getApplicationCache().get(CacheKeys.REGISTERED_INDEXERS);
+        catch (IOException e) {
+            Logger.error("Error while creating a HashSet, this shouldn't happen", e);
+            return null;
+        }
     }
 
     //-----PRIVATE METHODS-----

@@ -20,7 +20,6 @@ import bitronix.tm.BitronixTransaction;
 import bitronix.tm.internal.TransactionStatusChangeListener;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.ReleaseFilter;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.index.ifaces.XAClosableResource;
@@ -251,8 +250,6 @@ public class TX implements AutoCloseable
     }
     /**
      * Atomically commit all sub-transactions registered in this request TX
-     *
-     * @see ReleaseFilter
      */
     private void doCommit() throws IOException
     {
@@ -275,8 +272,6 @@ public class TX implements AutoCloseable
     }
     /**
      * Atomically rollback all sub-transactions registered in this request TX
-     *
-     * @see ReleaseFilter
      */
     private void doRollback() throws IOException
     {
@@ -298,8 +293,6 @@ public class TX implements AutoCloseable
     /**
      * This is called at the very end of each request,
      * after commit/rollback has been performed.
-     *
-     * @see ReleaseFilter
      */
     private void doClose() throws IOException
     {
