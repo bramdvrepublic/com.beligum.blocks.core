@@ -19,6 +19,8 @@ package com.beligum.blocks.filesystem.hdfs.monitor;
 import com.beligum.blocks.filesystem.ifaces.FsMonitor;
 import org.apache.hadoop.fs.Path;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -37,7 +39,7 @@ public abstract class AbstractFsMonitor implements FsMonitor
     protected AbstractFsMonitor(Path rootFolder)
     {
         this.rootFolder = rootFolder;
-        this.listeners = new LinkedHashSet<>();
+        this.listeners = Collections.synchronizedSet(new LinkedHashSet<>());
     }
 
     //-----PUBLIC METHODS-----
@@ -55,6 +57,11 @@ public abstract class AbstractFsMonitor implements FsMonitor
     public boolean unregisterListener(Listener listener)
     {
         return this.listeners.remove(listener);
+    }
+    @Override
+    public Collection<Listener> getListeners()
+    {
+        return this.listeners;
     }
 
     //-----PROTECTED METHODS-----

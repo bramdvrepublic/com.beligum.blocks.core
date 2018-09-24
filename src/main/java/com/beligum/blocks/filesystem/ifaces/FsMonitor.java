@@ -19,6 +19,7 @@ package com.beligum.blocks.filesystem.ifaces;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Created by bram on 6/20/16.
@@ -71,6 +72,11 @@ public interface FsMonitor
      * Unregister a listener (does nothing if not registered previously)
      */
     boolean unregisterListener(Listener listener);
+
+    /**
+     * Return the currently registered set of listeners
+     */
+    Collection<Listener> getListeners();
 
     //-----PROTECTED METHODS-----
 

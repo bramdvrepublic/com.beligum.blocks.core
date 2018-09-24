@@ -17,7 +17,7 @@
 package com.beligum.blocks.filesystem.hdfs.impl;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.hdfs.monitor.LocalFSMonitor;
+import com.beligum.blocks.filesystem.hdfs.monitor.local.LocalFSMonitor;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolver;
 import com.beligum.blocks.filesystem.ifaces.FsMonitor;
 import com.beligum.blocks.filesystem.ifaces.LocalFS;
