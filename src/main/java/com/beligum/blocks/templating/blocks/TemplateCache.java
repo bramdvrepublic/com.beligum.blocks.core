@@ -24,11 +24,11 @@ import com.google.common.base.Joiner;
 import net.htmlparser.jericho.Source;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -50,6 +50,8 @@ public class TemplateCache
 
     //-----VARIABLES-----
     private static Object initMutex = new Object();
+    private static boolean initCalled = false;
+
     private Map<String, HtmlTemplate> nameMapping;
     private Map<String, HtmlTemplate> relativePathMapping;
     private Set<HtmlTemplate> pageTemplates;
@@ -62,14 +64,14 @@ public class TemplateCache
     private String cachedJsArray;
 
     //-----CONSTRUCTORS-----
-    private TemplateCache()
+    private TemplateCache() throws IOException
     {
-        this.nameMapping = new HashMap<>();
+        this.nameMapping = new LinkedHashMap<>();
         this.relativePathMapping = new LinkedHashMap<>();
         this.pageTemplates = new LinkedHashSet<>();
         this.disabledTemplates = new LinkedHashSet<>();
 
-        this.resetCache();
+        this.searchAllTemplates();
     }
     public static TemplateCache instance()
     {
@@ -77,12 +79,32 @@ public class TemplateCache
         if (retVal == null) {
             synchronized (initMutex) {
                 if (retVal == null) {
-                    R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
-                    try {
-                        searchAllTemplates(retVal);
+                    // Here, we iterate the classpath to search for all html files with <template> tags.
+                    // It is a bit of a tricky situation: when building and parsing the html import templates,
+                    // we'll possibly encounter recursive calls to this constructor method. This would create
+                    // infinite recursion.
+                    //
+                    // To make sure this doesn't happen and the cache is constructed with a full and sound list of
+                    // detected html templates, we created a detection system to throw an exception if this
+                    // happens, so the creator of the libraries is responsible of not using the template cache
+                    // during creation of the html templates
+                    //
+                    // Note that we need to use another guard because the initMutex above passes just fine
+                    // during recursion because it all happens in the same thread. This also means we can't allow any updates
+                    // (directly via the setters or leaked via any exposed methods in the objects returned by the getters)
+                    // before the searchAllTemplates() method below ends because they will be overwritten.
+                    if (!initCalled) {
+                        initCalled = true;
+
+                        try {
+                            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
+                        }
+                        catch (IOException e) {
+                            Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+                        }
                     }
-                    catch (Exception e) {
-                        Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+                    else {
+                        throw new RuntimeException("Recursive template cache initialization detected. This is forbidden, please update the code so this doesn't happen");
                     }
                 }
             }
@@ -92,31 +114,29 @@ public class TemplateCache
     }
 
     //-----PUBLIC METHODS-----
-    public void flush()
-    {
-        R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
-    }
+    /**
+     * Returns the template attached to the tag name (eg. blocks-scripts)
+     */
     public HtmlTemplate getByTagName(String templateTagName)
     {
-        return StringUtils.isEmpty(templateTagName) ? null : this.nameMapping.get(templateTagName);
-    }
-    public HtmlTemplate getByRelativePath(String templateRelativePath)
-    {
-        return StringUtils.isEmpty(templateRelativePath) ? null : this.relativePathMapping.get(templateRelativePath);
-    }
-    public Set<HtmlTemplate> getPageTemplates()
-    {
-        return this.pageTemplates;
+        return !StringUtils.isEmpty(templateTagName) ? this.nameMapping.get(templateTagName) : null;
     }
     /**
-     * Inserts an entry by supplying the relative classpath. Note that it still should start with a slash though;
-     * eg. /imports/blocks/blah.html
+     * Returns the template attached to the relative path (eg. /imports/blocks/blah.html)
+     */
+    public HtmlTemplate getByRelativePath(String templateRelativePath)
+    {
+        return !StringUtils.isEmpty(templateRelativePath) ? this.relativePathMapping.get(templateRelativePath) : null;
+    }
+    /**
+     * Inserts an entry by supplying the relative classpath.
+     * Note that it still should start with a slash, though; eg. /imports/blocks/blah.html
      * But make sure it doesn't have any schema.
      */
-    public HtmlTemplate putByRelativePath(String templateRelativePath, HtmlTemplate template)
+    public void putByRelativePath(String templateRelativePath, HtmlTemplate template)
     {
         //both should be synched, so one retval = other retval
-        HtmlTemplate retVal = this.relativePathMapping.put(templateRelativePath, template);
+        this.relativePathMapping.put(templateRelativePath, template);
         this.nameMapping.put(template.getTemplateName(), template);
 
         if (template instanceof PageTemplate) {
@@ -124,24 +144,19 @@ public class TemplateCache
         }
 
         this.resetCache();
-
-        return retVal;
     }
-    public Collection<HtmlTemplate> values()
+    /**
+     * Returns all templates in the cache
+     */
+    public Collection<HtmlTemplate> getAllTemplates()
     {
         return this.nameMapping.values();
     }
-    public boolean containsKeyByTagName(String key)
+    /**
+     * Disables the supplied template in all contexts
+     */
+    public void disableTemplate(HtmlTemplate template)
     {
-        return this.nameMapping.containsKey(key);
-    }
-    public boolean containsKeyByRelativePath(String key)
-    {
-        return this.relativePathMapping.containsKey(key);
-    }
-    public void disable(HtmlTemplate template)
-    {
-        //let's track disabled templates
         this.disabledTemplates.add(template);
 
         this.nameMapping.values().remove(template);
@@ -149,6 +164,13 @@ public class TemplateCache
         this.pageTemplates.remove(template);
 
         this.resetCache();
+    }
+    /**
+     * Disables the template when it's used in the context of the page
+     */
+    public void disableTemplate(TagTemplate template, PageTemplate page)
+    {
+        template.addDisabledContext(page);
     }
     public void clear()
     {
@@ -160,7 +182,11 @@ public class TemplateCache
     public String getAllTagNamesBySpace()
     {
         if (this.cachedSpacedTagNames == null) {
-            this.cachedSpacedTagNames = Joiner.on(" ").join(this.nameMapping.keySet());
+            synchronized (this) {
+                if (this.cachedSpacedTagNames == null) {
+                    this.cachedSpacedTagNames = Joiner.on(" ").join(this.nameMapping.keySet());
+                }
+            }
         }
 
         return this.cachedSpacedTagNames;
@@ -168,12 +194,15 @@ public class TemplateCache
     public String getAllTagNamesCsv()
     {
         if (this.cachedCsvTagNames == null) {
-            this.cachedCsvTagNames = Joiner.on(",").join(this.nameMapping.keySet());
+            synchronized (this) {
+                if (this.cachedCsvTagNames == null) {
+                    this.cachedCsvTagNames = Joiner.on(",").join(this.nameMapping.keySet());
+                }
+            }
         }
 
         return this.cachedCsvTagNames;
     }
-
     /**
      * Returns and caches css code that resets our custom template tags
      *
@@ -182,23 +211,27 @@ public class TemplateCache
     public String getCssReset()
     {
         if (this.cachedCssReset == null) {
-            StringBuilder css = new StringBuilder();
-            boolean first = true;
-            for (HtmlTemplate htmlTemplate : this.nameMapping.values()) {
-                if (!first) {
-                    css.append(",").append("\n");
+            synchronized (this) {
+                if (this.cachedCssReset == null) {
+                    StringBuilder css = new StringBuilder();
+                    boolean first = true;
+                    for (HtmlTemplate htmlTemplate : this.nameMapping.values()) {
+                        if (!first) {
+                            css.append(",").append("\n");
+                        }
+                        css.append(htmlTemplate.getTemplateName());
+                        first = false;
+                    }
+
+                    css.append(" {").append("\n");
+                    css.append("\t").append("display: block;").append("\n");
+                    css.append("\t").append("margin: 0;").append("\n");
+                    css.append("\t").append("padding: 0;").append("\n");
+                    css.append("}");
+
+                    this.cachedCssReset = css.toString();
                 }
-                css.append(htmlTemplate.getTemplateName());
-                first = false;
             }
-
-            css.append(" {").append("\n");
-            css.append("\t").append("display: block;").append("\n");
-            css.append("\t").append("margin: 0;").append("\n");
-            css.append("\t").append("padding: 0;").append("\n");
-            css.append("}");
-
-            this.cachedCssReset = css.toString();
         }
 
         return cachedCssReset;
@@ -211,21 +244,25 @@ public class TemplateCache
     public String getJsArray()
     {
         if (this.cachedJsArray == null) {
-            StringBuilder js = new StringBuilder();
-            js.append("base.plugin(\"blocks.imports.All\", function () ").append("{").append("this.IMPORTS = [");
+            synchronized (this) {
+                if (this.cachedJsArray == null) {
+                    StringBuilder js = new StringBuilder();
+                    js.append("base.plugin(\"blocks.imports.All\", function () ").append("{").append("this.IMPORTS = [");
 
-            boolean first = true;
-            for (HtmlTemplate htmlTemplate : this.nameMapping.values()) {
-                if (!first) {
-                    js.append(",");
+                    boolean first = true;
+                    for (HtmlTemplate htmlTemplate : this.nameMapping.values()) {
+                        if (!first) {
+                            js.append(",");
+                        }
+                        js.append("'").append(htmlTemplate.getTemplateName()).append("'");
+                        first = false;
+                    }
+
+                    js.append("];").append("});");
+
+                    this.cachedJsArray = js.toString();
                 }
-                js.append("'").append(htmlTemplate.getTemplateName()).append("'");
-                first = false;
             }
-
-            js.append("];").append("});");
-
-            this.cachedJsArray = js.toString();
         }
 
         return cachedJsArray;
@@ -234,11 +271,18 @@ public class TemplateCache
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static void searchAllTemplates(TemplateCache templateCache) throws Exception
+    private void resetCache()
     {
-        //start with a clean slate
-        templateCache.clear();
+        this.cachedSpacedTagNames = null;
+        this.cachedCsvTagNames = null;
+        this.cachedCssReset = null;
+        this.cachedJsArray = null;
+    }
 
+    //-----CONSTRUCTOR METHODS-----
+    private void searchAllTemplates() throws IOException
+    {
+        Logger.info("Iterating the classpath to search for all html import templates");
         List<ClasspathSearchResult> htmlFiles = new ArrayList<>();
         htmlFiles.addAll(R.resourceManager().getClasspathHelper().searchResourceGlob("/" + RESOURCES_IMPORTS_FOLDER + "/**.{html,htm}"));
 
@@ -249,7 +293,7 @@ public class TemplateCache
             Path absolutePath = htmlFile.getResource();
             //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
             Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
-            String templateName = TemplateCache.parseTemplateName(relativePath);
+            String templateName = this.parseTemplateName(relativePath);
 
             List<Path[]> entries = inheritanceTree.get(templateName);
             if (entries == null) {
@@ -284,7 +328,7 @@ public class TemplateCache
                         if (i == 0) {
                             // Note: it's important this string is just that: the relative path, but make sure it starts with a slash (it's relative to the classpath),
                             // but more importantly; no schema (because the lookup above in parse() expects that)
-                            templateCache.putByRelativePath(relativePath.toString(), template);
+                            this.putByRelativePath(relativePath.toString(), template);
                         }
 
                         //this can be used by the next loop
@@ -300,7 +344,7 @@ public class TemplateCache
             }
         }
     }
-    private static String parseTemplateName(Path relativePath) throws ParseException
+    private String parseTemplateName(Path relativePath) throws IOException
     {
         String retVal = null;
 
@@ -325,19 +369,11 @@ public class TemplateCache
             // and its prototype must extend HTMLElement.
             // See https://css-tricks.com/modular-future-web-components/
             if (!retVal.contains("-")) {
-                throw new ParseException("The name of an import template should always contain at least one dash; '" + retVal + "' in " + relativePath, 0);
+                throw new IOException("The name of an import template should always contain at least one dash; '" + retVal + "' in " + relativePath);
             }
         }
 
         return retVal;
     }
-    private void resetCache()
-    {
-        this.cachedSpacedTagNames = null;
-        this.cachedCsvTagNames = null;
-        this.cachedCssReset = null;
-        this.cachedJsArray = null;
-    }
 
-    //-----PRIVATE CLASSES-----
 }

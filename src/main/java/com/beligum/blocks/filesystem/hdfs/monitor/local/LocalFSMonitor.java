@@ -68,7 +68,7 @@ public class LocalFSMonitor extends AbstractFsMonitor
     public synchronized void stop()
     {
         if (this.watchThread != null) {
-            this.watchThread.keepRunning(false);
+            this.watchThread.shutdown();
         }
     }
     @Override

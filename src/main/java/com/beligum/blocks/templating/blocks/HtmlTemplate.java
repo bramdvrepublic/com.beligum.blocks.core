@@ -24,6 +24,8 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.templating.ifaces.TemplateContext;
+import com.beligum.base.templating.ifaces.TemplateEngine;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
@@ -49,6 +51,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
@@ -127,7 +130,6 @@ public abstract class HtmlTemplate
     protected Iterable<Element> externalStyleElements;
     protected MetaDisplayType displayType;
     protected Element rootElement;
-    protected Set<String> disabledTemplates;
     protected List<SubstitionReference> normalizationSubstitutions;
 
     protected List<HtmlRdfPropertyRef> rdfPropertyRefs;
@@ -232,18 +234,26 @@ public abstract class HtmlTemplate
         //prepend the html with the parent resources if it's there
         if (superTemplate != null) {
             StringBuilder superTemplateResourceHtml = new StringBuilder();
-            this.inlineStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getInlineStyleElements(),
-                                                      null);
-            this.externalStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements,
-                                                      superTemplate.getExternalStyleElements(), "href");
-            this.inlineScriptElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements,
-                                                      superTemplate.getInlineScriptElements(), null);
-            this.externalScriptElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
-                                                      superTemplate.getExternalScriptElements(), "src");
+            this.inlineStyleElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles,
+                                                                 superTemplateResourceHtml,
+                                                                 this.inlineStyleElements,
+                                                                 superTemplate.getInlineStyleElements(),
+                                                                 null);
+            this.externalStyleElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles,
+                                                                   superTemplateResourceHtml,
+                                                                   this.externalStyleElements,
+                                                                   superTemplate.getExternalStyleElements(),
+                                                                   "href");
+            this.inlineScriptElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts,
+                                                                  superTemplateResourceHtml,
+                                                                  this.inlineScriptElements,
+                                                                  superTemplate.getInlineScriptElements(),
+                                                                  null);
+            this.externalScriptElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts,
+                                                                    superTemplateResourceHtml,
+                                                                    this.externalScriptElements,
+                                                                    superTemplate.getExternalScriptElements(),
+                                                                    "src");
 
             //insert all (processed) super resources at the beginning of the html
             tempHtml.insert(0, superTemplateResourceHtml);
@@ -255,9 +265,6 @@ public abstract class HtmlTemplate
         //once we have the final html saved, we'll parse it again to mark the template variables for normalization,
         // calculate a standardized version for comparison, etc.
         this.parseHtml();
-
-        //by default, this template is not disabled inside any page template
-        this.disabledTemplates = new LinkedHashSet<>();
     }
 
     //-----PUBLIC STATIC METHODS-----
@@ -655,18 +662,6 @@ public abstract class HtmlTemplate
     {
         return this.normalizationSubstitutions;
     }
-    public void addDisabledTemplate(String templateName)
-    {
-        this.disabledTemplates.add(templateName);
-    }
-    public void addDisabledTemplates(Collection<String> templateNames)
-    {
-        this.disabledTemplates.addAll(templateNames);
-    }
-    public boolean isDisabledForTemplate(String templateName)
-    {
-        return this.disabledTemplates.contains(templateName);
-    }
 
     //-----PROTECTED METHODS-----
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
@@ -843,7 +838,8 @@ public abstract class HtmlTemplate
         if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
             //this means we're dealing with an external resource
             if (attrValue != null) {
-                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedExternalScripts()) || (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedExternalStyles())) {
+                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedExternalScripts()) ||
+                    (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedExternalStyles())) {
                     //validate the URI
                     resource = R.resourceManager().get(UriBuilder.fromUri(attrValue).build());
 
@@ -871,7 +867,8 @@ public abstract class HtmlTemplate
             }
             //this means we're dealing with an inline resource; iterate all uri's to see if we can fingerprint them
             else {
-                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedInlineScripts()) || (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedInlineStyles())) {
+                if ((type.isScript() && R.configuration().getResourceConfig().getEnableFingerprintedInlineScripts()) ||
+                    (type.isStyle() && R.configuration().getResourceConfig().getEnableFingerprintedInlineStyles())) {
                     //Tried to wrap all URIs in a #brud directive, but that didn't really work,
                     //so switched to "block-mode" where we'll parsed all URIs in this inline resource and keep
                     //some statistics to see if we can alter the resource code right now, or need to defer to dynamic fingerprinting
@@ -919,19 +916,33 @@ public abstract class HtmlTemplate
                                   .append("#end");
     }
     /**
-     * Puts the element's html through the template engine to render out all needed context variables (constants/messages)
+     * This serializes all constants in the template.
      * Note that this is executed during boot, so eg. the language for the messages will probably not be initialized correctly,
      * so avoid using $MESSAGES in resource element names. This is mainly made for using $CONSTANTS in the resource URLs.
-     * Also note that this will automatically fingerprint the URIs in the resources.
      */
     private Element renderResourceElement(Element element) throws IOException
     {
-        // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
-        // so make sure you don't use this URI to instance template or you'll end up overwriting the cache with this temporary StringSource
-        Template template = R.resourceManager().newTemplate(new StringSource(element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
+        //the idea (in the new method) is to create a dummy template with the provided html to be able to access
+        //the template context (and it's evaluate() method), but not render it out (because that would cause infinite recursion),
+        //but feed it's own html to the evaluate method, so it's serialized in the right context.
+        String html = element.toString();
+
+        //note that if you debug this variable during boot, the toString() method will throw an exception because it tries
+        //to render out the template and a recursive init TemplateCache exception occurs (that doesn't occur during normal operation)
+        Template template = R.resourceManager().newTemplate(new StringSource(html, MimeTypes.HTML, R.i18n().getOptimalLocale()));
+
+        String parsedHtml = template.getContext().evaluate(html, true, false);
 
         //there should always be a first element since we started out with an element, right?
-        return new Source(template.render()).getFirstElement();
+        return new Source(parsedHtml).getFirstElement();
+
+        // This is the old way that parses the html but we can't use it anymore because it causes a recursive call to the TemplateCache during boot.
+        //        // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
+        //        // so make sure you don't use this URI to instance template or you'll end up overwriting the cache with this temporary StringSource
+        //        Template template = R.resourceManager().newTemplate(new StringSource(element.toString(), MimeTypes.HTML, R.i18n().getOptimalLocale()));
+        //
+        //        //there should always be a first element since we started out with an element, right?
+        //        return new Source(template.render()).getFirstElement();
     }
     private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements,
                                                         String attribute)

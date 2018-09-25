@@ -8,7 +8,6 @@ import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
@@ -33,7 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.new_page;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Term;
@@ -43,15 +41,12 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.util.*;
 
 /**
@@ -733,7 +728,7 @@ public class RequestRouter
     {
         List<Map<String, String>> retVal = new ArrayList<>();
 
-        for (HtmlTemplate htmlTemplate : TemplateCache.instance().values()) {
+        for (HtmlTemplate htmlTemplate : TemplateCache.instance().getAllTemplates()) {
             if (htmlTemplate instanceof PageTemplate && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
 
                 ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()

@@ -60,7 +60,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         if (retVal == null) {
             Map<String, Class<?>> mapping = new HashMap<>();
             TemplateCache cachedTemplates = TemplateCache.instance();
-            for (HtmlTemplate tagTemplate : cachedTemplates.values()) {
+            for (HtmlTemplate tagTemplate : cachedTemplates.getAllTemplates()) {
                 mapping.put(tagTemplate.getTemplateName(), tagTemplate.getControllerClass());
             }
 

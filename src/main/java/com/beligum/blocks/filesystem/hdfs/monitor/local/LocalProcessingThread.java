@@ -46,9 +46,17 @@ public class LocalProcessingThread extends Thread
     }
 
     //-----PUBLIC METHODS-----
-    public void keepRunning(boolean keepRunning)
+    public void shutdown()
     {
-        this.keepRunning.set(keepRunning);
+        this.keepRunning.set(false);
+
+        try {
+            //notify the watcher so the loop below throws the ClosedWatchServiceException
+            this.watcher.close();
+        }
+        catch (IOException e) {
+            //ignore
+        }
     }
     @Override
     public void run()
@@ -77,9 +85,6 @@ public class LocalProcessingThread extends Thread
                     }
                     //means we're shutting down
                     catch (ClosedWatchServiceException e) {
-                        continue;
-                    }
-                    catch (InterruptedException e) {
                         continue;
                     }
 

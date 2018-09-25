@@ -24,6 +24,7 @@ import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
@@ -36,6 +37,7 @@ import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
+import com.beligum.blocks.templating.blocks.TagTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
@@ -143,11 +145,27 @@ public class PageAdminEndpoint
     @GET
     @Path("/blocks")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplate)
+    public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplateName)
     {
         RdfClass typeOf = null;
         if (!StringUtils.isEmpty(typeOfStr)) {
             typeOf = RdfFactory.getClassForResourceType(typeOfStr);
+        }
+
+        PageTemplate pageTemplate = null;
+        if (!StringUtils.isEmpty(pageTemplateName)) {
+            HtmlTemplate template = TemplateCache.instance().getByTagName(pageTemplateName);
+            if (template != null) {
+                if (template instanceof PageTemplate) {
+                    pageTemplate = (PageTemplate) template;
+                }
+                else {
+                    Logger.error("Encountered template name that was expected to be a page template, but it isn't; " + pageTemplateName);
+                }
+            }
+            else {
+                Logger.error("Encountered unknown template name; " + pageTemplateName);
+            }
         }
 
         Template template = new_block.get().getNewTemplate();
@@ -155,11 +173,13 @@ public class PageAdminEndpoint
         //build a list of all blocks that are accessible from this template and remote page
         TemplateCache cache = TemplateCache.instance();
         List<Map<String, String>> templates = new ArrayList<>();
-        for (HtmlTemplate htmlTemplate : cache.values()) {
-            if (!(htmlTemplate instanceof PageTemplate) && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+        for (HtmlTemplate htmlTemplate : cache.getAllTemplates()) {
+            if (htmlTemplate instanceof TagTemplate && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+
+                TagTemplate tagTemplate = (TagTemplate) htmlTemplate;
 
                 //don't include the blocks where we have them disabled for the page template
-                if (pageTemplate == null || !htmlTemplate.isDisabledForTemplate(pageTemplate)) {
+                if (pageTemplate == null || !tagTemplate.isDisabledInContext(pageTemplate)) {
 
                     ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
                                     .put(Entries.NEW_BLOCK_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))

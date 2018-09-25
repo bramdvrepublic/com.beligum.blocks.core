@@ -20,6 +20,7 @@ import com.beligum.blocks.filesystem.index.ifaces.RdfTupleResult;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import java.util.NoSuchElementException;
 
@@ -67,6 +68,11 @@ public class StringTupleRdfResult implements RdfTupleResult<String, String>
         }
 
         return retVal;
+    }
+    @Override
+    public void close(RequestEvent event) throws Exception
+    {
+        this.close();
     }
     @Override
     public void close() throws Exception

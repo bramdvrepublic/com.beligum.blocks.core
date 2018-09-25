@@ -23,9 +23,7 @@ import net.htmlparser.jericho.Source;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bram on 5/13/15.
@@ -35,11 +33,15 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    protected Set<PageTemplate> disabledPages;
 
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
         super(templateName, document, absolutePath, relativePath, parent);
+
+        //by default, this template is not disabled inside any page template
+        this.disabledPages = new LinkedHashSet<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -47,6 +49,10 @@ public class TagTemplate extends HtmlTemplate
     public boolean renderTemplateTag()
     {
         return true;
+    }
+    public boolean isDisabledInContext(PageTemplate pageTemplate)
+    {
+        return this.disabledPages.contains(pageTemplate);
     }
 
     //-----PROTECTED METHODS-----
@@ -125,6 +131,10 @@ public class TagTemplate extends HtmlTemplate
             //we unwrap the template tag (already saved the attributes)
             this.innerHtml = templateTag.getContent();
         }
+    }
+    protected void addDisabledContext(PageTemplate pageTemplate)
+    {
+        this.disabledPages.add(pageTemplate);
     }
 
     //-----PRIVATE METHODS-----

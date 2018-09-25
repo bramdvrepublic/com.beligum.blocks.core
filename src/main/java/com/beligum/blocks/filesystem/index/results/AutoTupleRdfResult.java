@@ -25,6 +25,7 @@ import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -92,6 +93,11 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
         }
 
         return retVal;
+    }
+    @Override
+    public void close(RequestEvent event) throws Exception
+    {
+        this.close();
     }
     @Override
     public void close() throws Exception

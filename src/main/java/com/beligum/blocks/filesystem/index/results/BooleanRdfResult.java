@@ -18,6 +18,7 @@ package com.beligum.blocks.filesystem.index.results;
 
 import com.beligum.blocks.filesystem.index.ifaces.RdfTupleResult;
 import gen.com.beligum.blocks.core.messages.blocks.core;
+import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import java.util.NoSuchElementException;
 
@@ -62,6 +63,11 @@ public class BooleanRdfResult implements RdfTupleResult<String, String>
         this.index++;
 
         return retVal;
+    }
+    @Override
+    public void close(RequestEvent event) throws Exception
+    {
+        this.close();
     }
     @Override
     public void close() throws Exception

@@ -51,6 +51,11 @@ public class ServerStartStopListener implements ServerLifecycleListener
 
     //-----PUBLIC METHODS-----
     @Override
+    public int getStartupPriority()
+    {
+        return ServerLifecycleListener.PRIORITY_CORE;
+    }
+    @Override
     public void onServerStarted(Server server, Container container)
     {
         if (Settings.instance().hasBlocksCoreConfig()) {
@@ -70,6 +75,11 @@ public class ServerStartStopListener implements ServerLifecycleListener
             //boot up all the static RDF fields
             RdfFactory.assertInitialized();
         }
+    }
+    @Override
+    public int getShutdownPriority()
+    {
+        return ServerLifecycleListener.PRIORITY_CORE;
     }
     @Override
     public void onServerStopped(Server server, Container container)

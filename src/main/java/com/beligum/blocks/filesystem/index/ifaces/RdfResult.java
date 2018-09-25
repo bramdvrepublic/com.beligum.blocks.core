@@ -16,6 +16,8 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import com.beligum.base.server.ifaces.RequestCloseable;
+
 import java.util.Iterator;
 
 /**
@@ -28,7 +30,7 @@ import java.util.Iterator;
  *
  * Created by bram on 19/04/17.
  */
-public interface RdfResult<E extends RdfResult.RdfResultEntry> extends Iterator<E>, AutoCloseable
+public interface RdfResult<E extends RdfResult.RdfResultEntry> extends Iterator<E>, RequestCloseable, AutoCloseable
 {
     interface RdfResultEntry
     {
