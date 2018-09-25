@@ -116,35 +116,30 @@ public abstract class HtmlTemplate
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
     //-----VARIABLES-----
-    protected Map<String, String> attributes;
     protected Path absolutePath;
     protected Path relativePath;
     protected String templateName;
+    //this will enable us to save the 'inheritance tree'
+    protected HtmlTemplate superTemplate;
+    protected Map<String, String> attributes;
+    protected Element rootElement;
     protected String title;
     protected String description;
     protected String icon;
     protected Class<TemplateController> controllerClass;
+    protected MetaDisplayType displayType;
     protected Iterable<Element> inlineScriptElements;
     protected Iterable<Element> externalScriptElements;
     protected Iterable<Element> inlineStyleElements;
     protected Iterable<Element> externalStyleElements;
-    protected MetaDisplayType displayType;
-    protected Element rootElement;
-    protected List<SubstitionReference> normalizationSubstitutions;
-
-    protected List<HtmlRdfPropertyRef> rdfPropertyRefs;
-
-    //this will enable us to save the 'inheritance tree'
-    protected HtmlTemplate superTemplate;
-
     // This will hold the html before the <template> tags
     protected Segment prefixHtml;
-
     // This will hold the html inside the <template> tags
     protected Segment innerHtml;
-
     // This will hold the html after the <template> tags
     protected Segment suffixHtml;
+    protected List<SubstitionReference> normalizationSubstitutions;
+    //make sure to check init() (and make sure it's re-inited when init() is called) if you add more variables
 
     //-----CONSTRUCTORS-----
     public static HtmlTemplate create(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
@@ -163,7 +158,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    protected HtmlTemplate(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
+    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
     {
         //INIT THE PATHS
         this.absolutePath = absolutePath;

@@ -38,18 +38,7 @@ public class PageTemplate extends HtmlTemplate
     //-----CONSTRUCTORS-----
     protected PageTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
-        super(templateName, document, absolutePath, relativePath, parent);
-
-        //Not yet activated...
-//        //two default RDF attributes are set during a page save: vocab and prefix,
-//        //so push those two on the stacks if we encounter a page template, cause any page
-//        //that's created (and eventually saved), will have them too
-//        if (this.rdfVocab == null) {
-//            this.rdfVocab = HtmlTemplate.getDefaultRdfVocab();
-//        }
-//        if (this.rdfPrefixes.isEmpty()) {
-//            this.rdfPrefixes.putAll(HtmlTemplate.getDefaultRdfPrefixes());
-//        }
+        this.init(templateName, document, absolutePath, relativePath, parent);
     }
 
     //-----PUBLIC STATIC METHODS-----
@@ -62,6 +51,22 @@ public class PageTemplate extends HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
+    {
+        super.init(templateName, source, absolutePath, relativePath, superTemplate);
+
+        //Not yet activated...
+        //        //two default RDF attributes are set during a page save: vocab and prefix,
+        //        //so push those two on the stacks if we encounter a page template, cause any page
+        //        //that's created (and eventually saved), will have them too
+        //        if (this.rdfVocab == null) {
+        //            this.rdfVocab = HtmlTemplate.getDefaultRdfVocab();
+        //        }
+        //        if (this.rdfPrefixes.isEmpty()) {
+        //            this.rdfPrefixes.putAll(HtmlTemplate.getDefaultRdfPrefixes());
+        //        }
+    }
     @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException
     {

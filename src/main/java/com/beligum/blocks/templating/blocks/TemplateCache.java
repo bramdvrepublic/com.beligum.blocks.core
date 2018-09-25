@@ -133,17 +133,20 @@ public class TemplateCache
      * Note that it still should start with a slash, though; eg. /imports/blocks/blah.html
      * But make sure it doesn't have any schema.
      */
-    public void putByRelativePath(String templateRelativePath, HtmlTemplate template)
+    public HtmlTemplate update(HtmlTemplate template, Source htmlSource) throws Exception
     {
-        //both should be synched, so one retval = other retval
-        this.relativePathMapping.put(templateRelativePath, template);
-        this.nameMapping.put(template.getTemplateName(), template);
-
-        if (template instanceof PageTemplate) {
-            this.pageTemplates.add(template);
+        //double-check it's really here and make sure we don't change the cache instances
+        HtmlTemplate existingTemplate = this.getByTagName(template.getTemplateName());
+        if (existingTemplate == null) {
+            throw new IOException("Can't update a html template " + template + " because it doesn't exist in the cache");
         }
 
+        //this will re-init all fields of the template
+        existingTemplate.init(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
+
         this.resetCache();
+
+        return existingTemplate;
     }
     /**
      * Returns all templates in the cache
@@ -271,6 +274,23 @@ public class TemplateCache
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * Inserts an entry by supplying the relative classpath.
+     * Note that it still should start with a slash, though; eg. /imports/blocks/blah.html
+     * But make sure it doesn't have any schema.
+     */
+    private void addTemplate(String templateRelativePath, HtmlTemplate template)
+    {
+        //both should be synched, so one retval = other retval
+        this.relativePathMapping.put(templateRelativePath, template);
+        this.nameMapping.put(template.getTemplateName(), template);
+
+        if (template instanceof PageTemplate) {
+            this.pageTemplates.add(template);
+        }
+
+        this.resetCache();
+    }
     private void resetCache()
     {
         this.cachedSpacedTagNames = null;
@@ -328,7 +348,7 @@ public class TemplateCache
                         if (i == 0) {
                             // Note: it's important this string is just that: the relative path, but make sure it starts with a slash (it's relative to the classpath),
                             // but more importantly; no schema (because the lookup above in parse() expects that)
-                            this.putByRelativePath(relativePath.toString(), template);
+                            this.addTemplate(relativePath.toString(), template);
                         }
 
                         //this can be used by the next loop

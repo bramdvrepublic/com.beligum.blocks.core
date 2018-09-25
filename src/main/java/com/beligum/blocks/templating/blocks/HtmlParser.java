@@ -539,8 +539,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     {
         //first of all, since this method is only called when something changed, update the cache value
         //(note we can use the old template value for the paths)
-        HtmlTemplate sourceTemplate = HtmlTemplate.create(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
-        TemplateCache.instance().putByRelativePath(template.getRelativePath().toString(), sourceTemplate);
+        HtmlTemplate sourceTemplate = TemplateCache.instance().update(template, htmlSource);
 
         //this is the base for all coming preprocessing
         //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)

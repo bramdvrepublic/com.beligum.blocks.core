@@ -38,10 +38,7 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
-        super(templateName, document, absolutePath, relativePath, parent);
-
-        //by default, this template is not disabled inside any page template
-        this.disabledPages = new LinkedHashSet<>();
+        this.init(templateName, document, absolutePath, relativePath, parent);
     }
 
     //-----PUBLIC METHODS-----
@@ -56,6 +53,14 @@ public class TagTemplate extends HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
+    {
+        super.init(templateName, source, absolutePath, relativePath, superTemplate);
+
+        //by default, this template is not disabled inside any page template context
+        this.disabledPages = new LinkedHashSet<>();
+    }
     @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException
     {
