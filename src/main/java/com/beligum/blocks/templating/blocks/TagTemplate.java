@@ -58,8 +58,12 @@ public class TagTemplate extends HtmlTemplate
     {
         super.init(templateName, source, absolutePath, relativePath, superTemplate);
 
-        //by default, this template is not disabled inside any page template context
-        this.disabledPages = new LinkedHashSet<>();
+        //by default, this template is not disabled inside any page template context,
+        //but if this method is called again and there were some contexts disabled, we probably
+        //want to keep them disabled, so only initialize the set if it's null
+        if (this.disabledPages == null) {
+            this.disabledPages = new LinkedHashSet<>();
+        }
     }
     @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException
