@@ -21,7 +21,6 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
-import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
@@ -34,7 +33,7 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.sources.NewPageSource;
-import com.beligum.blocks.security.Permissions;
+import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TagTemplate;
@@ -68,7 +67,6 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
  * Created by bram on 2/10/16.
  */
 @Path("/blocks/admin/page")
-@RequiresRoles(ADMIN_ROLE_NAME)
 public class PageAdminEndpoint
 {
     //-----CONSTANTS-----
@@ -102,7 +100,7 @@ public class PageAdminEndpoint
      */
     @GET
     @Path("/template")
-    @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING })
+    @RequiresPermissions(PAGE_CREATE_PERMISSION)
     public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) String pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
@@ -144,7 +142,7 @@ public class PageAdminEndpoint
      */
     @GET
     @Path("/blocks")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @RequiresPermissions(PAGE_EDIT_PERMISSION)
     public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplateName)
     {
         RdfClass typeOf = null;
@@ -214,7 +212,7 @@ public class PageAdminEndpoint
     @GET
     @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @RequiresPermissions(PAGE_EDIT_PERMISSION)
     public Response getBlock(@PathParam("name") String name) throws IOException
     {
         HashMap<String, Object> retVal = new HashMap<>();
@@ -255,8 +253,8 @@ public class PageAdminEndpoint
     @POST
     @javax.ws.rs.Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING,
-                                   Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @RequiresPermissions({ PAGE_CREATE_PERMISSION,
+                           PAGE_EDIT_PERMISSION })
     public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
         //this wraps and parses the raw data coming in
@@ -266,7 +264,7 @@ public class PageAdminEndpoint
         source = HtmlTemplate.prepareForSave(source);
 
         //save the file to disk and pull all the proxies etc
-        Page savedPage = R.resourceManager().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class);
+        Page savedPage = R.resourceManager().save(source, new PersonRepository().get(R.securityManager().getCurrentPrincipal()), Page.class);
 
         return Response.ok().build();
     }
@@ -274,8 +272,8 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING,
-                                   Permissions.PAGE_DELETE_PERMISSION_STRING })
+    @RequiresPermissions({ PAGE_EDIT_PERMISSION,
+                           PAGE_DELETE_PERMISSION })
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePage(String uri) throws Exception
     {
@@ -284,7 +282,7 @@ public class PageAdminEndpoint
             throw new NotFoundException("Resource not found; " + uri);
         }
 
-        R.resourceManager().delete(page, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class);
+        R.resourceManager().delete(page, new PersonRepository().get(R.securityManager().getCurrentPrincipal()), Page.class);
 
         return Response.ok().build();
     }
@@ -292,8 +290,8 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete/all")
     @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING,
-                                   Permissions.PAGE_DELETE_PERMISSION_STRING })
+    @RequiresPermissions({ PAGE_EDIT_PERMISSION,
+                           PAGE_DELETE_PERMISSION })
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePageAndTranslations(String uri) throws Exception
     {
@@ -302,14 +300,14 @@ public class PageAdminEndpoint
             throw new NotFoundException("Resource not found; " + uri);
         }
 
-        R.resourceManager().delete(page, new PersonRepository().get(Authentication.getCurrentPrincipal()), Page.class, PageRepository.PageDeleteOption.DELETE_ALL_TRANSLATIONS);
+        R.resourceManager().delete(page, new PersonRepository().get(R.securityManager().getCurrentPrincipal()), Page.class, PageRepository.PageDeleteOption.DELETE_ALL_TRANSLATIONS);
 
         return Response.ok().build();
     }
 
     @POST
-    @javax.ws.rs.Path("/index")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @Path("/index")
+    @RequiresPermissions(PAGE_REINDEX_PERMISSION)
     public Response reindex(@QueryParam("url") URI uri) throws Exception
     {
         Response.ResponseBuilder retVal = null;
@@ -339,8 +337,8 @@ public class PageAdminEndpoint
     }
 
     @GET
-    @javax.ws.rs.Path("/index/all")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @Path("/index/all")
+    @RequiresPermissions(PAGE_REINDEX_PERMISSION)
     public Response indexAll(@QueryParam("folder") List<String> folder,
                              @QueryParam("classCurie") List<String> classCurie,
                              @QueryParam("filter") String filter,
@@ -446,8 +444,8 @@ public class PageAdminEndpoint
     }
 
     //    @GET
-    //    @javax.ws.rs.Path("/index/clear")
-    //    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    //    @Path("/index/clear")
+    //    @RequiresPermissions(PAGE_REINDEX_PERMISSION)
     //    public synchronized Response indexClear() throws Exception
     //    {
     //        Response.ResponseBuilder retVal = null;
@@ -479,8 +477,8 @@ public class PageAdminEndpoint
     //    }
 
     @GET
-    @javax.ws.rs.Path("/index/all/cancel")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @Path("/index/all/cancel")
+    @RequiresPermissions(PAGE_REINDEX_PERMISSION)
     public Response indexAllCancel() throws Exception
     {
         Response.ResponseBuilder retVal = null;
@@ -499,8 +497,8 @@ public class PageAdminEndpoint
     }
 
     @GET
-    @javax.ws.rs.Path("/index/all/status")
-    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    @Path("/index/all/status")
+    @RequiresPermissions(PAGE_REINDEX_PERMISSION)
     public Response indexAllStatus() throws Exception
     {
         Response.ResponseBuilder retVal = null;

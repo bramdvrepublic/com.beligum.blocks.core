@@ -17,16 +17,14 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
+import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.PermissionRole;
-import com.beligum.base.security.PermissionsConfigurator;
+import com.beligum.base.security.PermissionFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.templating.ifaces.TemplateContext;
-import com.beligum.base.templating.ifaces.TemplateEngine;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
@@ -51,7 +49,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
@@ -274,13 +271,13 @@ public abstract class HtmlTemplate
         if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
             SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
             if (securityConfig != null) {
-                retVal = securityConfig.lookupPermissionRole(scope.getValue());
+                retVal = securityConfig.getRole(scope.getValue());
             }
         }
 
         //we guarantee non-null
         if (retVal == null) {
-            retVal = PermissionsConfigurator.ROLE_GUEST;
+            retVal = SecurityConfig.ANONYMOUS_ROLE;
         }
 
         return retVal;
@@ -336,11 +333,11 @@ public abstract class HtmlTemplate
         // guest role is not always added by default to the current principal by the security system,
         // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
         // so the check below would fail, while it's actually ok
-        if (role == null || role == PermissionsConfigurator.ROLE_GUEST) {
+        if (role == null || role.equals(SecurityConfig.ANONYMOUS_ROLE)) {
             return true;
         }
         else {
-            return SecurityUtils.getSubject().hasRole(role.getRoleName());
+            return SecurityUtils.getSubject().hasRole(role.getName());
         }
     }
     /**

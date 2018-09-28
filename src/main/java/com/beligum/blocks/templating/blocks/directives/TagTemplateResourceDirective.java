@@ -64,7 +64,7 @@ public class TagTemplateResourceDirective extends Directive
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 1);
         String urlArgument = (String) TagTemplateDirectiveUtils.readArg(context, node, 2);
         boolean enableDynamicFingerprinting = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 3);
-        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 4));
+        PermissionRole roleScope = R.configuration().getSecurityConfig().getRole((String) TagTemplateDirectiveUtils.readArg(context, node, 4));
         HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 5)];
         HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 6)];
 

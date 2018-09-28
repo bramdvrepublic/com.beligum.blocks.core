@@ -27,6 +27,7 @@ import com.beligum.base.resources.ifaces.AutoLock;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.toolkit.NetworkFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
@@ -228,8 +229,7 @@ public class StorageFactory
                             @Override
                             public void close(RequestEvent event) throws Exception
                             {
-                                releaseCurrentRequestTx(
-                                                event == null || event.getContainerResponse() == null || event.getContainerResponse().getStatus() >= Response.Status.BAD_REQUEST.getStatusCode());
+                                releaseCurrentRequestTx(NetworkFunctions.isFailedRequestEvent(event));
                             }
                         });
 

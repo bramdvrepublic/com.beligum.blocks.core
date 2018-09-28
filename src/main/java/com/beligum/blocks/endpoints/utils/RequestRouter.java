@@ -22,7 +22,7 @@ import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.rdf.sources.PageSourceCopy;
-import com.beligum.blocks.security.Permissions;
+import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
@@ -155,7 +155,7 @@ public class RequestRouter
         this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
-        this.allowCreateNew = SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission());
+        this.allowCreateNew = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_CREATE_PERMISSION);
 
         // --- The basic steps
         this.doRequestUriCleaning();
@@ -210,7 +210,7 @@ public class RequestRouter
             retVal = R.resourceManager().newTemplate(this.getRequestedPage());
 
             //this will allow the blocks javascript/css to be included if we're logged in and have permission
-            if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+            if (SecurityUtils.getSubject().isPermitted(Permissions.PAGE_EDIT_PERMISSION)) {
                 this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, retVal);
             }
         }
@@ -353,7 +353,7 @@ public class RequestRouter
                     //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
                     //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
                     //instance the translated page
-                    else if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                    else if (SecurityUtils.getSubject().isPermitted(Permissions.PAGE_EDIT_PERMISSION)) {
                         selectedEntryAddress = null;
                     }
                 }
