@@ -29,6 +29,7 @@ import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
 import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
@@ -69,7 +70,7 @@ public class RdfEndpoint
     @GET
     @Path("/classes/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(ADMIN_ROLE_NAME)
+    @RequiresPermissions(RDF_CLASS_LIST_PERMISSION)
     public Response getClasses() throws IOException
     {
         return Response.ok(RdfFactory.getLocalPublicClasses()).build();
@@ -78,7 +79,7 @@ public class RdfEndpoint
     @GET
     @Path("/properties/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(ADMIN_ROLE_NAME)
+    @RequiresPermissions(RDF_PROPERTY_LIST_PERMISSION)
     public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
         Set<RdfProperty> retVal = null;
@@ -106,7 +107,7 @@ public class RdfEndpoint
     @GET
     @Path("/properties/main")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(ADMIN_ROLE_NAME)
+    @RequiresPermissions(RDF_PROPERTY_MAIN_PERMISSION)
     public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
     {
         RdfProperty retVal = null;
@@ -125,7 +126,7 @@ public class RdfEndpoint
     @GET
     @Path("/resources/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(ADMIN_ROLE_NAME)
+    @RequiresPermissions(RDF_RESOURCE_SEARCH_PERMISSION)
     //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
     public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults,
                                  @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
@@ -164,7 +165,7 @@ public class RdfEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     //We disabled this because some javascript initialization code needs to access it,
     // and I think it's not really a security issue. Let's hope I'm right...
-    //@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    @RequiresPermissions(RDF_RESOURCE_GET_PERMISSION)
     public Response getResource(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_RES_URI_PARAM) URI resourceUri) throws IOException
     {
         ResourceInfo retVal = null;
