@@ -12,8 +12,11 @@
 <script src="/assets/blocks/core/scripts/broadcaster.js" type="application/javascript"></script>
 <script src="/assets/blocks/core/scripts/notification.js" type="application/javascript"></script>
 
+## dynamic page with JS security plugin
+<script src="$CONSTANTS.base.core.SECURITY_SCRIPTS_ENDPOINT" type="application/javascript"></script>
+
 ## dynamic page with JS array of all the import tags
-<script src="/assets/blocks/core/scripts/imports/all.js" type="application/javascript"></script>
+<script src="$CONSTANTS.blocks.core.IMPORTS_SCRIPTS_ENDPOINT" type="application/javascript"></script>
 
 ## this will make the current language accessible to the JS code in a uniform way
 <script src="/messages/base/core?type=js" type="application/javascript"></script>

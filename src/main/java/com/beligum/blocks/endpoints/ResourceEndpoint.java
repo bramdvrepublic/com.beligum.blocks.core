@@ -19,16 +19,20 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.filesystem.HtmlFile;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.repositories.AssetsRepository;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.snippets.sidebar;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import static gen.com.beligum.base.core.constants.base.core.ASSETS_GET_PERMISSION;
+
 /**
- * Some dynamic enpoints, dealing with the resources
+ * Some dynamic endpoints, dealing with the resources
  * <p>
  * Created by bas on 21.10.14.
  */
@@ -39,8 +43,9 @@ public class ResourceEndpoint
      * Returns a css reset code of all known blocks in the system (resetting padding, margin and display)
      */
     @GET
-    @Path("/assets/blocks/core/styles/imports/reset.css")
-    public Resource getResources()
+    @Path(AssetsRepository.PUBLIC_PATH_PREFIX + "blocks/core/styles/imports/styles.css")
+    @RequiresPermissions(ASSETS_GET_PERMISSION)
+    public Resource getImportsStyles()
     {
         //note: by returning a resource instead of a response, we pass through the caching mechanisms
         return R.resourceManager().create(new StringSource(TemplateCache.instance().getCssReset(), MimeTypes.CSS, null));
@@ -50,8 +55,9 @@ public class ResourceEndpoint
      * As JS plugin with all known block names in this system
      */
     @GET
-    @Path("/assets/blocks/core/scripts/imports/all.js")
-    public Resource getImportsArray()
+    @Path(AssetsRepository.PUBLIC_PATH_PREFIX + "blocks/core/scripts/imports/scripts.js")
+    @RequiresPermissions(ASSETS_GET_PERMISSION)
+    public Resource getImportsScripts()
     {
         //note: by returning a resource instead of a response, we pass through the caching mechanisms
         return R.resourceManager().create(new StringSource(TemplateCache.instance().getJsArray(), MimeTypes.JAVASCRIPT, null));
@@ -62,6 +68,7 @@ public class ResourceEndpoint
      */
     @GET
     @Path("/templates/blocks/core/snippets/sidebar.html")
+    @RequiresPermissions(ASSETS_GET_PERMISSION)
     public HtmlFile getSidebar()
     {
         return sidebar.get();

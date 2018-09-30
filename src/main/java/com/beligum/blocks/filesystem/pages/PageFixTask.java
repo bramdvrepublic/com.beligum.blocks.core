@@ -20,7 +20,7 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.RdfFactory;
-import com.beligum.blocks.endpoints.AbstractImportEndpoint;
+import com.beligum.blocks.utils.importer.ImportTools;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -169,7 +169,7 @@ public class PageFixTask extends ReindexTask
                                     || (rdfProperty.getDataType().equals(XSD.DATE_TIME) && !classes.contains(InputType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
-                                    String newHtml = AbstractImportEndpoint.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
+                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
                                     output.replace(factElement, new Source(newHtml));
 
                                     retVal = true;

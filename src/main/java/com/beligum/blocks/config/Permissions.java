@@ -33,6 +33,9 @@ import java.util.Set;
 public class Permissions implements PermissionFactory
 {
     //-----CONSTANTS-----
+    public static final Permission PAGE_GET_PERMISSION = new PermissionImpl(core.Entries.PAGE_GET_PERMISSION);
+    public static final Permission PAGE_GET_HTML_PERMISSION = new PermissionImpl(core.Entries.PAGE_GET_HTML_PERMISSION, SecurityConfig.ANONYMOUS_ROLE);
+    public static final Permission PAGE_GET_RDF_PERMISSION = new PermissionImpl(core.Entries.PAGE_GET_RDF_PERMISSION, SecurityConfig.ANONYMOUS_ROLE);
     public static final Permission PAGE_CREATE_PERMISSION = new PermissionImpl(core.Entries.PAGE_CREATE_PERMISSION, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission PAGE_EDIT_PERMISSION = new PermissionImpl(core.Entries.PAGE_EDIT_PERMISSION, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission PAGE_DELETE_PERMISSION = new PermissionImpl(core.Entries.PAGE_DELETE_PERMISSION, SecurityConfig.DEFAULT_ADMIN_ROLE);
@@ -44,7 +47,10 @@ public class Permissions implements PermissionFactory
     public static final Permission RDF_RESOURCE_SEARCH_PERMISSION = new PermissionImpl(core.Entries.RDF_RESOURCE_SEARCH_PERMISSION, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission RDF_RESOURCE_GET_PERMISSION = new PermissionImpl(core.Entries.RDF_RESOURCE_GET_PERMISSION, SecurityConfig.ANONYMOUS_ROLE);
 
-    protected static final ImmutableSet<Permission> PERMISSIONS = ImmutableSet.of(PAGE_CREATE_PERMISSION,
+    protected static final ImmutableSet<Permission> PERMISSIONS = ImmutableSet.of(PAGE_GET_PERMISSION,
+                                                                                  PAGE_GET_HTML_PERMISSION,
+                                                                                  PAGE_GET_RDF_PERMISSION,
+                                                                                  PAGE_CREATE_PERMISSION,
                                                                                   PAGE_EDIT_PERMISSION,
                                                                                   PAGE_DELETE_PERMISSION,
                                                                                   PAGE_REINDEX_PERMISSION,

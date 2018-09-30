@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.endpoints;
+package com.beligum.blocks.utils.importer;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
@@ -43,7 +43,7 @@ import static java.time.ZoneOffset.UTC;
 /**
  * Created by bram on 3/22/16.
  */
-public abstract class AbstractImportEndpoint
+public abstract class ImportTools
 {
     //-----CONSTANTS-----
 
