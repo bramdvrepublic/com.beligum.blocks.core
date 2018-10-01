@@ -17,6 +17,7 @@
 package com.beligum.blocks.templating.blocks.analyzer;
 
 import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.*;
@@ -56,6 +57,10 @@ public class HtmlTag implements HtmlTemplate.SubstitionReferenceRenderer
         this.normalizedStartTag = "";
         this.normalizedContent = new ArrayList<>();
         this.normalizedEndTag = "";
+    }
+    protected HtmlTag(HtmlTag htmlTag)
+    {
+        this(htmlTag.source, htmlTag.startTag);
     }
 
     //-----PUBLIC METHODS-----

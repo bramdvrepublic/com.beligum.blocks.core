@@ -17,20 +17,28 @@
 package com.beligum.blocks.rdf.sources;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.models.Person;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
+import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -40,12 +48,13 @@ import org.jsoup.select.Elements;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import javax.xml.datatype.DatatypeFactory;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.*;
 
 /**
  * Created by bram on 1/23/16.
@@ -68,6 +77,7 @@ public abstract class PageSource extends AbstractSource implements Source
     public static final String HTML_ROOT_VOCAB_ATTR = HtmlParser.RDF_VOCAB_ATTR;
     public static final String HTML_ROOT_PREFIX_ATTR = HtmlParser.RDF_PREFIX_ATTR;
     public static final String HTML_TITLE_ELEMENT = "title";
+    public static final String HTML_META_ELEMENT = "meta";
 
     private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
 
@@ -83,6 +93,7 @@ public abstract class PageSource extends AbstractSource implements Source
     //-----VARIABLES-----
     protected Document document;
     protected Element htmlTag;
+    protected Element headTag;
     protected HtmlAnalyzer htmlAnalyzer;
     protected Entities.EscapeMode escapeMode;
 
@@ -211,6 +222,36 @@ public abstract class PageSource extends AbstractSource implements Source
     {
         return this.getHtmlAnalyzer().getNormalizedHtml();
     }
+    public void updateMetadata(Person editor) throws IOException
+    {
+        try {
+            ValueFactory valueFactory = SimpleValueFactory.getInstance();
+            DatatypeFactory datatypeFactory = DatatypeFactory.newInstance();
+
+            //we need custom conversion to store everything in UTC format
+            GregorianCalendar nowUtc = GregorianCalendar.from(ZonedDateTime.now(ZoneOffset.UTC));
+            String timestamp = valueFactory.createLiteral(datatypeFactory.newXMLGregorianCalendar(nowUtc)).stringValue();
+
+            //let's use the user endpoint url to designate the editor
+            //hope it's okay to save this as a relative URI (sinc we try to save all RDFa URIs as relative)
+            String editorUrl = UsersEndpointRoutes.getUser(editor.getId()).getRelativeUri().toString();
+
+            //update the created date
+            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false);
+
+            //update the creator URL
+            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUrl, true, false);
+
+            //update the modified date
+            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true);
+
+            //update the contributor list
+            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUrl, false, false);
+        }
+        catch (Exception e) {
+            throw new IOException("Error while updating the html with the new metadata values; " + this.getUri(), e);
+        }
+    }
 
     //-----PROTECTED METHODS-----
     protected void parseHtml(InputStream source) throws IOException
@@ -228,7 +269,7 @@ public abstract class PageSource extends AbstractSource implements Source
         // - the document must contain a <html> tag
         Elements htmlTags = this.document.getElementsByTag("html");
         if (htmlTags.isEmpty()) {
-            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getUri());
+            throw new IOException("The supplied HTML must contain a <html> tag; " + this.getUri());
         }
         else {
             this.htmlTag = htmlTags.first();
@@ -254,6 +295,14 @@ public abstract class PageSource extends AbstractSource implements Source
             });
 
             el.html(html);
+        }
+
+        Elements headTags = this.document.getElementsByTag("head");
+        if (headTags.isEmpty()) {
+            throw new IOException("The supplied HTML must contain a <head> tag; " + this.getUri());
+        }
+        else {
+            this.headTag = headTags.first();
         }
     }
 
@@ -298,6 +347,70 @@ public abstract class PageSource extends AbstractSource implements Source
 
         if (this.escapeMode != null) {
             retVal.escapeMode(this.escapeMode);
+        }
+
+        return retVal;
+    }
+    private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite)
+    {
+        Element retVal = null;
+
+        Elements existingPropEls = this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]");
+
+        if (existingPropEls.isEmpty()) {
+            this.headTag.prependChild(retVal = this.document.createElement(PageSource.HTML_META_ELEMENT));
+        }
+        else {
+            //this basically means 'append'
+            if (!deleteOthers && !overwrite) {
+
+                //we start out by adding the retval to the DOM, so it's grouped together with the others
+                //note: this doesn't add the retVal to the existingPropEls
+                existingPropEls.last().after(retVal = this.document.createElement(PageSource.HTML_META_ELEMENT));
+
+                //first, check if we are already in the existing list
+                boolean alreadyPresent = false;
+                for (Element contributorEl : existingPropEls) {
+                    //note: this will be null when no such attribute exists
+                    String content = contributorEl.attr(HtmlParser.RDF_CONTENT_ATTR);
+                    //we delete the blanks while we iterate
+                    if (StringUtils.isBlank(content)) {
+                        //note: this doesn't change the list
+                        contributorEl.remove();
+                    }
+                    else if (content.trim().equals(value) && contributorEl != retVal) {
+                        alreadyPresent = true;
+                    }
+                }
+
+                //remove the new element again if it's value was already present in the list
+                if (alreadyPresent) {
+                    retVal.remove();
+                    retVal = null;
+                }
+            }
+            else {
+                Element existingEl = existingPropEls.first();
+
+                if (deleteOthers && existingPropEls.size() > 1) {
+                    for (int i = 0; i < existingPropEls.size(); i++) {
+                        Logger.warn("Encountered html with more than one " + property + " meta property, deleting others; " + this.getUri());
+                        existingPropEls.get(i).remove();
+                    }
+                }
+
+                //note that we need to use placeholders in the templates as anchors for our properties,
+                // so we should always overwrite an empty-valued element since it's the same as no element
+                if (overwrite || StringUtils.isBlank(existingEl.attr(HtmlParser.RDF_CONTENT_ATTR))) {
+                    retVal = existingEl;
+                }
+            }
+        }
+
+        if (retVal != null) {
+            retVal.attr(HtmlParser.RDF_PROPERTY_ATTR, property.getName())
+                  .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString())
+                  .attr(HtmlParser.RDF_CONTENT_ATTR, value);
         }
 
         return retVal;

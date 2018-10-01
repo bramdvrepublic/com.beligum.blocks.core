@@ -63,6 +63,7 @@ public class HtmlAnalyzer
     private AttributeRef htmlPrefixes;
     private Locale htmlLocale;
     private String title;
+    private Set<HtmlTag> metaTags;
     private Set<URI> subResources;
     private boolean analyzedShallow;
     private boolean analyzedDeep;
@@ -144,6 +145,12 @@ public class HtmlAnalyzer
         this.assertAnalyzedDeep();
 
         return title;
+    }
+    public Set<HtmlTag> getMetaTags() throws IOException
+    {
+        this.assertAnalyzedDeep();
+
+        return metaTags;
     }
     public Set<URI> getSubResources() throws IOException
     {
@@ -248,6 +255,7 @@ public class HtmlAnalyzer
      */
     private void analyzeDeep() throws IOException
     {
+        //Note: the normalizer not only normalizes the html, but it also saves certain references along the way
         HtmlNormalizer normalizer = new HtmlNormalizer(pageSource);
         CharSequence unformattedNormalizedHtml = normalizer.process(rootElement);
 
@@ -260,6 +268,7 @@ public class HtmlAnalyzer
 
         //save some additional variables that were detected during normalizing
         this.title = normalizer.getTitle();
+        this.metaTags = normalizer.getMetaTags();
         this.subResources = normalizer.getSubResources();
 
         this.analyzedDeep = true;

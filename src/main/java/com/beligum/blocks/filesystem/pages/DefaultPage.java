@@ -20,6 +20,7 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.logger.RdfLogWriter;
 import com.beligum.blocks.filesystem.logger.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.EBUCoreHdfsMetadataWriter;
@@ -109,6 +110,11 @@ public abstract class DefaultPage extends AbstractPage
     public MetadataWriter createMetadataWriter() throws IOException
     {
         return new EBUCoreHdfsMetadataWriter(this.getFileContext());
+    }
+    @Override
+    public ResourceMetadata getMetadata() throws IOException
+    {
+        return new DefaultPageMetadata(this);
     }
     @Override
     public Path getNormalizedHtmlFile()

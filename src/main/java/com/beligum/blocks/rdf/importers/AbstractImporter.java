@@ -17,10 +17,12 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -30,6 +32,7 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import javax.xml.bind.annotation.XmlSchema;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
@@ -142,29 +145,47 @@ public abstract class AbstractImporter implements Importer
                 }
 
                 //if the object is a literal, check if it needs to be trimmed
+                //BIG NOTE: XSD.ANY_URI is also an instance of a Literal!!
                 if (stmt.getObject() instanceof Literal) {
                     Literal literal = (Literal) stmt.getObject();
                     String objectValue = literal.getLabel();
-                    String objectValueTrimmed = StringUtils.strip(objectValue);
 
-                    if (!objectValue.equals(objectValueTrimmed)) {
-                        //Note: this makes sense: see SimpleLiteral(String label, IRI datatype) constructor code
-                        if (literal.getDatatype().equals(RDF.LANGSTRING)) {
-                            newObject = factory.createLiteral(objectValueTrimmed, literal.getLanguage().get());
+                    //we like to use and save relative URIs as relative URIs because it means we don't need to
+                    //update them if the site domain changes. But the RDFa doc clearly states all relative URIs need
+                    //to be converted to absolute URIs: https://www.w3.org/TR/rdfa-core/#s_curieprocessing
+                    //However, when dealing with custom html tags (eg. <meta datatype="xsd:anyURI"> tags), this doesn't happen
+                    //automatically, so let's do it manually.
+                    if (literal.getDatatype().equals(XMLSchema.ANYURI)) {
+                        URI objectUri = URI.create(objectValue);
+                        if (!objectUri.isAbsolute()) {
+                            objectUri = documentBaseUri.resolve(objectUri);
                         }
-                        else if (literal.getDatatype().equals(XMLSchema.STRING)) {
-                            newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
-                        }
-                        else if (literal.getDatatype().equals(RDF.HTML)) {
-                            newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
-                        }
-                        else {
-                            throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype() + " - " + objectValue);
+                        //it makes sense to convert the data type to IRI as well
+                        newObject = factory.createIRI(objectUri.toString());
+                    }
+                    //this means it's a 'true' literal -> check if we can trim
+                    else {
+                        String objectValueTrimmed = StringUtils.strip(objectValue);
+
+                        if (!objectValue.equals(objectValueTrimmed)) {
+                            //Note: this makes sense: see SimpleLiteral(String label, IRI datatype) constructor code
+                            if (literal.getDatatype().equals(RDF.LANGSTRING)) {
+                                newObject = factory.createLiteral(objectValueTrimmed, literal.getLanguage().get());
+                            }
+                            else if (literal.getDatatype().equals(XMLSchema.STRING)) {
+                                newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
+                            }
+                            else if (literal.getDatatype().equals(RDF.HTML)) {
+                                newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
+                            }
+                            else {
+                                throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype() + " - " + objectValue);
+                            }
                         }
                     }
                 }
 
-                //check if we need to change the statement: remove it from the model and add it again later on
+                //After all the filtering above, check if we need to change the statement: remove it from the model and add it again later on
                 if (newSubject != null || newObject != null || newPredicate != null) {
                     if (newSubject == null) {
                         newSubject = stmt.getSubject();

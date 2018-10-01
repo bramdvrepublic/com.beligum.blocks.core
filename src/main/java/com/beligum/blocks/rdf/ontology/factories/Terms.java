@@ -96,6 +96,52 @@ public class Terms implements RdfResourceFactory
                                                                  },
                                                                  false);
 
+    //note the difference between the LogEntry createdAt (which is modeled after our internal BasicModel interface)
+    //and this (publicly accessible) term, which is modeled after the Dublin Core (and EBU Core)
+    public static final RdfProperty created = new RdfPropertyImpl("created",
+                                                                     LocalVocabulary.INSTANCE,
+                                                                     ontology.Entries.propertyTitle_created,
+                                                                     ontology.Entries.propertyLabel_created,
+                                                                     XSD.DATE_TIME,
+                                                                     InputType.DateTime,
+                                                                     null,
+                                                                     new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-created
+                                                                     },
+                                                                     false);
+
+    public static final RdfProperty creator = new RdfPropertyImpl("creator",
+                                                                  LocalVocabulary.INSTANCE,
+                                                                  ontology.Entries.propertyTitle_creator,
+                                                                  ontology.Entries.propertyLabel_creator,
+                                                                  XSD.ANY_URI,
+                                                                  InputType.Resource,
+                                                                  null,
+                                                                  new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-creator
+                                                                  },
+                                                                  false);
+
+    public static final RdfProperty modified = new RdfPropertyImpl("modified",
+                                                                  LocalVocabulary.INSTANCE,
+                                                                  ontology.Entries.propertyTitle_modified,
+                                                                  ontology.Entries.propertyLabel_modified,
+                                                                  XSD.DATE_TIME,
+                                                                  InputType.DateTime,
+                                                                  null,
+                                                                  new URI[] { //TODO http://dublincore.org/documents/dcmi-terms/#terms-modified
+                                                                  },
+                                                                  false);
+
+    public static final RdfProperty contributor = new RdfPropertyImpl("contributor",
+                                                                  LocalVocabulary.INSTANCE,
+                                                                  ontology.Entries.propertyTitle_contributor,
+                                                                  ontology.Entries.propertyLabel_contributor,
+                                                                  XSD.ANY_URI,
+                                                                  InputType.Resource,
+                                                                  null,
+                                                                  new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-contributor
+                                                                  },
+                                                                  false);
+
     //-----CONFIGS-----
 
 }

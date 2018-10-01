@@ -47,12 +47,14 @@ public class HtmlNormalizer
     //-----VARIABLES-----
     private Source source;
     private String title;
+    private Set<HtmlTag> metaTags;
     private Set<URI> subResources;
 
     //-----CONSTRUCTORS-----
     public HtmlNormalizer(Source source)
     {
         this.source = source;
+        this.metaTags = new LinkedHashSet<>();
         this.subResources = new LinkedHashSet<>();
     }
 
@@ -83,6 +85,10 @@ public class HtmlNormalizer
     public String getTitle()
     {
         return title;
+    }
+    public Set<HtmlTag> getMetaTags()
+    {
+        return metaTags;
     }
     public Set<URI> getSubResources()
     {
@@ -178,6 +184,7 @@ public class HtmlNormalizer
     private void extractMetaData(HtmlTag htmlTag)
     {
         this.extractTitle(htmlTag);
+        this.extractMetaTags(htmlTag);
         this.extractSubResources(htmlTag);
 
         //        this.extractReferences(htmlTag);
@@ -192,6 +199,12 @@ public class HtmlNormalizer
             if (!StringUtils.isEmpty(this.title)) {
                 this.title = this.title.trim();
             }
+        }
+    }
+    private void extractMetaTags(HtmlTag htmlTag)
+    {
+        if (htmlTag.getName().equalsIgnoreCase(PageSource.HTML_META_ELEMENT)) {
+            this.metaTags.add(htmlTag);
         }
     }
     /**

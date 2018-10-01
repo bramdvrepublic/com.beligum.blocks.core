@@ -137,6 +137,12 @@ public interface BlocksResource extends HdfsResource
     void writeHash(Hash newHash) throws IOException;
 
     /**
+     * Fetches and parses the structured metadata of this resource.
+     * Note: this is probably a very expensive operation, use with care.
+     */
+    ResourceMetadata getMetadata() throws IOException;
+
+    /**
      * Acquire a filesystem lock on this resource or throw an exception if it didn't succeed.
      */
     LockFile acquireLock() throws IOException;

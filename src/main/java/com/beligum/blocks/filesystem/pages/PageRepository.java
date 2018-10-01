@@ -26,6 +26,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.LockFile;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.logger.PageLogEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -192,6 +193,10 @@ public class PageRepository extends AbstractResourceRepository
                     newPage.writeHistoryEntry(oldPage);
                 }
 
+                //update the metadata of the source before we write it to disk
+                //Note: by doing it here, the nothingChanged flag still works as expected
+                pageSource.updateMetadata(editor);
+
                 //save the original page html
                 newPage.write(pageSource);
 
@@ -206,10 +211,6 @@ public class PageRepository extends AbstractResourceRepository
 
                 //write out a log entry that the page was altered
                 newPage.writeLogEntry(editor, oldPage != null ? PageLogEntry.Action.UPDATE : PageLogEntry.Action.CREATE);
-
-                //save the page metadata (read it in if it exists)
-                //Note: disabled and more or less replaced by the writeLogEntry() above because it was too setRollbackOnly prone on crashes
-                //newPage.writeMetadata(editor);
 
                 //reindex the page
                 this.index(newPage);

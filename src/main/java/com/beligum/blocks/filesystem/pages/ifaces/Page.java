@@ -75,7 +75,7 @@ public interface Page extends BlocksResource
     Exporter createExporter(Format exportFormat) throws IOException;
 
     /**
-     * Creates a new analyzer, based on the currently stored original source for this page, reads it in and parses it.
+     * Creates a new analyzer - based on the information coming from newInputStream() - reads it in and parses it.
      * Note: this is a very expensive operation, use with care.
      * @return the initialized and parsed analyzer to be used to extract meta info from the stored html.
      * @throws IOException
@@ -83,7 +83,8 @@ public interface Page extends BlocksResource
     HtmlAnalyzer createAnalyzer() throws IOException;
 
     /**
-     * Same as above, but forces to read the original file instead of the default newInputStream() (which reads the normalized stream for ReadOnlyPages)
+     * Same as above, but forces to read the original, unmodified file instead of the default newInputStream()
+     * (eg. which reads the normalized stream for ReadOnlyPages instead of the full original html)
      */
     HtmlAnalyzer createAnalyzer(boolean readOriginal) throws IOException;
 

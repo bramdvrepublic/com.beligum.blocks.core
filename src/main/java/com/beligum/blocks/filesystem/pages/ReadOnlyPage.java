@@ -21,6 +21,7 @@ import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import org.apache.hadoop.fs.FileContext;
 
 import java.io.IOException;

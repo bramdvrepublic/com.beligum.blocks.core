@@ -26,6 +26,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.hdfs.HdfsZipUtils;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.logger.PageLogEntry;
 import com.beligum.blocks.filesystem.logger.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
