@@ -2,8 +2,8 @@ package com.beligum.blocks.endpoints.utils;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.ifaces.ResourceRequest;
-import com.beligum.base.resources.ifaces.ResourceSecurityAction;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
@@ -13,6 +13,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
@@ -138,6 +139,7 @@ public class PageRouter
     private String newPageTemplateName;
     private String newPageCopyUrl;
     private Boolean newPageCopyLink;
+    private Boolean newPagePersistent;
     private MultivaluedMap<String, String> newPageExtraParams;
 
     /**
@@ -161,8 +163,8 @@ public class PageRouter
         this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
-        this.allowCreateNew = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
-        this.allowEditExisting = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+        this.allowCreateNew = R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
+        this.allowEditExisting = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
 
         // --- The basic steps
         this.doRequestUriCleaning();
@@ -184,6 +186,7 @@ public class PageRouter
             this.doExtractCreateVariables();
             this.doBuildNewTemplatePage();
             this.doBuildNewCopyPage();
+            this.doPersistNewPage();
             this.doBuildNewPageSelection();
         }
     }
@@ -220,9 +223,9 @@ public class PageRouter
             //this is the retVal for the public page
             retVal = R.resourceManager().newTemplate(page);
 
-            //this will allow the blocks javascript/css to be included if we have permission to do so
-            if (page.isPermitted(ResourceSecurityAction.UPDATE)) {
-                this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, retVal);
+            //this will allow the extra edit javascript/css to be included
+            if (page.isPermitted(ResourceAction.UPDATE)) {
+                this.setResourceAction(ResourceAction.UPDATE);
             }
         }
 
@@ -517,7 +520,7 @@ public class PageRouter
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew()) {
 
-            String safePagePath = this.safePagePath(this.requestedUri.getPath());
+            String safePagePath = new PageUrlValidator().createSafePagePath(this.requestedUri.getPath());
 
             //If the URL is not safe, fix it and redirect
             if (!this.requestedUri.getPath().equals(safePagePath)) {
@@ -538,13 +541,15 @@ public class PageRouter
             this.newPageTemplateName = null;
             this.newPageCopyUrl = null;
             this.newPageCopyLink = false;
+            this.newPagePersistent = false;
             this.newPageExtraParams = new MultivaluedHashMap<>();
 
             if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
-                this.newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
-                this.newPageCopyUrl = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
-                this.newPageCopyLink = (Boolean) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
-                this.newPageExtraParams = (MultivaluedMap<String, String>) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name());
+                this.newPageTemplateName = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+                this.newPageCopyUrl = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
+                this.newPageCopyLink = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
+                this.newPagePersistent = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_PERSISTENT.name());
+                this.newPageExtraParams = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name());
             }
         }
     }
@@ -554,7 +559,7 @@ public class PageRouter
      */
     private void doBuildNewTemplatePage() throws InternalServerErrorException
     {
-        if (this.assertUnfinished() && this.assertAllowCreateNew() && this.assertNotCreatedNew()) {
+        if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
             if (!StringUtils.isEmpty(this.newPageTemplateName)) {
 
@@ -568,9 +573,10 @@ public class PageRouter
                     this.transferExtraParams(this.adminTemplate.getContext(), this.newPageExtraParams);
 
                     //this will allow the extra edit javascript/css to be included
-                    this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, this.adminTemplate);
+                    this.setResourceAction(ResourceAction.UPDATE);
 
-                    //note: we deliberately don't set the targetUri because we don't have a real target yet (only after the first save)
+                    //Note: we deliberately don't set the targetUri because we don't have a real target yet (only after the first save)
+                    //(except when we'll persist the page in one go, see later)
                 }
                 else {
                     throw new InternalServerErrorException("Requested to instance a new page (" + requestedUri + ") with an invalid page template name; " + newPageTemplateName);
@@ -584,7 +590,7 @@ public class PageRouter
      */
     private void doBuildNewCopyPage() throws InternalServerErrorException
     {
-        if (this.assertUnfinished() && this.assertAllowCreateNew() && this.assertNotCreatedNew()) {
+        if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
             if (!StringUtils.isEmpty(this.newPageCopyUrl)) {
 
@@ -604,7 +610,7 @@ public class PageRouter
                         //note: extra params are inserted in the copy, not here
 
                         //activate blocks mode for the old template so we copy everything, not just the public html
-                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
+                        this.setResourceAction(ResourceAction.UPDATE);
 
                         Source source = new StringSource(copyPage.getPublicAbsoluteAddress(),
                                                          copyTemplate.render(),
@@ -625,9 +631,10 @@ public class PageRouter
                         this.transferExtraParams(this.adminTemplate.getContext(), this.newPageExtraParams);
 
                         //this will allow the extra edit javascript/css to be included
-                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, this.adminTemplate);
+                        this.setResourceAction(ResourceAction.UPDATE);
 
                         //note: we deliberately don't set the targetUri because we don't have a real target yet (only after the first save)
+                        //(except when we'll persist the page in one go, see later)
                     }
                     catch (IOException e) {
                         throw new InternalServerErrorException("Error while building page copy of page " + this.newPageCopyUrl + " for " + this.requestedUri, e);
@@ -639,12 +646,31 @@ public class PageRouter
             }
         }
     }
+    private void doPersistNewPage() throws InternalServerErrorException
+    {
+        if (this.assertUnfinished() && this.assertAllowCreateNew() && this.assertCreatedNew()) {
+
+            if (this.newPagePersistent) {
+                try {
+                    //sync these with the annotations on the PageAdminEndpoint.save() method
+                    R.securityManager().checkPermissions(Permissions.PAGE_CREATE_ALL_PERM, Permissions.PAGE_UPDATE_ALL_PERM);
+                    new PageAdminEndpoint().savePage(this.requestedUri, this.adminTemplate.render());
+
+                    //this will uniformly set the required variables for further handling
+                    this.doResolvePage();
+                }
+                catch (IOException e) {
+                    throw new InternalServerErrorException("Error while persisting a new page (" + requestedUri + ") of template; " + newPageTemplateName);
+                }
+            }
+        }
+    }
     /**
      * Show the instance-new page list to the end user
      */
     private void doBuildNewPageSelection()
     {
-        if (this.assertUnfinished() && this.assertAllowCreateNew() && this.assertNotCreatedNew()) {
+        if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
             //we'll use the admin-interface language to render this page, not the language of the content
             R.i18n().setManualLocale(R.i18n().getBrowserLocale());
@@ -655,7 +681,7 @@ public class PageRouter
             this.adminTemplate.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.searchAllPageTranslations(this.requestedUri));
 
             //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
-            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.create, this.adminTemplate);
+            this.setResourceAction(ResourceAction.CREATE);
         }
     }
 
@@ -669,9 +695,9 @@ public class PageRouter
     {
         return this.allowCreateNew;
     }
-    private boolean assertNotCreatedNew()
+    private boolean assertCreatedNew()
     {
-        return this.adminTemplate == null;
+        return this.adminTemplate != null;
     }
     private LuceneQueryConnection getMainPageQueryConnection() throws IOException
     {
@@ -681,37 +707,6 @@ public class PageRouter
         }
 
         return this.cachedQueryConnection;
-    }
-    /**
-     * This is modified version of StringFunctions.prepareSeoValue()
-     */
-    private String safePagePath(String path)
-    {
-        String retVal = path.trim();
-
-        if (!StringUtils.isEmpty(retVal)) {
-            //convert all special chars to ASCII
-            retVal = StringFunctions.webNormalizeString(retVal);
-            //this might be extended later on (note that we need to allow slashes because the path might have multiple segments)
-            retVal = retVal.replaceAll("[^a-zA-Z0-9_ \\-/.]", "");
-            //replace whitespace with dashes
-            retVal = retVal.replaceAll("\\s+", "-");
-            //replace double dashes with single dashes
-            retVal = retVal.replaceAll("-+", "-");
-            //make sure the path doesn't begin or end with a dash
-            retVal = StringUtils.strip(retVal, "-");
-
-            //Note: don't do a toLowerCase, it messes up a lot of resource-addresses, eg. /resource/SmithMark/360
-
-            //see for inspiration: http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
-            final int MAX_LENGTH = 2000;
-            if (retVal.length() > MAX_LENGTH) {
-                retVal = retVal.substring(0, MAX_LENGTH);
-                retVal = retVal.substring(0, retVal.lastIndexOf("-"));
-            }
-        }
-
-        return retVal;
     }
     private void transferExtraParams(TemplateContext context, MultivaluedMap<String, String> newPageExtraParams)
     {
@@ -775,13 +770,10 @@ public class PageRouter
 
         return retVal;
     }
-    private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, Template template)
+    private void setResourceAction(ResourceAction action)
     {
         //this one is used by HtmlParser to doIsValid if we need to include certain tags
-        R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
-
-        //for velocity templates
-        template.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
+        R.cacheManager().getRequestCache().put(CacheKeys.RESOURCE_ACTION, action);
     }
 
     //-----MGMT METHODS-----

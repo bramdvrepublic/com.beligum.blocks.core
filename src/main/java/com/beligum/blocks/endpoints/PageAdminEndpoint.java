@@ -19,6 +19,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
@@ -27,6 +28,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.endpoints.utils.PageUrlValidator;
 import com.beligum.blocks.filesystem.index.reindex.*;
 import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
@@ -42,6 +44,7 @@ import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
@@ -97,6 +100,7 @@ public class PageAdminEndpoint
      * @param pageTemplateName the name of the page template to use for the new page
      * @param pageCopyUrl      the url of an existing page to make a copy from
      * @param pageCopyLink     true if the existing page needs to share the resource with the copy, false if a new resource URI will be generated
+     * @param pagePersistent   true if the existing page needs to be persisted (saved) during creation
      */
     @GET
     @Path("/template")
@@ -104,19 +108,26 @@ public class PageAdminEndpoint
     public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) String pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
-                                    @QueryParam(NEW_PAGE_COPY_LINK_PARAM) Boolean pageCopyLink) throws URISyntaxException
+                                    @QueryParam(NEW_PAGE_COPY_LINK_PARAM) Boolean pageCopyLink,
+                                    @QueryParam(NEW_PAGE_PERSISTENT_PARAM) Boolean pagePersistent) throws URISyntaxException
     {
-        if (StringUtils.isEmpty(pageUrl)) {
+        //if this endpoint is called directly, make sure we validate the url
+        //or eg. the new URI() method below will fail
+        String safePageUrl = new PageUrlValidator().createSafePagePath(pageUrl);
+
+        if (StringUtils.isEmpty(safePageUrl)) {
             throw new InternalServerErrorException(core.Entries.newPageNoUrlError.toString());
         }
         else {
 
             if (!StringUtils.isEmpty(pageTemplateName)) {
                 R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name(), pageTemplateName);
+                R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_PERSISTENT.name(), pagePersistent);
             }
             else if (!StringUtils.isEmpty(pageCopyUrl)) {
                 R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_COPY_URL.name(), pageCopyUrl);
                 R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_COPY_LINK.name(), pageCopyLink == null ? false : pageCopyLink);
+                R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_PERSISTENT.name(), pagePersistent);
             }
             else {
                 throw new InternalServerErrorException(core.Entries.newPageNoDataError.toString());
@@ -129,10 +140,11 @@ public class PageAdminEndpoint
             extraParams.remove(NEW_PAGE_TEMPLATE_PARAM);
             extraParams.remove(NEW_PAGE_COPY_URL_PARAM);
             extraParams.remove(NEW_PAGE_COPY_LINK_PARAM);
+            extraParams.remove(NEW_PAGE_PERSISTENT_PARAM);
             R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name(), extraParams);
 
             //redirect to the requested page with the flash cache filled in
-            return Response.seeOther(new URI(pageUrl)).build();
+            return Response.seeOther(new URI(safePageUrl)).build();
         }
     }
 
@@ -226,6 +238,9 @@ public class PageAdminEndpoint
         //note that we need to force this request to be that language, otherwise, a regular getOptimalLocale() will be used
         R.i18n().setManualLocale(lang);
 
+        //signal the block-to-be-created we want all it's resources for update mode
+        R.cacheManager().getRequestCache().put(CacheKeys.RESOURCE_ACTION, ResourceAction.UPDATE);
+
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to instance this resource or you'll re-instance the template, instead of an instance.
         // To avoid any clashes, we'll use the name of the instance as resource URI
@@ -238,14 +253,11 @@ public class PageAdminEndpoint
 
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
 
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
-                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),
-                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(),
-                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(),
-                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        //Note: the newArrayList is needed to make it work with json
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(), Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(), Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(), Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(), Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()));
 
         return Response.ok(retVal).build();
     }
@@ -253,10 +265,14 @@ public class PageAdminEndpoint
     @POST
     @javax.ws.rs.Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
+    //keep these in sync with the code in the PageRouter
     @RequiresPermissions({ PAGE_CREATE_ALL_PERM,
                            PAGE_UPDATE_ALL_PERM })
-    public Response savePage(@QueryParam("url") URI url, String content) throws Exception
+    public Response savePage(@QueryParam("url") URI url, String content) throws IOException
     {
+        //!!! WARNING: this method is also called directly from the PageRouter
+        // if it needs to persist the created page, beware of changes !!!
+
         //this wraps and parses the raw data coming in
         Source source = new NewPageSource(url, content);
 

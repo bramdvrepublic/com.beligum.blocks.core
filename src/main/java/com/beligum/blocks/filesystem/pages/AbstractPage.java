@@ -21,7 +21,7 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
-import com.beligum.base.resources.ifaces.ResourceSecurityAction;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
@@ -104,13 +104,12 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         return this.fileContext.util().exists(this.getNormalizedHtmlFile());
     }
     @Override
-    public boolean isPermitted(ResourceSecurityAction action)
+    public boolean isPermitted(ResourceAction action)
     {
         switch (action) {
             case READ:
             case CREATE:
             case DELETE:
-            case EXPIRE:
                 return true;
 
             case UPDATE:

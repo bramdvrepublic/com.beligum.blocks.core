@@ -27,8 +27,6 @@ public enum CacheKeys implements CacheKey
     TAG_TEMPLATES,
     //the hashmap that contains mappings for templateTag -> templateControllerClass
     TAG_TEMPLATE_CONTROLLERS,
-    //the key that maps to the mode in which we are now (set in HtmlRouter)
-    BLOCKS_MODE,
     //application cache key that stores the single XAttr resolver factory
     BLOCKS_XATTR_RESOLVER_FACTORY,
     //application cache key to store the configuration of the HDFS page store
@@ -57,6 +55,8 @@ public enum CacheKeys implements CacheKey
     NEW_PAGE_COPY_URL,
     //flash cache key that holds the temporarily boolean to see if we need to link the copy to the original
     NEW_PAGE_COPY_LINK,
+    //flash cache key that holds the temporarily boolean to see if we need to immediately save a page after creating it
+    NEW_PAGE_PERSISTENT,
     //flash cache key that holds a number of extra get-params that were passed in during new page template creation
     NEW_PAGE_EXTRA_PARAMS,
     //Application cache key that hold the lucene index writer
@@ -73,4 +73,6 @@ public enum CacheKeys implements CacheKey
     RDF_VOCABULARY_PREFIXES,
     //Application cache key that keeps a map to the discovered Rdf vocabularies-entries (classes and properties)
     RDF_VOCABULARY_ENTRIES,
+    //Request cache key that holds the resource action (create/update/...) for this request
+    RESOURCE_ACTION
 }

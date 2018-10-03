@@ -16,21 +16,15 @@
 
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.config.SecurityConfiguration;
-import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.resources.ifaces.ResourceSecurityAction;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.sources.StringSource;
-import com.beligum.base.security.Permission;
-import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.SecurityManager;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateDirectiveUtils;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.Function;
@@ -43,7 +37,6 @@ import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -90,14 +83,6 @@ public abstract class HtmlTemplate
     //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
     public static final String ATTRIBUTE_RENDER_TAG = "data-render-tag";
 
-    public enum ResourceScopeMode
-    {
-        UNDEFINED,
-        EMPTY,
-        create,
-        edit
-    }
-
     public enum ResourceJoinHint
     {
         UNDEFINED,
@@ -121,7 +106,7 @@ public abstract class HtmlTemplate
     }
 
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
-    protected static final ResourceSecurityAction[] NO_RESOURCE_ACTION = { ResourceSecurityAction.NONE };
+    protected static final ResourceAction[] NO_RESOURCE_ACTION = { ResourceAction.NONE };
 
     //-----VARIABLES-----
     protected Path absolutePath;
@@ -293,72 +278,62 @@ public abstract class HtmlTemplate
         return retVal;
     }
     /**
-     * Supply a scope attached to a html resource (with data-scope-role attribute)
-     * and return if that resource should be included or not.
+     * Test if ALL of the supplied permissions are permitted in the current context
      */
     public static boolean testResourcePermissionScope(Iterable<String> permissions)
     {
-        // anonymous role is not always added by default to the current principal by the security system,
-        // so if the resource is anonymous, assume this is a public resource
-        if (permissions == null) {
-            return true;
-        }
-        else {
-            boolean retVal = true;
-            SecurityManager securityManager = R.securityManager();
-            for (String perm : permissions) {
-                //note that multiple permissions are ANDed together since this is what you naturally expect
-                retVal = retVal && securityManager.isPermitted(perm);
-                if (!retVal) {
-                    break;
+        // By default, we assume this is a public resource: we default to true
+        boolean retVal = true;
+
+        if (permissions != null) {
+
+            Iterator<String> iter = permissions.iterator();
+            if (iter.hasNext()) {
+                SecurityManager securityManager = R.securityManager();
+                while (iter.hasNext()) {
+                    //note that multiple permissions are ANDed together;
+                    //when the perm list is not empty, all should pass,
+                    //so if one doesn't pass, we immediately return false
+                    if (!securityManager.isPermitted(iter.next())) {
+                        retVal = false;
+                        break;
+                    }
                 }
             }
-            return retVal;
         }
+
+        return retVal;
     }
     /**
-     * Return if we should currently (in this request context) render out for the specified mode.
+     * Test if ANY of the supplied actions are permitted in the current context
      */
-    public static boolean testResourceActionScope(Iterable<ResourceSecurityAction> actions)
+    public static boolean testResourceActionScope(Iterable<ResourceAction> actions)
     {
-        //same reason as for permissions
-        if (actions == null) {
-            return true;
-        }
-        else {
-            ResourceSecurityAction currentAction = R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE);
+        // By default, we assume this is a public resource: we default to true
+        boolean retVal = true;
 
-            boolean empty = true;
-            for (ResourceSecurityAction action : actions) {
+        if (actions != null) {
 
-                empty = false;
-                boolean retVal = false;
+            Iterator<ResourceAction> iter = actions.iterator();
+            if (iter.hasNext()) {
+                //as soon as we have one or more actions configured, at least one of the configured actions should be allowed,
+                //so we'll switch to a default of false and break if we find a matching action
+                retVal = false;
 
-                switch (action) {
-                    case READ:
-                    case CREATE:
-                    case UPDATE:
-                    case DELETE:
-                    case EXPIRE:
-                        retVal = action.equals(currentAction);
-                        break;
-                    case NONE:
-                        //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
-                        retVal = true;
-                        break;
-                    default:
-                        Logger.error("Encountered unsupported resource action, ignoring; " + action);
-                        break;
-                }
-
-                //note that this will OR the actions; as soon as we find a hit, we return true
-                if (retVal) {
-                    return true;
+                ResourceAction currentResourceAction = R.cacheManager().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
+                //this means we'll return false if we're not doing anything
+                if (currentResourceAction != null) {
+                    while (iter.hasNext()) {
+                        if (currentResourceAction.equals(iter.next())) {
+                            retVal = true;
+                            break;
+                        }
+                    }
                 }
             }
-
-            return empty ? true : false;
         }
+
+        return retVal;
     }
     /**
      * Returns true if the supplied tag is a property tag
@@ -606,19 +581,19 @@ public abstract class HtmlTemplate
     {
         return externalStyleElements;
     }
-    public Iterable<Element> getInlineScriptElementsForCurrentScope()
+    public Iterable<String> getInlineScriptElementsForCurrentScope()
     {
         return this.buildScopedResourceIterator(this.getInlineScriptElements());
     }
-    public Iterable<Element> getExternalScriptElementsForCurrentScope()
+    public Iterable<String> getExternalScriptElementsForCurrentScope()
     {
         return this.buildScopedResourceIterator(this.getExternalScriptElements());
     }
-    public Iterable<Element> getInlineStyleElementsForCurrentScope()
+    public Iterable<String> getInlineStyleElementsForCurrentScope()
     {
         return this.buildScopedResourceIterator(this.getInlineStyleElements());
     }
-    public Iterable<Element> getExternalStyleElementsForCurrentScope()
+    public Iterable<String> getExternalStyleElementsForCurrentScope()
     {
         return this.buildScopedResourceIterator(this.getExternalStyleElements());
     }
@@ -890,10 +865,8 @@ public abstract class HtmlTemplate
             }
         }
 
-        //note that permissions are strings, so need to parse them
         Attribute permissionScopeAttr = element.getAttributes().get(ATTRIBUTE_RESOURCE_PERMISSION_SCOPE);
         String permissionScopeStr = permissionScopeAttr == null ? "" : permissionScopeAttr.getValue();
-
         Attribute actionScopeAttr = element.getAttributes().get(ATTRIBUTE_RESOURCE_ACTION_SCOPE);
         String actionScopeStr = actionScopeAttr == null ? "" : actionScopeAttr.getValue();
 
@@ -960,25 +933,26 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> buildScopedResourceIterator(Iterable<ScopedResource> resources)
+    private Iterable<String> buildScopedResourceIterator(Iterable<ScopedResource> resources)
     {
-        final Iterator iter = Iterators.filter(resources.iterator(), new Predicate<ScopedResource>()
-        {
-            @Override
-            public boolean apply(ScopedResource resource)
-            {
-                return testResourceActionScope(resource.getActions()) && testResourcePermissionScope(resource.getPermissions());
-            }
-        });
-
-        return new Iterable<Element>()
-        {
-            @Override
-            public Iterator iterator()
-            {
-                return iter;
-            }
-        };
+        return Iterables.transform(Iterables.filter(resources, new Predicate<ScopedResource>()
+                                   {
+                                       @Override
+                                       public boolean apply(ScopedResource resource)
+                                       {
+                                           return testResourceActionScope(resource.getActions()) && testResourcePermissionScope(resource.getPermissions());
+                                       }
+                                   }),
+                                   new Function<ScopedResource, String>()
+                                   {
+                                       @Nullable
+                                       @Override
+                                       public String apply(@Nullable ScopedResource input)
+                                       {
+                                           return input.getElement().toString();
+                                       }
+                                   }
+        );
     }
     /**
      * Post-parse the html of this template to save variable selectors, standardize html, etc.
@@ -1398,13 +1372,22 @@ public abstract class HtmlTemplate
         }
     }
 
-    private static class ScopedResource implements Function<String, ResourceSecurityAction>
+    public static class ScopedResource
     {
         private static Splitter csvSplitter = Splitter.on(",").trimResults().omitEmptyStrings();
+        private static Function<String, ResourceAction> actionParser = new Function<String, ResourceAction>()
+        {
+            @Nullable
+            @Override
+            public ResourceAction apply(@Nullable String input)
+            {
+                return ResourceAction.valueOfIgnoreCase(input);
+            }
+        };
 
         private Element element;
         private Iterable<String> permissions;
-        private Iterable<ResourceSecurityAction> actions;
+        private Iterable<ResourceAction> actions;
 
         public ScopedResource(Element element)
         {
@@ -1412,7 +1395,7 @@ public abstract class HtmlTemplate
 
             Attribute permScopeAttr = this.element.getAttributes().get(ATTRIBUTE_RESOURCE_PERMISSION_SCOPE);
             if (permScopeAttr != null && permScopeAttr.hasValue()) {
-                this.permissions = csvSplitter.split(permScopeAttr.getValue());
+                this.permissions = parsePermissions(permScopeAttr.getValue());
             }
             else {
                 this.permissions = Collections.emptyList();
@@ -1420,16 +1403,20 @@ public abstract class HtmlTemplate
 
             Attribute actionScopeAttr = this.element.getAttributes().get(ATTRIBUTE_RESOURCE_ACTION_SCOPE);
             if (actionScopeAttr != null && actionScopeAttr.hasValue()) {
-                this.actions = Iterables.transform(csvSplitter.split(actionScopeAttr.getValue()), this);
+                this.actions = parseActions(actionScopeAttr.getValue());
             }
             else {
                 this.actions = Collections.emptyList();
             }
         }
-        @Override
-        public ResourceSecurityAction apply(String input)
+        public static Iterable<String> parsePermissions(String value)
         {
-            return ResourceSecurityAction.valueOfIgnoreCase(input);
+            //note that permissions are just strings
+            return csvSplitter.split(value);
+        }
+        public static Iterable<ResourceAction> parseActions(String value)
+        {
+            return Iterables.transform(csvSplitter.split(value), actionParser);
         }
         public Element getElement()
         {
@@ -1439,7 +1426,7 @@ public abstract class HtmlTemplate
         {
             return permissions;
         }
-        public Iterable<ResourceSecurityAction> getActions()
+        public Iterable<ResourceAction> getActions()
         {
             return actions;
         }

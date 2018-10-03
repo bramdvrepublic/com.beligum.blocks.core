@@ -15,20 +15,19 @@
 
 ## -----ADMIN IMPORTS-----
 ## if we reach this part, we need to include it no matter what
-<link href="/assets/blocks/core/styles/imports/fontawesome.less" rel="stylesheet" data-scope-role="user">
-<link href="/assets/webjars/perfect-scrollbar/0.6.16/css/perfect-scrollbar.css" rel="stylesheet" data-scope-role="user">
+<link href="/assets/blocks/core/styles/imports/fontawesome.less" rel="stylesheet" data-scope-action="create,update">
+<link href="/assets/webjars/perfect-scrollbar/0.6.16/css/perfect-scrollbar.css" rel="stylesheet" data-scope-action="create,update">
 
 ## all styles for the sidebar, etc; always included (because we also need some styles for the select-template page)
-<link href="/assets/blocks/core/styles/main.less" rel="stylesheet" data-scope-role="user">
-<link href="/assets/blocks/media/core/styles/finder.less" rel="stylesheet" data-scope-role="user">
+<link href="/assets/blocks/core/styles/main.less" rel="stylesheet" data-scope-action="create,update">
+<link href="/assets/blocks/media/core/styles/finder.less" rel="stylesheet" data-scope-action="create,update">
 
 ## -----ADMIN + UPDATE IMPORTS-----
-<link href="/assets/webjars/bootstrap-toggle/2.2.0/css/bootstrap-toggle.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
-<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
-## For autocomplete widget in widget.js
-## Note: double scope workaround...
-<link href="/assets/blocks/core/styles/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
-<link href="/assets/blocks/core/styles/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="create">
+## These are references in widget.js
+<link href="/assets/webjars/bootstrap-toggle/2.2.0/css/bootstrap-toggle.css" rel="stylesheet" data-scope-action="update">
+<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet" data-scope-action="update">
+## Typeahead is also used in the create page
+<link href="/assets/blocks/core/styles/typeaheadjs.css" rel="stylesheet" data-scope-action="create,update">
 
 
 ## just to make it a template

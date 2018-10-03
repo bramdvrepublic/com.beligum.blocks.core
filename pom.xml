@@ -49,7 +49,6 @@
 
         <!-- Sync these two using https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
         <version.infinispan>8.1.1.Final</version.infinispan>
-        <version.jbossjta>5.0.4.Final</version.jbossjta>
         
     </properties>
 
@@ -588,12 +587,6 @@
             <groupId>com.ibm.icu</groupId>
             <artifactId>icu4j</artifactId>
             <version>60.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.8.11.1</version>
         </dependency>
 
     </dependencies>

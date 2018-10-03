@@ -22,6 +22,7 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.repositories.JoinRepository;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateResources;

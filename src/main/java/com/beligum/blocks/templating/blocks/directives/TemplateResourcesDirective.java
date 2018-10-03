@@ -16,10 +16,13 @@
 
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.cache.CacheFunction;
+import com.beligum.base.cache.CacheKey;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.templating.blocks.TemplateResources;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
@@ -97,24 +100,16 @@ public class TemplateResourcesDirective extends Directive
 
     //-----PUBLIC METHODS-----
     //Note: storing this in the context meant trouble (multiple factory calls during one request?)
-    public static TemplateResources getContextResources(InternalContextAdapter context)
+    public static TemplateResources getContextResources(InternalContextAdapter context) throws IOException
     {
-        TemplateResources retVal = (TemplateResources) R.cacheManager().getRequestCache().get(CacheKey.BLOCKS_TEMPLATE_RES);
-        if (retVal == null) {
-            R.cacheManager().getRequestCache().put(CacheKey.BLOCKS_TEMPLATE_RES, retVal = new TemplateResources());
-        }
-
-        //We don't do this anymore, see TemplateResourcesDirective.render()
-        //        InternalContextAdapter baseContext = context.getBaseContext();
-        //        synchronized (baseContext) {
-        //            retVal = (TemplateResources) baseContext.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
-        //            if (retVal == null) {
-        //                retVal = new TemplateResources();
-        //                baseContext.put(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal);
-        //            }
-        //        }
-
-        return retVal;
+        return R.cacheManager().getRequestCache().getAndPutIfAbsent(CacheKey.BLOCKS_TEMPLATE_RES, new CacheFunction<com.beligum.base.cache.CacheKey, TemplateResources>()
+        {
+            @Override
+            public TemplateResources apply(com.beligum.base.cache.CacheKey cacheKey) throws IOException
+            {
+                return new TemplateResources();
+            }
+        });
     }
     @Override
     public String getName()
@@ -146,6 +141,7 @@ public class TemplateResourcesDirective extends Directive
         //        }
 
         TemplateResources resources = getContextResources(context);
+
         //if we have nothing to check, let's move on
         if (resources != null) {
             Argument arg = Argument.all;

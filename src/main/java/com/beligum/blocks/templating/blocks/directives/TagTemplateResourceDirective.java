@@ -16,17 +16,15 @@
 
 package com.beligum.blocks.templating.blocks.directives;
 
-import com.beligum.base.resources.ifaces.ResourceSecurityAction;
-import com.beligum.base.security.Permission;
-import com.beligum.base.security.PermissionRole;
-import com.beligum.base.server.R;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateResources;
+import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
-import org.apache.shiro.SecurityUtils;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -70,16 +68,8 @@ public class TagTemplateResourceDirective extends Directive
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 1);
         String urlArgument = (String) TagTemplateDirectiveUtils.readArg(context, node, 2);
         boolean enableDynamicFingerprinting = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 3);
-        Iterable<String> permissions = Splitter.on(",").trimResults().omitEmptyStrings().split(TagTemplateDirectiveUtils.readArg(context, node, 4).toString());
-        Iterable<ResourceSecurityAction> action = Iterables.transform(Splitter.on(",").trimResults().omitEmptyStrings().split(TagTemplateDirectiveUtils.readArg(context, node, 5).toString()),
-                                                                      new Function<String, ResourceSecurityAction>()
-                                                                      {
-                                                                          @Override
-                                                                          public ResourceSecurityAction apply(String input)
-                                                                          {
-                                                                              return ResourceSecurityAction.valueOfIgnoreCase(input);
-                                                                          }
-                                                                      });
+        Iterable<String> permissions = HtmlTemplate.ScopedResource.parsePermissions(TagTemplateDirectiveUtils.readArg(context, node, 4).toString());
+        Iterable<ResourceAction> action = HtmlTemplate.ScopedResource.parseActions(TagTemplateDirectiveUtils.readArg(context, node, 5).toString());
         HtmlTemplate.ResourceJoinHint joinHint = HtmlTemplate.ResourceJoinHint.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 6)];
 
         if (HtmlTemplate.testResourcePermissionScope(permissions) && HtmlTemplate.testResourceActionScope(action)) {
