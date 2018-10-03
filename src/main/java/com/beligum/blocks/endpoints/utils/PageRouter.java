@@ -3,6 +3,7 @@ package com.beligum.blocks.endpoints.utils;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.base.resources.ifaces.ResourceSecurityAction;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
@@ -71,7 +72,7 @@ import java.util.*;
  * - the page doesn't exist & the user has instance rights & language is present & nothing in flash cache & page slug is unsafe -> redirect to safe variant
  * - the page doesn't exist & the user has instance rights & language is present & nothing in flash cache & page slug is safe -> show new page selection list
  */
-public class RequestRouter
+public class PageRouter
 {
     //-----CONSTANTS-----
 
@@ -127,6 +128,11 @@ public class RequestRouter
     private boolean allowCreateNew;
 
     /**
+     * A flag indicating we have permission to edit existing pages
+     */
+    private boolean allowEditExisting;
+
+    /**
      * The following newPage... variables will hold the values that are passed from the "Create new page" via the flash cache
      */
     private String newPageTemplateName;
@@ -148,14 +154,15 @@ public class RequestRouter
     /**
      * Note: the main objective here is to set the targetUri variable.
      * As long as it's null, we haven't found our target resource yet and we keep looking.
-     * This also allows us to skip later steps as soon as it was found
+     * This also allow us to skip later steps as soon as it was found
      */
-    public RequestRouter() throws InternalServerErrorException
+    public PageRouter() throws InternalServerErrorException
     {
         this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
-        this.allowCreateNew = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_CREATE_PERMISSION);
+        this.allowCreateNew = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
+        this.allowEditExisting = SecurityUtils.getSubject().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
 
         // --- The basic steps
         this.doRequestUriCleaning();
@@ -207,10 +214,14 @@ public class RequestRouter
         Template retVal = null;
 
         if (this.getRequestedPage() != null) {
-            retVal = R.resourceManager().newTemplate(this.getRequestedPage());
 
-            //this will allow the blocks javascript/css to be included if we're logged in and have permission
-            if (SecurityUtils.getSubject().isPermitted(Permissions.PAGE_EDIT_PERMISSION)) {
+            Page page = this.getRequestedPage();
+
+            //this is the retVal for the public page
+            retVal = R.resourceManager().newTemplate(page);
+
+            //this will allow the blocks javascript/css to be included if we have permission to do so
+            if (page.isPermitted(ResourceSecurityAction.UPDATE)) {
                 this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, retVal);
             }
         }
@@ -353,7 +364,7 @@ public class RequestRouter
                     //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
                     //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
                     //instance the translated page
-                    else if (SecurityUtils.getSubject().isPermitted(Permissions.PAGE_EDIT_PERMISSION)) {
+                    else if (this.allowEditExisting) {
                         selectedEntryAddress = null;
                     }
                 }
@@ -370,7 +381,7 @@ public class RequestRouter
                 }
             }
             catch (IOException e) {
-                throw new InternalServerErrorException("Error while detecting aliases for "+this.requestedUri, e);
+                throw new InternalServerErrorException("Error while detecting aliases for " + this.requestedUri, e);
             }
         }
     }
@@ -423,7 +434,7 @@ public class RequestRouter
                 }
             }
             catch (IOException e) {
-                throw new InternalServerErrorException("Error while detecting translated link for "+this.requestedUri, e);
+                throw new InternalServerErrorException("Error while detecting translated link for " + this.requestedUri, e);
             }
         }
     }

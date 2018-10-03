@@ -234,19 +234,19 @@ public abstract class PageSource extends AbstractSource implements Source
 
             //let's use the user endpoint url to designate the editor
             //hope it's okay to save this as a relative URI (sinc we try to save all RDFa URIs as relative)
-            String editorUrl = UsersEndpointRoutes.getUser(editor.getId()).getRelativeUri().toString();
+            String editorUri = R.securityManager().getPersonUri(editor, false).toString();
 
             //update the created date
             Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false);
 
             //update the creator URL
-            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUrl, true, false);
+            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false);
 
             //update the modified date
             Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true);
 
             //update the contributor list
-            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUrl, false, false);
+            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false);
         }
         catch (Exception e) {
             throw new IOException("Error while updating the html with the new metadata values; " + this.getUri(), e);

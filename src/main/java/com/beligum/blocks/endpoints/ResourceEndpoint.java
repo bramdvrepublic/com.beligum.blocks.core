@@ -29,7 +29,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import static gen.com.beligum.base.core.constants.base.core.ASSETS_GET_PERMISSION;
+import static gen.com.beligum.base.core.constants.base.core.*;
 
 /**
  * Some dynamic endpoints, dealing with the resources
@@ -44,7 +44,7 @@ public class ResourceEndpoint
      */
     @GET
     @Path(AssetsRepository.PUBLIC_PATH_PREFIX + "blocks/core/styles/imports/styles.css")
-    @RequiresPermissions(ASSETS_GET_PERMISSION)
+    @RequiresPermissions(ASSET_VIEW_ALL_PERM)
     public Resource getImportsStyles()
     {
         //note: by returning a resource instead of a response, we pass through the caching mechanisms
@@ -56,7 +56,7 @@ public class ResourceEndpoint
      */
     @GET
     @Path(AssetsRepository.PUBLIC_PATH_PREFIX + "blocks/core/scripts/imports/scripts.js")
-    @RequiresPermissions(ASSETS_GET_PERMISSION)
+    @RequiresPermissions(ASSET_VIEW_ALL_PERM)
     public Resource getImportsScripts()
     {
         //note: by returning a resource instead of a response, we pass through the caching mechanisms
@@ -68,7 +68,7 @@ public class ResourceEndpoint
      */
     @GET
     @Path("/templates/blocks/core/snippets/sidebar.html")
-    @RequiresPermissions(ASSETS_GET_PERMISSION)
+    @RequiresPermissions(ASSET_VIEW_ALL_PERM)
     public HtmlFile getSidebar()
     {
         return sidebar.get();

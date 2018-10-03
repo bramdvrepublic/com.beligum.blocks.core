@@ -126,7 +126,10 @@ public interface BlocksResource extends HdfsResource
     Path getProxyFolder(MimeType mimeType);
 
     /**
-     * The path to the base metadata folder of this resource
+     * The path to the base metadata folder of this resource.
+     * Note: this is the eg. /.img.jpg/meta/ folder where additional information about the file should be written
+     * and has not really anything to do with the getMetadata() function since the metadata returned there can be coming
+     * from anywhere (eg. interleaved RDFa metadata for the pages)
      */
     Path getMetadataFolder();
 

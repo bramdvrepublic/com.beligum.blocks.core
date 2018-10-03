@@ -18,9 +18,12 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.endpoints.AbstractUsersEndpoint;
 import com.beligum.base.auth.models.DefaultSubject;
+import com.beligum.base.models.Person;
+import com.beligum.base.models.Principal;
 import com.beligum.base.models.Subject;
 import com.beligum.base.routing.ifaces.ReverseRoute;
 import gen.com.beligum.blocks.endpoints.ApplicationEndpointRoutes;
+import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 
 import javax.ws.rs.Path;
 
@@ -36,32 +39,41 @@ public class UsersEndpoint extends AbstractUsersEndpoint
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
+    public UsersEndpoint()
+    {
+        //this is needed for the securityManager
+    }
 
     //-----PUBLIC METHODS-----
     @Override
-    protected Class<? extends Subject> getSubjectClass()
+    public Class<? extends Subject> getSubjectClass()
     {
         return DefaultSubject.class;
     }
     @Override
-    protected String getPrefixPath()
+    public String getPrefixPath()
     {
         return PATH;
     }
     @Override
-    protected ReverseRoute getLoginRedirect()
+    public ReverseRoute getLoginRedirect()
     {
         return ApplicationEndpointRoutes.getPage("");
     }
     @Override
-    protected ReverseRoute getLogoutRedirect()
+    public ReverseRoute getLogoutRedirect()
     {
         return ApplicationEndpointRoutes.getPage("");
     }
     @Override
-    protected ReverseRoute getEmailCallbackRedirect()
+    public ReverseRoute getEmailCallbackRedirect()
     {
         return ApplicationEndpointRoutes.getPage("");
+    }
+    @Override
+    public ReverseRoute getUserRedirect(long userId)
+    {
+        return UsersEndpointRoutes.getUser(userId);
     }
 
     //-----PROTECTED METHODS-----

@@ -20,11 +20,13 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.logger.RdfLogWriter;
 import com.beligum.blocks.filesystem.logger.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
+import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.rdf.exporters.SesameExporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
@@ -63,6 +65,8 @@ public abstract class DefaultPage extends AbstractPage
     private static final String PAGE_PROXY_RDF_DEPS_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf-deps.nt";
 
     //-----VARIABLES-----
+    private PageMetadata cachedMetadata;
+    private long cachedMetadataStamp;
 
     //-----CONSTRUCTORS-----
     protected DefaultPage(ResourceRequest request, FileContext fileContext) throws IOException
@@ -114,7 +118,17 @@ public abstract class DefaultPage extends AbstractPage
     @Override
     public ResourceMetadata getMetadata() throws IOException
     {
-        return new DefaultPageMetadata(this);
+        if (Settings.instance().getEnablePageMetadataCaching()) {
+            long stamp = this.getLastModifiedTime();
+            if (this.cachedMetadata == null || stamp > this.cachedMetadataStamp) {
+                this.cachedMetadata = new DefaultPageMetadata(this);
+                this.cachedMetadataStamp = stamp;
+            }
+            return this.cachedMetadata;
+        }
+        else {
+            return new DefaultPageMetadata(this);
+        }
     }
     @Override
     public Path getNormalizedHtmlFile()

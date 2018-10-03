@@ -20,16 +20,22 @@ import com.beligum.base.config.SecurityConfiguration;
 import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.ResourceSecurityAction;
 import com.beligum.base.resources.sources.StringSource;
+import com.beligum.base.security.Permission;
 import com.beligum.base.security.PermissionRole;
-import com.beligum.base.security.PermissionFactory;
+import com.beligum.base.security.SecurityManager;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateDirectiveUtils;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import gen.com.beligum.blocks.core.messages.blocks.core;
@@ -42,6 +48,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,13 +70,16 @@ public abstract class HtmlTemplate
     //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
     public static final String BLOCKS_META_TAG_PROPERTY_PREFIX = "blocks:";
 
-    // controls if the <script> or <style> tag needs to be included in the rendering
-    // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
-    // Role names are the same ones we use for Shiro
-    public static final String ATTRIBUTE_RESOURCE_ROLE_SCOPE = "data-scope-role";
+    // Controls if the <script> or <style> tag needs to be included in the rendering
+    // use it like this: <script data-scope-perm="$CONSTANTS.blocks.core.PAGE_CREATE_ALL_PERM"> to eg. only include the script when
+    // the page create permission is required
+    // Note that the value can be a CSV
+    public static final String ATTRIBUTE_RESOURCE_PERMISSION_SCOPE = "data-scope-perm";
 
-    //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
-    public static final String ATTRIBUTE_RESOURCE_MODE_SCOPE = "data-scope-mode";
+    // Set to the lower cased values of ResourceSecurityAction if you only want the resource
+    // to be included when in that action scope
+    // Note that the value can be a CSV
+    public static final String ATTRIBUTE_RESOURCE_ACTION_SCOPE = "data-scope-action";
 
     //set to 'skip' to skip this resource during the resource collecting phase and instead render it out where it's defined
     public static final String ATTRIBUTE_RESOURCE_JOIN_HINT = "data-join-hint";
@@ -111,6 +121,7 @@ public abstract class HtmlTemplate
     }
 
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
+    protected static final ResourceSecurityAction[] NO_RESOURCE_ACTION = { ResourceSecurityAction.NONE };
 
     //-----VARIABLES-----
     protected Path absolutePath;
@@ -125,10 +136,10 @@ public abstract class HtmlTemplate
     protected String icon;
     protected Class<TemplateController> controllerClass;
     protected MetaDisplayType displayType;
-    protected Iterable<Element> inlineScriptElements;
-    protected Iterable<Element> externalScriptElements;
-    protected Iterable<Element> inlineStyleElements;
-    protected Iterable<Element> externalStyleElements;
+    protected Iterable<ScopedResource> inlineScriptElements;
+    protected Iterable<ScopedResource> externalScriptElements;
+    protected Iterable<ScopedResource> inlineStyleElements;
+    protected Iterable<ScopedResource> externalStyleElements;
     // This will hold the html before the <template> tags
     protected Segment prefixHtml;
     // This will hold the html inside the <template> tags
@@ -261,49 +272,6 @@ public abstract class HtmlTemplate
 
     //-----PUBLIC STATIC METHODS-----
     /**
-     * Returns the permission role of the supplied element (guaranteed not-null)
-     */
-    public static PermissionRole getResourceRoleScope(Element resource)
-    {
-        PermissionRole retVal = null;
-
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
-        if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
-            SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
-            if (securityConfig != null) {
-                retVal = securityConfig.getRole(scope.getValue());
-            }
-        }
-
-        //we guarantee non-null
-        if (retVal == null) {
-            retVal = SecurityConfig.ANONYMOUS_ROLE;
-        }
-
-        return retVal;
-    }
-    /**
-     * Returns the scope mode of the supplied element (guaranteed non-null)
-     */
-    public static ResourceScopeMode getResourceModeScope(Element resource) throws IllegalArgumentException
-    {
-        ResourceScopeMode retVal = null;
-
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_MODE_SCOPE);
-        if (scope == null) {
-            retVal = ResourceScopeMode.UNDEFINED;
-        }
-        else if (StringUtils.isEmpty(scope.getValue())) {
-            retVal = ResourceScopeMode.EMPTY;
-        }
-        else {
-            //this will throw an exception if nothing was found
-            retVal = ResourceScopeMode.valueOf(scope.getValue());
-        }
-
-        return retVal;
-    }
-    /**
      * Returns the join hint of the supplied element (guaranteed non-null)
      */
     public static ResourceJoinHint getResourceJoinHint(Element resource)
@@ -328,33 +296,68 @@ public abstract class HtmlTemplate
      * Supply a scope attached to a html resource (with data-scope-role attribute)
      * and return if that resource should be included or not.
      */
-    public static boolean testResourceRoleScope(PermissionRole role)
+    public static boolean testResourcePermissionScope(Iterable<String> permissions)
     {
-        // guest role is not always added by default to the current principal by the security system,
-        // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
-        // so the check below would fail, while it's actually ok
-        if (role == null || role.equals(SecurityConfig.ANONYMOUS_ROLE)) {
+        // anonymous role is not always added by default to the current principal by the security system,
+        // so if the resource is anonymous, assume this is a public resource
+        if (permissions == null) {
             return true;
         }
         else {
-            return SecurityUtils.getSubject().hasRole(role.getName());
+            boolean retVal = true;
+            SecurityManager securityManager = R.securityManager();
+            for (String perm : permissions) {
+                //note that multiple permissions are ANDed together since this is what you naturally expect
+                retVal = retVal && securityManager.isPermitted(perm);
+                if (!retVal) {
+                    break;
+                }
+            }
+            return retVal;
         }
     }
     /**
      * Return if we should currently (in this request context) render out for the specified mode.
      */
-    public static boolean testResourceModeScope(ResourceScopeMode mode)
+    public static boolean testResourceActionScope(Iterable<ResourceSecurityAction> actions)
     {
-        switch (mode) {
-            // if you specifically set the mode flag, doIsValid it
-            case edit:
-                return mode.equals(R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE));
+        //same reason as for permissions
+        if (actions == null) {
+            return true;
+        }
+        else {
+            ResourceSecurityAction currentAction = R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE);
 
-            //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
-            case EMPTY:
-            case UNDEFINED:
-            default:
-                return true;
+            boolean empty = true;
+            for (ResourceSecurityAction action : actions) {
+
+                empty = false;
+                boolean retVal = false;
+
+                switch (action) {
+                    case READ:
+                    case CREATE:
+                    case UPDATE:
+                    case DELETE:
+                    case EXPIRE:
+                        retVal = action.equals(currentAction);
+                        break;
+                    case NONE:
+                        //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
+                        retVal = true;
+                        break;
+                    default:
+                        Logger.error("Encountered unsupported resource action, ignoring; " + action);
+                        break;
+                }
+
+                //note that this will OR the actions; as soon as we find a hit, we return true
+                if (retVal) {
+                    return true;
+                }
+            }
+
+            return empty ? true : false;
         }
     }
     /**
@@ -587,38 +590,37 @@ public abstract class HtmlTemplate
     {
         return superTemplate;
     }
-    public Iterable<Element> getInlineScriptElements()
+    public Iterable<ScopedResource> getInlineScriptElements()
     {
         return inlineScriptElements;
     }
-    public Iterable<Element> getExternalScriptElements()
+    public Iterable<ScopedResource> getExternalScriptElements()
     {
         return externalScriptElements;
     }
-    public Iterable<Element> getInlineStyleElements()
+    public Iterable<ScopedResource> getInlineStyleElements()
     {
         return inlineStyleElements;
     }
-    public Iterable<Element> getExternalStyleElements()
+    public Iterable<ScopedResource> getExternalStyleElements()
     {
         return externalStyleElements;
     }
-    //TODO we should probably optimize this a bit, but beware, it still needs to be user-dynamic...
     public Iterable<Element> getInlineScriptElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getInlineScriptElements());
+        return this.buildScopedResourceIterator(this.getInlineScriptElements());
     }
     public Iterable<Element> getExternalScriptElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getExternalScriptElements());
+        return this.buildScopedResourceIterator(this.getExternalScriptElements());
     }
     public Iterable<Element> getInlineStyleElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getInlineStyleElements());
+        return this.buildScopedResourceIterator(this.getInlineStyleElements());
     }
     public Iterable<Element> getExternalStyleElementsForCurrentScope()
     {
-        return this.buildScopeResourceIterator(this.getExternalStyleElements());
+        return this.buildScopedResourceIterator(this.getExternalStyleElements());
     }
     /**
      * Will instance a new html tag; eg for <template class="classname"></template>,
@@ -734,9 +736,9 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> parseInlineStyles(OutputDocument html) throws IOException
+    private Iterable<ScopedResource> parseInlineStyles(OutputDocument html) throws IOException
     {
-        List<Element> retVal = new ArrayList<>();
+        List<ScopedResource> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("style").iterator();
         while (iter.hasNext()) {
@@ -744,14 +746,14 @@ public abstract class HtmlTemplate
 
             Element parsedElement = this.renderResourceElement(element);
             html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineStyles, parsedElement, null));
-            retVal.add(parsedElement);
+            retVal.add(new ScopedResource(parsedElement));
         }
 
         return retVal;
     }
-    private Iterable<Element> parseExternalStyles(OutputDocument html) throws IOException
+    private Iterable<ScopedResource> parseExternalStyles(OutputDocument html) throws IOException
     {
-        List<Element> retVal = new ArrayList<>();
+        List<ScopedResource> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("rel", styleLinkRelAttrValue).iterator();
         while (iter.hasNext()) {
@@ -759,15 +761,15 @@ public abstract class HtmlTemplate
             if (element.getName().equals("link")) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, parsedElement, "href"));
-                retVal.add(parsedElement);
+                retVal.add(new ScopedResource(parsedElement));
             }
         }
 
         return retVal;
     }
-    private Iterable<Element> parseInlineScripts(OutputDocument html) throws IOException
+    private Iterable<ScopedResource> parseInlineScripts(OutputDocument html) throws IOException
     {
-        List<Element> retVal = new ArrayList<>();
+        List<ScopedResource> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
@@ -775,15 +777,15 @@ public abstract class HtmlTemplate
             if (element.getAttributeValue("src") == null) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineScripts, parsedElement, null));
-                retVal.add(parsedElement);
+                retVal.add(new ScopedResource(parsedElement));
             }
         }
 
         return retVal;
     }
-    private Iterable<Element> parseExternalScripts(OutputDocument html) throws IOException
+    private Iterable<ScopedResource> parseExternalScripts(OutputDocument html) throws IOException
     {
-        List<Element> retVal = new ArrayList<>();
+        List<ScopedResource> retVal = new ArrayList<>();
 
         Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
@@ -791,7 +793,7 @@ public abstract class HtmlTemplate
             if (element.getAttributeValue("src") != null) {
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, "src"));
-                retVal.add(parsedElement);
+                retVal.add(new ScopedResource(parsedElement));
             }
         }
 
@@ -888,6 +890,13 @@ public abstract class HtmlTemplate
             }
         }
 
+        //note that permissions are strings, so need to parse them
+        Attribute permissionScopeAttr = element.getAttributes().get(ATTRIBUTE_RESOURCE_PERMISSION_SCOPE);
+        String permissionScopeStr = permissionScopeAttr == null ? "" : permissionScopeAttr.getValue();
+
+        Attribute actionScopeAttr = element.getAttributes().get(ATTRIBUTE_RESOURCE_ACTION_SCOPE);
+        String actionScopeStr = actionScopeAttr == null ? "" : actionScopeAttr.getValue();
+
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
         return new StringBuilder().append("#").append(TagTemplateResourceDirective.NAME)
 
@@ -898,8 +907,8 @@ public abstract class HtmlTemplate
                                   //so make sure you pass the fingerprinted uri here
                                   .append("'").append(attrValue).append("',")
                                   .append(enableDynamicFingerprinting).append(",")
-                                  .append("'").append(HtmlTemplate.getResourceRoleScope(element)).append("',")
-                                  .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
+                                  .append("'").append(permissionScopeStr).append("',")
+                                  .append("'").append(actionScopeStr).append("',")
                                   .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
                                   .append(")")
 
@@ -936,29 +945,29 @@ public abstract class HtmlTemplate
         //        //there should always be a first element since we started out with an element, right?
         //        return new Source(template.render()).getFirstElement();
     }
-    private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements,
-                                                        String attribute)
-                    throws IOException
+    private Iterable<ScopedResource> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html,
+                                                               Iterable<ScopedResource> templateResources, Iterable<ScopedResource> superTemplateResources,
+                                                               String attribute) throws IOException
     {
-        Iterable<Element> retVal = templateElements;
+        Iterable<ScopedResource> retVal = templateResources;
 
-        if (superTemplateElements != null && superTemplateElements.iterator().hasNext()) {
-            for (Element element : superTemplateElements) {
-                html.append(buildResourceHtml(type, element, attribute));
+        if (superTemplateResources != null && superTemplateResources.iterator().hasNext()) {
+            for (ScopedResource r : superTemplateResources) {
+                html.append(buildResourceHtml(type, r.getElement(), attribute));
             }
-            retVal = Iterables.concat(superTemplateElements, templateElements);
+            retVal = Iterables.concat(superTemplateResources, templateResources);
         }
 
         return retVal;
     }
-    private Iterable<Element> buildScopeResourceIterator(Iterable<Element> elements)
+    private Iterable<Element> buildScopedResourceIterator(Iterable<ScopedResource> resources)
     {
-        final Iterator iter = Iterators.filter(elements.iterator(), new Predicate<Element>()
+        final Iterator iter = Iterators.filter(resources.iterator(), new Predicate<ScopedResource>()
         {
             @Override
-            public boolean apply(Element element)
+            public boolean apply(ScopedResource resource)
             {
-                return testResourceModeScope(getResourceModeScope(element)) && testResourceRoleScope(getResourceRoleScope(element));
+                return testResourceActionScope(resource.getActions()) && testResourcePermissionScope(resource.getPermissions());
             }
         });
 
@@ -1386,6 +1395,53 @@ public abstract class HtmlTemplate
             }
 
             return retVal;
+        }
+    }
+
+    private static class ScopedResource implements Function<String, ResourceSecurityAction>
+    {
+        private static Splitter csvSplitter = Splitter.on(",").trimResults().omitEmptyStrings();
+
+        private Element element;
+        private Iterable<String> permissions;
+        private Iterable<ResourceSecurityAction> actions;
+
+        public ScopedResource(Element element)
+        {
+            this.element = element;
+
+            Attribute permScopeAttr = this.element.getAttributes().get(ATTRIBUTE_RESOURCE_PERMISSION_SCOPE);
+            if (permScopeAttr != null && permScopeAttr.hasValue()) {
+                this.permissions = csvSplitter.split(permScopeAttr.getValue());
+            }
+            else {
+                this.permissions = Collections.emptyList();
+            }
+
+            Attribute actionScopeAttr = this.element.getAttributes().get(ATTRIBUTE_RESOURCE_ACTION_SCOPE);
+            if (actionScopeAttr != null && actionScopeAttr.hasValue()) {
+                this.actions = Iterables.transform(csvSplitter.split(actionScopeAttr.getValue()), this);
+            }
+            else {
+                this.actions = Collections.emptyList();
+            }
+        }
+        @Override
+        public ResourceSecurityAction apply(String input)
+        {
+            return ResourceSecurityAction.valueOfIgnoreCase(input);
+        }
+        public Element getElement()
+        {
+            return element;
+        }
+        public Iterable<String> getPermissions()
+        {
+            return permissions;
+        }
+        public Iterable<ResourceSecurityAction> getActions()
+        {
+            return actions;
         }
     }
 }

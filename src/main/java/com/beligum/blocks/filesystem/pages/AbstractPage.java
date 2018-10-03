@@ -21,13 +21,16 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.base.resources.ifaces.ResourceSecurityAction;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
@@ -99,6 +102,48 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     public boolean exists() throws IOException
     {
         return this.fileContext.util().exists(this.getNormalizedHtmlFile());
+    }
+    @Override
+    public boolean isPermitted(ResourceSecurityAction action)
+    {
+        switch (action) {
+            case READ:
+            case CREATE:
+            case DELETE:
+            case EXPIRE:
+                return true;
+
+            case UPDATE:
+                //we start out with the general permission
+                boolean allowEditing = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+
+                try {
+                    //if the settings say a user can only edit it's own creations, make sure
+                    //we have a creator and a matching current user before we allow editing
+                    if (Settings.instance().getPageSecurityOnlyEditOwnCreations()) {
+                        //we'll use a conservative approach: everything needs to be right
+                        //in order to allow editing the page, even though we have general edit permission
+                        allowEditing = false;
+
+                        ResourceMetadata metadata = this.getMetadata();
+                        if (metadata != null && metadata.getCreator() != null) {
+                            URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
+                            if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
+                                //don't set it to true by default; we follow the general security roles by default
+                                allowEditing = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+                            }
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    allowEditing = false;
+                    Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
+                }
+
+                return allowEditing;
+            default:
+                return false;
+        }
     }
     /**
      * This is mainly for debugging, but is probably what we want

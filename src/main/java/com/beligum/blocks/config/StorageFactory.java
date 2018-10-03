@@ -101,10 +101,10 @@ public class StorageFactory
     }
     public static PageIndexer getMainPageIndexer() throws IOException
     {
-        return (PageIndexer) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.MAIN_PAGE_INDEX, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.MAIN_PAGE_INDEX, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
                 PageIndexer indexer = new LucenePageIndexer();
                 getIndexerRegistry().add(indexer);
@@ -120,10 +120,10 @@ public class StorageFactory
     }
     public static PageIndexer getTriplestoreIndexer() throws IOException
     {
-        return (PageIndexer) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRIPLESTORE_PAGE_INDEX, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRIPLESTORE_PAGE_INDEX, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
                 PageIndexer indexer = new SesamePageIndexer();
                 getIndexerRegistry().add(indexer);
@@ -139,10 +139,10 @@ public class StorageFactory
     }
     public static TransactionManager getTransactionManager() throws IOException
     {
-        return (TransactionManager) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, TransactionManager>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public TransactionManager apply(CacheKey cacheKey) throws IOException
             {
                 try {
                     Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
@@ -215,10 +215,10 @@ public class StorageFactory
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
         if (txCache != null) {
-            retVal = (TX) cacheManager().getRequestCache().getAndPutIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, Object>()
+            retVal = cacheManager().getRequestCache().getAndPutIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, TX>()
             {
                 @Override
-                public Object apply(CacheKey cacheKey) throws IOException
+                public TX apply(CacheKey cacheKey) throws IOException
                 {
                     try {
                         TX tx = new TX(getTransactionManager());
@@ -269,17 +269,15 @@ public class StorageFactory
         //happens when the server hasn't started up yet or we're not in a request context
         if (txCache != null) {
 
-            txCache.removeIfPresent(CacheKeys.REQUEST_TRANSACTION, new CacheBiFunction<CacheKey, Object, Object>()
+            txCache.removeIfPresent(CacheKeys.REQUEST_TRANSACTION, new CacheBiFunction<CacheKey, TX, Void>()
             {
                 @Override
-                public Void apply(CacheKey cacheKey, Object value) throws IOException
+                public Void apply(CacheKey cacheKey, TX value) throws IOException
                 {
-                    TX tx = (TX) value;
-
                     //don't release anything if no tx is active
-                    if (tx != null) {
+                    if (value != null) {
                         try {
-                            tx.close(forceRollback);
+                            value.close(forceRollback);
                         }
                         catch (Throwable e) {
                             //don't wait for the next reboot before trying to revert to a clean state; try it now
@@ -386,7 +384,7 @@ public class StorageFactory
     }
     public static XAFileSystem getXADiskTransactionManager() throws IOException
     {
-        return (XAFileSystem) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
         {
             @Override
             public Object apply(CacheKey cacheKey) throws IOException
@@ -423,22 +421,21 @@ public class StorageFactory
         boolean retVal = false;
 
         try {
-            retVal = (boolean) cacheManager().getApplicationCache().removeIfPresent(CacheKeys.XADISK_FILE_SYSTEM, new CacheBiFunction<CacheKey, Object, Object>()
+            XAFileSystem existingFs = cacheManager().getApplicationCache().removeIfPresent(CacheKeys.XADISK_FILE_SYSTEM, new CacheBiFunction<CacheKey, XAFileSystem, Void>()
             {
                 @Override
-                public Object apply(CacheKey cacheKey, Object value) throws IOException
+                public Void apply(CacheKey cacheKey, XAFileSystem value) throws IOException
                 {
-                    XAFileSystem xafs = (XAFileSystem) value;
-
-                    xafs.shutdown();
+                    value.shutdown();
 
                     //uniform reboot
                     getXADiskTransactionManager();
 
-                    //return true if we reach this
-                    return true;
+                    return null;
                 }
             });
+
+            retVal = existingFs != null;
         }
         catch (IOException e) {
             Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
@@ -458,10 +455,10 @@ public class StorageFactory
     }
     public static FileContext getPageStoreFileSystem() throws IOException
     {
-        return (FileContext) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, FileContext>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public FileContext apply(CacheKey cacheKey) throws IOException
             {
                 FileContext fileContext = StorageFactory.createFileContext(getPageStoreFileSystemConfig());
 
@@ -484,10 +481,10 @@ public class StorageFactory
     }
     public static Configuration getPageViewFileSystemConfig() throws IOException
     {
-        return (Configuration) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Configuration>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public Configuration apply(CacheKey cacheKey) throws IOException
             {
                 return HdfsUtils.createHdfsConfig(Settings.instance().getPagesViewUri(), null, Settings.instance().getPagesHdfsProperties());
             }
@@ -495,10 +492,10 @@ public class StorageFactory
     }
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        return (FileContext) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, FileContext>()
         {
             @Override
-            public Object apply(CacheKey cacheKey) throws IOException
+            public FileContext apply(CacheKey cacheKey) throws IOException
             {
                 return StorageFactory.createFileContext(getPageViewFileSystemConfig());
             }
@@ -514,10 +511,10 @@ public class StorageFactory
     protected static Set<Indexer> getIndexerRegistry()
     {
         try {
-            return (Set<Indexer>) cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Object>()
+            return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
             {
                 @Override
-                public Object apply(CacheKey cacheKey) throws IOException
+                public Set<Indexer> apply(CacheKey cacheKey) throws IOException
                 {
                     return new HashSet<>();
                 }

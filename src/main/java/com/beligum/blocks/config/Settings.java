@@ -45,6 +45,7 @@ public class Settings
 
     private static final String COMMON_PREFIX = "blocks.core";
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
+    private static final String PAGES_SECURITY_PREFIX = PAGES_PREFIX + ".security";
     private static final String RDF_PREFIX = COMMON_PREFIX + ".rdf";
     private static final String ONTOLOGY_PREFIX = RDF_PREFIX + ".ontology";
 
@@ -359,6 +360,14 @@ public class Settings
     public boolean getForceRedirectToDefaultLocale()
     {
         return R.configuration().getBoolean(PAGES_PREFIX + ".force-default-locale", false);
+    }
+    public boolean getEnablePageMetadataCaching()
+    {
+        return R.configuration().getBoolean(PAGES_PREFIX + ".enable-metadata-caching", true);
+    }
+    public boolean getPageSecurityOnlyEditOwnCreations()
+    {
+        return R.configuration().getBoolean(PAGES_SECURITY_PREFIX + ".only-edit-own-creations", false);
     }
     public URI getRdfOntologyUri()
     {

@@ -18,6 +18,7 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,6 +28,7 @@ import java.util.List;
 public class SimpleIndexSearchResult extends AbstractIndexSearchResult
 {
     //-----CONSTANTS-----
+    public static final IndexSearchResult EMPTY_LIST = new SimpleIndexSearchResult(Collections.emptyList(), 0, 0, 0l);
 
     //-----VARIABLES-----
     /**
@@ -43,7 +45,7 @@ public class SimpleIndexSearchResult extends AbstractIndexSearchResult
     {
         super(pageIndex, pageSize, searchDuration);
 
-        if (results==null) {
+        if (results == null) {
             throw new IllegalArgumentException("It's not possible to create a search result with a null array list");
         }
         else {

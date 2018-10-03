@@ -633,9 +633,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     Path path = new Path(resultSet.getString(SQL_COLUMN_PATH_NAME));
                     FileType fileType = FileType.valueOf(resultSet.getShort(SQL_COLUMN_FILETYPE_NAME));
                     short replication = resultSet.getShort(SQL_COLUMN_REPLICATION_NAME);
-                    long blockSize = resultSet.getShort(SQL_COLUMN_BLOCKSIZE_NAME);
-                    long mtime = resultSet.getShort(SQL_COLUMN_MTIME_NAME);
-                    long atime = resultSet.getShort(SQL_COLUMN_ATIME_NAME);
+                    long blockSize = resultSet.getLong(SQL_COLUMN_BLOCKSIZE_NAME);
+                    long mtime = resultSet.getLong(SQL_COLUMN_MTIME_NAME);
+                    long atime = resultSet.getLong(SQL_COLUMN_ATIME_NAME);
                     FsPermission permission = new FsPermission(resultSet.getShort(SQL_COLUMN_PERMISSION_NAME));
                     String username = resultSet.getString(SQL_COLUMN_USERNAME_NAME);
                     String groupname = resultSet.getString(SQL_COLUMN_GROUPNAME_NAME);
@@ -749,9 +749,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                         Path path = new Path(resultSet.getString(SQL_COLUMN_PATH_NAME));
                         FileType fileType = FileType.valueOf(resultSet.getShort(SQL_COLUMN_FILETYPE_NAME));
                         short replication = resultSet.getShort(SQL_COLUMN_REPLICATION_NAME);
-                        long blockSize = resultSet.getShort(SQL_COLUMN_BLOCKSIZE_NAME);
-                        long mtime = resultSet.getShort(SQL_COLUMN_MTIME_NAME);
-                        long atime = resultSet.getShort(SQL_COLUMN_ATIME_NAME);
+                        long blockSize = resultSet.getLong(SQL_COLUMN_BLOCKSIZE_NAME);
+                        long mtime = resultSet.getLong(SQL_COLUMN_MTIME_NAME);
+                        long atime = resultSet.getLong(SQL_COLUMN_ATIME_NAME);
                         FsPermission permission = new FsPermission(resultSet.getShort(SQL_COLUMN_PERMISSION_NAME));
                         String username = resultSet.getString(SQL_COLUMN_USERNAME_NAME);
                         String groupname = resultSet.getString(SQL_COLUMN_GROUPNAME_NAME);
@@ -1073,7 +1073,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
 
                                                "(" + SQL_COLUMN_PATH_NAME + " TEXT NOT NULL," +
                                                " " + SQL_COLUMN_FILETYPE_NAME + " SMALLINT NOT NULL," +
-                                               " " + SQL_COLUMN_PERMISSION_NAME + " INTEGER NOT NULL," +
+                                               " " + SQL_COLUMN_PERMISSION_NAME + " SMALLINT NOT NULL," +
                                                " " + SQL_COLUMN_USERNAME_NAME + " TEXT," +
                                                " " + SQL_COLUMN_GROUPNAME_NAME + " TEXT," +
                                                //SQLite: The value is a signed integer, stored in 1, 2, 3, 4, 6, or 8 bytes depending on the magnitude of the value,

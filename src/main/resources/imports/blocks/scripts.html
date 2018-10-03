@@ -21,79 +21,65 @@
 ## this will make the current language accessible to the JS code in a uniform way
 <script src="/messages/base/core?type=js" type="application/javascript"></script>
 
-
 ## -----ADMIN IMPORTS-----
-#if($PRINCIPAL)
 
-## this $BLOCKS_MODE is set server-side
-    #if ($BLOCKS_MODE=="create" || $BLOCKS_MODE=="edit")
+<script src="/assets/webjars/jquery-ui-src/1.11.4/ui/widget.js" data-scope-action="create,update"></script>
+<script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.iframe-transport.js" data-scope-action="create,update"></script>
+<script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.fileupload.js" data-scope-action="create,update"></script>
 
-    <script src="/assets/webjars/jquery-ui-src/1.11.4/ui/widget.js"></script>
-    <script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.iframe-transport.js"></script>
-    <script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.fileupload.js"></script>
+<script src="/assets/webjars/bootstrap-toggle/2.2.0/js/bootstrap-toggle.js" type="application/javascript" data-scope-action="create,update"></script>
+<script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript" data-scope-action="create,update"></script>
 
-    <script src="/assets/webjars/bootstrap-toggle/2.2.0/js/bootstrap-toggle.js" type="application/javascript"></script>
-    <script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
+## load the mime.js plugin from base-core
+<script src="/assets/base/core/scripts/mime.js" type="application/javascript" data-scope-action="create,update"></script>
 
-    ## load the mime.js plugin from base-core
-    <script src="/assets/base/core/scripts/mime.js" type="application/javascript"></script>
+## for autocomplete widget in widget.js
+<script src="/assets/webjars/typeaheadjs/0.11.1/typeahead.jquery.js" type="application/javascript" data-scope-action="create,update"></script>
+<script src="/assets/webjars/typeaheadjs/0.11.1/bloodhound.js" type="application/javascript" data-scope-action="create,update"></script>
+<script src="/assets/webjars/handlebars/4.0.5/handlebars.js" type="application/javascript" data-scope-action="create,update"></script>
 
-    ## for autocomplete widget in widget.js
-    <script src="/assets/webjars/typeaheadjs/0.11.1/typeahead.jquery.js" type="application/javascript"></script>
-    <script src="/assets/webjars/typeaheadjs/0.11.1/bloodhound.js" type="application/javascript"></script>
-    <script src="/assets/webjars/handlebars/4.0.5/handlebars.js" type="application/javascript"></script>
 
-    #end
-
-    #if ($BLOCKS_MODE=="create")
-
-    <script src="/assets/blocks/core/scripts/new-page.js" type="application/javascript"></script>
-
-    #end
+<script src="/assets/blocks/core/scripts/new-page.js" type="application/javascript" data-scope-action="create"></script>
 
 ## Don't activate this part while creating a new page (we don't want to accidentally save that page)
-    #if ($BLOCKS_MODE=="edit")
 
-    <script src="/assets/webjars/perfect-scrollbar/0.6.16/js/perfect-scrollbar.jquery.js" type="application/javascript"></script>
+<script src="/assets/webjars/perfect-scrollbar/0.6.16/js/perfect-scrollbar.jquery.js" type="application/javascript" data-scope-action="update"></script>
 
-    <script src="/assets/blocks/core/scripts/elements/surface.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/layoutElement.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/property.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/resizeHandle.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/dropspot.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/row.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/column.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/container.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/block.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/elements/page.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/elements/surface.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/layoutElement.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/property.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/resizeHandle.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/dropspot.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/row.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/column.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/container.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/block.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/elements/page.js" type="application/javascript" data-scope-action="update"></script>
 
-    <script src="/assets/blocks/core/scripts/ui.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/layout.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/mouse.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/resizer.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/dragdrop.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/hover.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/manager.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/ui.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/layout.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/mouse.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/resizer.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/dragdrop.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/hover.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/manager.js" type="application/javascript" data-scope-action="update"></script>
 
-    <script src="/assets/blocks/core/scripts/dom-manipulation.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/dom-manipulation.js" type="application/javascript" data-scope-action="update"></script>
 
-    <script src="/assets/blocks/core/scripts/sidebar.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/menu.js" type="application/javascript"></script>
+<script src="/assets/blocks/core/scripts/sidebar.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/menu.js" type="application/javascript" data-scope-action="update"></script>
 
-    ## these are the widgets we need to include manually
-    <script src="/assets/blocks/core/scripts/imports/widget.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/imports/block.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/imports/property.js" type="application/javascript"></script>
-    <script src="/assets/blocks/core/scripts/imports/page.js" type="application/javascript"></script>
+## these are the widgets we need to include manually
+<script src="/assets/blocks/core/scripts/imports/widget.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/imports/block.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/imports/property.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/core/scripts/imports/page.js" type="application/javascript" data-scope-action="update"></script>
 
-    ## TODO: refactor this away cause we're not in pom.xml
-    <script src="/assets/blocks/media/core/scripts/finder-jobs.js" type="application/javascript"></script>
-    <script src="/assets/blocks/media/core/scripts/finder.js" type="application/javascript"></script>
-    <script src="/assets/blocks/media/core/scripts/finder-ui.js" type="application/javascript"></script>
+## TODO: refactor this away cause we're not in pom.xml
+<script src="/assets/blocks/media/core/scripts/finder-jobs.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/media/core/scripts/finder.js" type="application/javascript" data-scope-action="update"></script>
+<script src="/assets/blocks/media/core/scripts/finder-ui.js" type="application/javascript" data-scope-action="update"></script>
 
-    #end
-
-#end
 
 
 ## -----PUBLIC IMPORTS-----

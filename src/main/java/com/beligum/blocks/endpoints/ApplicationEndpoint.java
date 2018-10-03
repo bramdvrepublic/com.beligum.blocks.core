@@ -16,20 +16,16 @@
 
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.resources.GuavaMimeType;
-import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.utils.PageRdfResource;
-import com.beligum.blocks.endpoints.utils.RequestRouter;
+import com.beligum.blocks.endpoints.utils.PageRouter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
-import static gen.com.beligum.blocks.core.constants.blocks.core.PAGE_GET_HTML_PERMISSION;
-import static gen.com.beligum.blocks.core.constants.blocks.core.PAGE_GET_PERMISSION;
-import static gen.com.beligum.blocks.core.constants.blocks.core.PAGE_GET_RDF_PERMISSION;
+import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
  * Created by bram on 2/10/16.
@@ -56,13 +52,13 @@ public class ApplicationEndpoint
     }
     @GET
     @Path("/{path:.*}")
-    @RequiresPermissions(PAGE_GET_HTML_PERMISSION)
+    @RequiresPermissions(PAGE_READ_ALL_HTML_PERM)
     //note: don't delete the method argument; it enables us to construct hooks into this method via the reverse router
     public Response getPage(@PathParam("path") String rawPath)
     {
         Response.ResponseBuilder retVal = null;
 
-        RequestRouter requestRouter = new RequestRouter();
+        PageRouter requestRouter = new PageRouter();
 
         //if we need to redirect away, send a 303
         if (requestRouter.needsRedirection() && requestRouter.getTargetUri() != null) {
@@ -106,10 +102,10 @@ public class ApplicationEndpoint
                 "text/n3",
               }
     )
-    @RequiresPermissions(PAGE_GET_RDF_PERMISSION)
+    @RequiresPermissions(PAGE_READ_ALL_RDF_PERM)
     public Response getPageRdf(@PathParam("path") String rawPath, @HeaderParam(HttpHeaders.ACCEPT) String acceptHeader)
     {
-        RequestRouter requestRouter = new RequestRouter();
+        PageRouter requestRouter = new PageRouter();
 
         //if we found an external redirect URL, redirect there, otherwise continue
         Response.ResponseBuilder retVal = null;
