@@ -541,7 +541,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             message: BlocksMessages.deletePageDialogMessage,
             buttons: [
                 {
-                    id: 'btn-ok',
+                    id: 'btn-ok-single',
                     label: BlocksMessages.deletePageDialogConfirmSingle,
                     cssClass: 'btn-danger',
                     action: function (dialogRef)
@@ -552,7 +552,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 },
                 {
-                    id: 'btn-ok',
+                    id: 'btn-ok-all',
                     label: BlocksMessages.deletePageDialogConfirmAll,
                     cssClass: 'btn-danger',
                     action: function (dialogRef)

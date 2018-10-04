@@ -105,7 +105,7 @@ public class PageAdminEndpoint
     @GET
     @Path("/template")
     @RequiresPermissions(PAGE_CREATE_ALL_PERM)
-    public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) String pageUrl,
+    public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) URI pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
                                     @QueryParam(NEW_PAGE_COPY_LINK_PARAM) Boolean pageCopyLink,

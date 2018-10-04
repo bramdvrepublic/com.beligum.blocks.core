@@ -50,15 +50,22 @@ public class ApplicationEndpoint
     {
         throw new NotFoundException();
     }
+
+    /**
+     * The general entry point for a saved page. This method is both called directly to fetch a page,
+     * but also indirectly when redirected from PageAdminEndpoint.getPageTemplate()
+     * Use the X-Anonymous header to signal you want this page to return as if the current user wasn't logged in.
+     *
+     * Note: don't delete the method rawPath argument; it enables us to construct hooks into this method via the reverse router
+     */
     @GET
     @Path("/{path:.*}")
     @RequiresPermissions(PAGE_READ_ALL_HTML_PERM)
-    //note: don't delete the method argument; it enables us to construct hooks into this method via the reverse router
-    public Response getPage(@PathParam("path") String rawPath)
+    public Response getPage(@PathParam("path") String rawPath, @HeaderParam(PAGE_ANONYMOUS_HEADER) @DefaultValue("false") boolean anonymous)
     {
         Response.ResponseBuilder retVal = null;
 
-        PageRouter requestRouter = new PageRouter();
+        PageRouter requestRouter = new PageRouter(anonymous);
 
         //if we need to redirect away, send a 303
         if (requestRouter.needsRedirection() && requestRouter.getTargetUri() != null) {
@@ -72,6 +79,8 @@ public class ApplicationEndpoint
         //if we got a valid RDF type query parameter, return RDF instead,
         //but if RDFA was requested (it's also in the supported formats), keep on serving html
         else if (requestRouter.getTargetRdfType() != null && !requestRouter.getTargetRdfType().equals(Format.RDFA)) {
+            //invoke the extra check for explicit RDF-ization of the page
+            R.securityManager().checkPermission(PAGE_READ_ALL_RDF_PERM);
 
             retVal = Response.ok(new PageRdfResource(requestRouter.getRequestedPage(), requestRouter.getTargetRdfType()));
         }
@@ -87,60 +96,6 @@ public class ApplicationEndpoint
 
         if (retVal == null) {
             throw new NotFoundException("Can't find this page and you have no rights to create it; " + requestRouter.getRequestedUri());
-        }
-        else {
-            return retVal.build();
-        }
-    }
-    @GET
-    @Path("/{path:.*}")
-    //Sync this with com.beligum.blocks.rdf.ifaces.Format
-    @Produces({ "application/rdf+xml",
-                "application/n-triples",
-                "application/ld+json",
-                "text/turtle",
-                "text/n3",
-              }
-    )
-    @RequiresPermissions(PAGE_READ_ALL_RDF_PERM)
-    public Response getPageRdf(@PathParam("path") String rawPath, @HeaderParam(HttpHeaders.ACCEPT) String acceptHeader)
-    {
-        PageRouter requestRouter = new PageRouter();
-
-        //if we found an external redirect URL, redirect there, otherwise continue
-        Response.ResponseBuilder retVal = null;
-
-        if (requestRouter.getTargetUri() != null && requestRouter.needsRedirection()) {
-            retVal = Response.seeOther(requestRouter.getTargetUri());
-            //see getPage() for why this is used
-            R.cacheManager().getFlashCache().resurrect();
-        }
-        else {
-            if (requestRouter.getRequestedPage() != null) {
-
-                Format rdfFormat = Format.fromMimeType(acceptHeader);
-
-                //this is the old version, before the header was added to the method definition
-                //                //having a page is not enough, the requested RDF format (mime type) needs to be
-                //                //supported as well, so we'll iterate all acceptable media types and try to convert them
-                //                //to supported RDF formats, stopping once we found one that matches
-                //                for (MediaType m : R.requestContext().getJaxRsRequest().getAcceptableMediaTypes()) {
-                //                    //note that we strip the possible parameters and charset from the media type
-                //                    //and reconstruct the mimetype from its parts so the match is as broad as possible
-                //                    rdfFormat = Format.fromMimeType(m.getType() + "/" + m.getSubtype());
-                //                    if (rdfFormat != null) {
-                //                        break;
-                //                    }
-                //                }
-
-                if (rdfFormat != null) {
-                    retVal = Response.ok(new PageRdfResource(requestRouter.getRequestedPage(), rdfFormat));
-                }
-            }
-        }
-
-        if (retVal == null) {
-            throw new NotFoundException("Can't find RDF page; " + requestRouter.getRequestedUri());
         }
         else {
             return retVal.build();

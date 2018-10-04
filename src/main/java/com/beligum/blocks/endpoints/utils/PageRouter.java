@@ -43,6 +43,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
@@ -134,13 +135,14 @@ public class PageRouter
     private boolean allowEditExisting;
 
     /**
-     * The following newPage... variables will hold the values that are passed from the "Create new page" via the flash cache
+     * The following newPage... variables will hold the values that are passed from the "Create new page" via the flash cache,
+     * note that it's important they are initialized conservatively
      */
-    private String newPageTemplateName;
-    private String newPageCopyUrl;
-    private Boolean newPageCopyLink;
-    private Boolean newPagePersistent;
-    private MultivaluedMap<String, String> newPageExtraParams;
+    private String newPageTemplateName = null;
+    private String newPageCopyUrl = null;
+    private boolean newPageCopyLink = false;
+    private boolean newPagePersistent = false;
+    private MultivaluedMap<String, String> newPageExtraParams = new MultivaluedHashMap<>();
 
     /**
      * This will hold the template when we're creating, copying or selecting a new page
@@ -157,14 +159,16 @@ public class PageRouter
      * Note: the main objective here is to set the targetUri variable.
      * As long as it's null, we haven't found our target resource yet and we keep looking.
      * This also allow us to skip later steps as soon as it was found
+     *
+     * @param anonymous
      */
-    public PageRouter() throws InternalServerErrorException
+    public PageRouter(boolean anonymous) throws InternalServerErrorException
     {
         this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
-        this.allowCreateNew = R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
-        this.allowEditExisting = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+        this.allowCreateNew = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
+        this.allowEditExisting = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
 
         // --- The basic steps
         this.doRequestUriCleaning();
@@ -182,7 +186,6 @@ public class PageRouter
         // --- The create new page cases
         if (this.assertUnfinished() && this.assertAllowCreateNew()) {
             this.doCheckValidResourceUrl();
-            this.doCheckSafeNewUrl();
             this.doExtractCreateVariables();
             this.doBuildNewTemplatePage();
             this.doBuildNewCopyPage();
@@ -265,6 +268,16 @@ public class PageRouter
             this.queryParameters = PageSource.transferCleanedQueryParams(uriBuilder, R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
 
             this.requestedUri = uriBuilder.build();
+
+            // We allow the user to instance any kind of URL since it can be typed in the browser
+            // However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
+            // address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
+            // If the URL is not safe, fix it and redirect
+            String safePagePath = new PageUrlValidator().createSafePagePath(this.requestedUri);
+            if (!this.requestedUri.getPath().equals(safePagePath)) {
+                this.needsRedirection = true;
+                this.targetUri = UriBuilder.fromUri(this.requestedUri).replacePath(safePagePath).build();
+            }
         }
     }
     /**
@@ -274,14 +287,22 @@ public class PageRouter
     private void doRdfTypeDetection()
     {
         if (this.assertUnfinished()) {
+
+            //if we have an explicit type parameter, use that, otherwise, use the http headers
             if (this.queryParameters.containsKey(ResourceRequest.TYPE_QUERY_PARAM)) {
                 //let's check if the passed type is a supported RDF type
-                Format rdfFormat = Format.fromMimeType(this.queryParameters.getFirst(ResourceRequest.TYPE_QUERY_PARAM));
-                if (rdfFormat != null) {
-                    this.rdfType = rdfFormat;
-                    //Important: don't do this because it would cache this rdf version as the regular page
-                    //remove the type from the requested URI now we've saved it
-                    //this.requestedUri = UriBuilder.fromUri(this.requestedUri).replaceQueryParam(ResourceRequest.TYPE_QUERY_PARAM, null).build();
+                this.rdfType = Format.fromMimeType(this.queryParameters.getFirst(ResourceRequest.TYPE_QUERY_PARAM));
+
+                //Important: don't do this because (in case of the type parameter) it would cache this rdf version as the regular page
+                //this.requestedUri = UriBuilder.fromUri(this.requestedUri).replaceQueryParam(ResourceRequest.TYPE_QUERY_PARAM, null).build();
+            }
+            else {
+                List<MediaType> acceptableMediaTypes = R.requestContext().getJaxRsRequest().getAcceptableMediaTypes();
+                if (acceptableMediaTypes != null && !acceptableMediaTypes.isEmpty()) {
+                    MediaType mainType = acceptableMediaTypes.iterator().next();
+                    //note that we strip the possible parameters and charset from the media type
+                    //and reconstruct the mimetype from its parts so the match is as broad as possible
+                    this.rdfType = Format.fromMimeType(mainType.getType() + "/" + mainType.getSubtype());
                 }
             }
         }
@@ -512,24 +533,6 @@ public class PageRouter
         }
     }
     /**
-     * We allow the user to instance any kind of URL since it can be typed in the browser
-     * However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
-     * address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
-     */
-    private void doCheckSafeNewUrl()
-    {
-        if (this.assertUnfinished() && this.assertAllowCreateNew()) {
-
-            String safePagePath = new PageUrlValidator().createSafePagePath(this.requestedUri.getPath());
-
-            //If the URL is not safe, fix it and redirect
-            if (!this.requestedUri.getPath().equals(safePagePath)) {
-                this.needsRedirection = true;
-                this.targetUri = UriBuilder.fromUri(this.requestedUri).replacePath(safePagePath).build();
-            }
-        }
-    }
-    /**
      * Extract the variables from the flash cache if we just came from the create-new-page page.
      * Note that we can't pass them on via query parameters because we need to keep the final URL
      * of the page we're creating intact.
@@ -537,18 +540,29 @@ public class PageRouter
     private void doExtractCreateVariables()
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew()) {
-            //initialize them with default values
-            this.newPageTemplateName = null;
-            this.newPageCopyUrl = null;
-            this.newPageCopyLink = false;
-            this.newPagePersistent = false;
-            this.newPageExtraParams = new MultivaluedHashMap<>();
-
             if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
+
                 this.newPageTemplateName = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+
                 this.newPageCopyUrl = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
-                this.newPageCopyLink = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
-                this.newPagePersistent = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_PERSISTENT.name());
+
+                //If we make a copy from another page, we need to know if we need to treat it as a translation (re-using it's resource URI)
+                //or treat it as a completely new resource. So if the user passed a copy url, it also needs to decide which mode to copy it in.
+                Boolean linkToSource = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_LINK.name());
+                if (!StringUtils.isEmpty(this.newPageCopyUrl) && linkToSource == null) {
+                    throw new InternalServerErrorException("Asking to create a page by copying an existing page (" + this.newPageCopyUrl
+                                                           + ") without supplying the boolean to link it or not. This is not allowed; " + this.getRequestedPage());
+                }
+                else if (linkToSource != null) {
+                    this.newPageCopyLink = linkToSource;
+                }
+
+                //only modify the default if we have a value
+                Boolean persistNewPage = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_PERSISTENT.name());
+                if (persistNewPage != null) {
+                    this.newPagePersistent = persistNewPage;
+                }
+
                 this.newPageExtraParams = R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_EXTRA_PARAMS.name());
             }
         }

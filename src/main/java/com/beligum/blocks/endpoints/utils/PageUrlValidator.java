@@ -3,6 +3,8 @@ package com.beligum.blocks.endpoints.utils;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import org.apache.commons.lang.StringUtils;
 
+import java.net.URI;
+
 public class PageUrlValidator
 {
     //-----CONSTANTS-----
@@ -14,10 +16,11 @@ public class PageUrlValidator
     //-----PUBLIC METHODS-----
     /**
      * This is modified version of StringFunctions.prepareSeoValue()
+     * @param uri
      */
-    public String createSafePagePath(String path)
+    public String createSafePagePath(URI uri)
     {
-        String retVal = path == null ? null : path.trim();
+        String retVal = uri == null ? null : uri.getPath().trim();
 
         if (!StringUtils.isEmpty(retVal)) {
             //convert all special chars to ASCII
