@@ -142,8 +142,9 @@ public class TemplateCache
         }
 
         //this will re-init all fields of the template
+        boolean wasDisabled = existingTemplate.isDisabled();
         existingTemplate.init(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
-        existingTemplate.setDisabled(template.isDisabled());
+        existingTemplate.setDisabled(wasDisabled);
 
         this.resetCache();
 
