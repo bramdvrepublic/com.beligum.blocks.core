@@ -161,7 +161,7 @@ public class HtmlAnalyzer
     }
     public PageTemplate getTemplate() throws IOException
     {
-        this.assertAnalyzedDeep();
+        this.analyzeShallow();
 
         return htmlTemplate;
     }
@@ -254,9 +254,12 @@ public class HtmlAnalyzer
             this.htmlLocale = Locale.ROOT;
         }
 
-        //extract the template
+        //extract the template; let's support both template definition files as template instances (eg. normalized pages)
         if (htmlAttributes.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlParser.HTML_ROOT_TEMPLATE_ATTR))) {
             this.htmlTemplate = (PageTemplate) TemplateCache.instance().getByTagName(tempAttrValue);
+        }
+        else if (this.rootElement.getName().contains("-")) {
+            this.htmlTemplate = (PageTemplate) TemplateCache.instance().getByTagName(this.rootElement.getName());
         }
         else {
             this.htmlTemplate = null;
