@@ -12,8 +12,8 @@
 <script src="/assets/blocks/core/scripts/broadcaster.js" type="application/javascript"></script>
 <script src="/assets/blocks/core/scripts/notification.js" type="application/javascript"></script>
 
-## dynamic page with JS security plugin
-<script src="$CONSTANTS.base.core.SECURITY_SCRIPTS_ENDPOINT" type="application/javascript"></script>
+## dynamic page with JS security plugin (make sure we don't join this, it's per-user dynamic!)
+<script src="$CONSTANTS.base.core.SECURITY_SCRIPTS_ENDPOINT" type="application/javascript" data-join-hint="skip"></script>
 
 ## dynamic page with JS array of all the import tags
 <script src="$CONSTANTS.blocks.core.IMPORTS_SCRIPTS_ENDPOINT" type="application/javascript"></script>
