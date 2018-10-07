@@ -16,7 +16,6 @@
 
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceAction;
@@ -35,22 +34,18 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.sources.NewPageSource;
-import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TagTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
-import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -63,7 +58,6 @@ import java.util.*;
 
 import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
 import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
-import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
@@ -189,7 +183,7 @@ public class PageAdminEndpoint
                 TagTemplate tagTemplate = (TagTemplate) htmlTemplate;
 
                 //don't include the blocks where we have them disabled for the page template
-                if (pageTemplate == null || !tagTemplate.isDisabledInContext(pageTemplate)) {
+                if (!cache.isDisabled(tagTemplate) && (pageTemplate == null || !cache.isDisabled(tagTemplate, pageTemplate))) {
 
                     ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
                                     .put(Entries.NEW_BLOCK_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))
@@ -266,8 +260,7 @@ public class PageAdminEndpoint
     @javax.ws.rs.Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
     //keep these in sync with the code in the PageRouter
-    @RequiresPermissions({ PAGE_CREATE_ALL_PERM,
-                           PAGE_UPDATE_ALL_PERM })
+    @RequiresPermissions({ PAGE_UPDATE_ALL_PERM })
     public Response savePage(@QueryParam("url") URI url, String content) throws IOException
     {
         //!!! WARNING: this method is also called directly from the PageRouter

@@ -143,6 +143,7 @@ public class TemplateCache
 
         //this will re-init all fields of the template
         existingTemplate.init(template.getTemplateName(), htmlSource, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
+        existingTemplate.setDisabled(template.isDisabled());
 
         this.resetCache();
 
@@ -155,18 +156,31 @@ public class TemplateCache
     {
         return this.nameMapping.values();
     }
-    /**
-     * Disables the supplied template in all contexts
-     */
     public void disableTemplate(HtmlTemplate template)
     {
-        this.disabledTemplates.add(template);
+        this.disableTemplate(template, false);
+    }
+    /**
+     * Disables the supplied template in all contexts
+     * When disabling a template, we have two options: either we just flag it as disabled,
+     * or we effectively remove it from the system. Note that the latter means it can never
+     * be used in any inner html as well. Just disabling it will only restrict the end user
+     * from creating new instances of this template.
+     */
+    public void disableTemplate(HtmlTemplate template, boolean completelyRemove)
+    {
+        if (completelyRemove) {
+            this.disabledTemplates.add(template);
 
-        this.nameMapping.values().remove(template);
-        this.relativePathMapping.values().remove(template);
-        this.pageTemplates.remove(template);
+            this.nameMapping.values().remove(template);
+            this.relativePathMapping.values().remove(template);
+            this.pageTemplates.remove(template);
 
-        this.resetCache();
+            this.resetCache();
+        }
+        else {
+            template.setDisabled(true);
+        }
     }
     /**
      * Disables the template when it's used in the context of the page
@@ -174,6 +188,20 @@ public class TemplateCache
     public void disableTemplate(TagTemplate template, PageTemplate page)
     {
         template.addDisabledContext(page);
+    }
+    /**
+     * Returns true if the template is flagged disabled
+     */
+    public boolean isDisabled(HtmlTemplate template)
+    {
+        return template.isDisabled();
+    }
+    /**
+     * Returns true if the tag template is disabled in the context of the page template
+     */
+    public boolean isDisabled(TagTemplate template, PageTemplate pageTemplate)
+    {
+        return template.getDisabledPages().contains(pageTemplate);
     }
     public void clear()
     {

@@ -61,6 +61,7 @@ public class HtmlAnalyzer
     private AttributeRef htmlTypeof;
     private AttributeRef htmlVocab;
     private AttributeRef htmlPrefixes;
+    private PageTemplate htmlTemplate;
     private Locale htmlLocale;
     private String title;
     private Set<HtmlTag> metaTags;
@@ -158,6 +159,12 @@ public class HtmlAnalyzer
 
         return subResources;
     }
+    public PageTemplate getTemplate() throws IOException
+    {
+        this.assertAnalyzedDeep();
+
+        return htmlTemplate;
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -245,6 +252,14 @@ public class HtmlAnalyzer
         else {
             //this is a nice practice and allows us to skip a lot of null tests (reason why ROOT was added in the first place)
             this.htmlLocale = Locale.ROOT;
+        }
+
+        //extract the template
+        if (htmlAttributes.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlParser.HTML_ROOT_TEMPLATE_ATTR))) {
+            this.htmlTemplate = (PageTemplate) TemplateCache.instance().getByTagName(tempAttrValue);
+        }
+        else {
+            this.htmlTemplate = null;
         }
 
         this.analyzedShallow = true;

@@ -19,10 +19,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var Frame = this;
 
     var SIDEBAR_STATE_NULL = "";
-    var SIDEBAR_STATE_SHOW = "show";
-    var SIDEBAR_STATE_HIDE = "hide";
+    var SIDEBAR_STATE_SHOW = BlocksConstants.PAGE_SIDEBAR_COOKIE_SHOW;
+    var SIDEBAR_STATE_HIDE = BlocksConstants.PAGE_SIDEBAR_COOKIE_HIDE;
     //Note: an empty paths means: take the path of the current page
-    var DEFAULT_COOKIE_OPTIONS = {path: '/'};
+    var DEFAULT_COOKIE_OPTIONS = BlocksConstants.PAGE_SIDEBAR_COOKIE_OPTIONS;
 
     var MIN_SIDEBAR_WIDTH = 200;
 

@@ -52,6 +52,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
 
+import static com.beligum.blocks.config.Permissions.PAGE_CREATE_COPY_ALL_PERM;
+import static com.beligum.blocks.config.Permissions.PAGE_CREATE_TEMPLATE_ALL_PERM;
+
 /**
  * This class holds the general algorithm we follow when parsing publicly incoming requests
  * for a page. It handles all the details of RDF resource URIs, translated URIs, aliasing, etc.
@@ -575,22 +578,32 @@ public class PageRouter
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
+            //make sure we have permission to create a page copy
+            R.securityManager().checkPermission(PAGE_CREATE_TEMPLATE_ALL_PERM);
+
             if (!StringUtils.isEmpty(this.newPageTemplateName)) {
 
                 //check if the name exists and is all right
-                HtmlTemplate pageTemplate = TemplateCache.instance().getByTagName(this.newPageTemplateName);
+                TemplateCache templateCache = TemplateCache.instance();
+                HtmlTemplate pageTemplate = templateCache.getByTagName(this.newPageTemplateName);
                 if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
 
-                    this.adminTemplate = R.resourceManager().newTemplate(new StringSource(this.requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, this.locale));
+                    if (!templateCache.isDisabled(pageTemplate)) {
 
-                    //transfer the passed-in extra params into the template context
-                    this.transferExtraParams(this.adminTemplate.getContext(), this.newPageExtraParams);
+                        this.adminTemplate = R.resourceManager().newTemplate(new StringSource(this.requestedUri, pageTemplate.createNewHtmlInstance(false), MimeTypes.HTML, this.locale));
 
-                    //this will allow the extra edit javascript/css to be included
-                    this.setResourceAction(ResourceAction.UPDATE);
+                        //transfer the passed-in extra params into the template context
+                        this.transferExtraParams(this.adminTemplate.getContext(), this.newPageExtraParams);
 
-                    //Note: we deliberately don't set the targetUri because we don't have a real target yet (only after the first save)
-                    //(except when we'll persist the page in one go, see later)
+                        //this will allow the extra edit javascript/css to be included
+                        this.setResourceAction(ResourceAction.UPDATE);
+
+                        //Note: we deliberately don't set the targetUri because we don't have a real target yet (only after the first save)
+                        //(except when we'll persist the page in one go, see later)
+                    }
+                    else {
+                        throw new InternalServerErrorException("Requested to instance a new page (" + requestedUri + ") with a disabled page template; " + newPageTemplateName);
+                    }
                 }
                 else {
                     throw new InternalServerErrorException("Requested to instance a new page (" + requestedUri + ") with an invalid page template name; " + newPageTemplateName);
@@ -606,6 +619,9 @@ public class PageRouter
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
+            //make sure we have permission to create a page copy
+            R.securityManager().checkPermission(PAGE_CREATE_COPY_ALL_PERM);
+
             if (!StringUtils.isEmpty(this.newPageCopyUrl)) {
 
                 //read the page we'll copy from
@@ -618,6 +634,11 @@ public class PageRouter
                 if (copyPage != null) {
 
                     try {
+                        PageTemplate pageTemplate = copyPage.createAnalyzer().getTemplate();
+                        if (pageTemplate == null || TemplateCache.instance().isDisabled(pageTemplate)) {
+                            throw new IOException("Requested to copy a page (" + requestedUri + ") with an unknown or disabled page template; " + pageTemplate);
+                        }
+
                         //we need to pull the normalized html through the template engine for this to work
                         Template copyTemplate = R.resourceManager().newTemplate(copyPage);
 
@@ -667,8 +688,12 @@ public class PageRouter
             if (this.newPagePersistent) {
                 try {
                     //sync these with the annotations on the PageAdminEndpoint.save() method
-                    R.securityManager().checkPermissions(Permissions.PAGE_CREATE_ALL_PERM, Permissions.PAGE_UPDATE_ALL_PERM);
+                    R.securityManager().checkPermissions(Permissions.PAGE_CREATE_ALL_PERM);
+
                     new PageAdminEndpoint().savePage(this.requestedUri, this.adminTemplate.render());
+
+                    //we rendered and saved the page, so jump out of admin mode
+                    this.adminTemplate = null;
 
                     //this will uniformly set the required variables for further handling
                     this.doResolvePage();
@@ -748,8 +773,9 @@ public class PageRouter
     {
         List<Map<String, String>> retVal = new ArrayList<>();
 
-        for (HtmlTemplate htmlTemplate : TemplateCache.instance().getAllTemplates()) {
-            if (htmlTemplate instanceof PageTemplate && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+        TemplateCache templateCache = TemplateCache.instance();
+        for (HtmlTemplate htmlTemplate : templateCache.getAllTemplates()) {
+            if (htmlTemplate instanceof PageTemplate && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN && !templateCache.isDisabled(htmlTemplate)) {
 
                 ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
                                 .put(core.Entries.NEW_PAGE_TEMPLATE_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))

@@ -7,87 +7,93 @@
 
             <div class="row">
 
-                <div class="col-sm-6 actions-group">
+                #if($SECURITY.checkPermission($CONSTANTS.blocks.core.PAGE_CREATE_TEMPLATE_ALL_PERM))
+                    <div class="col-sm-6 actions-group">
 
-                    <div class="title">
-                        <div class="number fa-stack fa-lg">
-                            <i class="fa fa-circle fa-stack-2x"></i>
-                            <i class="fa fa-inverse fa-stack-1x">
-                                <span class="digit">A</span>
-                            </i>
+                        <div class="title">
+                            <div class="number fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-inverse fa-stack-1x">
+                                    <span class="digit">A</span>
+                                </i>
+                            </div>
+                            $MESSAGES.blocks.core.newPageFromTemplate
                         </div>
-                        $MESSAGES.blocks.core.newPageFromTemplate
-                    </div>
 
-                    <div class="list-group actions">
+                        <div class="list-group actions">
 
-                        #if($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES].isEmpty())
-                            <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
-                        #else
-                            #foreach($template in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES])
-                                <a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_PARAM=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
-                                    <div class="preview">
-                                        <i class="fa #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
-                                    </div>
-                                    <div class="caption">
-                                        <span class="title">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TITLE]</span>
-                                        <span class="description">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_DESCRIPTION]</span>
-                                    </div>
-                                </a>
-                            #end
-                        #end
-
-                    </div>
-                </div>
-
-                <div class="col-sm-6 actions-group">
-
-                    <div class="title">
-                        <div class="number fa-stack fa-lg">
-                            <i class="fa fa-circle fa-stack-2x"></i>
-                            <i class="fa fa-inverse fa-stack-1x">
-                                <span class="digit">B</span>
-                            </i>
-                        </div>
-                        $MESSAGES.blocks.core.newPageFromOther
-                    </div>
-
-                    <div class="actions">
-                        <div class="translations">
-
-                            #if($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS].isEmpty())
-                                <p>
-                                    <i>$MESSAGES.blocks.core.noPageTranslationsAvailable</i>
-                                </p>
+                            #if($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES].isEmpty())
+                                <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
                             #else
-                                <p>
-                                    $TOOLKIT.display.message($MESSAGES.blocks.core.newPageTranslationsSubtitle, $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS].size()):
-                                </p>
-
-                                <ul>
-                                    #foreach($page in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS])
-                                        <li>
-                                            <i class="fa fa-copy"></i><a href="javascript:void(0)" $CONSTANTS.blocks.core.NEW_PAGE_TRANSLATION_ATTR="$page.publicAbsoluteAddress">$page.language.getDisplayLanguage($LOCALE_BROWSER)</a>
-                                        </li>
-                                    #end
-                                </ul>
+                                #foreach($template in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES])
+                                    <a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_PARAM=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])"
+                                       class="list-group-item">
+                                        <div class="preview">
+                                            <i class="fa #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
+                                        </div>
+                                        <div class="caption">
+                                            <span class="title">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TITLE]</span>
+                                            <span class="description">$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_DESCRIPTION]</span>
+                                        </div>
+                                    </a>
+                                #end
                             #end
 
-                            <hr>
+                        </div>
+                    </div>
+                #end
 
+                #if($SECURITY.checkPermission($CONSTANTS.blocks.core.PAGE_CREATE_COPY_ALL_PERM))
+                    <div class="col-sm-6 actions-group">
+
+                        <div class="title">
+                            <div class="number fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-inverse fa-stack-1x">
+                                    <span class="digit">B</span>
+                                </i>
+                            </div>
+                            $MESSAGES.blocks.core.newPageFromOther
                         </div>
 
-                        <div class="copy">
-                            <p>
-                                $MESSAGES.blocks.core.newPageCopyTitle
-                            </p>
-                            <div>
-                                <input type="text" class="form-control typeahead" placeholder="$MESSAGES.blocks.core.newPageCopyPlaceholder">
+                        <div class="actions">
+                            <div class="translations">
+
+                                #if($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS].isEmpty())
+                                    <p>
+                                        <i>$MESSAGES.blocks.core.noPageTranslationsAvailable</i>
+                                    </p>
+                                #else
+                                    <p>
+                                        $TOOLKIT.display.message($MESSAGES.blocks.core.newPageTranslationsSubtitle, $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS].size()):
+                                    </p>
+
+                                    <ul>
+                                        #foreach($page in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS])
+                                            <li>
+                                                <i class="fa fa-copy"></i><a href="javascript:void(0)" $CONSTANTS.blocks.core.NEW_PAGE_TRANSLATION_ATTR="$page.publicAbsoluteAddress"
+                                                >$page.language.getDisplayLanguage($LOCALE_BROWSER)</a>
+                                            </li>
+                                        #end
+                                    </ul>
+                                #end
+
+                                <hr>
+
+                            </div>
+
+                            <div class="copy">
+                                <p>
+                                    $MESSAGES.blocks.core.newPageCopyTitle
+                                </p>
+                                <div>
+                                    <input type="text" class="form-control typeahead" placeholder="$MESSAGES.blocks.core.newPageCopyPlaceholder">
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                </div>
+                    </div>
+                #end
 
             </div>
         </div>

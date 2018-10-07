@@ -116,27 +116,21 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                 //we start out with the general permission
                 boolean allowEditing = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
 
-                try {
-                    //if the settings say a user can only edit it's own creations, make sure
-                    //we have a creator and a matching current user before we allow editing
-                    if (Settings.instance().getPageSecurityOnlyEditOwnCreations()) {
-                        //we'll use a conservative approach: everything needs to be right
-                        //in order to allow editing the page, even though we have general edit permission
-                        allowEditing = false;
-
+                //if the settings say a user can only edit it's own creations, make sure
+                //we have a creator and a matching current user before we allow editing
+                if (!allowEditing && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
+                    try {
                         ResourceMetadata metadata = this.getMetadata();
                         if (metadata != null && metadata.getCreator() != null) {
                             URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
                             if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
-                                //don't set it to true by default; we follow the general security roles by default
-                                allowEditing = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+                                allowEditing = true;
                             }
                         }
                     }
-                }
-                catch (Exception e) {
-                    allowEditing = false;
-                    Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
+                    catch (Exception e) {
+                        Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
+                    }
                 }
 
                 return allowEditing;

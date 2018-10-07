@@ -35,7 +35,10 @@ public class Permissions implements PermissionFactory
     public static final Permission PAGE_READ_ALL_HTML_PERM = new PermissionImpl(core.Entries.PAGE_READ_ALL_HTML_PERM, SecurityConfig.ANON_ROLE);
     public static final Permission PAGE_READ_ALL_RDF_PERM = new PermissionImpl(core.Entries.PAGE_READ_ALL_RDF_PERM, SecurityConfig.ANON_ROLE);
     public static final Permission PAGE_CREATE_ALL_PERM = new PermissionImpl(core.Entries.PAGE_CREATE_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
+    public static final Permission PAGE_CREATE_TEMPLATE_ALL_PERM = new PermissionImpl(core.Entries.PAGE_CREATE_TEMPLATE_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
+    public static final Permission PAGE_CREATE_COPY_ALL_PERM = new PermissionImpl(core.Entries.PAGE_CREATE_COPY_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission PAGE_UPDATE_ALL_PERM = new PermissionImpl(core.Entries.PAGE_UPDATE_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
+    public static final Permission PAGE_UPDATE_OWN_PERM = new PermissionImpl(core.Entries.PAGE_UPDATE_OWN_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission PAGE_DELETE_ALL_PERM = new PermissionImpl(core.Entries.PAGE_DELETE_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
     public static final Permission PAGE_REINDEX_ALL_PERM = new PermissionImpl(core.Entries.PAGE_REINDEX_ALL_PERM, SecurityConfig.DEFAULT_ADMIN_ROLE);
 
@@ -48,6 +51,7 @@ public class Permissions implements PermissionFactory
                                                                             PAGE_READ_ALL_RDF_PERM,
                                                                             PAGE_CREATE_ALL_PERM,
                                                                             PAGE_UPDATE_ALL_PERM,
+                                                                            PAGE_UPDATE_OWN_PERM,
                                                                             PAGE_DELETE_ALL_PERM,
                                                                             PAGE_REINDEX_ALL_PERM,
                                                                             RDF_CLASS_READ_ALL_PERM,

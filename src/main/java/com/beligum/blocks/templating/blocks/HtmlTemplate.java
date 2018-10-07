@@ -114,6 +114,7 @@ public abstract class HtmlTemplate
     protected String templateName;
     //this will enable us to save the 'inheritance tree'
     protected HtmlTemplate superTemplate;
+    protected boolean disabled;
     protected Map<String, String> attributes;
     protected Element rootElement;
     protected String title;
@@ -160,6 +161,7 @@ public abstract class HtmlTemplate
         //INIT THE NAMES
         this.templateName = templateName;
         this.superTemplate = superTemplate;
+        this.disabled = false;
 
         //INIT THE HTML
         //note: this should take the parent into account
@@ -637,6 +639,16 @@ public abstract class HtmlTemplate
 
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException;
 
+    //we want these to only be used by the TemplateCache
+    protected boolean isDisabled()
+    {
+        return disabled;
+    }
+    protected void setDisabled(boolean disabled)
+    {
+        this.disabled = disabled;
+    }
+
     //-----PRIVATE METHODS-----
     private static boolean isTagTemplate(Source source)
     {
@@ -989,22 +1001,54 @@ public abstract class HtmlTemplate
                 this.normalizationSubstitutions.add(new ReplaceVariableContent(this.cssSelector(e), e));
             }
 
+            // Some notes for the two checks below:
+            // Note that we instance a template of our own name (see createNewHtmlInstance() in the beginning of this method),
+            // but inside the html of that template can also be instances of other templates (eg. <blocks-text>).
+            // Since this method call is mainly meant to deal with the normalization of _this_ template (eg. not the <blocks-text> one),
+            // we must distinguish between 'our context' and 'other contexts'. For instance, supposed we define a default page template
+            // in which we have some <blocks-text> instances, but we have added a class to those instances (<blocks-text class="blah">),
+            // that class can't be normalized away, because we don't know if the <blocks-text> definition template has this class set too.
+            // And since only those attributes are added (the ones present in the definition file of <blocks-text>) during rendering of
+            // that <blocks-text> block, they must be left alone.
+
             //(3) check if the element is a property
             if (this.isPropertyTag(e)) {
-                phase2.add(new CollapseTemplateProperty(this.cssSelector(e), e));
+                //Since we iterate _all_ properties, we'll also iterate properties
+                //of other template instances (eg. when a template uses other templates).
+                //A property 'belongs' to it's parent template instance,
+                //we shouldn't collapse the properties of others
+                org.jsoup.nodes.Element parentTemplateInstance = e.parent();
+                while (parentTemplateInstance != null && !parentTemplateInstance.tagName().contains("-")) {
+                    parentTemplateInstance = parentTemplateInstance.parent();
+                }
+
+                if (parentTemplateInstance == null) {
+                    throw new IOException("Found a property tag (" + e + ") in a template file (" + this.getRelativePath() + ") that's not in the context of any template-instance; this shouldn't happen");
+                }
+
+                //only add references to properties that belong to us
+                if (parentTemplateInstance.tagName().equals(this.getTemplateName())) {
+                    phase2.add(new CollapseTemplateProperty(this.cssSelector(e), e));
+                }
             }
 
             //(4) check if the element is a template
             //Note that we can't use isTemplateInstanceTag() here because this is called
             //*during* template cache building, so we'll add a semi-check and postpone
             //to the parsing in the substitution
-            if (e.tagName().contains("-")) {
+            //Updated to only accepting our own (root) template instance tag, because
+            //if we would normalize an instance tag in another instance tag, the removed attributes
+            //wouldn't be added again during rendering because the attribtues that are added are controlled
+            //by the definition html file of _that_ template tag, not the ones we might have added
+            //to this sub-instance-tag
+            //Also note that we could remove the dash-check, but we kept it to make the remake above valid
+            //(because it's also relevant for the property-checking above)
+            if (e.tagName().contains("-") && e.tagName().equals(this.getTemplateName())) {
                 phase2.add(new CollapseTemplateInstance(this.cssSelector(e), e));
             }
         }
         //now add all phase 2 substitutions at the end of the existing list so we're sure they're executed after phase 1
         this.normalizationSubstitutions.addAll(phase2);
-
 
         /*
         // This is a bit stupid to iterate the DOM another time, but the written Jericho code to detect RDF properties

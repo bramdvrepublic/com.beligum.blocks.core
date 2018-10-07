@@ -33,7 +33,7 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected Set<PageTemplate> disabledPages;
+    private Set<PageTemplate> disabledPages;
 
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
@@ -47,9 +47,9 @@ public class TagTemplate extends HtmlTemplate
     {
         return true;
     }
-    public boolean isDisabledInContext(PageTemplate pageTemplate)
+    public Set<PageTemplate> getDisabledPages()
     {
-        return this.disabledPages.contains(pageTemplate);
+        return disabledPages;
     }
 
     //-----PROTECTED METHODS-----
