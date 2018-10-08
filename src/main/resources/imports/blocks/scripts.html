@@ -1,6 +1,9 @@
 <meta property="blocks:display" content="hidden">
 
 ## -----COMMON IMPORTS-----
+## inline the dynamic (request-scoped) scripts as soon as possible
+$!CONTEXT.dynamicScripts
+
 <script src="/assets/webjars/jquery/1.11.1-PATCHED-1987/jquery.js" type="application/javascript"></script>
 <script src="/assets/webjars/js-cookie/2.0.2/js.cookie.js" type="application/javascript"></script>
 <script src="/assets/webjars/bootstrap/3.3.4/js/bootstrap.js" type="application/javascript"></script>
@@ -8,12 +11,10 @@
 
 <script src="/assets/base/core/scripts/main.js" type="application/javascript"></script>
 <script src="/assets/base/core/scripts/commons.js" type="application/javascript"></script>
+<script src="/assets/base/core/scripts/security.js" type="application/javascript"></script>
 
 <script src="/assets/blocks/core/scripts/broadcaster.js" type="application/javascript"></script>
 <script src="/assets/blocks/core/scripts/notification.js" type="application/javascript"></script>
-
-## dynamic page with JS security plugin (make sure we don't join this, it's per-user dynamic!)
-<script src="$CONSTANTS.base.core.SECURITY_SCRIPTS_ENDPOINT" type="application/javascript" data-join-hint="skip"></script>
 
 ## dynamic page with JS array of all the import tags
 <script src="$CONSTANTS.blocks.core.IMPORTS_SCRIPTS_ENDPOINT" type="application/javascript"></script>
