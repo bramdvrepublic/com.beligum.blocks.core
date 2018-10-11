@@ -45,6 +45,7 @@ import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
+import org.apache.shiro.authz.annotation.Logical;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
 import javax.ws.rs.*;
@@ -98,7 +99,10 @@ public class PageAdminEndpoint
      */
     @GET
     @Path("/template")
-    @RequiresPermissions(PAGE_CREATE_ALL_PERM)
+    @RequiresPermissions(logical = Logical.OR,
+                         value ={ PAGE_CREATE_ALL_PERM,
+                                  PAGE_CREATE_TEMPLATE_ALL_PERM,
+                                  PAGE_CREATE_COPY_ALL_PERM })
     public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) URI pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
@@ -148,7 +152,9 @@ public class PageAdminEndpoint
      */
     @GET
     @Path("/blocks")
-    @RequiresPermissions(PAGE_UPDATE_ALL_PERM)
+    @RequiresPermissions(logical = Logical.OR,
+                         value ={ PAGE_UPDATE_ALL_PERM,
+                                  PAGE_UPDATE_OWN_PERM })
     public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplateName)
     {
         RdfClass typeOf = null;
@@ -218,7 +224,9 @@ public class PageAdminEndpoint
     @GET
     @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(PAGE_UPDATE_ALL_PERM)
+    @RequiresPermissions(logical = Logical.OR,
+                         value ={ PAGE_UPDATE_ALL_PERM,
+                                  PAGE_UPDATE_OWN_PERM })
     public Response getBlock(@PathParam("name") String name) throws IOException
     {
         HashMap<String, Object> retVal = new HashMap<>();
@@ -249,9 +257,11 @@ public class PageAdminEndpoint
 
         //Note: the newArrayList is needed to make it work with json
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(), Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(), Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),
+                   Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()));
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(), Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(), Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(),
+                   Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()));
 
         return Response.ok(retVal).build();
     }
@@ -260,7 +270,7 @@ public class PageAdminEndpoint
     @javax.ws.rs.Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
     //keep these in sync with the code in the PageRouter
-    @RequiresPermissions({ PAGE_UPDATE_ALL_PERM })
+    //Note: security is handled by R.resourceManager().save()
     public Response savePage(@QueryParam("url") URI url, String content) throws IOException
     {
         //!!! WARNING: this method is also called directly from the PageRouter
@@ -281,8 +291,8 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions({ PAGE_DELETE_ALL_PERM })
     //Note that we can't make the uri an URI, because it's incompatible with the client side
+    //Note: security is handled by R.resourceManager().delete()
     public Response deletePage(String uri) throws Exception
     {
         Resource page = R.resourceManager().get(URI.create(uri), MimeTypes.HTML);
@@ -298,8 +308,8 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete/all")
     @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions({ PAGE_DELETE_ALL_PERM })
     //Note that we can't make the uri an URI, because it's incompatible with the client side
+    //Note: security is handled by R.resourceManager().delete()
     public Response deletePageAndTranslations(String uri) throws Exception
     {
         Resource page = R.resourceManager().get(URI.create(uri));

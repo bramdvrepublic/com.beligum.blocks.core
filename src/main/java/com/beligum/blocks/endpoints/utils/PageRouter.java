@@ -40,7 +40,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.MediaType;
@@ -130,12 +129,7 @@ public class PageRouter
     /**
      * A flag indicating we have permission to create new pages
      */
-    private boolean allowCreateNew;
-
-    /**
-     * A flag indicating we have permission to edit existing pages
-     */
-    private boolean allowEditExisting;
+    private boolean allowCreateAll;
 
     /**
      * The following newPage... variables will hold the values that are passed from the "Create new page" via the flash cache,
@@ -170,8 +164,7 @@ public class PageRouter
         this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
-        this.allowCreateNew = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
-        this.allowEditExisting = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+        this.allowCreateAll = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
 
         // --- The basic steps
         this.doRequestUriCleaning();
@@ -391,7 +384,8 @@ public class PageRouter
                     //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
                     //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
                     //instance the translated page
-                    else if (this.allowEditExisting) {
+                    //TODO: what about PAGE_UPDATE_OWN_PERM here?
+                    else if (R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM)) {
                         selectedEntryAddress = null;
                     }
                 }
@@ -687,9 +681,7 @@ public class PageRouter
 
             if (this.newPagePersistent) {
                 try {
-                    //sync these with the annotations on the PageAdminEndpoint.save() method
-                    R.securityManager().checkPermissions(Permissions.PAGE_CREATE_ALL_PERM);
-
+                    //note: further permission is handled in the code of the method (no annotations)
                     new PageAdminEndpoint().savePage(this.requestedUri, this.adminTemplate.render());
 
                     //we rendered and saved the page, so jump out of admin mode
@@ -732,7 +724,7 @@ public class PageRouter
     }
     private boolean assertAllowCreateNew()
     {
-        return this.allowCreateNew;
+        return this.allowCreateAll;
     }
     private boolean assertCreatedNew()
     {

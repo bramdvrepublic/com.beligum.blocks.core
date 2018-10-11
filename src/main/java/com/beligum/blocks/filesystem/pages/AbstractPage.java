@@ -106,25 +106,34 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     @Override
     public boolean isPermitted(ResourceAction action)
     {
+        boolean retVal = false;
+
         switch (action) {
             case READ:
+                retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
+                         || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
+                         || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
+                break;
+
             case CREATE:
-            case DELETE:
-                return true;
+                retVal = R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM)
+                         || R.securityManager().isPermitted(Permissions.PAGE_CREATE_TEMPLATE_ALL_PERM)
+                         || R.securityManager().isPermitted(Permissions.PAGE_CREATE_COPY_ALL_PERM);
+                break;
 
             case UPDATE:
                 //we start out with the general permission
-                boolean allowEditing = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+                retVal = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
 
                 //if the settings say a user can only edit it's own creations, make sure
                 //we have a creator and a matching current user before we allow editing
-                if (!allowEditing && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
+                if (!retVal && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
                     try {
                         ResourceMetadata metadata = this.getMetadata();
                         if (metadata != null && metadata.getCreator() != null) {
                             URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
                             if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
-                                allowEditing = true;
+                                retVal = true;
                             }
                         }
                     }
@@ -133,10 +142,14 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     }
                 }
 
-                return allowEditing;
-            default:
-                return false;
+                break;
+
+            case DELETE:
+                retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
+                break;
         }
+
+        return retVal;
     }
     /**
      * This is mainly for debugging, but is probably what we want
