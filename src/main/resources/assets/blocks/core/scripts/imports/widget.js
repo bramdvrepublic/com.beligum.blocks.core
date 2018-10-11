@@ -671,6 +671,53 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         },
 
         /**
+         * Links the value of a configurable attribute to a clickable link with a selection method
+         *
+         * element: element to change
+         * labelText: name to show as label
+         * attribute: name of the attribute the value changes
+         * confirm: value only changes when user confirms
+         * fileSelect: user can only select file from server
+         * pageSelect: user can select a page url from the sitemap
+         */
+        addValueAttributeSelection: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
+        {
+            var selectedFilePath = element.attr(attribute);
+
+            if (Commons.isUriAttribute(attribute)) {
+                selectedFilePath = Commons.defingerprint(selectedFilePath);
+            }
+
+            var inputActions = this.buildInputActions(Sidebar, fileSelect, pageSelect, selectedFilePath);
+            //for now, we'll take the first one
+            var inputAction = null;
+            $.each(inputActions, function(key, value) {
+                inputAction = value;
+                return false;
+            });
+
+            var content = this.createLinkInput(Sidebar,
+                function getterFunction()
+                {
+                    var retVal = element.attr(attribute);
+
+                    if (Commons.isUriAttribute(attribute)) {
+                        retVal = Commons.defingerprint(retVal);
+                    }
+
+                    return retVal;
+                },
+                function setterFunction(val)
+                {
+                    return element.attr(attribute, val);
+                },
+                labelText, placeholderText, confirm, inputAction
+            );
+
+            return content;
+        },
+
+        /**
          * Links the inner html of an element to an input box (eg. for iframes)
          *
          * element: element to change
@@ -1072,6 +1119,86 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 {
                     if (setterFunction) {
                         setterFunction(input.val());
+                    }
+                });
+            }
+            else {
+                //implemented in the input event handler
+            }
+
+            return formGroup;
+        },
+
+        /**
+         * Create a link with clear functionality and with a helper selection method that is called on click.
+         *
+         * getterFunction: the function to use to get the value we're changing
+         * setterFunction: the function to use to set the value we're changing
+         * labelText: name to show as label
+         * placeholderText: string to show as placeholder
+         * confirm: value only changes when user clicks apply button
+         **/
+        createLinkInput: function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownAction)
+        {
+            var id = Commons.generateId();
+
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+
+            //note that this setup (with the link, the html, the title and the hidden input) is expected in eg. admin.js of
+            //the blocks-video and blocks-image imports. If you would ever change it, make sure to update them too.
+            var inputGroup = $('<div class="' + BlocksConstants.LINK_GROUP_CLASS + '"></div>').appendTo(formGroup);
+            var link = $('<a id="' + id + '" href="javascript:void(0)">'+placeholderText+'</a>').appendTo(inputGroup);
+            var hidden = $('<input type="hidden">').appendTo(inputGroup);
+            hidden.on("change", function (event)
+            {
+                var val = hidden.val();
+
+                if (event.type !== "focus" && !confirm && setterFunction) {
+                    setterFunction(val);
+                    link.html(val);
+                    link.attr('title', val);
+                }
+            });
+
+            var oldVal = '';
+            if (getterFunction) {
+                oldVal = getterFunction();
+                if (!oldVal) {
+                    oldVal = '';
+                }
+            }
+            link.attr(Widget.OLD_VAL_ATTR, oldVal);
+            link.html(oldVal);
+            link.attr('title', oldVal);
+
+            //check if there are extra action
+            if (dropdownAction) {
+
+                if (dropdownAction[Widget.TEXT_INPUT_ACTION_OPTION_DISABLE] === true) {
+                    link.addClass("disabled");
+                }
+                //don't add the event handler when the link is disabled
+                else {
+                    if (dropdownAction[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT]) {
+                        link.click(function (event)
+                        {
+                            //let's pass the hidden field as the place where to put the result
+                            dropdownAction[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT](event, hidden);
+                        });
+                    }
+                }
+            }
+
+            if (confirm) {
+                var actionsGroup = $('<div class="input-group actions"></div>').appendTo(formGroup);
+                var applyBtn = $('<a class="btn btn-sm btn-primary"><i class="fa fa-check"></i> Apply</a>').appendTo(actionsGroup);
+                applyBtn.click(function (event)
+                {
+                    if (setterFunction) {
+                        setterFunction(hidden.val());
                     }
                 });
             }

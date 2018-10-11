@@ -609,6 +609,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           .@{RADIO_GROUP_CLASS},
           .@{COLOR_GROUP_CLASS},
           .@{TOGGLE_GROUP_CLASS},
+          .@{LINK_GROUP_CLASS},
           .list-group {
             @textAlign: left;
             @formAlign: right;
@@ -675,6 +676,13 @@ ul.@{BLOCK_ACTIONS_CLASS} {
                 .opacity(0.5);
                 padding-top: 6px;
               }
+            }
+
+            &.@{LINK_GROUP_CLASS} {
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
             }
 
             .dropdown-toggle {
