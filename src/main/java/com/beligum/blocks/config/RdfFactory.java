@@ -54,7 +54,7 @@ public class RdfFactory
             R.cacheManager().getApplicationCache().put(CacheKeys.RDF_VOCABULARIES, new HashMap<URI, RdfVocabulary>());
         }
 
-        return (Map<URI, RdfVocabulary>) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARIES);
+        return R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARIES);
     }
     public static Map<String, URI> getVocabularyPrefixes()
     {
@@ -62,7 +62,7 @@ public class RdfFactory
             R.cacheManager().getApplicationCache().put(CacheKeys.RDF_VOCABULARY_PREFIXES, new HashMap<String, URI>());
         }
 
-        return (Map<String, URI>) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_PREFIXES);
+        return R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_PREFIXES);
     }
     public static RdfVocabulary getVocabularyForPrefix(String prefix)
     {

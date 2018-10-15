@@ -193,7 +193,7 @@ public class LucenePageIndexer implements PageIndexer
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
             synchronized (this.searcherLock) {
                 if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-                    IndexSearcher indexSearcher = (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+                    IndexSearcher indexSearcher = R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
                     try (IndexReader indexReader = indexSearcher.getIndexReader()) {
                         indexReader.close();
                     }
@@ -210,7 +210,7 @@ public class LucenePageIndexer implements PageIndexer
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
             synchronized (this.writerLock) {
                 if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
-                    try (IndexWriter indexWriter = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER)) {
+                    try (IndexWriter indexWriter = R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER)) {
                         indexWriter.close();
                     }
                     catch (Exception e) {
@@ -236,7 +236,7 @@ public class LucenePageIndexer implements PageIndexer
             }
         }
 
-        return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+        return R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
     public IndexWriter getIndexWriter() throws IOException
     {
@@ -249,7 +249,7 @@ public class LucenePageIndexer implements PageIndexer
         }
 
         //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
-        IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
+        IndexWriter retVal = R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
         if (retVal == null || !retVal.isOpen()) {
             synchronized (this.writerLock) {
                 if (retVal == null || !retVal.isOpen()) {

@@ -174,7 +174,7 @@ public class Settings
             R.cacheManager().getApplicationCache().put(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY, xAttrResolverFactory);
         }
 
-        return (XAttrResolverFactory) R.cacheManager().getApplicationCache().get(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY);
+        return R.cacheManager().getApplicationCache().get(CacheKeys.BLOCKS_XATTR_RESOLVER_FACTORY);
     }
     public URI getPagesRootPath()
     {

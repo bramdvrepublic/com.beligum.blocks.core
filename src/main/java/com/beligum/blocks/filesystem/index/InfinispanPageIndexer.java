@@ -300,6 +300,6 @@
 //            R.cacheManager().getApplicationCache().put(CacheKeys.INFINISPAN_CACHE_MANAGER, new DefaultCacheManager(builder.build()));
 //        }
 //
-//        return (EmbeddedCacheManager) R.cacheManager().getApplicationCache().get(CacheKeys.INFINISPAN_CACHE_MANAGER);
+//        return R.cacheManager().getApplicationCache().get(CacheKeys.INFINISPAN_CACHE_MANAGER);
 //    }
 //}

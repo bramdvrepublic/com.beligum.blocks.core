@@ -56,7 +56,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
     //-----PRIVATE METHODS-----
     public static Map<String, TemplateController> getTemplateControllers()
     {
-        Map<String, TemplateController> retVal = (Map<String, TemplateController>) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATE_CONTROLLERS);
+        Map<String, TemplateController> retVal = R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATE_CONTROLLERS);
         if (retVal == null) {
             Map<String, Class<?>> mapping = new HashMap<>();
             TemplateCache cachedTemplates = TemplateCache.instance();

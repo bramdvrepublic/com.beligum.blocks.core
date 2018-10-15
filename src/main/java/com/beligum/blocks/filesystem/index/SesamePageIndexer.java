@@ -129,7 +129,7 @@ public class SesamePageIndexer implements PageIndexer
             }
         }
 
-        return (SailRepository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
+        return R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
     }
 
     //-----PROTECTED METHODS-----

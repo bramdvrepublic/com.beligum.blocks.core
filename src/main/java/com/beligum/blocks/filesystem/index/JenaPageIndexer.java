@@ -205,7 +205,7 @@
 //                R.cacheManager().getApplicationCache().put(CacheKeys.RDF_DATASET, indexedDataset);
 //            }
 //
-//            return (Dataset) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_DATASET);
+//            return R.cacheManager().getApplicationCache().get(CacheKeys.RDF_DATASET);
 //        }
 //    }
 //}

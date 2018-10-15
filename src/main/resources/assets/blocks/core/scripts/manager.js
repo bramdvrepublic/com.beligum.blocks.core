@@ -23,6 +23,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 {
     var Manager = this;
 
+    var observer = null;
+
     //-----EVENTS-----
     //main entry point for blocks after all the GUI events are handled
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
@@ -40,10 +42,46 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             //start off by showing the layouter
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
         }, 0);
+
+        // //-----DEBUG-----
+        // Manager.observer = new MutationObserver(function (mutations) {
+        //     // Whether you iterate over mutations..
+        //     mutations.forEach(function (mutation) {
+        //         // or use all mutation records is entirely up to you
+        //         var entry = {
+        //             //mutation: mutation,
+        //             // Returns "attributes" if the mutation was an attribute mutation,
+        //             // "characterData" if it was a mutation to a CharacterData node,
+        //             // and "childList" if it was a mutation to the tree of nodes.
+        //             type: mutation.type,
+        //             // For attributes, it is the element whose attribute changed.
+        //             // For characterData, it is the CharacterData node.
+        //             // For childList, it is the node whose children changed.
+        //             target: mutation.target,
+        //             value: mutation.target.textContent,
+        //             oldValue: mutation.oldValue
+        //         };
+        //         console.log('Recording mutation:', mutation);
+        //     });
+        // });
+        // Manager.observer.observe($('blocks-layout'/*BlocksConstants.PAGE_CONTENT_CLASS*//*'.blocks-page-content'*/)[0], {
+        //     subtree: true,
+        //     attributes: true,
+        //     childList: true,
+        //     characterData: true,
+        //     attributeOldValue: true,
+        //     characterDataOldValue: true
+        // });
+        // //---------------
+
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
+        // if (Manager.observer) {
+        //     Manager.observer.disconnect();
+        // }
+
         //some cleanup: helps bugs when closing the bar during focus
         focusSwitch(Hover.getPageBlock());
 

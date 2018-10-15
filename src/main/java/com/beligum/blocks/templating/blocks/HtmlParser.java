@@ -404,7 +404,18 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
         //render the start tag, except if the template is eg. a page template
         String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
         if (renderTag != null) {
+
             String attr = templateInstance.getAttributeValue(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
+
+            //note: this is subtle; it means we'll only consider the data-render-tag on the htmlTemplate (the definition file)
+            //if no such attribute is present on the instance (which is probably what is expected; the instances overrides the definition)
+            if (attr == null) {
+                Map<String, String> attrs = htmlTemplate.getAttributes();
+                if (attrs != null) {
+                    attr = attrs.get(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
+                }
+            }
+
             //if it's not set, just render the tag name
             if (attr != null) {
                 //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all

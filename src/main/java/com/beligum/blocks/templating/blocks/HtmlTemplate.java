@@ -25,13 +25,13 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.controllers.BlocksReferenceController;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
@@ -126,6 +126,7 @@ public abstract class HtmlTemplate
     protected Iterable<ScopedResource> externalScriptElements;
     protected Iterable<ScopedResource> inlineStyleElements;
     protected Iterable<ScopedResource> externalStyleElements;
+    protected Iterable<ResourceReference> resourceReferences;
     // This will hold the html before the <template> tags
     protected Segment prefixHtml;
     // This will hold the html inside the <template> tags
@@ -220,6 +221,7 @@ public abstract class HtmlTemplate
         this.externalStyleElements = parseExternalStyles(tempHtml);
         this.inlineScriptElements = parseInlineScripts(tempHtml);
         this.externalScriptElements = parseExternalScripts(tempHtml);
+        this.resourceReferences = parseResourceReferences(tempHtml);
 
         //prepend the html with the parent resources if it's there
         if (superTemplate != null) {
@@ -244,6 +246,8 @@ public abstract class HtmlTemplate
                                                                     this.externalScriptElements,
                                                                     superTemplate.getExternalScriptElements(),
                                                                     "src");
+
+            this.resourceReferences = Iterables.concat(superTemplate.getResourceReferences(), this.resourceReferences);
 
             //insert all (processed) super resources at the beginning of the html
             tempHtml.insert(0, superTemplateResourceHtml);
@@ -559,30 +563,6 @@ public abstract class HtmlTemplate
     {
         return icon;
     }
-    public Class<TemplateController> getControllerClass()
-    {
-        return controllerClass;
-    }
-    public HtmlTemplate getSuperTemplate()
-    {
-        return superTemplate;
-    }
-    public Iterable<ScopedResource> getInlineScriptElements()
-    {
-        return inlineScriptElements;
-    }
-    public Iterable<ScopedResource> getExternalScriptElements()
-    {
-        return externalScriptElements;
-    }
-    public Iterable<ScopedResource> getInlineStyleElements()
-    {
-        return inlineStyleElements;
-    }
-    public Iterable<ScopedResource> getExternalStyleElements()
-    {
-        return externalStyleElements;
-    }
     public Iterable<String> getInlineScriptElementsForCurrentScope()
     {
         return this.buildScopedResourceIterator(this.getInlineScriptElements());
@@ -647,6 +627,14 @@ public abstract class HtmlTemplate
     protected void setDisabled(boolean disabled)
     {
         this.disabled = disabled;
+    }
+    protected Class<TemplateController> getControllerClass()
+    {
+        return controllerClass;
+    }
+    protected HtmlTemplate getSuperTemplate()
+    {
+        return superTemplate;
     }
 
     //-----PRIVATE METHODS-----
@@ -723,6 +711,26 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
+    private Iterable<ScopedResource> getInlineScriptElements()
+    {
+        return inlineScriptElements;
+    }
+    private Iterable<ScopedResource> getExternalScriptElements()
+    {
+        return externalScriptElements;
+    }
+    private Iterable<ScopedResource> getInlineStyleElements()
+    {
+        return inlineStyleElements;
+    }
+    private Iterable<ScopedResource> getExternalStyleElements()
+    {
+        return externalStyleElements;
+    }
+    private Iterable<ResourceReference> getResourceReferences()
+    {
+        return resourceReferences;
+    }
     private Iterable<ScopedResource> parseInlineStyles(OutputDocument html) throws IOException
     {
         List<ScopedResource> retVal = new ArrayList<>();
@@ -781,6 +789,35 @@ public abstract class HtmlTemplate
                 Element parsedElement = this.renderResourceElement(element);
                 html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, "src"));
                 retVal.add(new ScopedResource(parsedElement));
+            }
+        }
+
+        return retVal;
+    }
+    private Iterable<ResourceReference> parseResourceReferences(OutputDocument html) throws IOException
+    {
+        List<ResourceReference> retVal = new ArrayList<>();
+
+        Iterator<Element> iter = html.getSegment().getAllElements(BlocksReferenceController.TAG_NAME).iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+
+            String typeStr = element.getAttributeValue(BlocksReferenceController.TYPE_ATTR);
+            if (!StringUtils.isEmpty(typeStr)) {
+                BlocksReferenceController.Type type = BlocksReferenceController.Type.valueOfAttr(typeStr);
+                String id = element.getAttributeValue(BlocksReferenceController.ID_ATTR);
+                BlocksReferenceController.TemplateRenderFilter filter = BlocksReferenceController.TemplateRenderFilter.NONE;
+                String filterStr = element.getAttributeValue(BlocksReferenceController.RENDER_FILTER_ATTR);
+                if (!StringUtils.isEmpty(filterStr)) {
+                    filter = BlocksReferenceController.TemplateRenderFilter.valueOfAttr(filterStr);
+                }
+
+                ResourceReference reference = new ResourceReference(element, type, id, filter);
+                //html.replace(element, reference.getVelocityTag());
+                retVal.add(reference);
+            }
+            else {
+                throw new IOException("Encountered a blocks reference tag without a type. Please supply at least a " + BlocksReferenceController.TYPE_ATTR + " attribute.");
             }
         }
 
@@ -1023,7 +1060,8 @@ public abstract class HtmlTemplate
                 }
 
                 if (parentTemplateInstance == null) {
-                    throw new IOException("Found a property tag (" + e + ") in a template file (" + this.getRelativePath() + ") that's not in the context of any template-instance; this shouldn't happen");
+                    throw new IOException(
+                                    "Found a property tag (" + e + ") in a template file (" + this.getRelativePath() + ") that's not in the context of any template-instance; this shouldn't happen");
                 }
 
                 //only add references to properties that belong to us
@@ -1473,6 +1511,22 @@ public abstract class HtmlTemplate
         public Iterable<ResourceAction> getActions()
         {
             return actions;
+        }
+    }
+
+    public static class ResourceReference
+    {
+        private Element element;
+        private BlocksReferenceController.Type type;
+        private String id;
+        private BlocksReferenceController.TemplateRenderFilter filter;
+
+        public ResourceReference(Element element, BlocksReferenceController.Type type, String id, BlocksReferenceController.TemplateRenderFilter filter)
+        {
+            this.element = element;
+            this.type = type;
+            this.id = id;
+            this.filter = filter;
         }
     }
 }

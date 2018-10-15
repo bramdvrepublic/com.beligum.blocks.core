@@ -75,7 +75,7 @@ public class TemplateCache
     }
     public static TemplateCache instance()
     {
-        TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
+        TemplateCache retVal = R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
         if (retVal == null) {
             synchronized (initMutex) {
                 if (retVal == null) {
