@@ -21,7 +21,7 @@ import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ontology.factories.Classes;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlRdfContext;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;

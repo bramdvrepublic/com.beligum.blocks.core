@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf.sources;
 
+import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.models.Person;
 import com.beligum.base.resources.MimeTypes;
@@ -23,17 +24,18 @@ import com.beligum.base.resources.ResourceInputStream;
 import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.AbstractSource;
+import com.beligum.base.security.PermissionRole;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
-import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -236,17 +238,37 @@ public abstract class PageSource extends AbstractSource implements Source
             //hope it's okay to save this as a relative URI (sinc we try to save all RDFa URIs as relative)
             String editorUri = R.securityManager().getPersonUri(editor, false).toString();
 
+            PermissionRole currentRole = R.securityManager().getCurrentRole();
+
             //update the created date
-            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false);
+            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false, false);
 
             //update the creator URL
-            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false);
+            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false, false);
 
             //update the modified date
-            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true);
+            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true, false);
 
             //update the contributor list
-            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false);
+            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false);
+
+            //Note: by default, we allow all visitors to view the pages by default.
+            //The update/delete/manage levels default to the role level of the creator if nothing is set.
+            //Nothing is overwritten if the metadata is already set, of course
+
+            //update the view ACL
+            String defaultViewValue = Settings.instance().getEnableRestrictedReadDefault() ? String.valueOf(currentRole.getLevel()) : String.valueOf(SecurityConfig.ANON_ROLE.getLevel());
+            Element aclViewProp = this.findOrCreateElement(Terms.aclRead, defaultViewValue, true, false, true);
+
+            //update the update ACL
+            Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(currentRole.getLevel()), true, false, true);
+
+            //update the delete ACL
+            Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(currentRole.getLevel()), true, false, true);
+
+            //update the manage ACL
+            Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(currentRole.getLevel()), true, false, true);
+
         }
         catch (Exception e) {
             throw new IOException("Error while updating the html with the new metadata values; " + this.getUri(), e);
@@ -351,7 +373,7 @@ public abstract class PageSource extends AbstractSource implements Source
 
         return retVal;
     }
-    private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite)
+    private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite, boolean onlyUpdateIfBlank)
     {
         Element retVal = null;
 
@@ -409,8 +431,17 @@ public abstract class PageSource extends AbstractSource implements Source
 
         if (retVal != null) {
             retVal.attr(HtmlParser.RDF_PROPERTY_ATTR, property.getName())
-                  .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString())
-                  .attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                  .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString());
+
+            String existingValue = retVal.attr(HtmlParser.RDF_CONTENT_ATTR);
+            if (onlyUpdateIfBlank) {
+                if (StringUtils.isBlank(existingValue)) {
+                    retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                }
+            }
+            else {
+                retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+            }
         }
 
         return retVal;

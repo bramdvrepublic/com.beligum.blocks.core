@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.rdf.ontology.factories;
+package com.beligum.blocks.rdf.ontology.vocabularies.local.factories;
 
+import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;
@@ -29,7 +30,7 @@ import java.net.URI;
  * Note: we try to keep this list as short as possible and keep all ontology-implementations in sub-modules.
  * However, some property-references are needed by the core system (eg. during indexing), so these are the properties
  * that are too integrated in blocks-core to move anywhere else.
- *
+ * <p>
  * Created by bram on 3/22/16.
  */
 public class Terms implements RdfResourceFactory
@@ -99,15 +100,15 @@ public class Terms implements RdfResourceFactory
     //note the difference between the LogEntry createdAt (which is modeled after our internal BasicModel interface)
     //and this (publicly accessible) term, which is modeled after the Dublin Core (and EBU Core)
     public static final RdfProperty created = new RdfPropertyImpl("created",
-                                                                     LocalVocabulary.INSTANCE,
-                                                                     ontology.Entries.propertyTitle_created,
-                                                                     ontology.Entries.propertyLabel_created,
-                                                                     XSD.DATE_TIME,
-                                                                     InputType.DateTime,
-                                                                     null,
-                                                                     new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-created
-                                                                     },
-                                                                     false);
+                                                                  LocalVocabulary.INSTANCE,
+                                                                  ontology.Entries.propertyTitle_created,
+                                                                  ontology.Entries.propertyLabel_created,
+                                                                  XSD.DATE_TIME,
+                                                                  InputType.DateTime,
+                                                                  null,
+                                                                  new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-created
+                                                                  },
+                                                                  false);
 
     public static final RdfProperty creator = new RdfPropertyImpl("creator",
                                                                   LocalVocabulary.INSTANCE,
@@ -121,26 +122,70 @@ public class Terms implements RdfResourceFactory
                                                                   false);
 
     public static final RdfProperty modified = new RdfPropertyImpl("modified",
+                                                                   LocalVocabulary.INSTANCE,
+                                                                   ontology.Entries.propertyTitle_modified,
+                                                                   ontology.Entries.propertyLabel_modified,
+                                                                   XSD.DATE_TIME,
+                                                                   InputType.DateTime,
+                                                                   null,
+                                                                   new URI[] { //TODO http://dublincore.org/documents/dcmi-terms/#terms-modified
+                                                                   },
+                                                                   false);
+
+    public static final RdfProperty contributor = new RdfPropertyImpl("contributor",
+                                                                      LocalVocabulary.INSTANCE,
+                                                                      ontology.Entries.propertyTitle_contributor,
+                                                                      ontology.Entries.propertyLabel_contributor,
+                                                                      XSD.ANY_URI,
+                                                                      InputType.Resource,
+                                                                      null,
+                                                                      new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-contributor
+                                                                      },
+                                                                      false);
+
+    public static final RdfProperty aclRead = new RdfPropertyImpl("aclRead",
                                                                   LocalVocabulary.INSTANCE,
-                                                                  ontology.Entries.propertyTitle_modified,
-                                                                  ontology.Entries.propertyLabel_modified,
-                                                                  XSD.DATE_TIME,
-                                                                  InputType.DateTime,
+                                                                  ontology.Entries.propertyTitle_aclRead,
+                                                                  ontology.Entries.propertyLabel_aclRead,
+                                                                  XSD.INT,
+                                                                  InputType.Number,
                                                                   null,
-                                                                  new URI[] { //TODO http://dublincore.org/documents/dcmi-terms/#terms-modified
+                                                                  new URI[] {
                                                                   },
                                                                   false);
 
-    public static final RdfProperty contributor = new RdfPropertyImpl("contributor",
-                                                                  LocalVocabulary.INSTANCE,
-                                                                  ontology.Entries.propertyTitle_contributor,
-                                                                  ontology.Entries.propertyLabel_contributor,
-                                                                  XSD.ANY_URI,
-                                                                  InputType.Resource,
-                                                                  null,
-                                                                  new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-contributor
-                                                                  },
-                                                                  false);
+    public static final RdfProperty aclUpdate = new RdfPropertyImpl("aclUpdate",
+                                                                    LocalVocabulary.INSTANCE,
+                                                                    ontology.Entries.propertyTitle_aclUpdate,
+                                                                    ontology.Entries.propertyLabel_aclUpdate,
+                                                                    XSD.INT,
+                                                                    InputType.Number,
+                                                                    null,
+                                                                    new URI[] {
+                                                                    },
+                                                                    false);
+
+    public static final RdfProperty aclDelete = new RdfPropertyImpl("aclDelete",
+                                                                    LocalVocabulary.INSTANCE,
+                                                                    ontology.Entries.propertyTitle_aclDelete,
+                                                                    ontology.Entries.propertyLabel_aclDelete,
+                                                                    XSD.INT,
+                                                                    InputType.Number,
+                                                                    null,
+                                                                    new URI[] {
+                                                                    },
+                                                                    false);
+
+    public static final RdfProperty aclManage = new RdfPropertyImpl("aclManage",
+                                                                    LocalVocabulary.INSTANCE,
+                                                                    ontology.Entries.propertyTitle_aclManage,
+                                                                    ontology.Entries.propertyLabel_aclManage,
+                                                                    XSD.INT,
+                                                                    InputType.Number,
+                                                                    null,
+                                                                    new URI[] {
+                                                                    },
+                                                                    false);
 
     //-----CONFIGS-----
 

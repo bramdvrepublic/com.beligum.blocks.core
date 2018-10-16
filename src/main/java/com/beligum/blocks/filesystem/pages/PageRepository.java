@@ -193,6 +193,8 @@ public class PageRepository extends AbstractResourceRepository
                     newPage.writeHistoryEntry(oldPage);
                 }
 
+                //TODO check/update ACLs
+
                 //update the metadata of the source before we write it to disk
                 //Note: by doing it here, the nothingChanged flag still works as expected
                 pageSource.updateMetadata(editor);

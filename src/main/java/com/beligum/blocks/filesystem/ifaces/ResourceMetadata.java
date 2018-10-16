@@ -44,4 +44,24 @@ public interface ResourceMetadata
      * The counterpart of dc:contributor; An entity responsible for making contributions to the resource.
      */
     Collection<URI> getContributors();
+
+    /**
+     * The minimum security level that is required for viewing this resource
+     */
+    Integer getReadAccessControlLevel();
+
+    /**
+     * The minimum security level that is required for editing this resource
+     */
+    Integer getUpdateAccessControlLevel();
+
+    /**
+     * The minimum security level that is required for deleting this resource
+     */
+    Integer getDeleteAccessControlLevel();
+
+    /**
+     * The minimum security level that is required for managing this resource's security levels
+     */
+    Integer getManageAccessControlLevel();
 }

@@ -1,28 +1,18 @@
 package com.beligum.blocks.filesystem.pages;
 
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.IOException;
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
 
 public class DefaultPageMetadata extends AbstractResourceMetadata implements PageMetadata
@@ -35,6 +25,10 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     private URI creator;
     private ZonedDateTime modifiedUtc;
     private Collection<URI> contributors;
+    private Integer aclRead;
+    private Integer aclUpdate;
+    private Integer aclDelete;
+    private Integer aclManage;
 
     //-----CONSTRUCTORS-----
     public DefaultPageMetadata(Page page) throws IOException
@@ -66,6 +60,26 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     public Collection<URI> getContributors()
     {
         return this.contributors;
+    }
+    @Override
+    public Integer getReadAccessControlLevel()
+    {
+        return this.aclRead;
+    }
+    @Override
+    public Integer getUpdateAccessControlLevel()
+    {
+        return this.aclUpdate;
+    }
+    @Override
+    public Integer getDeleteAccessControlLevel()
+    {
+        return this.aclDelete;
+    }
+    @Override
+    public Integer getManageAccessControlLevel()
+    {
+        return this.aclManage;
     }
 
     //-----PROTECTED METHODS-----
@@ -101,6 +115,18 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
                             contributor = this.page.getUri().resolve(contributor);
                         }
                         this.contributors.add(contributor);
+                    }
+                    else if (property.equals(Terms.aclRead.getName())) {
+                        this.aclRead = Integer.valueOf(content);
+                    }
+                    else if (property.equals(Terms.aclUpdate.getName())) {
+                        this.aclUpdate = Integer.valueOf(content);
+                    }
+                    else if (property.equals(Terms.aclDelete.getName())) {
+                        this.aclDelete = Integer.valueOf(content);
+                    }
+                    else if (property.equals(Terms.aclManage.getName())) {
+                        this.aclManage = Integer.valueOf(content);
                     }
                 }
             }

@@ -19,7 +19,7 @@ package com.beligum.blocks.rdf.sources;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ontology.factories.Classes;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Classes;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
 

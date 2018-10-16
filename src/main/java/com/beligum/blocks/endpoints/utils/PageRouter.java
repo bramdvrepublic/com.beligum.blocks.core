@@ -21,7 +21,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.rdf.sources.PageSourceCopy;
 import com.beligum.blocks.config.Permissions;

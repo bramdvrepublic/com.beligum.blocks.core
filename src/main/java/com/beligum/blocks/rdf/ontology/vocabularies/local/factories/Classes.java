@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.rdf.ontology.factories;
+package com.beligum.blocks.rdf.ontology.vocabularies.local.factories;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;

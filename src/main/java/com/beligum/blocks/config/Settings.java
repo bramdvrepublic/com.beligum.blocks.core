@@ -16,25 +16,28 @@
 
 package com.beligum.blocks.config;
 
+import com.beligum.base.filesystem.MessagesFileEntry;
+import com.beligum.base.security.PermissionRole;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.json.Json;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrMapper;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
+import com.beligum.blocks.security.AclImpl;
+import com.beligum.blocks.security.ifaces.Acl;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.TransactionManager;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bas on 08.10.14.
@@ -47,6 +50,7 @@ public class Settings
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
     private static final String RDF_PREFIX = COMMON_PREFIX + ".rdf";
     private static final String ONTOLOGY_PREFIX = RDF_PREFIX + ".ontology";
+    private static final String SECURITY_PREFIX = COMMON_PREFIX + ".security";
 
     private static final String TRANSACTIONS_PROPERTIES_KEY = COMMON_PREFIX + ".transactions.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = COMMON_PREFIX + ".transactions.transaction-manager";
@@ -69,6 +73,8 @@ public class Settings
     public static final String PAGES_DEFAULT_TRANSACTIONS_FOLDER = "tx";
     private static final String PAGES_DEFAULT_DATA_FOLDER = "data";
 
+    private static final String SECURITY_ACLS_KEY = SECURITY_PREFIX + ".acls.acl";
+
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
 
@@ -82,10 +88,12 @@ public class Settings
     private URI cachedPagesMainIndexDir;
     private URI cachedPagesTripleStoreDir;
     private Class<? extends TransactionManager> cachedTransactionManagerClass;
-    protected HashMap<String, String> cachedTransactionsProperties = null;
-    protected HashMap<String, String> cachedHdfsProperties = null;
+    private HashMap<String, String> cachedTransactionsProperties = null;
+    private HashMap<String, String> cachedHdfsProperties = null;
     private String cachedPagesFileExtension;
     private String cachedPagesLockFileExtension;
+    private Map<Integer, Acl> cachedAcls;
+    private String cachedAclsJson;
 
     private Settings()
     {
@@ -384,6 +392,48 @@ public class Settings
     public String getRdfOntologyPrefix()
     {
         return R.configuration().getString(ONTOLOGY_PREFIX + ".prefix");
+    }
+    public boolean getEnableRestrictedReadDefault()
+    {
+        return R.configuration().getBoolean(SECURITY_PREFIX + ".enable-restricted-read-default", false);
+    }
+    public Map<Integer, Acl> getAcls()
+    {
+        if (this.cachedAcls == null) {
+            this.cachedAcls = new LinkedHashMap<>();
+
+            List<HierarchicalConfiguration> acls = R.configuration().configurationsAt(SECURITY_ACLS_KEY);
+            for (HierarchicalConfiguration aclConfig : acls) {
+                Integer level = aclConfig.getInteger("level", null);
+                String labelStr = aclConfig.getString("label", null);
+
+                if (level != null && !StringUtils.isEmpty(labelStr)) {
+                    MessagesFileEntry labelMsg = R.resourceManager().getTemplateEngine().resolvePropertyKey(labelStr);
+                    Acl acl = labelMsg == null ? new AclImpl(level, labelStr) : new AclImpl(level, labelMsg);
+                    this.cachedAcls.put(level, acl);
+                }
+                else {
+                    throw new RuntimeException("Encountered an ACL without a level or label; this is not allowed");
+                }
+            }
+
+            //if no explicit ACLs are configured, we'll sync them with the security roles
+            if (this.cachedAcls.isEmpty()) {
+                for (PermissionRole r : R.configuration().getSecurityConfig().getRoles(true)) {
+                    this.cachedAcls.put(r.getLevel(), new AclImpl(r));
+                }
+            }
+        }
+
+        return this.cachedAcls;
+    }
+    public String getAclsJson()
+    {
+        if (this.cachedAclsJson == null) {
+            this.cachedAclsJson = Json.getSettingsMap(this.getAcls().values());
+        }
+
+        return this.cachedAclsJson;
     }
 
     //-----PRIVATE METHODS-----

@@ -27,7 +27,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDFS;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedPageResourceInfo;
