@@ -223,6 +223,17 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $("body").append(menuStartButton);
                 enableSidebarDrag();
 
+                if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
+                    window.onbeforeunload = function(e) {
+                        // Cancel the event as stated by the standard.
+                        e.preventDefault();
+                        // Chrome requires returnValue to be set.
+                        e.returnValue = '';
+                        //most browsers will ignore this message
+                        return BlocksMessages.leavePageConfirmation;
+                    };
+                }
+
                 //give ourself and the animation some time to settle before sending out the event
                 //Note: not anymore, fixed it
                 setTimeout(function ()
@@ -247,6 +258,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             {
                 disableSidebarDrag();
                 menuStartButton.show();
+
+                if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
+                    window.onbeforeunload = undefined;
+                }
 
                 var body = $("body");
                 var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
@@ -475,7 +490,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             data: savePage,
             contentType: 'application/json; charset=UTF-8',
         })
-            .done(function (url, textStatus, response)
+            .done(function (data, textStatus, response)
             {
             })
             .fail(function (xhr, textStatus, exception)

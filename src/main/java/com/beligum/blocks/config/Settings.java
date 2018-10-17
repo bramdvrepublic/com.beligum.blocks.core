@@ -51,6 +51,7 @@ public class Settings
     private static final String RDF_PREFIX = COMMON_PREFIX + ".rdf";
     private static final String ONTOLOGY_PREFIX = RDF_PREFIX + ".ontology";
     private static final String SECURITY_PREFIX = COMMON_PREFIX + ".security";
+    private static final String SECURITY_ACLS_PREFIX = SECURITY_PREFIX + ".acls";
 
     private static final String TRANSACTIONS_PROPERTIES_KEY = COMMON_PREFIX + ".transactions.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = COMMON_PREFIX + ".transactions.transaction-manager";
@@ -73,7 +74,7 @@ public class Settings
     public static final String PAGES_DEFAULT_TRANSACTIONS_FOLDER = "tx";
     private static final String PAGES_DEFAULT_DATA_FOLDER = "data";
 
-    private static final String SECURITY_ACLS_KEY = SECURITY_PREFIX + ".acls.acl";
+    private static final String SECURITY_ACLS_KEY = SECURITY_ACLS_PREFIX + ".acl";
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
@@ -372,6 +373,10 @@ public class Settings
     {
         return R.configuration().getBoolean(PAGES_PREFIX + ".enable-metadata-caching", true);
     }
+    public boolean getEnablePageLeaveEditConfirmation()
+    {
+        return R.configuration().getBoolean(PAGES_PREFIX + ".enable-leave-edit-confirmation", false);
+    }
     public URI getRdfOntologyUri()
     {
         if (!this.triedRdfOntologyUri) {
@@ -393,9 +398,25 @@ public class Settings
     {
         return R.configuration().getString(ONTOLOGY_PREFIX + ".prefix");
     }
-    public boolean getEnableRestrictedReadDefault()
+    public boolean getEnableRestrictedDefaultRead()
     {
-        return R.configuration().getBoolean(SECURITY_PREFIX + ".enable-restricted-read-default", false);
+        return R.configuration().getBoolean(SECURITY_ACLS_PREFIX + ".enable-restricted-default-read", false);
+    }
+    public Integer getDefaultLevelRead()
+    {
+        return R.configuration().getInteger(SECURITY_ACLS_PREFIX + ".default-level-read", null);
+    }
+    public Integer getDefaultLevelUpdate()
+    {
+        return R.configuration().getInteger(SECURITY_ACLS_PREFIX + ".default-level-update", null);
+    }
+    public Integer getDefaultLevelDelete()
+    {
+        return R.configuration().getInteger(SECURITY_ACLS_PREFIX + ".default-level-delete", null);
+    }
+    public Integer getDefaultLevelManage()
+    {
+        return R.configuration().getInteger(SECURITY_ACLS_PREFIX + ".default-level-manage", null);
     }
     public Map<Integer, Acl> getAcls()
     {

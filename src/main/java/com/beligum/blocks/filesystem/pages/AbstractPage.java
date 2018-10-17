@@ -47,6 +47,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.shiro.authz.UnauthorizedException;
 import org.eclipse.rdf4j.model.Model;
 
 import javax.ws.rs.core.UriBuilder;
@@ -108,45 +109,71 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     {
         boolean retVal = false;
 
-        switch (action) {
-            case READ:
-                retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
-                         || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
-                         || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
-                break;
+        try {
+            switch (action) {
+                case READ:
+                    retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
+                             || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
+                             || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
 
-            case CREATE:
-                retVal = R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM)
-                         || R.securityManager().isPermitted(Permissions.PAGE_CREATE_TEMPLATE_ALL_PERM)
-                         || R.securityManager().isPermitted(Permissions.PAGE_CREATE_COPY_ALL_PERM);
-                break;
+                    //if all is well, also check the ACLs
+                    if (retVal) {
+                        retVal = this.getMetadata().getReadAcl().isPermitted(R.securityManager().getCurrentRole());
+                    }
 
-            case UPDATE:
-                //we start out with the general permission
-                retVal = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+                    break;
 
-                //if the settings say a user can only edit it's own creations, make sure
-                //we have a creator and a matching current user before we allow editing
-                if (!retVal && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
-                    try {
-                        ResourceMetadata metadata = this.getMetadata();
-                        if (metadata != null && metadata.getCreator() != null) {
-                            URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
-                            if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
-                                retVal = true;
+                case CREATE:
+                    retVal = R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM)
+                             || R.securityManager().isPermitted(Permissions.PAGE_CREATE_TEMPLATE_ALL_PERM)
+                             || R.securityManager().isPermitted(Permissions.PAGE_CREATE_COPY_ALL_PERM);
+
+                    //note: we don't have a create ACL
+
+                    break;
+
+                case UPDATE:
+                    //we start out with the general permission
+                    retVal = R.securityManager().isPermitted(Permissions.PAGE_UPDATE_ALL_PERM);
+
+                    //if the settings say a user can only edit it's own creations, make sure
+                    //we have a creator and a matching current user before we allow editing
+                    if (!retVal && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
+                        try {
+                            ResourceMetadata metadata = this.getMetadata();
+                            if (metadata != null && metadata.getCreator() != null) {
+                                URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
+                                if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
+                                    retVal = true;
+                                }
                             }
                         }
+                        catch (Exception e) {
+                            Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
+                        }
                     }
-                    catch (Exception e) {
-                        Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
+
+                    //if all is well, also check the ACLs
+                    if (retVal) {
+                        retVal = this.getMetadata().getUpdateAcl().isPermitted(R.securityManager().getCurrentRole());
                     }
-                }
 
-                break;
+                    break;
 
-            case DELETE:
-                retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
-                break;
+                case DELETE:
+                    retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
+
+                    //if all is well, also check the ACLs
+                    if (retVal) {
+                        retVal = this.getMetadata().getDeleteAcl().isPermitted(R.securityManager().getCurrentRole());
+                    }
+
+                    break;
+            }
+        }
+        catch (Throwable e) {
+            Logger.error("Caught unexpected exception while checking '" + action + "' access permission to this page; " + this, e);
+            throw new UnauthorizedException("Error happened while checking permission to execute action '" + action + "', can't continue");
         }
 
         return retVal;

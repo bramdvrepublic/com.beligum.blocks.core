@@ -1,5 +1,7 @@
 package com.beligum.blocks.filesystem.ifaces;
 
+import com.beligum.blocks.security.ifaces.Acl;
+
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -48,20 +50,25 @@ public interface ResourceMetadata
     /**
      * The minimum security level that is required for viewing this resource
      */
-    Integer getReadAccessControlLevel();
+    Acl getReadAcl();
 
     /**
      * The minimum security level that is required for editing this resource
      */
-    Integer getUpdateAccessControlLevel();
+    Acl getUpdateAcl();
 
     /**
      * The minimum security level that is required for deleting this resource
      */
-    Integer getDeleteAccessControlLevel();
+    Acl getDeleteAcl();
 
     /**
      * The minimum security level that is required for managing this resource's security levels
      */
-    Integer getManageAccessControlLevel();
+    Acl getManageAcl();
+
+    /**
+     * Returns true if the ACLs in this metadata object all equal to the ones of the supplied metadata object
+     */
+    boolean hasSameAcls(ResourceMetadata other);
 }

@@ -30,6 +30,8 @@ import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.filesystem.pages.DefaultPageMetadata;
+import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -96,6 +98,7 @@ public abstract class PageSource extends AbstractSource implements Source
     protected Document document;
     protected Element htmlTag;
     protected Element headTag;
+    protected List<Element> metaTags;
     protected HtmlAnalyzer htmlAnalyzer;
     protected Entities.EscapeMode escapeMode;
 
@@ -224,6 +227,10 @@ public abstract class PageSource extends AbstractSource implements Source
     {
         return this.getHtmlAnalyzer().getNormalizedHtml();
     }
+    public PageMetadata getMetadata() throws IOException
+    {
+        return new DefaultPageMetadata(this, this.metaTags);
+    }
     public void updateMetadata(Person editor) throws IOException
     {
         try {
@@ -252,22 +259,35 @@ public abstract class PageSource extends AbstractSource implements Source
             //update the contributor list
             Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false);
 
-            //Note: by default, we allow all visitors to view the pages by default.
-            //The update/delete/manage levels default to the role level of the creator if nothing is set.
-            //Nothing is overwritten if the metadata is already set, of course
+            //initialize the view ACL (no values are overwritten, only initialized)
+            //Note: by default, we allow all anonymous visitors to view the pages by default
+            //      if the restricted setting is active, viewing will be restricted to the level of the current user
+            String defaultReadLevel = String.valueOf(Settings.instance().getDefaultLevelRead());
+            if (StringUtils.isBlank(defaultReadLevel)) {
+                defaultReadLevel = Settings.instance().getEnableRestrictedDefaultRead() ? String.valueOf(currentRole.getLevel()) : String.valueOf(SecurityConfig.ANON_ROLE.getLevel());
+            }
+            Element aclViewProp = this.findOrCreateElement(Terms.aclRead, defaultReadLevel, true, false, true);
 
-            //update the view ACL
-            String defaultViewValue = Settings.instance().getEnableRestrictedReadDefault() ? String.valueOf(currentRole.getLevel()) : String.valueOf(SecurityConfig.ANON_ROLE.getLevel());
-            Element aclViewProp = this.findOrCreateElement(Terms.aclRead, defaultViewValue, true, false, true);
+            //initialize the update ACL (no values are overwritten, only initialized)
+            String defaultUpdateLevel = String.valueOf(Settings.instance().getDefaultLevelUpdate());
+            if (StringUtils.isBlank(defaultUpdateLevel)) {
+                defaultUpdateLevel = String.valueOf(currentRole.getLevel());
+            }
+            Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, defaultUpdateLevel, true, false, true);
 
-            //update the update ACL
-            Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(currentRole.getLevel()), true, false, true);
+            //initialize the delete ACL (no values are overwritten, only initialized)
+            String defaultDeleteLevel = String.valueOf(Settings.instance().getDefaultLevelDelete());
+            if (StringUtils.isBlank(defaultDeleteLevel)) {
+                defaultDeleteLevel = String.valueOf(currentRole.getLevel());
+            }
+            Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, defaultDeleteLevel, true, false, true);
 
-            //update the delete ACL
-            Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(currentRole.getLevel()), true, false, true);
-
-            //update the manage ACL
-            Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(currentRole.getLevel()), true, false, true);
+            //initialize the manage ACL (no values are overwritten, only initialized)
+            String defaultManageLevel = String.valueOf(Settings.instance().getDefaultLevelManage());
+            if (StringUtils.isBlank(defaultManageLevel)) {
+                defaultManageLevel = String.valueOf(currentRole.getLevel());
+            }
+            Element aclManageProp = this.findOrCreateElement(Terms.aclManage, defaultManageLevel, true, false, true);
 
         }
         catch (Exception e) {
@@ -326,6 +346,8 @@ public abstract class PageSource extends AbstractSource implements Source
         else {
             this.headTag = headTags.first();
         }
+
+        this.metaTags = this.document.getElementsByTag("meta");
     }
 
     //-----PRIVATE METHODS-----

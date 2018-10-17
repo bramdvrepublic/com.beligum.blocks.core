@@ -193,11 +193,35 @@ public class PageRepository extends AbstractResourceRepository
                     newPage.writeHistoryEntry(oldPage);
                 }
 
-                //TODO check/update ACLs
-
-                //update the metadata of the source before we write it to disk
+                //update and/or initialize the metadata of the incoming source before we write it to disk
                 //Note: by doing it here, the nothingChanged flag still works as expected
+                //Note that this needs to be called before the security check below because it initializes the ACls if needed
                 pageSource.updateMetadata(editor);
+
+                //note that this must be called on the source (not the newPage)
+                //because the html hasn't been injected in the newPage yet (this happens below in newPage.write(pageSource))
+                ResourceMetadata newMetadata = pageSource.getMetadata();
+
+                //if we have an old page, make sure to check the permissions on that version, not the new version
+                if (oldPage != null) {
+                    ResourceMetadata oldMetadata = oldPage.getMetadata();
+
+                    //first, check if we had save rights on the old page, because we're about to overwrite it
+                    newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+
+                    //check if the ACLs have changed; if they did, we need to check that we have the manage ACL
+                    if (!newMetadata.hasSameAcls(oldMetadata)) {
+                        oldMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                    }
+                }
+                //If this is the first time this page is saved, we check that we have save and manage permission,
+                //otherwise, we're about to create a page that can't be changed or managed by the current user anymore
+                //Note that this is not strictly necessary (the acls should be initialized correctly),
+                //but if this doesn't pass, the ACL system is probably misconfigured.
+                else {
+                    newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                    newMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                }
 
                 //save the original page html
                 newPage.write(pageSource);

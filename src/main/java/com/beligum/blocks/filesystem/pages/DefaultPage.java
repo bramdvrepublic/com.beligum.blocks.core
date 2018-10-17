@@ -20,6 +20,7 @@ import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.logger.RdfLogWriter;
