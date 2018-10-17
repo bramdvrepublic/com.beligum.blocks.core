@@ -39,6 +39,7 @@ import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
@@ -119,7 +120,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     //if all is well, also check the ACLs
                     //note: for backwards-compatibility, we can't check what isn't there...
                     if (retVal && this.getMetadata().getReadAcl() != null) {
-                        retVal = this.getMetadata().getReadAcl().isPermitted(R.securityManager().getCurrentRole());
+                        retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getReadAcl());
                     }
 
                     break;
@@ -157,7 +158,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     //if all is well, also check the ACLs
                     //note: for backwards-compatibility, we can't check what isn't there...
                     if (retVal && this.getMetadata().getUpdateAcl() != null) {
-                        retVal = this.getMetadata().getUpdateAcl().isPermitted(R.securityManager().getCurrentRole());
+                        retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getUpdateAcl());
                     }
 
                     break;
@@ -168,7 +169,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     //if all is well, also check the ACLs
                     //note: for backwards-compatibility, we can't check what isn't there...
                     if (retVal && this.getMetadata().getDeleteAcl() != null) {
-                        retVal = this.getMetadata().getDeleteAcl().isPermitted(R.securityManager().getCurrentRole());
+                        retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getDeleteAcl());
                     }
 
                     break;

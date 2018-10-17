@@ -529,6 +529,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             })
                 .done(function (url, textStatus, response)
                 {
+                    if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
+                        window.onbeforeunload = undefined;
+                    }
+
                     if (url) {
                         window.location = url;
                     }

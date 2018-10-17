@@ -1,5 +1,8 @@
 package com.beligum.blocks.filesystem.pages;
 
+import com.beligum.base.config.ifaces.SecurityConfig;
+import com.beligum.base.security.PermissionRole;
+import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
@@ -11,6 +14,7 @@ import com.beligum.blocks.security.ifaces.Acl;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
+import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -33,10 +37,10 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     private URI creator;
     private ZonedDateTime modifiedUtc;
     private Collection<URI> contributors;
-    private Acl aclRead;
-    private Acl aclUpdate;
-    private Acl aclDelete;
-    private Acl aclManage;
+    private Integer aclRead;
+    private Integer aclUpdate;
+    private Integer aclDelete;
+    private Integer aclManage;
 
     //-----CONSTRUCTORS-----
     public DefaultPageMetadata(Page page) throws IOException
@@ -78,22 +82,22 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
         return this.contributors;
     }
     @Override
-    public Acl getReadAcl()
+    public Integer getReadAcl()
     {
         return this.aclRead;
     }
     @Override
-    public Acl getUpdateAcl()
+    public Integer getUpdateAcl()
     {
         return this.aclUpdate;
     }
     @Override
-    public Acl getDeleteAcl()
+    public Integer getDeleteAcl()
     {
         return this.aclDelete;
     }
     @Override
-    public Acl getManageAcl()
+    public Integer getManageAcl()
     {
         return this.aclManage;
     }
@@ -123,6 +127,8 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
         for (HtmlTag metaTag : analyzer.getMetaTags()) {
             this.parseMetaTag(page.getUri(), metaTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR), metaTag.getAttributeValue(HtmlParser.RDF_CONTENT_ATTR));
         }
+
+        this.fillEmptyDefaults();
     }
     private void init(PageSource pageSource, List<Element> metaTags)
     {
@@ -130,6 +136,8 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
         for (Element metaTag : metaTags) {
             this.parseMetaTag(pageSource.getUri(), metaTag.attr(HtmlParser.RDF_PROPERTY_ATTR), metaTag.attr(HtmlParser.RDF_CONTENT_ATTR));
         }
+
+        this.fillEmptyDefaults();
     }
     private void parseMetaTag(URI baseUri, String property, String content)
     {
@@ -157,27 +165,45 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
                 else if (property.equals(Terms.aclRead.getName())) {
                     int aclReadLevel = NumberUtils.toInt(content, -1);
                     if (aclReadLevel >= 0) {
-                        this.aclRead = Settings.instance().getAcls().get(aclReadLevel);
+                        this.aclRead = aclReadLevel;
                     }
                 }
                 else if (property.equals(Terms.aclUpdate.getName())) {
                     int aclUpdateLevel = NumberUtils.toInt(content, -1);
                     if (aclUpdateLevel >= 0) {
-                        this.aclUpdate = Settings.instance().getAcls().get(aclUpdateLevel);
+                        this.aclUpdate = aclUpdateLevel;
                     }
                 }
                 else if (property.equals(Terms.aclDelete.getName())) {
                     int aclDeleteLevel = NumberUtils.toInt(content, -1);
                     if (aclDeleteLevel >= 0) {
-                        this.aclDelete = Settings.instance().getAcls().get(aclDeleteLevel);
+                        this.aclDelete = aclDeleteLevel;
                     }
                 }
                 else if (property.equals(Terms.aclManage.getName())) {
                     int aclManageLevel = NumberUtils.toInt(content, -1);
                     if (aclManageLevel >= 0) {
-                        this.aclManage = Settings.instance().getAcls().get(aclManageLevel);
+                        this.aclManage = aclManageLevel;
                     }
                 }
+            }
+        }
+    }
+    private void fillEmptyDefaults()
+    {
+        //Note: this is more or less the same code as in PageSource, beware of changes
+        if (!Settings.instance().getDisableAcls()) {
+            if (this.aclRead == null) {
+                this.aclRead = SecurityTools.getDefaultReadAclLevel();
+            }
+            if (this.aclUpdate == null) {
+                this.aclUpdate = SecurityTools.getDefaultUpdateAclLevel();
+            }
+            if (this.aclDelete == null) {
+                this.aclDelete = SecurityTools.getDefaultDeleteAclLevel();
+            }
+            if (this.aclManage == null) {
+                this.aclManage = SecurityTools.getDefaultManageAclLevel();
             }
         }
     }

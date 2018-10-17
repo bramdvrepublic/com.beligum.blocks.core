@@ -32,6 +32,7 @@ import com.beligum.blocks.filesystem.logger.PageLogEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.rdf.sources.PageSource;
+import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -208,12 +209,12 @@ public class PageRepository extends AbstractResourceRepository
 
                     //first, check if we had save rights on the old page, because we're about to overwrite it
                     if (newMetadata.getUpdateAcl() != null) {
-                        newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                        SecurityTools.checkPermission(R.securityManager().getCurrentRole(), newMetadata.getUpdateAcl());
                     }
 
                     //check if the ACLs have changed; if they did, we need to check that we have the manage ACL
                     if (!newMetadata.hasSameAcls(oldMetadata) && oldMetadata.getManageAcl() != null) {
-                        oldMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                        SecurityTools.checkPermission(R.securityManager().getCurrentRole(), oldMetadata.getManageAcl());
                     }
                 }
                 //If this is the first time this page is saved, we check that we have save and manage permission,
@@ -222,10 +223,10 @@ public class PageRepository extends AbstractResourceRepository
                 //but if this doesn't pass, the ACL system is probably misconfigured.
                 else {
                     if (newMetadata.getUpdateAcl() != null) {
-                        newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                        SecurityTools.checkPermission(R.securityManager().getCurrentRole(), newMetadata.getUpdateAcl());
                     }
                     if (newMetadata.getManageAcl() != null) {
-                        newMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                        SecurityTools.checkPermission(R.securityManager().getCurrentRole(), newMetadata.getManageAcl());
                     }
                 }
 

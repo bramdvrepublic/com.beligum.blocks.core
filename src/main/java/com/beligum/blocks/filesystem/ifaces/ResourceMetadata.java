@@ -50,22 +50,22 @@ public interface ResourceMetadata
     /**
      * The minimum security level that is required for viewing this resource
      */
-    Acl getReadAcl();
+    Integer getReadAcl();
 
     /**
      * The minimum security level that is required for editing this resource
      */
-    Acl getUpdateAcl();
+    Integer getUpdateAcl();
 
     /**
      * The minimum security level that is required for deleting this resource
      */
-    Acl getDeleteAcl();
+    Integer getDeleteAcl();
 
     /**
      * The minimum security level that is required for managing this resource's security levels
      */
-    Acl getManageAcl();
+    Integer getManageAcl();
 
     /**
      * Returns true if the ACLs in this metadata object all equal to the ones of the supplied metadata object

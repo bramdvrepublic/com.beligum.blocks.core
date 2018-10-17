@@ -16,7 +16,6 @@
 
 package com.beligum.blocks.rdf.sources;
 
-import com.beligum.base.config.ifaces.SecurityConfig;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.models.Person;
 import com.beligum.base.resources.MimeTypes;
@@ -36,6 +35,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.utils.SecurityTools;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
@@ -259,35 +259,28 @@ public abstract class PageSource extends AbstractSource implements Source
             //update the contributor list
             Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false);
 
-            //initialize the view ACL (no values are overwritten, only initialized)
-            //Note: by default, we allow all anonymous visitors to view the pages by default
-            //      if the restricted setting is active, viewing will be restricted to the level of the current user
-            String defaultReadLevel = String.valueOf(Settings.instance().getDefaultLevelRead());
-            if (StringUtils.isBlank(defaultReadLevel)) {
-                defaultReadLevel = Settings.instance().getEnableRestrictedDefaultRead() ? String.valueOf(currentRole.getLevel()) : String.valueOf(SecurityConfig.ANON_ROLE.getLevel());
-            }
-            Element aclViewProp = this.findOrCreateElement(Terms.aclRead, defaultReadLevel, true, false, true);
+            if (!Settings.instance().getDisableAcls()) {
 
-            //initialize the update ACL (no values are overwritten, only initialized)
-            String defaultUpdateLevel = String.valueOf(Settings.instance().getDefaultLevelUpdate());
-            if (StringUtils.isBlank(defaultUpdateLevel)) {
-                defaultUpdateLevel = String.valueOf(currentRole.getLevel());
-            }
-            Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, defaultUpdateLevel, true, false, true);
+                //initialize the view ACL (no values are overwritten, only initialized)
+                Element aclViewProp = this.findOrCreateElement(Terms.aclRead, String.valueOf(SecurityTools.getDefaultReadAclLevel()), true, false, true);
 
-            //initialize the delete ACL (no values are overwritten, only initialized)
-            String defaultDeleteLevel = String.valueOf(Settings.instance().getDefaultLevelDelete());
-            if (StringUtils.isBlank(defaultDeleteLevel)) {
-                defaultDeleteLevel = String.valueOf(currentRole.getLevel());
-            }
-            Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, defaultDeleteLevel, true, false, true);
+                //initialize the update ACL (no values are overwritten, only initialized)
+                Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(SecurityTools.getDefaultUpdateAclLevel()), true, false, true);
 
-            //initialize the manage ACL (no values are overwritten, only initialized)
-            String defaultManageLevel = String.valueOf(Settings.instance().getDefaultLevelManage());
-            if (StringUtils.isBlank(defaultManageLevel)) {
-                defaultManageLevel = String.valueOf(currentRole.getLevel());
+                //initialize the delete ACL (no values are overwritten, only initialized)
+                Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(SecurityTools.getDefaultDeleteAclLevel()), true, false, true);
+
+                //initialize the manage ACL (no values are overwritten, only initialized)
+                Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(SecurityTools.getDefaultManageAclLevel()), true, false, true);
             }
-            Element aclManageProp = this.findOrCreateElement(Terms.aclManage, defaultManageLevel, true, false, true);
+            else {
+                //if the ACL system is disabled, we need to make sure to delete incoming ACL entries (especially the empty ones)
+                //or the indexer will probably crash (because it doesn't know how to index empty integer property values)
+                this.deletePropertyElements(Terms.aclRead);
+                this.deletePropertyElements(Terms.aclUpdate);
+                this.deletePropertyElements(Terms.aclDelete);
+                this.deletePropertyElements(Terms.aclManage);
+            }
 
         }
         catch (Exception e) {
@@ -395,11 +388,15 @@ public abstract class PageSource extends AbstractSource implements Source
 
         return retVal;
     }
+    private void deletePropertyElements(RdfProperty property)
+    {
+        this.getPropertyElements(property).remove();
+    }
     private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite, boolean onlyUpdateIfBlank)
     {
         Element retVal = null;
 
-        Elements existingPropEls = this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]");
+        Elements existingPropEls = this.getPropertyElements(property);
 
         if (existingPropEls.isEmpty()) {
             this.headTag.prependChild(retVal = this.document.createElement(PageSource.HTML_META_ELEMENT));
@@ -467,6 +464,10 @@ public abstract class PageSource extends AbstractSource implements Source
         }
 
         return retVal;
+    }
+    private Elements getPropertyElements(RdfProperty property)
+    {
+        return this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]");
     }
 
     //-----MANAGEMENT METHODS-----

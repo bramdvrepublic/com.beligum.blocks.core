@@ -418,6 +418,10 @@ public class Settings
     {
         return R.configuration().getInteger(SECURITY_ACLS_PREFIX + ".default-level-manage", null);
     }
+    public boolean getDisableAcls()
+    {
+        return R.configuration().getBoolean(SECURITY_ACLS_PREFIX + ".disable", false);
+    }
     public Map<Integer, Acl> getAcls()
     {
         if (this.cachedAcls == null) {

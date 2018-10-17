@@ -47,19 +47,6 @@ public class AclImpl implements Acl
     {
         return this.label == null ? null : this.label.toString();
     }
-    @Override
-    public boolean isPermitted(PermissionRole role)
-    {
-        //we assert a straightup level comparison
-        return role.getLevel() <= this.getLevel();
-    }
-    @Override
-    public void checkPermission(PermissionRole role) throws AuthorizationException
-    {
-        if (!this.isPermitted(role)) {
-            throw new UnauthorizedException("Role '"+role+"' does not include ACL [" + this.getLabel() + "]");
-        }
-    }
 
     //-----PROTECTED METHODS-----
 

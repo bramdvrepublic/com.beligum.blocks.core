@@ -34,14 +34,4 @@ public interface Acl
      */
     String getLabel();
 
-    /**
-     * Returns false if this ACL is not allowed for the supplied role
-     */
-    boolean isPermitted(PermissionRole role);
-
-    /**
-     * Throws an exception if this ACL is not allowed for the supplied role
-     */
-    void checkPermission(PermissionRole role) throws AuthorizationException;
-
 }
