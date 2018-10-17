@@ -207,10 +207,12 @@ public class PageRepository extends AbstractResourceRepository
                     ResourceMetadata oldMetadata = oldPage.getMetadata();
 
                     //first, check if we had save rights on the old page, because we're about to overwrite it
-                    newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                    if (newMetadata.getUpdateAcl() != null) {
+                        newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                    }
 
                     //check if the ACLs have changed; if they did, we need to check that we have the manage ACL
-                    if (!newMetadata.hasSameAcls(oldMetadata)) {
+                    if (!newMetadata.hasSameAcls(oldMetadata) && oldMetadata.getManageAcl() != null) {
                         oldMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
                     }
                 }
@@ -219,8 +221,12 @@ public class PageRepository extends AbstractResourceRepository
                 //Note that this is not strictly necessary (the acls should be initialized correctly),
                 //but if this doesn't pass, the ACL system is probably misconfigured.
                 else {
-                    newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
-                    newMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                    if (newMetadata.getUpdateAcl() != null) {
+                        newMetadata.getUpdateAcl().checkPermission(R.securityManager().getCurrentRole());
+                    }
+                    if (newMetadata.getManageAcl() != null) {
+                        newMetadata.getManageAcl().checkPermission(R.securityManager().getCurrentRole());
+                    }
                 }
 
                 //save the original page html

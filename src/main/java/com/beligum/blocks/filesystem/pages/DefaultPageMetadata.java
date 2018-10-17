@@ -101,10 +101,10 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     {
         boolean retVal = true;
 
-        retVal = retVal && this.getReadAcl().equals(other.getReadAcl());
-        retVal = retVal && this.getUpdateAcl().equals(other.getUpdateAcl());
-        retVal = retVal && this.getDeleteAcl().equals(other.getDeleteAcl());
-        retVal = retVal && this.getManageAcl().equals(other.getManageAcl());
+        retVal = retVal && this.getReadAcl() != null && this.getReadAcl().equals(other.getReadAcl());
+        retVal = retVal && this.getUpdateAcl() != null && this.getUpdateAcl().equals(other.getUpdateAcl());
+        retVal = retVal && this.getDeleteAcl() != null && this.getDeleteAcl().equals(other.getDeleteAcl());
+        retVal = retVal && this.getManageAcl() != null && this.getManageAcl().equals(other.getManageAcl());
 
         return retVal;
     }

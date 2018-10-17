@@ -117,7 +117,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                              || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
 
                     //if all is well, also check the ACLs
-                    if (retVal) {
+                    //note: for backwards-compatibility, we can't check what isn't there...
+                    if (retVal && this.getMetadata().getReadAcl() != null) {
                         retVal = this.getMetadata().getReadAcl().isPermitted(R.securityManager().getCurrentRole());
                     }
 
@@ -154,7 +155,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     }
 
                     //if all is well, also check the ACLs
-                    if (retVal) {
+                    //note: for backwards-compatibility, we can't check what isn't there...
+                    if (retVal && this.getMetadata().getUpdateAcl() != null) {
                         retVal = this.getMetadata().getUpdateAcl().isPermitted(R.securityManager().getCurrentRole());
                     }
 
@@ -164,7 +166,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
 
                     //if all is well, also check the ACLs
-                    if (retVal) {
+                    //note: for backwards-compatibility, we can't check what isn't there...
+                    if (retVal && this.getMetadata().getDeleteAcl() != null) {
                         retVal = this.getMetadata().getDeleteAcl().isPermitted(R.securityManager().getCurrentRole());
                     }
 
