@@ -11,6 +11,7 @@ import com.beligum.blocks.security.ifaces.Acl;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
@@ -154,26 +155,26 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
                     this.contributors.add(contributor);
                 }
                 else if (property.equals(Terms.aclRead.getName())) {
-                    Integer aclReadLevel = Integer.valueOf(content);
-                    if (aclReadLevel != null) {
+                    int aclReadLevel = NumberUtils.toInt(content, -1);
+                    if (aclReadLevel >= 0) {
                         this.aclRead = Settings.instance().getAcls().get(aclReadLevel);
                     }
                 }
                 else if (property.equals(Terms.aclUpdate.getName())) {
-                    Integer aclUpdateLevel = Integer.valueOf(content);
-                    if (aclUpdateLevel != null) {
+                    int aclUpdateLevel = NumberUtils.toInt(content, -1);
+                    if (aclUpdateLevel >= 0) {
                         this.aclUpdate = Settings.instance().getAcls().get(aclUpdateLevel);
                     }
                 }
                 else if (property.equals(Terms.aclDelete.getName())) {
-                    Integer aclDeleteLevel = Integer.valueOf(content);
-                    if (aclDeleteLevel != null) {
+                    int aclDeleteLevel = NumberUtils.toInt(content, -1);
+                    if (aclDeleteLevel >= 0) {
                         this.aclDelete = Settings.instance().getAcls().get(aclDeleteLevel);
                     }
                 }
                 else if (property.equals(Terms.aclManage.getName())) {
-                    Integer aclManageLevel = Integer.valueOf(content);
-                    if (aclManageLevel != null) {
+                    int aclManageLevel = NumberUtils.toInt(content, -1);
+                    if (aclManageLevel >= 0) {
                         this.aclManage = Settings.instance().getAcls().get(aclManageLevel);
                     }
                 }
