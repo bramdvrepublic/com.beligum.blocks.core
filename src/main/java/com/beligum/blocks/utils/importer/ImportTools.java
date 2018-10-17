@@ -360,7 +360,7 @@ public abstract class ImportTools
     }
 
     //-----INNER CLASSES-----
-    protected static class NamedUri
+    public static class NamedUri
     {
         URI uri;
         String name;
