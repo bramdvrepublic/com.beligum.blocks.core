@@ -16,7 +16,10 @@
 
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.toolkit.NetworkFunctions;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.utils.PageRdfResource;
 import com.beligum.blocks.endpoints.utils.PageRouter;
 import com.beligum.blocks.rdf.ifaces.Format;
@@ -98,6 +101,15 @@ public class ApplicationEndpoint
             throw new NotFoundException("Can't find this page and you have no rights to create it; " + requestRouter.getRequestedUri());
         }
         else {
+            //when we edit or create pages, we disable caching to prevent stale page states from ending up in the
+            //browser, causing trouble on save. This happens eg. when the user hits the back button by accident,
+            //navigating away, then hitting forward again and hitting save, ending up with possibly good information being
+            // overwritten by stale page html
+            ResourceAction resourceAction = R.cacheManager().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
+            if (!(resourceAction == null || resourceAction.equals(ResourceAction.READ) || resourceAction.equals(ResourceAction.NONE))) {
+                NetworkFunctions.disableCaching(retVal);
+            }
+
             return retVal.build();
         }
     }

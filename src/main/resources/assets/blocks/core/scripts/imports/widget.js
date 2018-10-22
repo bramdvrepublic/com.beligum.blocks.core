@@ -20,7 +20,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification, Undo)
 {
     var Widget = this;
 
@@ -540,6 +540,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     var attrFound = false;
 
                     //we externalized this method to be able to load the data lazily when an async json call completed
+                    var initValue = undefined;
                     _this.reinitCombobox(retVal, comboEntries,
                         function initCallback(testValue)
                         {
@@ -556,6 +557,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                                 }
                             }
 
+                            //save the init value so we can skip it in the change callback
+                            if (retVal && !initValue) {
+                                initValue = testValue;
+                            }
+
                             //return true if this element needs to be selected
                             return retVal;
                         },
@@ -563,6 +569,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         {
                             var oldValueTerm = _this._termMappings[comboId][oldValue];
                             var newValueTerm = _this._termMappings[comboId][newValue];
+
+                            var oldVal = element.attr(attribute);
 
                             element.removeAttr(attribute);
 
@@ -573,6 +581,25 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                             if (changeListener) {
                                 changeListener(oldValueTerm, newValueTerm);
+                            }
+
+                            //On first load, this change callback is called when the value is updated
+                            //from undefined/empty to the selected value. We don't want this to record
+                            //an undo event, because the real initial state is after this value has been set.
+                            var initialChange = !oldValue && newValue == initValue;
+                            if (!initialChange) {
+                                //Note: there's a problem when we try to sync the config widget in the sidebar
+                                //with an undo/redo action because that widget might have been deleted/rebuilt in
+                                //the mean time (eg. focus was lost and regained).
+                                //To work around that, we generate a css selector for the config widget and try to find it
+                                //again when the undo/redo is happening.
+                                //Note that by default, this id's of the elements are taken into account,
+                                //but they're generated on-the-fly, so we explicitly removed them from the option list below.
+                                var retValSelector = new CssSelectorGenerator({selectors: ['class', 'tag', 'nthchild']}).getSelector(retVal[0]);
+                                Undo.recordAttributeChange(element, attribute, oldVal, function (value, action, cmd)
+                                {
+                                    $(retValSelector).find('a[data-value="' + value + '"]').first().click();
+                                });
                             }
                         }
                     );
@@ -691,7 +718,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var inputActions = this.buildInputActions(Sidebar, fileSelect, pageSelect, selectedFilePath);
             //for now, we'll take the first one
             var inputAction = null;
-            $.each(inputActions, function(key, value) {
+            $.each(inputActions, function (key, value)
+            {
                 inputAction = value;
                 return false;
             });
@@ -718,7 +746,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         },
 
         /**
-         * Links the inner html of an element to an input box (eg. for iframes)
+         * Links the inner html of an element to an input box or textarea (eg. for iframes)
          *
          * element: element to change
          * labelText: name to show as label
@@ -728,21 +756,37 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          **/
         addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm, textarea)
         {
+            var inputEl = null;
+
             var getterFunction = function ()
             {
                 return $.trim(element.html());
             };
             var setterFunction = function (val)
             {
-                return element.html($.trim(val));
+                var oldVal = element.html();
+                var newVal = $.trim(val);
+                var retVal = element.html(newVal);
+
+                if (oldVal != newVal) {
+                    var retValSelector = new CssSelecto rGenerator({selectors: ['class', 'tag', 'nthchild']}).getSelector(inputEl.find('input').first()[0]);
+                    Undo.recordHtmlChange(element, oldVal, function (value, action, cmd)
+                    {
+                        $(retValSelector).val(value).change();
+                    });
+                }
+
+                return retVal;
             };
 
             if (textarea) {
-                return this.createTextareaInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText);
+                inputEl = this.createTextareaInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText);
             }
             else {
-                return this.createTextInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm);
+                inputEl = this.createTextInput(Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm);
             }
+
+            return inputEl;
         },
 
         /**
@@ -1150,7 +1194,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             //note that this setup (with the link, the html, the title and the hidden input) is expected in eg. admin.js of
             //the blocks-video and blocks-image imports. If you would ever change it, make sure to update them too.
             var inputGroup = $('<div class="' + BlocksConstants.LINK_GROUP_CLASS + '"></div>').appendTo(formGroup);
-            var link = $('<a id="' + id + '" href="javascript:void(0)">'+placeholderText+'</a>').appendTo(inputGroup);
+            var link = $('<a id="' + id + '" href="javascript:void(0)">' + placeholderText + '</a>').appendTo(inputGroup);
             var hidden = $('<input type="hidden">').appendTo(inputGroup);
             hidden.on("change", function (event)
             {
@@ -1457,7 +1501,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             if (activateAfterInit) {
                 activateAfterInit(null, activateAfterInitEl);
             }
-            // if we don' have anything to activate, make sure we get rid of the "Loading" entry
+            // if we don't have anything to activate, make sure we get rid of the "Loading" entry
             // by reverting back to the default empty label
             else {
                 dropdownToggle.find('.text').text(BlocksMessages.comboboxEmptySelection);

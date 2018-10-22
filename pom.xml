@@ -60,12 +60,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.7.6</version>
+            <version>0.7.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.5.3</version>
+            <version>0.5.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -144,6 +144,18 @@
             <groupId>org.webjars</groupId>
             <artifactId>handlebars</artifactId>
             <version>4.0.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.bowergithub.pieroxy</groupId>
+            <artifactId>lz-string</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>css-selector-generator</artifactId>
+            <version>1.1.0</version>
         </dependency>
 
         <dependency>

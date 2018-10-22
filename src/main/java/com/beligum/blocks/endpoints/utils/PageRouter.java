@@ -321,8 +321,13 @@ public class PageRouter
                 if (this.rdfResourceUriAnalyzer.isTyped()) {
                     RdfQueryEndpoint endpoint = this.rdfResourceUriAnalyzer.getResourceClass().getEndpoint();
                     if (endpoint != null) {
-                        this.targetUri = endpoint.getExternalResourceId(this.requestedUri, this.locale);
-                        this.needsRedirection = true;
+                        //note that eg. LocalQueryEndpoint returns null here to signal we're not dealing with a true external URI
+                        //so make sure to check it or we'll have an eternal redirect
+                        URI externalUri = endpoint.getExternalResourceId(this.requestedUri, this.locale);
+                        if (externalUri != null) {
+                            this.targetUri = externalUri;
+                            this.needsRedirection = true;
+                        }
                     }
                 }
             }
