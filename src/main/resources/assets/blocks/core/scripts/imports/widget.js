@@ -226,6 +226,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
             }
 
+            var initValue = null;
             var retVal = this.createCombobox(Sidebar, labelText, values,
                 function initCallback(testValue)
                 {
@@ -243,10 +244,18 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         }
                     }
 
+                    //save the init value so we can skip it in the change callback
+                    if (retVal && initValue == null) {
+                        initValue = testValue;
+                    }
+
                     return retVal;
                 },
                 function changeCallback(oldValue, newValue)
                 {
+                    var undoAttr = 'class';
+                    var oldUndoVal = element.attr(undoAttr);
+
                     //this will reset the classes even if newValue is ""
                     for (var i = 0; i < values.length; i++) {
                         element.removeClass(values[i].value);
@@ -254,6 +263,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     if (newValue) {
                         element.addClass(newValue);
+                    }
+
+                    var initialChange = !oldValue && newValue == initValue;
+                    if (!initialChange) {
+                        Undo.recordAttributeChange(element, undoAttr, oldUndoVal, retVal.find('button.dropdown-toggle'), oldValue, newValue);
                     }
 
                     //propagate up if we have a someone listening
@@ -279,16 +293,23 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var retVal = this.createToggleButton(labelText,
                 function initStateCallback()
                 {
+                    var retVal = false;
+
                     if (attribute) {
-                        return element.hasAttribute(attribute);
+                        retVal = element.hasAttribute(attribute);
                     }
                     else {
-                        return element.hasClass(value);
+                        retVal = element.hasClass(value);
                     }
+
+                    return retVal;
                 },
 
                 function switchStateCallback(oldValue, newValue)
                 {
+                    var undoAttr = attribute ? attribute : 'class';
+                    var oldUndoVal = element.attr(undoAttr);
+
                     if (attribute) {
                         if (newValue) {
                             //Note: having a value seems to be necessary
@@ -304,6 +325,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             element.removeClass(value);
                         }
                     }
+
+                    //Note: the callback doesn't seem to be called on init, so it's safe to just log all changes
+                    Undo.recordAttributeChange(element, undoAttr, oldUndoVal, retVal.find('input[type="checkbox"]'), oldValue, newValue);
 
                     //propagate up if we have a someone listening
                     if (changeListener) {
@@ -396,6 +420,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     };
                 }
 
+                //sync this with switch below
+                var undoAttr = attribute ? attribute : 'class';
+                var oldUndoVal = element.attr(undoAttr);
+
                 if (attribute) {
                     element.attr(attribute, values[currentIdx].value);
                 }
@@ -414,10 +442,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                 }
 
+                var oldIdx = event.value.oldValue;
+                var newIdx = event.value.newValue;
+
+                Undo.recordAttributeChange(element, undoAttr, oldUndoVal, formGroup.find('input[type="range"]'), oldIdx, newIdx);
+
                 //propagate up if we have a someone listening
                 if (changeListener) {
-                    var oldValue = values[event.value.oldValue] || undefined;
-                    var newValue = values[event.value.newValue] || undefined;
+                    var oldValue = values[oldIdx] || undefined;
+                    var newValue = values[newIdx] || undefined;
                     changeListener(oldValue ? oldValue.value : undefined, newValue ? newValue.value : undefined);
                 }
             });
@@ -445,6 +478,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var attr = hasAttr ? element.attr(attribute) : null;
 
             var attrFound = false;
+            var initValue = null;
             var retVal = this.createCombobox(Sidebar, labelText, values,
                 function initCallback(testValue)
                 {
@@ -460,10 +494,17 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         }
                     }
 
+                    //save the init value so we can skip it in the change callback
+                    if (retVal && initValue == null) {
+                        initValue = testValue;
+                    }
+
                     return retVal;
                 },
                 function changeCallback(oldValue, newValue)
                 {
+                    var oldVal = element.attr(attribute);
+
                     if (newValue) {
                         element.attr(attribute, newValue);
                     }
@@ -471,6 +512,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         if (hasAttr) {
                             element.removeAttr(attribute);
                         }
+                    }
+
+                    var initialChange = !oldValue && newValue == initValue;
+                    if (!initialChange) {
+                        Undo.recordAttributeChange(element, attribute, oldVal, retVal.find('button.dropdown-toggle'));
                     }
 
                     //propagate up if we have a someone listening
@@ -540,7 +586,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     var attrFound = false;
 
                     //we externalized this method to be able to load the data lazily when an async json call completed
-                    var initValue = undefined;
+                    var initValue = null;
                     _this.reinitCombobox(retVal, comboEntries,
                         function initCallback(testValue)
                         {
@@ -558,7 +604,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             }
 
                             //save the init value so we can skip it in the change callback
-                            if (retVal && !initValue) {
+                            if (retVal && initValue == null) {
                                 initValue = testValue;
                             }
 
@@ -588,18 +634,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             //an undo event, because the real initial state is after this value has been set.
                             var initialChange = !oldValue && newValue == initValue;
                             if (!initialChange) {
-                                //Note: there's a problem when we try to sync the config widget in the sidebar
-                                //with an undo/redo action because that widget might have been deleted/rebuilt in
-                                //the mean time (eg. focus was lost and regained).
-                                //To work around that, we generate a css selector for the config widget and try to find it
-                                //again when the undo/redo is happening.
-                                //Note that by default, this id's of the elements are taken into account,
-                                //but they're generated on-the-fly, so we explicitly removed them from the option list below.
-                                var retValSelector = new CssSelectorGenerator({selectors: ['class', 'tag', 'nthchild']}).getSelector(retVal[0]);
-                                Undo.recordAttributeChange(element, attribute, oldVal, function (value, action, cmd)
-                                {
-                                    $(retValSelector).find('a[data-value="' + value + '"]').first().click();
-                                });
+                                Undo.recordAttributeChange(element, attribute, oldVal, retVal.find('button.dropdown-toggle'));
                             }
                         }
                     );
@@ -621,6 +656,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * */
         addUniqueAttribute: function (Sidebar, element, labelText, values, changeListener)
         {
+            //TODO no undo/redo functionality implemented because no use of this method at the time of adding it
             var attrFound = false;
 
             var retVal = this.createCombobox(Sidebar, labelText, values,
@@ -689,7 +725,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 },
                 function setterFunction(val)
                 {
-                    return element.attr(attribute, val);
+                    var oldVal = element.attr(attribute);
+                    var newVal = $.trim(val);
+                    var retVal = element.attr(attribute, newVal);
+
+                    if (oldVal != newVal) {
+                        Undo.recordAttributeChange(element, attribute, oldVal, content.find('input'));
+                    }
+
+                    return retVal;
                 },
                 labelText, placeholderText, confirm, inputActions
             );
@@ -737,7 +781,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 },
                 function setterFunction(val)
                 {
-                    return element.attr(attribute, val);
+                    var oldVal = element.attr(attribute);
+                    var newVal = $.trim(val);
+                    var retVal = element.attr(attribute, newVal);
+
+                    if (oldVal != newVal) {
+                        //note: this input selector will find the hidden input field (with a change listener)
+                        Undo.recordAttributeChange(element, attribute, oldVal, content.find('input'));
+                    }
+
+                    return retVal;
                 },
                 labelText, placeholderText, confirm, inputAction
             );
@@ -769,11 +822,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var retVal = element.html(newVal);
 
                 if (oldVal != newVal) {
-                    var retValSelector = new CssSelecto rGenerator({selectors: ['class', 'tag', 'nthchild']}).getSelector(inputEl.find('input').first()[0]);
-                    Undo.recordHtmlChange(element, oldVal, function (value, action, cmd)
-                    {
-                        $(retValSelector).val(value).change();
-                    });
+                    Undo.recordHtmlChange(element, oldVal, inputEl.find('input'));
                 }
 
                 return retVal;
@@ -794,12 +843,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          *
          * @param labelText
          * @param attribute
-         * * @param values array of objects with a label and value property (if a 'disabled' property is 'true', the radio will be disabled)
+         * @param values array of objects with a label and value property (if a 'disabled' property is 'true', the radio will be disabled)
+         * @param initialValue
          * @param changeListener
          * @returns {*|jQuery|HTMLElement}
          */
         addRadioAttribute: function (labelText, attribute, values, initialValue, changeListener)
         {
+            //TODO no undo/redo functionality implemented because no use of this method at the time of adding it
             var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
             {
                 //Note: 'radio' is a bootstrap class
@@ -877,6 +928,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         addUniqueStyle: function (Sidebar, element, labelText, cssProperty, values, changeListener)
         {
+            //TODO no undo/redo functionality implemented because no use of this method at the time of adding it
             var _this = this;
 
             //note: we parse the raw style attribue instead of using $.css() to control the html-attribute better
@@ -896,8 +948,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 initValue = defaultObj.value;
             }
 
-
-            var retVal = this.createCombobox(Sidebar, labelText, values,
+            var content = this.createCombobox(Sidebar, labelText, values,
                 function initCallback(testValue)
                 {
                     var retVal = false;
@@ -913,7 +964,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 },
                 function changeCallback(oldValue, newValue)
                 {
-                    var styles = _this.splitStyles(element.attr('style'));
+                    var oldStyle = element.attr('style');
+                    var styles = _this.splitStyles(oldStyle);
 
                     delete styles[cssProperty];
                     if (newValue != "") {
@@ -934,13 +986,18 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         element.removeAttr('style');
                     }
 
+                    //Note: untested code
+                    if (oldValue != newValue) {
+                        Undo.recordAttributeChange(element, 'style', oldStyle, content.find('button.dropdown-toggle'), oldValue, newValue);
+                    }
+
                     //propagate up if we have a someone listening
                     if (changeListener) {
                         changeListener(oldValue, newValue);
                     }
                 });
 
-            return retVal;
+            return content;
         },
 
         /**
@@ -967,6 +1024,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 },
                 function setterFunction(val)
                 {
+                    var oldStyle = element.attr('style');
+                    var styles = _this.splitStyles(oldStyle);
+                    var oldVal = styles[cssProperty];
+
                     delete styles[cssProperty];
                     if (val != "") {
                         styles[cssProperty] = val;
@@ -978,6 +1039,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                     else {
                         element.removeAttr('style');
+                    }
+
+                    if (oldVal != val) {
+                        Undo.recordAttributeChange(element, 'style', oldStyle, content.find('input'), oldVal, val);
                     }
                 },
                 labelText, placeholderText, confirm,
@@ -1364,6 +1429,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var dropdown = $('<div class="dropdown"/>').appendTo(content);
             var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">' + BlocksMessages.comboboxEmptySelection + '</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
 
+            //this will allow us to call button.val('value').change() on this button element
+            //to manually update the combobox
+            button.on('change', function (e)
+            {
+                dropdown.find('a[data-value="' + button.val() + '"]').first().click();
+            });
+
             // Create values inside selectbox and see which one to select
             dropdown.append($('<ul class="dropdown-menu" role="menu" aria-labelledby="' + id + '"/>'));
 
@@ -1480,13 +1552,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
 
                     //close the dropdown on click, apparently this didn't work automatically...
-                    var dropDown = $('#' + id);
                     //hope this is _always_ ok
-                    if (dropDown.attr('aria-expanded') == "true") {
-                        dropDown.dropdown("toggle");
+                    if (dropdownToggle.attr('aria-expanded') == "true") {
+                        dropdownToggle.dropdown("toggle");
                     }
                 };
 
+                //install the main change listener
                 a.on("click", clickHandler);
 
                 if (initCallback) {
@@ -1820,7 +1892,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          **/
         createColorInput: function (Sidebar, getterFunction, setterFunction, labelText)
         {
-
             //note: html5 spec says the color cannot be empty and defaults to black
             //see https://www.w3schools.com/jsreF/prop_color_value.asp
             var DEFAULT_VALUE = '#000000';
@@ -1855,23 +1926,33 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) : DEFAULT_VALUE;
                 }
             }
-            input.val(oldVal);
-            input.change(); //doesn't seem to happen automatically
+
+            //Note: change callback doesn't happen automatically
+            input.val(oldVal).change();
+
+            //this will save the old value every time the color picker is launched,
+            //so we can pass it along in the setterFunction
+            input.on('click', function (e)
+            {
+                oldVal = input.val();
+            });
 
             //listener
-            input.change(function (e)
+            //note: the 'change' event happens when the color picker is dismissed
+            //      the 'input' event happens every time the color in the picker changes
+            input.on('change', function (e)
             {
                 if (setterFunction) {
                     //dependency code requires the 'reset-value' to be the empty string
-                    setterFunction(input.val() == DEFAULT_VALUE ? '' : input.val());
+                    setterFunction(oldVal == DEFAULT_VALUE ? '' : oldVal, input.val() == DEFAULT_VALUE ? '' : input.val());
                 }
             });
 
             var reset = $('<a href="javascript:void(0);" class="btn btn-link btn-xs btn-reset"><i class="fa fa-trash-o"></a>').appendTo(colorGroup);
             reset.click(function (e)
             {
-                input.val(DEFAULT_VALUE);
-                input.change(); //doesn't seem to happen automatically
+                oldVal = input.val();
+                input.val(DEFAULT_VALUE).change();
             });
 
             input.appendTo(colorGroup);

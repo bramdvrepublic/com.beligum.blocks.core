@@ -156,13 +156,30 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
 
         //-----VARIABLES-----
         context: null,
+        element: null,
+        oldValue: null,
+        newValue: null,
+        configSelector: null,
+        configOldValue: null,
+        configNewValue: null,
         listener: null,
         sizeof: -1,
 
         //-----CONSTRUCTORS-----
-        constructor: function (context, listener)
+        constructor: function (context, element, oldValue, newValue, configElement, configOldValue, configNewValue, listener)
         {
             this.context = context;
+            this.element = element;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+            //Instead of saving the config element (that is dynamically created in the sidebar),
+            //we keep a selector reference and hope it will match on the next undo/redo.
+            //Note that this solution is not optimal because the elements in the sidebar can change order,
+            //get added to, etc. We should probably move to a situation where each element has it's own fixed id.
+            this.configSelector = this._buildSelector(configElement);
+            //let's make everything uniform and set it to undefined if null was passed (see check in _doPostprocessing())
+            this.configOldValue = configOldValue == null ? undefined : configOldValue;
+            this.configNewValue = configNewValue == null ? undefined : configNewValue;
             this.listener = listener;
         },
 
@@ -196,17 +213,44 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         //-----PUBLIC METHODS-----
 
         //-----PRIVATE METHODS-----
-        _notifyUndoListeners: function (value)
+        _doPostprocessing: function (action, value, configValue)
         {
             if (this.listener) {
-                this.listener(value, 'undo', this);
+                this.listener(value, action, this);
+            }
+
+            if (this.configSelector) {
+                var configEl = $(this.configSelector);
+                if (configEl.length > 0) {
+                    var configVal = value;
+                    if (typeof configValue !== 'undefined') {
+                        //this allows us to pass a dynamic callback function as the config value
+                        if (typeof configValue == 'function') {
+                            configVal = configValue(value, action, this);
+                        }
+                        else {
+                            configVal = configValue;
+                        }
+                    }
+
+                    //setting the value of a checkbox doesn't happen with val()
+                    if (configEl.is('input[type="checkbox"]')) {
+                        configEl.prop('checked', configVal).change();
+                    }
+                    else {
+                        configEl.val(configVal).change();
+                    }
+                }
             }
         },
-        _notifyRedoListeners: function (value)
+        _buildSelector: function (element)
         {
-            if (this.listener) {
-                this.listener(value, 'redo', this);
-            }
+            //Note: there's a problem when we try to sync the config widget in the sidebar
+            //with an undo/redo action because that widget might have been deleted/rebuilt in
+            //the mean time (eg. focus was lost and regained).
+            //To work around that, we generate a css selector for the config widget and try to find it
+            //again when the undo/redo is happening.
+            return element && element.length > 0 ? Undo.cssSelectorGenerator.getSelector(element[0]) : null;
         }
     });
 
@@ -218,18 +262,12 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         },
 
         //-----VARIABLES-----
-        element: null,
-        oldHtml: null,
-        newHtml: null,
 
         //-----CONSTRUCTORS-----
-        constructor: function (context, element, oldHtml, listener)
+        constructor: function (context, element, oldValue, configElement, configOldValue, configNewValue, listener)
         {
-            Undo.UpdateHtmlCommand.Super.call(this, context, listener);
-
-            this.element = element;
-            this.newHtml = LZString.compress(element.html());
-            this.oldHtml = LZString.compress(oldHtml);
+            Undo.UpdateHtmlCommand.Super.call(this, context, element, LZString.compress(oldValue), LZString.compress(element.html()),
+                configElement, configOldValue, configNewValue, listener);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -243,17 +281,17 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         undo: function ()
         {
             this.element.data(Undo.Command.UNDO_DATA, '');
-            var value = LZString.decompress(this.oldHtml);
+            var value = LZString.decompress(this.oldValue);
             this.element.html(value);
-            this._notifyUndoListeners(value);
+            this._doPostprocessing('undo', value, this.configOldValue);
             this.element.removeData(Undo.Command.UNDO_DATA);
         },
         redo: function ()
         {
             this.element.data(Undo.Command.REDO_DATA, '');
-            var value = LZString.decompress(this.newHtml);
+            var value = LZString.decompress(this.newValue);
             this.element.html(value);
-            this._notifyRedoListeners(value);
+            this._doPostprocessing('redo', value, this.configNewValue);
             this.element.removeData(Undo.Command.REDO_DATA);
         },
     });
@@ -272,14 +310,23 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         newValue: null,
 
         //-----CONSTRUCTORS-----
-        constructor: function (context, element, attribute, oldValue, listener)
+        constructor: function (context, element, attribute, oldValue, configElement, configOldValue, configNewValue, listener)
         {
-            Undo.UpdateHtmlCommand.Super.call(this, context, listener);
+            //from the docs:
+            // - attr(name): returns undefined for attributes that have not been set
+            // - attr(name, value): if value is null, the attribute will be removed (note: doesn't work with undefined!)
+            var newValue = element.attr(attribute);
+            if (typeof newValue == 'undefined') {
+                newValue = null;
+            }
+            if (typeof oldValue == 'undefined') {
+                oldValue = null;
+            }
 
-            this.element = element;
+            Undo.UpdateHtmlCommand.Super.call(this, context, element, oldValue, newValue,
+                configElement, configOldValue, configNewValue, listener);
+
             this.attribute = attribute;
-            this.newValue = element.attr(attribute);
-            this.oldValue = oldValue;
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -294,22 +341,27 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         {
             this.element.data(Undo.Command.UNDO_DATA, '');
             var value = this.oldValue;
+            //note: from the docs: if value is null, the attribute will be removed
             this.element.attr(this.attribute, value);
-            this._notifyUndoListeners(value);
+            this._doPostprocessing('undo', value, this.configOldValue);
             this.element.removeData(Undo.Command.UNDO_DATA);
         },
         redo: function ()
         {
             this.element.data(Undo.Command.REDO_DATA, '');
             var value = this.newValue;
+            //note: from the docs: if value is null, the attribute will be removed
             this.element.attr(this.attribute, value);
-            this._notifyRedoListeners(value);
+            this._doPostprocessing('redo', value, this.configNewValue);
             this.element.removeData(Undo.Command.REDO_DATA);
         },
     });
 
     //-----MAIN CODE-----
     this.stack = new Undo.Stack();
+    //Note that by default, this id's of the elements are taken into account,
+    //but they're generated on-the-fly, so we explicitly removed them from the option list below.
+    this.cssSelectorGenerator = new CssSelectorGenerator({selectors: ['class', 'tag', 'nthchild']});
     this.enabled = false;
 
     //-----PUBLIC METHODS-----
@@ -325,18 +377,39 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     {
         return typeof element.data(Undo.Command.REDO_DATA) !== 'undefined';
     };
-    this.recordHtmlChange = function (element, oldHtml, listener)
+    /**
+     * Records an inner HTML change that can later be undone.
+     *
+     * @param element The jQuery element on which the attribute was changed
+     * @param oldValue The old value of the inner html
+     * @param configElement The jQuery sidebar widget to call .val().change() on if we undo/redo this action
+     * @param configOldValue A value, a callback function or null (to use the oldValue) that will be supplied to the config's .val() callback on undo
+     * @param configNewValue A value, a callback function or null (to use the newValue) that will be supplied to the config's .val() callback on redo
+     * @param listener The listener callback that is called on each undo and redo
+     */
+    this.recordHtmlChange = function (element, oldValue, configElement, configOldValue, configNewValue, listener)
     {
-        _executeDelayedCommand(Undo.UpdateHtmlCommand.NAME, element, oldHtml, function (oldVal)
+        _executeDelayedCommand(Undo.UpdateHtmlCommand.NAME, element, oldValue, function (oldVal)
         {
-            return new Undo.UpdateHtmlCommand(Hover.getFocusedBlock().element[0], element, oldVal, listener);
+            return new Undo.UpdateHtmlCommand(Hover.getFocusedBlock().element[0], element, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
-    this.recordAttributeChange = function (element, attribute, oldValue, listener)
+    /**
+     * Records an attribute change that can later be undone.
+     *
+     * @param element The jQuery element on which the attribute was changed
+     * @param attribute The name of the attribute
+     * @param oldValue The old value of the attribute or null if it didn't exist before this call
+     * @param configElement The jQuery sidebar widget to call .val().change() on if we undo/redo this action
+     * @param configOldValue A value, a callback function or null (to use the oldValue) that will be supplied to the config's .val() callback on undo
+     * @param configNewValue A value, a callback function or null (to use the newValue) that will be supplied to the config's .val() callback on redo
+     * @param listener The listener callback that is called on each undo and redo
+     */
+    this.recordAttributeChange = function (element, attribute, oldValue, configElement, configOldValue, configNewValue, listener)
     {
         _executeDelayedCommand(Undo.UpdateAttributeCommand.NAME, element, oldValue, function (oldVal)
         {
-            return new Undo.UpdateAttributeCommand(Hover.getFocusedBlock().element[0], element, attribute, oldVal, listener);
+            return new Undo.UpdateAttributeCommand(Hover.getFocusedBlock().element[0], element, attribute, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
 
@@ -395,6 +468,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         if (!Undo.isInsideUndoRedo(element)) {
 
             // a simple algorithm to amortize frequent changes
+            //Note: by using the cmdName as key, we only group the same type commands together
             var prevEvent = element.data(cmdName);
             if (prevEvent) {
                 //if we're about to merge two updates, we need to take the first oldHtml value
@@ -407,7 +481,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                 timer: setTimeout(function ()
                 {
                     var command = commandCallback(oldValue);
-                    Logger.info('Executing undo/redo command: ' + command.name());
+                    Logger.info('Storing undo/redo command: ' + command.name());
                     Undo.stack.execute(command);
                     element.removeData(cmdName);
 
