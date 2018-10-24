@@ -117,8 +117,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                              || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
                              || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
 
-                    //if all is well, also check the ACLs
-                    //note: for backwards-compatibility, we can't check what isn't there...
+                    //if all is well, and a custom ACL is set, also check the ACL
                     if (retVal && this.getMetadata().getReadAcl() != null) {
                         retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getReadAcl());
                     }
@@ -155,8 +154,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                         }
                     }
 
-                    //if all is well, also check the ACLs
-                    //note: for backwards-compatibility, we can't check what isn't there...
+                    //if all is well, and a custom ACL is set, also check the ACL
                     if (retVal && this.getMetadata().getUpdateAcl() != null) {
                         retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getUpdateAcl());
                     }
@@ -166,8 +164,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                 case DELETE:
                     retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
 
-                    //if all is well, also check the ACLs
-                    //note: for backwards-compatibility, we can't check what isn't there...
+                    //if all is well, and a custom ACL is set, also check the ACL
                     if (retVal && this.getMetadata().getDeleteAcl() != null) {
                         retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getDeleteAcl());
                     }

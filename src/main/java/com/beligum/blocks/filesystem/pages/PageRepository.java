@@ -212,9 +212,15 @@ public class PageRepository extends AbstractResourceRepository
                         SecurityTools.checkPermission(R.securityManager().getCurrentRole(), newMetadata.getUpdateAcl());
                     }
 
-                    //check if the ACLs have changed; if they did, we need to check that we have the manage ACL
-                    if (!newMetadata.hasSameAcls(oldMetadata) && oldMetadata.getManageAcl() != null) {
-                        SecurityTools.checkPermission(R.securityManager().getCurrentRole(), oldMetadata.getManageAcl());
+                    //check if the ACLs have changed; if they did, we need to check that we have the right permission
+                    if (!newMetadata.hasSameAcls(oldMetadata)) {
+                        if (oldMetadata.getManageAcl() != null) {
+                            SecurityTools.checkPermission(R.securityManager().getCurrentRole(), oldMetadata.getManageAcl());
+                        }
+                        else {
+                            // What do we do here? The ACL changed, but there was no specific manager ACL set on the old page.
+                            // I guess we can leave it alone and assume the more general security rules should do their work, right?
+                        }
                     }
                 }
                 //If this is the first time this page is saved, we check that we have save and manage permission,
@@ -227,6 +233,10 @@ public class PageRepository extends AbstractResourceRepository
                     }
                     if (newMetadata.getManageAcl() != null) {
                         SecurityTools.checkPermission(R.securityManager().getCurrentRole(), newMetadata.getManageAcl());
+                    }
+                    else {
+                        // What do we do here? The ACL changed, but there was no specific manager ACL set on the new page.
+                        // I guess we can leave it alone and assume the more general security rules should do their work, right?
                     }
                 }
 

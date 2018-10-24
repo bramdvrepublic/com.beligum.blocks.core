@@ -248,30 +248,33 @@ public abstract class PageSource extends AbstractSource implements Source
             PermissionRole currentRole = R.securityManager().getCurrentRole();
 
             //update the created date
-            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false, false);
+            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false, false, false);
 
             //update the creator URL
-            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false, false);
+            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false, false, false);
 
             //update the modified date
-            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true, false);
+            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true, false, false);
 
             //update the contributor list
-            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false);
+            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false, false);
 
             if (!Settings.instance().getDisableAcls()) {
 
+                //Note: we switched to wiping blank permissions because we don't want to fill these on every save of a page
+                //It would mean that every page would get it's custom permissions if it's saved once and we don't want that,
+
                 //initialize the view ACL (no values are overwritten, only initialized)
-                Element aclViewProp = this.findOrCreateElement(Terms.aclRead, String.valueOf(SecurityTools.getDefaultReadAclLevel()), true, false, true);
+                Element aclViewProp = this.findOrCreateElement(Terms.aclRead, String.valueOf(SecurityTools.getDefaultReadAclLevel()), true, false, false, true);
 
                 //initialize the update ACL (no values are overwritten, only initialized)
-                Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(SecurityTools.getDefaultUpdateAclLevel()), true, false, true);
+                Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(SecurityTools.getDefaultUpdateAclLevel()), true, false, false, true);
 
                 //initialize the delete ACL (no values are overwritten, only initialized)
-                Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(SecurityTools.getDefaultDeleteAclLevel()), true, false, true);
+                Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(SecurityTools.getDefaultDeleteAclLevel()), true, false, false, true);
 
                 //initialize the manage ACL (no values are overwritten, only initialized)
-                Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(SecurityTools.getDefaultManageAclLevel()), true, false, true);
+                Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(SecurityTools.getDefaultManageAclLevel()), true, false, false, true);
             }
             else {
                 //if the ACL system is disabled, we need to make sure to delete incoming ACL entries (especially the empty ones)
@@ -392,7 +395,7 @@ public abstract class PageSource extends AbstractSource implements Source
     {
         this.getPropertyElements(property).remove();
     }
-    private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite, boolean onlyUpdateIfBlank)
+    private Element findOrCreateElement(RdfProperty property, String value, boolean deleteOthers, boolean overwrite, boolean onlyUpdateIfBlank, boolean deleteIfBlank) throws IOException
     {
         Element retVal = null;
 
@@ -453,9 +456,19 @@ public abstract class PageSource extends AbstractSource implements Source
                   .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString());
 
             String existingValue = retVal.attr(HtmlParser.RDF_CONTENT_ATTR);
-            if (onlyUpdateIfBlank) {
-                if (StringUtils.isBlank(existingValue)) {
-                    retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+            if (onlyUpdateIfBlank || deleteIfBlank) {
+                if (onlyUpdateIfBlank && deleteIfBlank) {
+                    throw new IOException("Use one of both params onlyUpdateIfBlank or deleteIfBlank, not both");
+                }
+                else {
+                    if (StringUtils.isBlank(existingValue)) {
+                        if (onlyUpdateIfBlank) {
+                            retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                        }
+                        else {
+                            retVal.remove();
+                        }
+                    }
                 }
             }
             else {
@@ -467,7 +480,9 @@ public abstract class PageSource extends AbstractSource implements Source
     }
     private Elements getPropertyElements(RdfProperty property)
     {
-        return this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]");
+        //note that we search for both curies and regular names (since we assume we're searching in the default ontology)
+        return this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]" +
+                                    "," + "[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getCurieName() + "]");
     }
 
     //-----MANAGEMENT METHODS-----

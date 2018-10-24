@@ -106,10 +106,10 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     {
         boolean retVal = true;
 
-        retVal = retVal && this.getReadAcl() != null && this.getReadAcl().equals(other.getReadAcl());
-        retVal = retVal && this.getUpdateAcl() != null && this.getUpdateAcl().equals(other.getUpdateAcl());
-        retVal = retVal && this.getDeleteAcl() != null && this.getDeleteAcl().equals(other.getDeleteAcl());
-        retVal = retVal && this.getManageAcl() != null && this.getManageAcl().equals(other.getManageAcl());
+        retVal = retVal && ((this.getReadAcl() != null && this.getReadAcl().equals(other.getReadAcl())) || (this.getReadAcl() == null && other.getReadAcl() == null));
+        retVal = retVal && ((this.getUpdateAcl() != null && this.getUpdateAcl().equals(other.getUpdateAcl())) || (this.getUpdateAcl() == null && other.getUpdateAcl() == null));
+        retVal = retVal && ((this.getDeleteAcl() != null && this.getDeleteAcl().equals(other.getDeleteAcl())) || (this.getDeleteAcl() == null && other.getDeleteAcl() == null));
+        retVal = retVal && ((this.getManageAcl() != null && this.getManageAcl().equals(other.getManageAcl())) || (this.getManageAcl() == null && other.getManageAcl() == null));
 
         return retVal;
     }
@@ -128,7 +128,8 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
             this.parseMetaTag(page.getUri(), metaTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR), metaTag.getAttributeValue(HtmlParser.RDF_CONTENT_ATTR));
         }
 
-        this.fillEmptyDefaults();
+        //note: we don't fill ACLs by default because it means a page-specific permission
+        //      and we don't want every page to have a specific permission set (only global permission system if unset)
     }
     private void init(PageSource pageSource, List<Element> metaTags)
     {
@@ -137,73 +138,56 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
             this.parseMetaTag(pageSource.getUri(), metaTag.attr(HtmlParser.RDF_PROPERTY_ATTR), metaTag.attr(HtmlParser.RDF_CONTENT_ATTR));
         }
 
-        this.fillEmptyDefaults();
+        //note: we don't fill ACLs by default because it means a page-specific permission
+        //      and we don't want every page to have a specific permission set (only global permission system if unset)
     }
     private void parseMetaTag(URI baseUri, String property, String content)
     {
         if (!StringUtils.isEmpty(property)) {
             if (!StringUtils.isEmpty(content)) {
-                if (property.equals(Terms.created.getName())) {
+                if (property.equals(Terms.created.getName()) || property.equals(Terms.created.getCurieName().toString())) {
                     this.createdUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Terms.creator.getName())) {
+                else if (property.equals(Terms.creator.getName()) || property.equals(Terms.creator.getCurieName().toString())) {
                     this.creator = URI.create(content);
                     if (!this.creator.isAbsolute()) {
                         this.creator = baseUri.resolve(this.creator);
                     }
                 }
-                else if (property.equals(Terms.modified.getName())) {
+                else if (property.equals(Terms.modified.getName()) || property.equals(Terms.modified.getCurieName().toString())) {
                     this.modifiedUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Terms.contributor.getName())) {
+                else if (property.equals(Terms.contributor.getName()) || property.equals(Terms.contributor.getCurieName().toString())) {
                     URI contributor = URI.create(content);
                     if (!contributor.isAbsolute()) {
                         contributor = baseUri.resolve(contributor);
                     }
                     this.contributors.add(contributor);
                 }
-                else if (property.equals(Terms.aclRead.getName())) {
+                else if (property.equals(Terms.aclRead.getName()) || property.equals(Terms.aclRead.getCurieName().toString())) {
                     int aclReadLevel = NumberUtils.toInt(content, -1);
                     if (aclReadLevel >= 0) {
                         this.aclRead = aclReadLevel;
                     }
                 }
-                else if (property.equals(Terms.aclUpdate.getName())) {
+                else if (property.equals(Terms.aclUpdate.getName()) || property.equals(Terms.aclUpdate.getCurieName().toString())) {
                     int aclUpdateLevel = NumberUtils.toInt(content, -1);
                     if (aclUpdateLevel >= 0) {
                         this.aclUpdate = aclUpdateLevel;
                     }
                 }
-                else if (property.equals(Terms.aclDelete.getName())) {
+                else if (property.equals(Terms.aclDelete.getName()) || property.equals(Terms.aclDelete.getCurieName().toString())) {
                     int aclDeleteLevel = NumberUtils.toInt(content, -1);
                     if (aclDeleteLevel >= 0) {
                         this.aclDelete = aclDeleteLevel;
                     }
                 }
-                else if (property.equals(Terms.aclManage.getName())) {
+                else if (property.equals(Terms.aclManage.getName()) || property.equals(Terms.aclManage.getCurieName().toString())) {
                     int aclManageLevel = NumberUtils.toInt(content, -1);
                     if (aclManageLevel >= 0) {
                         this.aclManage = aclManageLevel;
                     }
                 }
-            }
-        }
-    }
-    private void fillEmptyDefaults()
-    {
-        //Note: this is more or less the same code as in PageSource, beware of changes
-        if (!Settings.instance().getDisableAcls()) {
-            if (this.aclRead == null) {
-                this.aclRead = SecurityTools.getDefaultReadAclLevel();
-            }
-            if (this.aclUpdate == null) {
-                this.aclUpdate = SecurityTools.getDefaultUpdateAclLevel();
-            }
-            if (this.aclDelete == null) {
-                this.aclDelete = SecurityTools.getDefaultDeleteAclLevel();
-            }
-            if (this.aclManage == null) {
-                this.aclManage = SecurityTools.getDefaultManageAclLevel();
             }
         }
     }
