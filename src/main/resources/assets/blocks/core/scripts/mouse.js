@@ -204,6 +204,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var mouseDown = function (event)
     {
         if (active) {
+
             // check for left mouse click
             if (event.which == 1) {
 

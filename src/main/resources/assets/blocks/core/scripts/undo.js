@@ -50,6 +50,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
             this.commands.push(command);
             this.stackPosition++;
             this.changed();
+            Broadcaster.send(Broadcaster.EVENTS.UNDO_RECORDED);
 
             //the calc seems to be quite heavy, so we put it somewhere in the future
             //to improve the user experience
@@ -157,6 +158,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         //-----VARIABLES-----
         context: null,
         element: null,
+        elementSelector: null,
         oldValue: null,
         newValue: null,
         configSelector: null,
@@ -170,6 +172,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         {
             this.context = context;
             this.element = element;
+            this.elementSelector = this._buildSelector(element);
             this.oldValue = oldValue;
             this.newValue = newValue;
             //Instead of saving the config element (that is dynamically created in the sidebar),
@@ -242,6 +245,34 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                     }
                 }
             }
+
+            if (action == 'undo') {
+                Broadcaster.send(Broadcaster.EVENTS.UNDO_PERFORMED);
+            }
+            else {
+                Broadcaster.send(Broadcaster.EVENTS.REDO_PERFORMED);
+            }
+        },
+        _getElement: function()
+        {
+            // Note that we get in trouble if we store a reference to an elemnt
+            // and later modify the html (eg. of it's container element).
+            // The stored element reference will still be valid (apparently)
+            // but changes to it won't happen.
+            // This method works around that by also storing a selector and checking
+            // if the element exists and re-searching it using the selector if it doesn't.
+            // Note that the real cause is more problematic: by using .html(), we lose all
+            // references to elements in that html (eg. event handlers, data, etc.) and
+            // things might break.
+            // It's a work in progress, but we should update the code of UpdateHtmlCommand with
+            // something better.
+            var retVal = this.element;
+
+            if (!$.contains(document, retVal[0])) {
+                retVal = $(this.elementSelector);
+            }
+
+            return retVal;
         },
         _buildSelector: function (element)
         {
@@ -280,19 +311,23 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         },
         undo: function ()
         {
-            this.element.data(Undo.Command.UNDO_DATA, '');
+            var element = this._getElement();
+
+            element.data(Undo.Command.UNDO_DATA, '');
             var value = LZString.decompress(this.oldValue);
-            this.element.html(value);
+            element.html(value);
             this._doPostprocessing('undo', value, this.configOldValue);
-            this.element.removeData(Undo.Command.UNDO_DATA);
+            element.removeData(Undo.Command.UNDO_DATA);
         },
         redo: function ()
         {
-            this.element.data(Undo.Command.REDO_DATA, '');
+            var element = this._getElement();
+
+            element.data(Undo.Command.REDO_DATA, '');
             var value = LZString.decompress(this.newValue);
-            this.element.html(value);
+            element.html(value);
             this._doPostprocessing('redo', value, this.configNewValue);
-            this.element.removeData(Undo.Command.REDO_DATA);
+            element.removeData(Undo.Command.REDO_DATA);
         },
     });
 
@@ -339,21 +374,25 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         },
         undo: function ()
         {
-            this.element.data(Undo.Command.UNDO_DATA, '');
+            var element = this._getElement();
+
+            element.data(Undo.Command.UNDO_DATA, '');
             var value = this.oldValue;
             //note: from the docs: if value is null, the attribute will be removed
-            this.element.attr(this.attribute, value);
+            element.attr(this.attribute, value);
             this._doPostprocessing('undo', value, this.configOldValue);
-            this.element.removeData(Undo.Command.UNDO_DATA);
+            element.removeData(Undo.Command.UNDO_DATA);
         },
         redo: function ()
         {
-            this.element.data(Undo.Command.REDO_DATA, '');
+            var element = this._getElement();
+
+            element.data(Undo.Command.REDO_DATA, '');
             var value = this.newValue;
             //note: from the docs: if value is null, the attribute will be removed
-            this.element.attr(this.attribute, value);
+            element.attr(this.attribute, value);
             this._doPostprocessing('redo', value, this.configNewValue);
-            this.element.removeData(Undo.Command.REDO_DATA);
+            element.removeData(Undo.Command.REDO_DATA);
         },
     });
 
@@ -425,14 +464,13 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     {
         Undo.enabled = false;
     });
-
     //note that we need to use keydown in order to override the builtin shortcut (eg. contenteditable)
     $(document).bind("keydown", function KeyPress(e)
     {
         if (Undo.enabled) {
             var evtobj = window.event ? event : e;
 
-            if (evtobj.ctrlKey) {
+            if (evtobj.ctrlKey || evtobj.metaKey) {
                 switch (evtobj.keyCode) {
                     case 90: //z
                         e.preventDefault();
@@ -457,6 +495,35 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
 
                         break;
                 }
+            }
+        }
+    });
+
+    /*
+     * The following code handles the undo/redo of the general page layout (adding/removing blocks, relayout).
+     */
+    var oldBlocksHtml = $('blocks-layout').html();
+    //note: if another block executes a change, we need to make sure
+    //the old html is updated or we'll bypass that change and jump further back in time
+    $(document).on(Broadcaster.EVENTS.UNDO_RECORDED, function (event)
+    {
+        oldBlocksHtml = $('blocks-layout').html();
+    });
+    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event, extraData)
+    {
+        //Note: blocks-layout is moved around when the sidebar opens,
+        //so we need to re-fetch it every time the DOM changes to avoid stale references
+        var blocksLayout = $('blocks-layout');
+        var newBlocksHtml = blocksLayout.html();
+        if (newBlocksHtml !== oldBlocksHtml) {
+            if (!extraData || !extraData.inSideUndoRedo) {
+                //note: executing this will trigger the update of oldBlocksHtml, see listener above
+                Undo.recordHtmlChange(blocksLayout, oldBlocksHtml, null, null, null, function ()
+                {
+                    //note that we signal ourself to not store this event as an undo event too
+                    //but we can't use isInsideUndoRedo() because the events are sent async
+                    Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, null, {inSideUndoRedo: true});
+                });
             }
         }
     });

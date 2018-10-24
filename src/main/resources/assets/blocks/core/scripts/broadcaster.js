@@ -125,6 +125,13 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
     // this will automatically trigger DO_REFRESH_LAYOUT
     this.EVENTS.DOM_CHANGED = "DOM_CHANGED";
 
+    // Sent out when an undo stack frame is recorded
+    this.EVENTS.UNDO_RECORDED = "UNDO_RECORDED";
+    // Sent out when an undo action has been executed
+    this.EVENTS.UNDO_PERFORMED = "UNDO_PERFORMED";
+    // Sent out when an redo action has been executed
+    this.EVENTS.REDO_PERFORMED = "REDO_PERFORMED";
+
     // on/off
     this.EVENTS.PRE_START_BLOCKS = "PRE_START_BLOCKS";
     this.EVENTS.START_BLOCKS = "START_BLOCKS";
