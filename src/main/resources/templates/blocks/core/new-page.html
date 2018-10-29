@@ -7,7 +7,7 @@
 
             <div class="row">
 
-                #if($SECURITY.checkPermission($CONSTANTS.blocks.core.PAGE_CREATE_TEMPLATE_ALL_PERM))
+                #if($SECURITY.isPermitted($CONSTANTS.blocks.core.PAGE_CREATE_TEMPLATE_ALL_PERM))
                     <div class="col-sm-6 actions-group">
 
                         <div class="title">
@@ -43,7 +43,7 @@
                     </div>
                 #end
 
-                #if($SECURITY.checkPermission($CONSTANTS.blocks.core.PAGE_CREATE_COPY_ALL_PERM))
+                #if($SECURITY.isPermitted($CONSTANTS.blocks.core.PAGE_CREATE_COPY_ALL_PERM))
                     <div class="col-sm-6 actions-group">
 
                         <div class="title">

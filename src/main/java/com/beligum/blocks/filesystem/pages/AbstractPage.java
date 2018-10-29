@@ -140,18 +140,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     //if the settings say a user can only edit it's own creations, make sure
                     //we have a creator and a matching current user before we allow editing
                     if (!retVal && R.securityManager().isPermitted(Permissions.PAGE_UPDATE_OWN_PERM)) {
-                        try {
-                            ResourceMetadata metadata = this.getMetadata();
-                            if (metadata != null && metadata.getCreator() != null) {
-                                URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
-                                if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
-                                    retVal = true;
-                                }
-                            }
-                        }
-                        catch (Exception e) {
-                            Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
-                        }
+                        retVal = currentPersonIsCreator();
                     }
 
                     //if all is well, and a custom ACL is set, also check the ACL
@@ -163,6 +152,12 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
 
                 case DELETE:
                     retVal = R.securityManager().isPermitted(Permissions.PAGE_DELETE_ALL_PERM);
+
+                    //if the settings say a user can only edit it's own creations, make sure
+                    //we have a creator and a matching current user before we allow editing
+                    if (!retVal && R.securityManager().isPermitted(Permissions.PAGE_DELETE_OWN_PERM)) {
+                        retVal = currentPersonIsCreator();
+                    }
 
                     //if all is well, and a custom ACL is set, also check the ACL
                     if (retVal && this.getMetadata().getDeleteAcl() != null) {
@@ -397,6 +392,25 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                 //note that all RDF needs absolute addresses
                 retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
             }
+        }
+
+        return retVal;
+    }
+    private boolean currentPersonIsCreator()
+    {
+        boolean retVal = false;
+
+        try {
+            ResourceMetadata metadata = this.getMetadata();
+            if (metadata != null && metadata.getCreator() != null) {
+                URI currentPerson = R.securityManager().getCurrentPersonUri(metadata.getCreator().isAbsolute());
+                if (currentPerson != null && metadata.getCreator().equals(currentPerson)) {
+                    retVal = true;
+                }
+            }
+        }
+        catch (Exception e) {
+            Logger.error("Error while checking security of page " + this.getClass().getSimpleName() + "; " + this.getUri(), e);
         }
 
         return retVal;
