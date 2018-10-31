@@ -74,7 +74,6 @@
  *
  *
  */
-
 base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI)
 {
     // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)

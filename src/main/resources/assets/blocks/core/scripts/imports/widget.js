@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-/**
- * Created by bram on 8/13/15.
- */
 /*
  * This is the abstract superclass that all widgets need to extend
+ *
+ * Created by bram on 8/13/15.
  */
 base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification, Undo)
 {

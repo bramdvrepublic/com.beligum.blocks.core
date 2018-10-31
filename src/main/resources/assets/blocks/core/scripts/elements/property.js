@@ -15,30 +15,35 @@
  */
 
 /**
+ * A container contains properties
+ * A property can contain a new container itself to go up the tree
+ *
  * Created by wouter on 5/03/15.
  */
-
 base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DomManipulation", "base.core.Commons", function (Class, BaseConstantsInternal, BlocksConstants, DOM, Commons)
 {
-
-    var body = $("body");
-    // A container contains properties
-    // A property can contain a new container itself to go up the tree
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Property = Class.create(blocks.elements.LayoutElement, {
 
+        //-----STATICS-----
         STATIC: {
-            //will keep an index of all registerd properties (to back-reference from their overlays)
+            //will keep an index of all registered properties (to back-reference from their overlays)
             INDEX: {},
             OVERLAY_INDEX_ATTR: "data-property-index"
         },
 
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (element, parent, index)
         {
             blocks.elements.Property.Super.call(this, element, parent, index);
-            //var ct = this.getContainer();
-            //ct.blocks.push(this);
 
             if (this.element.siblings().length == 0 && this.element.parent == parent.element) {
                 this.left = this.parent.left;
@@ -68,17 +73,26 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             // Remove sides of layout lines to prevent overlap
             var block = this.parent.parent;
             if (!(this instanceof blocks.elements.Block) && block != null && block.overlay != null) {
-                if (this.isNear(block.left, this.left)) this.overlay.addClass("left");
-                if (this.isNear(block.top, this.top)) this.overlay.addClass("top");
-                if (this.isNear(block.right, this.right)) this.overlay.addClass("right");
-                if (this.isNear(block.bottom, this.bottom)) this.overlay.addClass("bottom");
+                if (this.isNear(block.left, this.left)) {
+                    this.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
+                }
+                if (this.isNear(block.top, this.top)) {
+                    this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
+                }
+                if (this.isNear(block.right, this.right)) {
+                    this.overlay.addClass(blocks.elements.LayoutElement.RIGHT_CLASS);
+                }
+                if (this.isNear(block.bottom, this.bottom)) {
+                    this.overlay.addClass(blocks.elements.LayoutElement.BOTTOM_CLASS);
+                }
             } else if (this instanceof blocks.elements.Block) {
                 if (this.index == 0 && this.parent.parent.index == 0 && this.getContainer().parent != null && this.getContainer().parent.index > 0) {
-                    this.overlay.addClass("top");
+                    this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
                 }
             }
         },
 
+        //-----PUBLIC METHODS-----
         isNear: function (one, two)
         {
             var retVal = false;
@@ -88,18 +102,6 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             }
             return retVal;
         },
-
-        //findActiveElement: function (x, y)
-        //{
-        //    var retVal = null;
-        //    if (this.isTriggered(x, y)) {
-        //        retVal = this.findActiveElement(x, y, -1);
-        //        if (retVal == null) {
-        //            retVal = this;
-        //        }
-        //    }
-        //    return retVal;
-        //},
 
         // Easily walk the tree and find the block that contains the coordinates
         findElements: function (minSearchLevel, maxSearchLevel)
@@ -122,13 +124,13 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             return retVal;
         },
 
-
         isOuterTop: function ()
         {
             retVal = this.element.prev().length == 0;
 
             return retVal;
         },
+
         isOuterBottom: function ()
         {
             retVal = this.element.next().length == 0;
@@ -155,29 +157,35 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             }
         },
 
-        generateProperties: function (parent, index)
+        //TODO refactor this (same code as in page.js)
+        _initChildren: function (parent, index)
         {
             var children = parent.children();
-            var childcount = children.length;
-            for (var i = 0; i < childcount; i++) {
+
+            for (var i = 0; i < children.length; i++) {
                 var child = $(children[i]);
-                if (child[0].tagName == "BLOCKS-LAYOUT") {
-                    var b = new blocks.elements.Container($(child.children("[property=container], [data-property=container]")[0]), this, index);
-                    this.children.push(b);
+
+                if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
+                    //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
+                    var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
+                    if (containerEls.length > 1) {
+                        Logger.warn('Encountered multiple container tags, only using first, please check this');
+                    }
+
+                    this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
                     index++;
-                    //} else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
-                    //    var b = new blocks.elements.Property(child, this, index);
-                    //    this.children.push(b);
-                    //    index++;
-                } else if (child[0].tagName.indexOf("-") > 0) {
-                    var b = new blocks.elements.Block(child, this, index, false);
-                    this.children.push(b);
+                }
+                else if (child[0].tagName.indexOf("-") > 0) {
+                    this.children.push(new blocks.elements.Block(child, this, index, false));
                     index++;
-                } else if (child.children.length > 0) {
-                    this.generateProperties(child, index);
+                }
+                else if (child.children.length > 0) {
+                    this._initChildren(child, index);
                 }
             }
         }
+
+        //-----PRIVATE METHODS-----
 
     });
 

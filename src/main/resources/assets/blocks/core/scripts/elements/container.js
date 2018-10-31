@@ -15,20 +15,30 @@
  */
 
 /**
+ * Region where templates can be dragged
  * Created by wouter on 5/03/15.
  */
-
 base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DomManipulation", function (Class, Constants, DOM)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
-    // Region where templates can be dragged
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Container = Class.create(blocks.elements.LayoutElement, {
+
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (element, parent)
         {
             blocks.elements.Container.Super.call(this, element, parent, 0);
-            this.blocks = [];
 
+            //I guess this is here to allow for multiple levels down (old style of editing)
             if (this.parent != null && this.parent instanceof blocks.elements.Block) {
                 this.left = this.parent.left;
                 this.right = this.parent.right;
@@ -36,18 +46,18 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
                 this.bottom = this.parent.bottom;
             }
 
-            this.canLayout = true;
-            this.generateChildrenForColumn();
-            this.fillRows();
+            //this will find and create the rows in this container
+            this._generateVerticalChildren(true);
 
-            this.overlay = null;
+            //iterate the rows and build their children
+            this._fillVerticalChildren();
         },
 
+        //-----PUBLIC METHODS-----
         getElementAtSide: function (side)
         {
             return null;
         },
-
         calculateDropspots: function (side, dropspots)
         {
             if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
@@ -56,16 +66,12 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
 
             return dropspots;
         },
-
-        generateProperties: function (parent, index)
-        {
-
-        },
-
         getContainer: function ()
         {
             return this;
         }
+
+        //-----PRIVATE METHODS-----
 
     });
 

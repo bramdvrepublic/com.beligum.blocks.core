@@ -19,8 +19,17 @@ $!CONTEXT.dynamicScripts
 ## dynamic page with JS array of all the import tags
 <script src="$CONSTANTS.blocks.core.IMPORTS_SCRIPTS_ENDPOINT" type="application/javascript"></script>
 
-## this will make the current language accessible to the JS code in a uniform way
+<script src="/constants/base/core?type=js" type="application/javascript"></script>
 <script src="/messages/base/core?type=js" type="application/javascript"></script>
+
+<script src="/constants/blocks/core?type=js" type="application/javascript"></script>
+<script src="/messages/blocks/core?type=js" type="application/javascript"></script>
+
+## TODO: refactor these away cause we're not in pom.xml
+<script src="/constants/blocks/media/commons?type=js" type="application/javascript"></script>
+<script src="/constants/blocks/media/core?type=js" type="application/javascript"></script>
+<script src="/messages/blocks/media/core?type=js" type="application/javascript"></script>
+
 
 ## -----ADMIN IMPORTS-----
 
@@ -39,10 +48,9 @@ $!CONTEXT.dynamicScripts
 <script src="/assets/webjars/typeaheadjs/0.11.1/bloodhound.js" type="application/javascript" data-scope-action="create,update"></script>
 <script src="/assets/webjars/handlebars/4.0.5/handlebars.js" type="application/javascript" data-scope-action="create,update"></script>
 
-
 <script src="/assets/blocks/core/scripts/new-page.js" type="application/javascript" data-scope-action="create"></script>
 
-## Don't activate this part while creating a new page (we don't want to accidentally save that page)
+## Don't activate this part while creating a new page (so we don't want to accidentally save that page)
 
 <script src="/assets/webjars/perfect-scrollbar/0.6.16/js/perfect-scrollbar.jquery.js" type="application/javascript" data-scope-action="update"></script>
 
@@ -82,20 +90,6 @@ $!CONTEXT.dynamicScripts
 <script src="/assets/blocks/media/core/scripts/finder-jobs.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/blocks/media/core/scripts/finder.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/blocks/media/core/scripts/finder-ui.js" type="application/javascript" data-scope-action="update"></script>
-
-
-## -----PUBLIC IMPORTS-----
-<script src="/constants/base/core?type=js" type="application/javascript"></script>
-<script src="/messages/base/core?type=js" type="application/javascript"></script>
-
-<script src="/constants/blocks/core?type=js" type="application/javascript"></script>
-<script src="/messages/blocks/core?type=js" type="application/javascript"></script>
-
-## TODO: refactor these away cause we're not in pom.xml
-<script src="/constants/blocks/media/commons?type=js" type="application/javascript"></script>
-<script src="/constants/blocks/media/core?type=js" type="application/javascript"></script>
-<script src="/messages/blocks/media/core?type=js" type="application/javascript"></script>
-
 
 ## just to make it a template
 <template></template>

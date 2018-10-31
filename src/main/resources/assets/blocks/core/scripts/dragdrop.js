@@ -15,7 +15,6 @@
  */
 
 /**
- *
  * Plugin that handles the dragging of blocks
  *
  * While dragging we create 2 dropPointers, "anchor" and "other".

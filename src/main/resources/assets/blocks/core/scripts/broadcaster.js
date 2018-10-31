@@ -49,7 +49,6 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
     var Broadcaster = this;
 
     this.active = false;
-    var layoutTree = null;
 
     /*
      * This function sends an event and automatically creates a blockevent with all current parameters
@@ -85,59 +84,50 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
         }
     };
 
-    this.EVENTS = {};
-    // Events with callback
+    this.EVENTS = {
 
-    // This enables/disables the drag functionality. But all mouse ecvents are still send
-    // This way you can implement your own drag without diabling the whole templates event system
-    this.EVENTS.ENABLE_BLOCK_DRAG = "ENABLE_DRAG";
-    this.EVENTS.DISABLE_BLOCK_DRAG = "DISABLE_DRAG";
+        //sent out when the edit page button was clicked, but the sidebar hasn't completed opening
+        PRE_START_BLOCKS: "PRE_START_BLOCKS",
+        //sent out when the edit page button was clicked, and the sidebar has completed opening
+        START_BLOCKS: "START_BLOCKS",
+        //sent out when the sidebar was closed, but hasn't completed shutdown
+        PRE_STOP_BLOCKS: "PRE_STOP_BLOCKS",
+        //sent out when the sidebar was closed, and has completed shutdown
+        STOP_BLOCKS: "STOP_BLOCKS",
 
-    // Events with blockEvent as argument
-    this.EVENTS.START_DRAG = "START_DRAG";
-    this.EVENTS.END_DRAG = "END_DRAG";
-    this.EVENTS.ABORT_DRAG = "ABORT_DRAG";
-    this.EVENTS.DRAG_LEAVE_BLOCK = "DRAG_LEAVE_BLOCK";
-    this.EVENTS.DRAG_ENTER_BLOCK = "DRAG_ENTER_BLOCK";
-    this.EVENTS.DRAG_OVER_BLOCK = "DRAG_OVER_BLOCK";
+        // Events with blockEvent as argument
+        START_DRAG: "START_DRAG",
+        END_DRAG: "END_DRAG",
+        ABORT_DRAG: "ABORT_DRAG",
+        DRAG_OVER_BLOCK: "DRAG_OVER_BLOCK",
+        FOCUS_BLOCK: "FOCUS_BLOCK",
 
-    this.EVENTS.FOCUS_BLOCK = "FOCUS_BLOCK";
+        // Called when the mouse pointer enters/leaves a visible LayoutElement
+        HOVER_ENTER_OVERLAY: "HOVER_ENTER_OVERLAY",
+        HOVER_LEAVE_OVERLAY: "HOVER_LEAVE_OVERLAY",
 
-    this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
+        ENABLE_DND: "ALLOW_DRAG",
+        DISABLE_DND: "DISABLE_DND",
 
-    // Notifications
+        // This (de)activates the mouse cf pauzes the templates layouter (used during dialogs, resizing, etc)
+        ACTIVATE_MOUSE: "ACTIVATE_MOUSE",
+        DEACTIVATE_MOUSE: "DEACTIVATE_MOUSE",
 
-    // Called when the mouse pointer enters/leaves a visible LayoutElement
-    this.EVENTS.HOVER_ENTER_OVERLAY = "HOVER_ENTER_OVERLAY";
-    this.EVENTS.HOVER_LEAVE_OVERLAY = "HOVER_LEAVE_OVERLAY";
+        // Events send when the the templates DOM tree in memory will/is/did rebuild
+        DO_REFRESH_LAYOUT: "DO_REFRESH_LAYOUT",
+        WILL_REFRESH_LAYOUT: "WILL_REFRESH_LAYOUT",
+        DID_REFRESH_LAYOUT: "DID_REFRESH_LAYOUT",
 
-    this.EVENTS.ENABLE_DND = "ALLOW_DRAG";
-    this.EVENTS.DISABLE_DND = "DISABLE_DND";
-    // This (de)activates the mouse cf pauzes the templates layouter (used during dialogs, resizing, etc)
-    this.EVENTS.ACTIVATE_MOUSE = "ACTIVATE_MOUSE";
-    this.EVENTS.DEACTIVATE_MOUSE = "DEACTIVATE_MOUSE";
-    // Events send when the the templates DOM tree in memory will/is/did rebuild
-    this.EVENTS.DO_REFRESH_LAYOUT = "DO_REFRESH_LAYOUT";
-    this.EVENTS.WILL_REFRESH_LAYOUT = "WILL_REFRESH_LAYOUT";
-    this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";
+        // Announce that we changed someting to the dom (add/remove/resize elements)
+        // this will automatically trigger DO_REFRESH_LAYOUT
+        DOM_CHANGED: "DOM_CHANGED",
 
-    // Announce that we changed someting to the dom (add/remove/resize elements)
-    // this will automatically trigger DO_REFRESH_LAYOUT
-    this.EVENTS.DOM_CHANGED = "DOM_CHANGED";
-
-    // Sent out when an undo stack frame is recorded
-    this.EVENTS.UNDO_RECORDED = "UNDO_RECORDED";
-    // Sent out when an undo action has been executed
-    this.EVENTS.UNDO_PERFORMED = "UNDO_PERFORMED";
-    // Sent out when an redo action has been executed
-    this.EVENTS.REDO_PERFORMED = "REDO_PERFORMED";
-
-    // on/off
-    this.EVENTS.PRE_START_BLOCKS = "PRE_START_BLOCKS";
-    this.EVENTS.START_BLOCKS = "START_BLOCKS";
-    this.EVENTS.PRE_STOP_BLOCKS = "PRE_STOP_BLOCKS";
-    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
-    this.EVENTS.WILL_SAVE = "WILL_SAVE";
-    this.EVENTS.DID_SAVE = "DID_SAVE";
+        // Sent out when an undo stack frame is recorded
+        UNDO_RECORDED: "UNDO_RECORDED",
+        // Sent out when an undo action has been executed
+        UNDO_PERFORMED: "UNDO_PERFORMED",
+        // Sent out when an redo action has been executed
+        REDO_PERFORMED: "REDO_PERFORMED",
+    };
 
 }]);

@@ -18,7 +18,7 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
 {
     var UI = this;
 
-    this.init = function (options)
+    this.init = function ()
     {
         UI.sidebar = $('.' + BlocksConstants.PAGE_SIDEBAR_CLASS);
         UI.newBlockBtn = $('.' + BlocksConstants.CREATE_BLOCK_CLASS);

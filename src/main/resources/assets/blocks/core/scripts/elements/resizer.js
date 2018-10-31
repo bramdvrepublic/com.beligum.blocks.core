@@ -22,14 +22,25 @@
 base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.DomManipulation", function (Class, BlocksConstants, Resizer, DOM)
 {
     var body = $("body");
+
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.ResizeHandle = Class.create(blocks.elements.Surface, {
+
+        //-----STATICS-----
         STATIC: {
             DRAW_WIDTH: 30,
             TRIGGER_WIDTH: 6
         },
 
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (leftColumn, rightColumn)
         {
             this.leftColumn = leftColumn;
@@ -37,6 +48,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS + " " + BlocksConstants.COLUMN_RESIZER_CLASS);
         },
 
+        //-----PUBLIC METHODS-----
         update: function ()
         {
             var left = Math.floor((this.calculateLeft(this.rightColumn.element) + this.calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
@@ -96,5 +108,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.off("mousedown.resizehandle");
             this.overlay.remove();
         }
+
+        //-----PRIVATE METHODS-----
     });
 }]);

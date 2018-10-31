@@ -14,22 +14,36 @@
  * limitations under the License.
  */
 
-// Special kind of row that can contains a template
-// Draggable templates are the elements inside a column
+/**
+ * Special kind of row that can contains a template
+ * Draggable templates are the elements inside a column
+ */
 base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", function (Class, Constants, BlocksConstants)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Block = Class.create(blocks.elements.Property, {
+
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (element, parent, index, canDrag)
         {
             blocks.elements.Block.Super.call(this, element, parent, index);
+
             // if a block is editable does not depend on the parent
             var prev = element.prev();
             var next = element.next();
             if (prev.length > 0) {
                 this.top -= Math.floor((this.calculateBottom(prev) - this.top) / 2);
-                this.overlay.addClass("top");
+                this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
             }
             if (next.length > 0) {
                 this.bottom += Math.floor((this.calculateTop(next) - this.bottom) / 2);
@@ -40,7 +54,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
             this.dropspots = {};
         },
 
-
+        //-----PUBLIC METHODS-----
         // gets all dropspots for this block and his parents, for each side
         // then generate the triggers (surfaces) for each dropspot
         generateDropspots: function ()
@@ -52,7 +66,6 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
             this.dropspots[Constants.SIDE.RIGHT] = this.calculateDropspots(Constants.SIDE.RIGHT, []);
             this.generateTriggers();
         },
-
 
         // calculates the triggers (surface where mouse coordinates trigger a dropspot)
         generateTriggers: function ()
@@ -88,7 +101,6 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
                 this.verticalDropspots[i].block = this;
             }
         },
-
 
         // Find the dropspot that is triggered for x and y
         getTriggeredDropspot: function (direction, x, y)
@@ -156,5 +168,8 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
             return c.getBlocks();
         }
 
+        //-----PRIVATE METHODS-----
+
     });
+
 }]);

@@ -15,15 +15,13 @@
  */
 
 /**
- * Created by wouter on 19/01/15.
- *
  * The manager is the central point. here we catch all the events to keep an overview
+ *
+ * Created by wouter on 19/01/15.
  */
 base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DomManipulation", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
 {
     var Manager = this;
-
-    var observer = null;
 
     //-----EVENTS-----
     //main entry point for blocks after all the GUI events are handled
@@ -32,16 +30,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //load in all the elements
         UI.init();
 
-        //we activate everything after a little timeout to allow all the elements to fixate their final dimensions,
-        // so that the overlay bounding box fits nicely
-        //Note: not anymore, fixed it
-        setTimeout(function(){
-            //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
-            Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+        //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
+        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
-            //start off by showing the layouter
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
-        }, 0);
+        //start off by showing the layouter
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/*
+/**
  * Resize handles are the handles to resize columns
  * A row contains all the possible resize handles
  *
@@ -26,8 +26,7 @@
  *
  * this plugin does not send events of it's own
  *
- * */
-
+ */
 base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;

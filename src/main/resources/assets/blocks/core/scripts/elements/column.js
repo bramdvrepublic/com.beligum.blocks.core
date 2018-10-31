@@ -15,24 +15,35 @@
  */
 
 /**
+ * A column (inside a row) -> Can contain rows or templates
+ *
  * Created by wouter on 9/03/15.
  */
-
 base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
-    // A column (inside a row) -> Can contain rows or templates
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Column = Class.create(blocks.elements.LayoutElement, {
+
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (element, parent, index)
         {
             blocks.elements.Column.Super.call(this, element, parent, index);
 
-            this.canDrag = false;
-            this.generateChildrenForColumn();
-            this.overlay = null;
+            //this will find and create the blocks in this column
+            this._generateVerticalChildren(false);
         },
 
+        //-----PUBLIC METHODS-----
         isOuterLeft: function ()
         {
             return this.element.prev().length == 0
@@ -68,10 +79,7 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
             return dropspots;
         },
 
-        generateProperties: function ()
-        {
-
-        }
+        //-----PRIVATE METHODS-----
 
     });
 }]);

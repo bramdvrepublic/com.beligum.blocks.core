@@ -17,7 +17,6 @@
 /**
  * Created by wouter on 15/06/15.
  */
-
 base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages) {
 
     var SideBar = this;

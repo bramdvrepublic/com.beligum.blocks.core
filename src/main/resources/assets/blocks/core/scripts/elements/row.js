@@ -14,23 +14,38 @@
  * limitations under the License.
  */
 
-// A row inside a column or a container
-// Can only contain columns
+/**
+ * A row inside a column or a container
+ * Can only contain columns
+ */
 base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Row = Class.create(blocks.elements.LayoutElement, {
 
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (element, parent, index)
         {
             blocks.elements.Row.Super.call(this, element, parent, index);
 
-            this.canDrag = true;//need this to show the resizeHandles
-            this.generateChildrenForRow();
-            this.overlay = null;
+            // we need this to show the resizeHandles
+            this.canDrag = true;
+
+            //this will find and create the columns in this row
+            this._generateHorizontalChildren();
         },
 
+        //-----PUBLIC METHODS-----
         isOuterTop: function ()
         {
             return this.element.prev().length == 0
@@ -99,9 +114,7 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
             }
         },
 
-        generateProperties: function ()
-        {
-        }
+        //-----PRIVATE METHODS-----
 
     });
 

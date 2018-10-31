@@ -37,8 +37,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     //----MORE OR LESS THE START OF EVERYTHING----
     //note: the icon is set in blocks.less
-    var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>');
-    menuStartButton.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+    var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>')
+        .attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+
     // Hide show bar on click of menu button
     $(document).on("click", "." + BlocksConstants.BLOCKS_START_BUTTON, function (event)
     {
@@ -51,18 +52,17 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
     sidebarElement.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
     {
-        if (status == "error") {
-            Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
-        }
-        else {
+        if (status == 'success') {
             //check for a cookie and auto-open when the sidebar was active
-            var sidebarState = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE);
-            if (sidebarState === SIDEBAR_STATE_SHOW) {
+            if (Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE) === SIDEBAR_STATE_SHOW) {
                 $(document).ready(function ()
                 {
                     toggleSidebar(true);
                 });
             }
+        }
+        else {
+            Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
         }
     });
 
@@ -116,7 +116,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             // Note: after trying mousedown or mouseup to prevent vanishing links from triggering the modal,
             // it's quite important this is effectively the click event, because it overloads a lot of necessary other clicks
             // Use the pierce trough class to work around it
-            $(document).on("click.prevent_click_editing", "a, button", function (e)
+            var preventEditNamespace = 'prevent_click_editing';
+            $(document).on("click."+preventEditNamespace, "a, button", function (e)
             {
                 //this is needed (instead of $(this)) to detect the [contenteditable]
                 var control = $(e.target);
@@ -208,12 +209,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             if (cookieSidebarWidth != null && cookieSidebarWidth > 0) {
                 INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
             }
-
             //control the bounds, even if the cookie says otherwise
             if (INIT_SIDEBAR_WIDTH < MIN_SIDEBAR_WIDTH) {
                 INIT_SIDEBAR_WIDTH = MIN_SIDEBAR_WIDTH;
             }
 
+            //make it a close cross
             menuStartButton.addClass("open");
 
             //slide open the sidebar and activate the callback when finished
@@ -221,6 +222,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             {
                 //re-add the button (but with a changed icon)
                 $("body").append(menuStartButton);
+
                 enableSidebarDrag();
 
                 if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
@@ -234,12 +236,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     };
                 }
 
-                //give ourself and the animation some time to settle before sending out the event
-                //Note: not anymore, fixed it
-                setTimeout(function ()
-                {
-                    Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS, event);
-                }, 0);
+                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS, event);
             });
 
         }
@@ -280,7 +277,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     $(this).replaceWith(ignoredContent[idx]);
                 });
 
-                $(document).off("click.prevent_click_editing");
+                $(document).off("click."+preventEditNamespace);
                 body.append(menuStartButton);
                 body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
@@ -298,14 +295,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     {
         $(document).on("mousedown.sidebar_resize", "." + BlocksConstants.PAGE_SIDEBAR_RESIZE_CLASS, function (event)
         {
-            //TODO IS THIS NECESSARY?
-            //// On mousedown start resizing
-            //// Make sure we are no longer in edit mode
-            //Sidebar.reset();
-            //
-            //DOM.disableTextSelection();
-            //DOM.disableContextMenu();
-
             //needed because sometimes we hover out of the dragger while moving the sidebar (because of some lag)
             $("body").addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
@@ -336,11 +325,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $(document).off("mouseup.sidebar_resize");
 
                 $("body").removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
-
-                //TODO IS THIS NECESSARY?
-                //DOM.enableTextSelection();
-                //DOM.enableContextMenu();
-                //Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
                 Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width(), DEFAULT_COOKIE_OPTIONS);
@@ -386,24 +370,19 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var resizing = false;
     $(window).smartresize(function (event)
     {
-        if (resizing) {
+        //boots the resizing
+        if (!resizing) {
+            sidebarWidth = sidebarElement.outerWidth();
+            Hover.removeHoverOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+            resizing = true;
+        }
+        else {
             var windowWidth = $(window).width();
             $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
             resizing = false;
-        }
-    });
-
-    $(window).on("resize.blocks_broadcaster", function (event)
-    {
-        if (resizing == false) {
-            // Leave edit mode
-            //Sidebar.resetOld();
-            sidebarWidth = sidebarElement.outerWidth();
-            Hover.removeHoverOverlays();
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-            resizing = true;
         }
     });
 

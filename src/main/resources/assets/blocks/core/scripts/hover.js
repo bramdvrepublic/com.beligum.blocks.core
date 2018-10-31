@@ -24,7 +24,6 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
 
     var pageBlock = null;
     var focusedBlock = null;
-    var layoutTree = null;
 
     //-----METHODS-----
     this.setHoveredBlock = function (layoutElement)
@@ -49,14 +48,13 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         return pageBlock;
     };
 
-    /*
-     We create some sort of a heat map. We define boxes for all draggable templates
-     we can add left and right from each column
-     and left and right from container if container has more than 1 row
-     select each row and add bottom
-     if row has +1 colunms, we can add also to bottom of columns
-     except if column has +1 rows
-     */
+    // We create some sort of a heat map
+    // We define boxes for all draggable templates
+    // we can add left and right from each column
+    // and left and right from container if container has more than 1 row
+    // select each row and add bottom
+    // if row has +1 columns, we can add also to bottom of columns
+    // except if column has +1 rows
     this.createPageBlock = function ()
     {
         pageBlock = new blocks.elements.Page();

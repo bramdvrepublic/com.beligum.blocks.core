@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * Created by wouter on 9/03/15.
- */
-
-
-
 /*
  * Special element that indicates a trigger where a block could be dropped
  * on an other block. the dropspot is located on a SIDE of the block and the
@@ -27,7 +21,8 @@
  * e.g. side = TOP and min =0 and max= 10 then this dropspot will be triggered with an
  * y coordinate of 6
  *
- * */
+ * Created by wouter on 9/03/15.
+ */
 base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
     blocks = window['blocks'] || {};

@@ -15,9 +15,9 @@
  */
 
 /**
- * Created by wouter on 19/01/15.
+ * The undo manager.
  *
- * The manager is the central point. here we catch all the events to keep an overview
+ * Created by bram on 19/10/18.
  */
 base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, Broadcaster, Hover)
 {

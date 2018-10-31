@@ -15,50 +15,68 @@
  */
 
 /**
+ * Region where templates can be dragged
+ *
  * Created by wouter on 10/06/15.
  */
-
 base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.core", function (Class, Constants)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
-    // Region where templates can be dragged
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Page = Class.create(blocks.elements.LayoutElement, {
+
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            //super(this, element, parent, index)
             blocks.elements.Page.Super.call(this, $("." + Constants.PAGE_CONTENT_CLASS), null, 0);
-
-            this.canDrag = false;
-            this.blocks = [];
-            // find everything that is a container or a template or a property
-            this.overlay = null;
         },
 
-        generateProperties: function (parent, index)
+        //-----IMPLEMENTED METHODS-----
+        _initChildren: function (parentEl, index)
         {
-            var children = parent.children();
-            var childcount = children.length;
-            for (var i = 0; i < childcount; i++) {
+            //Note: this will only iterate all immediate children
+            //and recurse down (see below)
+            var children = parentEl.children();
+
+            for (var i = 0; i < children.length; i++) {
                 var child = $(children[i]);
-                if (child[0].tagName == "BLOCKS-LAYOUT") {
-                    var b = new blocks.elements.Container($(child.children("[property=container], [data-property=container]")[0]), this, index);
-                    this.children.push(b);
+                //if we hit the main layout tag, find it's container
+                //TODO: we should change this to the data-property of the blocks-layout
+                if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
+                    //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
+                    var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
+                    if (containerEls.length > 1) {
+                        Logger.warn('Encountered multiple container tags, only using first, please check this');
+                    }
+
+                    this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
                     index++;
-                } else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
-                    var b = new blocks.elements.Property(child, this, index);
-                    this.children.push(b);
+                }
+                else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
+                    this.children.push(new blocks.elements.Property(child, this, index));
                     index++;
-                } else if (child[0].tagName.indexOf("-") > 0) {
-                    var b = new blocks.elements.Block(child, this, index, false);
-                    this.children.push(b);
+                }
+                else if (child[0].tagName.indexOf("-") > 0) {
+                    this.children.push(new blocks.elements.Block(child, this, index, false));
                     index++;
-                } else if (child.children.length > 0) {
-                    this.generateProperties(child, index);
+                }
+                //recurse if the child has children of its own
+                else if (child.children.length > 0) {
+                    this._initChildren(child, index);
                 }
             }
         },
 
+        //-----PUBLIC METHODS-----
         getLayoutContainer: function ()
         {
             var retVal = null;
@@ -71,5 +89,7 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             }
             return retVal;
         }
+
+        //-----PRIVATE METHODS-----
     });
 }]);

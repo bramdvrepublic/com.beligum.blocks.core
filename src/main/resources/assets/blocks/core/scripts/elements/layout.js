@@ -15,69 +15,84 @@
  */
 
 /**
+ * Is the abstract class for DOM elements (row, container, block)
+ * contains some helper functions
+ *
  * Created by wouter on 5/03/15.
  */
-
-/*
- * Is the abstract class for DOM elements (row, container, block)
- * contains some helperfunctions
- * */
-
-
 base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants.base.core.internal", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Hover)
 {
     var body = $("body");
 
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
 
+    //----CLASSES-----
     blocks.elements.LayoutElement = Class.create(blocks.elements.Surface, {
 
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        element: null,
-        parent: null,
-        canLayout: false,
-        canDrag: false,
+        //-----STATICS-----
+        STATIC: {
+            BLOCKS_LAYOUT_TAG: 'blocks-layout',
+            CONTAINER_PROPERTY: 'container',
+            ROW_CLASS: 'row',
+            LEFT_CLASS: 'left',
+            RIGHT_CLASS: 'right',
+            TOP_CLASS: 'top',
+            BOTTOM_CLASS: 'bottom',
+        },
 
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+        parent: undefined,
+        index: undefined,
+        element: undefined,
+        children: undefined,
+        resizeHandles: undefined,
+        totalBlocks: undefined,
+        canDrag: undefined,
+        overlay: undefined,
+        isTemplate: undefined,
+
+        //-----CONSTRUCTORS-----
+        /**
+         * @param element The jQuery element bound to this surface
+         * @param parent The parent-surface or null if it doesn't have a parent
+         * @param index The index of this child in it's parent's children array
+         */
         constructor: function (element, parent, index)
         {
-            //super(this, top, bottom, left, right)
-            blocks.elements.LayoutElement.Super.call(this, this.calculateTop(element, true), this.calculateBottom(element, true), this.calculateLeft(element, true), this.calculateRight(element, true));
+            blocks.elements.LayoutElement.Super.call(this,
+                this.calculateTop(element),
+                this.calculateBottom(element),
+                this.calculateLeft(element),
+                this.calculateRight(element));
 
+            this.element = element;
             this.parent = parent;
-
-            //// If we are the only child in the parent then our dimensions are the same as the dimensions of the parent
-            //if (parent != null && !(this instanceof templates.elements.Container)) {
-            //    var prev = element.parent();
-            //    while (prev.siblings().length == 0 && prev[0] != parent.element[0]) {
-            //        prev = prev.parent();
-            //    }
-            //    if (prev[0] != parent.element[0]) {
-            //        this.top = parent.top;
-            //        this.left = parent.left;
-            //        this.bottom = parent.bottom;
-            //        this.right = parent.right;
-            //    }
-            //}
-
-            this.index = index; // index in the parent
-            this.element = element; // jquery element
+            this.index = index;
             this.children = [];
             this.resizeHandles = [];
             this.totalBlocks = null;
-            // only for containers
-            this.canLayout = false;
-            // only for first level blocks inside a container
-            this.canDrag = false;
+            this.canDrag = false; // only for first level blocks inside a container
             this.overlay = null;
             this.isTemplate = false;
 
-            this.generateProperties(this.element);
+            this._initChildren(this.element, 0);
         },
 
+        //-----ABSTRACT METHODS-----
+        /**
+         * Search the sub-surfaces of this surface
+         * @param parentEl The parent jQuery element on which we'll iterate it's children
+         * @param index The index of this surface in it's parent
+         */
+        _initChildren: function (parentEl, index)
+        {
+        },
+
+        //-----PUBLIC METHODS-----
         // Easily walk the tree and find the block that contains the coordinates
         findActiveElement: function (x, y, maxSearchLevel)
         {
@@ -132,7 +147,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             return retVal;
         },
         // returns true if this block has no sibling on his left/right/top/bottom
-        // to be overridden by subclasse
+        // to be overridden by subclasses
         isOuterLeft: function ()
         {
             return true
@@ -231,194 +246,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             }
         },
 
-        // Creates rows or templates inside a column
-        generateChildrenForColumn: function ()
-        {
-            var ROW_TYPE = "row";
-            var BLOCK_TYPE = "block";
-            var childType = ROW_TYPE;
-            var rows = this.element.children("." + ROW_TYPE);
-            if (rows.length == 0) {
-                var rows = this.element.children();
-                //var templates = true;
-                for (var x = 0; i < rows.length; i++) {
-                    if ($(rows[x].css('display') !== 'block')) {
-                        //templates = false;
-                        rows = [];
-                        break;
-                    }
-                }
-                childType = BLOCK_TYPE;
-            }
-
-            var innerZone = new blocks.elements.Surface(this.top, this.bottom, this.left, this.right);
-
-            if (rows.length > 0) {
-                var rowCount = rows.length;
-                for (var i = 0; i < rowCount; i++) {
-                    // create zone for child
-                    var currentRow = $(rows[i]);
-                    var zoneTop = innerZone.top;
-                    var zoneBottom = innerZone.bottom;
-                    if (i > 0) {  // Not first row
-                        var previousRow = $(rows[i - 1]);
-                        zoneTop = (this.calculateTop(currentRow) + this.calculateBottom(previousRow)) / 2;
-                    }
-                    if (i < rowCount - 1) { // Not last row
-                        var nextRow = $(rows[i + 1]);
-                        zoneBottom = (this.calculateBottom(currentRow) + this.calculateTop(nextRow)) / 2;
-                    }
-
-                    if (childType == ROW_TYPE) {
-                        this.children.push(new blocks.elements.Row(currentRow, this, i));
-                    } else if (childType == BLOCK_TYPE) {
-                        this.children.push(new blocks.elements.Block(currentRow, this, i, true));
-                    }
-                }
-            }
-        },
-
-        generateChildrenForRow: function ()
-        {
-            // check only for columns
-            var tColumns = this.element.children();
-            var columns = [];
-
-            for (var i = 0; i < tColumns.length; i++) {
-                if (DOM.isColumn($(tColumns[i]))) {
-                    columns.push($(tColumns[i]));
-                }
-            }
-            var innerZone = new blocks.elements.Surface(this.top, this.bottom, this.left, this.right);
-
-            if (columns.length > 0) {
-                var rowWidth = 0;
-                for (var x = 0; x < columns.length; x++) {
-                    rowWidth += DOM.getColumnWidth($(columns[x]));
-                }
-
-                // Variables to keep track when columns stack vertical
-                var prevColsWidth = 0;
-                var prevColBottom = innerZone.top;
-                var prevColMaxBottom = 0;
-
-                var columnCount = columns.length;
-                var oldColumn = null;
-                for (var i = 0; i < columnCount; i++) {
-                    // create zone for child
-                    var currentColumn = $(columns[i]);
-                    var newColumn = null;
-                    if (rowWidth <= 12) {
-                        var zoneLeft = innerZone.left;
-                        var zoneRight = innerZone.right;
-                        if (i > 0) { // Not first column
-                            // left side is between previous column and this column
-                            var previousColumn = $(columns[i - 1]);
-//                                zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
-                            zoneLeft = this.calculateLeft(currentColumn);
-                        }
-                        if (i < columnCount - 1) { // not last column
-                            // right side is between next column and this column
-                            var nextColumn = $(columns[i + 1]);
-//                                zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
-                            zoneRight = this.calculateRight(currentColumn);
-                        }
-
-
-                        newColumn = new blocks.elements.Column(currentColumn, this, i);
-
-                        var outside = this.parent != null && this.parent.parent != null && this.parent.parent instanceof blocks.elements.Container;
-
-                        if (oldColumn != null) {
-                            this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
-                        }
-                        //else if (outside) {
-                        //    this.resizeHandles.push(new templates.elements.ResizeHandle(oldColumn, newColumn));
-                        //}
-
-
-                        //if (outside && i == columnCount - 1) {
-                        //    this.resizeHandles.push(new templates.elements.ResizeHandle(newColumn, null));
-                        //}
-//
-                    } else {
-                        var colWidth = DOM.getColumnWidth(currentColumn);
-                        prevColsWidth += colWidth;
-                        if (prevColsWidth > 12) {
-                            prevColsWidth = colWidth;
-                            prevColBottom += prevColMaxBottom;
-                            prevColMaxBottom = 0;
-                        }
-                        var curBottom = this.calculateBottom(currentColumn);
-                        prevColMaxBottom = prevColMaxBottom < curBottom ? curBottom : prevColMaxBottom;
-
-                        newColumn = new blocks.elements.Column(currentColumn, this, i);
-
-                    }
-
-                    this.children.push(newColumn);
-                    oldColumn = newColumn;
-                }
-            }
-        },
-
-        fillRows: function ()
-        {
-            var totalChildren = this.children.length;
-            for (var i = 0; i < this.children.length; i++) {
-                var child = this.children[i];
-                var last = i + 1 == totalChildren;
-                child.left = this.left;
-                child.right = this.right;
-                if (i == 0) {
-                    child.top = this.top;
-                }
-
-                if (last) {
-                    child.bottom = this.bottom;
-                } else {
-                    var next = this.children[i + 1];
-                    var middle = Math.floor((child.bottom + next.top) / 2);
-                    next.top = middle;
-                    child.bottom = middle;
-
-                }
-                if (child instanceof blocks.elements.Row) {
-                    child.fillColumns();
-                }
-                if (child instanceof blocks.elements.Block) {
-                    if (this.index > 0) child.overlay.addClass("left");
-                    if (i > 0 || this.parent.index > 0) child.overlay.addClass("top");
-
-                }
-            }
-        },
-
-        fillColumns: function ()
-        {
-            var totalChildren = this.children.length;
-            for (var i = 0; i < this.children.length; i++) {
-                var child = this.children[i];
-                var last = i + 1 == totalChildren;
-                child.bottom = this.bottom;
-                child.top = this.top;
-                if (i == 0) {
-                    child.left = this.left;
-                }
-
-                if (last) {
-                    child.right = this.right;
-                } else {
-                    var next = this.children[i + 1];
-                    var middle = Math.floor((child.right + next.left) / 2);
-                    next.left = middle;
-                    child.right = middle;
-
-                }
-                if (child instanceof blocks.elements.Column) child.fillRows();
-            }
-        },
-
         getBlocks: function ()
         {
             if (this.totalBlocks != null) return this.totalBlocks;
@@ -493,7 +320,131 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
 
         generateDropspots: function ()
         {
-        }
+        },
+
+        //-----PRIVATE METHODS-----
+        /**
+         * Creates rows (if the flag is up) or blocks (if the flag is down) inside a parent (container or column)
+         * and add them to the children array.
+         */
+        _generateVerticalChildren: function (rows)
+        {
+            var children = rows ? this.element.children("." + blocks.elements.LayoutElement.ROW_CLASS) : this.element.children();
+
+            for (var i = 0; i < children.length; i++) {
+                // create zone for child
+                var child = $(children[i]);
+
+                if (rows) {
+                    this.children.push(new blocks.elements.Row(child, this, i));
+                }
+                else {
+                    this.children.push(new blocks.elements.Block(child, this, i, true));
+                }
+            }
+        },
+        /**
+         * Iterate the current children (which are expected to be rows or blocks)
+         * and create or initialize their sub-children.
+         */
+        _fillVerticalChildren: function ()
+        {
+            for (var i = 0; i < this.children.length; i++) {
+
+                var child = this.children[i];
+                var first = i == 0;
+                var last = (i + 1) == this.children.length;
+                child.left = this.left;
+                child.right = this.right;
+                if (first) {
+                    child.top = this.top;
+                }
+
+                //melt the edges with the parent or next because it feels
+                //more natural
+                if (last) {
+                    child.bottom = this.bottom;
+                }
+                else {
+                    var next = this.children[i + 1];
+                    var middle = Math.floor((child.bottom + next.top) / 2);
+                    next.top = middle;
+                    child.bottom = middle;
+                }
+
+                if (child instanceof blocks.elements.Row) {
+                    child._fillHorizontalChildren();
+                }
+                else if (child instanceof blocks.elements.Block) {
+                    //these two classes will remove the borders left and top so we don't
+                    //have double borders when two blocks are next to each other
+                    if (this.index > 0) {
+                        child.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
+                    }
+                    if (i > 0 || this.parent.index > 0) {
+                        child.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
+                    }
+                }
+                else {
+                    Logger.error('Encountered non-row and non-block as a vertical child, this shouldn\'t happen', child);
+                }
+            }
+        },
+        /**
+         * Creates columns inside a row and add them to the children array.
+         */
+        _generateHorizontalChildren: function ()
+        {
+            // check only for columns
+            var columns = this.element.children('[class*="col-"]');
+
+            if (columns.length > 0) {
+                var rowWidth = 0;
+                for (var i = 0; i < columns.length; i++) {
+                    rowWidth += DOM.getColumnWidth($(columns[i]));
+                }
+
+                var oldColumn = null;
+                for (var i = 0; i < columns.length; i++) {
+                    var col = $(columns[i]);
+
+                    var newColumn = new blocks.elements.Column(col, this, i);
+                    this.children.push(newColumn);
+                    
+                    if (oldColumn != null) {
+                        this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
+                    }
+                    oldColumn = newColumn;
+                }
+            }
+        },
+        _fillHorizontalChildren: function ()
+        {
+            for (var i = 0; i < this.children.length; i++) {
+                var child = this.children[i];
+
+                var last = (i + 1) == this.children.length;
+                var first = i == 0;
+                child.bottom = this.bottom;
+                child.top = this.top;
+                if (first) {
+                    child.left = this.left;
+                }
+                if (last) {
+                    child.right = this.right;
+                }
+                else {
+                    var next = this.children[i + 1];
+                    var middle = Math.floor((child.right + next.left) / 2);
+                    next.left = middle;
+                    child.right = middle;
+                }
+                if (child instanceof blocks.elements.Column) {
+                    child._fillVerticalChildren();
+                }
+            }
+        },
+
     });
 
 }]);

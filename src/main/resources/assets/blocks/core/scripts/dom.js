@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/*
+/**
  * Simple plugin that handles functions for the DOM. All elements should be jQuery Objects.
  * To allow for animations, most functions that manipulate the dom directly (remove an elment, add an element)
  * take callbacks to run when their animation ends. This way you can chain your animations.
@@ -27,9 +27,7 @@
  * ... see bottom page
  *
  *
- * */
-
-
+ */
 base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "constants.blocks.core", function (Constants, BlocksConstants)
 {
     var DOM = this;
@@ -57,6 +55,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     this.isColumn = function (element)
     {
+        //TODO we should replace this with .is('[class*="col-"]')
         var el = $(element);
         var retVal = false;
         var classList = el[0].className.split(/\s+/);
@@ -120,7 +119,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 if (newWidth != null) {
                     currentWidth = newWidth;
                 } else if (currentWidth == null) {
-                    currentWidth = 12;
+                    currentWidth = DOM.MAX_COLUMNS;
                 }
             }
         }
@@ -160,7 +159,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
             element.removeClass(currentClass);
             element.addClass(newClass);
         } else {
-            var newWidth = (element.parent().innerWidth() / 12) * newWidth;
+            var newWidth = (element.parent().innerWidth() / DOM.MAX_COLUMNS) * newWidth;
             if (currentClass != newClass) {
                 element.animate({width: newWidth}, animationTime, function ()
                 {
@@ -527,7 +526,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     this.wrapBlockInColumn = function (blockElement, columnWidth)
     {
-        columnWidth = columnWidth == null ? 12 : columnWidth;
+        columnWidth = columnWidth == null ? DOM.MAX_COLUMNS : columnWidth;
         var col = DOM.createColumn(columnWidth)
         blockElement = blockElement.replaceWith(col);
         col.append(blockElement);
@@ -538,13 +537,13 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     {
         var row = DOM.createRow();
         blockElement = blockElement.replaceWith(row);
-        row.append(DOM.createColumn(12).append(blockElement));
+        row.append(DOM.createColumn(DOM.MAX_COLUMNS).append(blockElement));
         return row;
     };
 
     this.wrapColumnInRow = function (blockElement)
     {
-        DOM.setColumnWidth(blockElement, 12);
+        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
         var row = DOM.createRow();
         blockElement = blockElement.replaceWith(row);
         row.append(blockElement);
@@ -554,7 +553,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     this.wrapColumnInColumn = function (blockElement)
     {
         var width = DOM.getColumnWidth(blockElement);
-        DOM.setColumnWidth(blockElement, 12);
+        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
         var col = DOM.createColumn(width);
         blockElement = blockElement.replaceWith(col);
         col.append(DOM.createRow().append(blockElement));
@@ -563,12 +562,12 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     this.wrapRowInColumn = function (blockElement)
     {
-        return DOM.wrapBlockInColumn(blockElement, 12);
+        return DOM.wrapBlockInColumn(blockElement, DOM.MAX_COLUMNS);
     };
 
     this.wrapRowInRow = function (blockElement)
     {
-        return DOM.wrapColumnInRow(DOM.wrapRowInColumn(blockElement, 12));
+        return DOM.wrapColumnInRow(DOM.wrapRowInColumn(blockElement, DOM.MAX_COLUMNS));
     };
 
     /*
@@ -666,7 +665,6 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     // debouncing function from John Hann
     // http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
-
     var debounce = function (func, threshold, execAsap)
     {
         var timeout;
@@ -694,9 +692,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     // smartresize
     $.fn["smartresize"] = function (fn)
     {
-        return fn ?
-            this.bind('resize', debounce(fn)) :
-            this.trigger("smartresize");
+        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
     };
 
     // smartresize
