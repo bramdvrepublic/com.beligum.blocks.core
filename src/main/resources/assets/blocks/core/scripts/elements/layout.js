@@ -58,10 +58,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         //-----CONSTRUCTORS-----
         /**
          * @param element The jQuery element bound to this surface
-         * @param parent The parent-surface or null if it doesn't have a parent
+         * @param parentSurface The parent-surface or null if it doesn't have a parent
          * @param index The index of this child in it's parent's children array
          */
-        constructor: function (element, parent, index)
+        constructor: function (parentSurface, element)
         {
             blocks.elements.LayoutElement.Super.call(this,
                 this.calculateTop(element),
@@ -70,8 +70,8 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 this.calculateRight(element));
 
             this.element = element;
-            this.parent = parent;
-            this.index = index;
+            this.parent = parentSurface;
+            this.index = parentSurface ? parentSurface.children.length : 0;
             this.children = [];
             this.resizeHandles = [];
             this.totalBlocks = null;
@@ -79,7 +79,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             this.overlay = null;
             this.isTemplate = false;
 
-            this._initChildren(this.element, 0);
+            //this._initChildren(this.element, 0);
         },
 
         //-----ABSTRACT METHODS-----
@@ -88,32 +88,11 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
          * @param parentEl The parent jQuery element on which we'll iterate it's children
          * @param index The index of this surface in it's parent
          */
-        _initChildren: function (parentEl, index)
-        {
-        },
+        // _initChildren: function (parentEl, index)
+        // {
+        // },
 
         //-----PUBLIC METHODS-----
-        // Easily walk the tree and find the block that contains the coordinates
-        findActiveElement: function (x, y, maxSearchLevel)
-        {
-            maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
-            var retVal = null;
-            if (this.isTriggered(x, y)) {
-                var i = 0;
-                if (maxSearchLevel != 0) {
-                    while (retVal == null && i < this.children.length) {
-                        retVal = this.children[i].findActiveElement(x, y, maxSearchLevel - 1);
-                        i++;
-                    }
-
-                }
-                if (retVal == null) {
-                    retVal = this;
-                }
-            }
-            return retVal;
-        },
-
         // Easily walk the tree and find the block that contains the coordinates
         findElements: function (minSearchLevel, maxSearchLevel)
         {
@@ -127,23 +106,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 }
             }
 
-            return retVal;
-        },
-
-
-        // find resizehandle that contains coordinates
-        findTriggeredResizeHandle: function (x, y)
-        {
-            var retVal = null;
-            if (this.isTriggered(x, y)) {
-                // find resizeHandles
-                var triggerCount = this.resizeHandles.length;
-                for (var i = 0; i < triggerCount; i++) {
-                    if (this.resizeHandles[i].isTriggered(x, y)) {
-                        return this.resizeHandles[i];
-                    }
-                }
-            }
             return retVal;
         },
         // returns true if this block has no sibling on his left/right/top/bottom
@@ -168,11 +130,14 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         {
             if (side == Constants.SIDE.TOP) {
                 return this.isOuterTop();
-            } else if (side == Constants.SIDE.BOTTOM) {
+            }
+            else if (side == Constants.SIDE.BOTTOM) {
                 return this.isOuterBottom();
-            } else if (side == Constants.SIDE.LEFT) {
+            }
+            else if (side == Constants.SIDE.LEFT) {
                 return this.isOuterLeft();
-            } else if (side == Constants.SIDE.RIGHT) {
+            }
+            else if (side == Constants.SIDE.RIGHT) {
                 return this.isOuterRight();
             }
         },
@@ -182,26 +147,34 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         {
             if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
                 return this.getPrevious();
-            } else {
+            }
+            else {
                 return this.getNext();
             }
         },
 
         getNext: function ()
         {
-            if (this.parent == null) return null;
+            if (this.parent == null) {
+                return null;
+            }
+
             if (this.index + 1 < this.parent.children.length) {
                 return this.parent.children[this.index + 1];
-            } else {
+            }
+            else {
                 return null;
             }
         },
         getPrevious: function ()
         {
-            if (this.parent == null) return null;
+            if (this.parent == null) {
+                return null;
+            }
             if (this.index - 1 >= 0) {
                 return this.parent.children[this.index - 1];
-            } else {
+            }
+            else {
                 return null;
             }
         },
@@ -210,6 +183,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         getFullWidth: function ()
         {
             var retVal = 0;
+
             if (this.parent != null) {
                 var outerleft = this;
                 var outerright = this;
@@ -221,9 +195,11 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 }
                 retVal = outerright.right - outerleft.left;
 
-            } else {
+            }
+            else {
                 retVal = this.right - this.left;
             }
+
             return retVal;
         },
 
@@ -267,6 +243,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             while (parent != null && !(parent instanceof blocks.elements.Container)) {
                 parent = parent.parent;
             }
+
             return parent;
         },
 
@@ -276,7 +253,9 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 this.overlay.css("width", (this.right - this.left) + "px");
                 this.overlay.css("height", (this.bottom - this.top) + "px");
 
-                if (this.overlay.parent().length > 0) this.overlay.remove();
+                if (this.overlay.parent().length > 0) {
+                    this.overlay.remove();
+                }
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
 
@@ -310,7 +289,9 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
 
         removeOverlay: function ()
         {
-            if (this.overlay != null) this.overlay.remove();
+            if (this.overlay != null){
+                this.overlay.remove();
+            }
         },
 
         calculateDropspots: function (side, dropspots)
@@ -323,6 +304,77 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Adds a new child surface to this parent.
+         * To be overloaded by subclasses for extra initializing.
+         *
+         * @param childSurface The surface to add to this parent
+         * @returns The child surface for chaining
+         * @protected
+         */
+        _addChild: function(childSurface)
+        {
+            this.children.push(childSurface);
+
+            //for chaining
+            return childSurface;
+        },
+        /**
+         * Adds a child to this vertical-oriented parent surface
+         * @param childSurface
+         * @protected
+         */
+        _addVerticalChild: function(childSurface)
+        {
+            childSurface.left = this.left;
+            childSurface.right = this.right;
+
+            if (childSurface.index == 0) {
+                childSurface.top = this.top;
+            }
+
+            // We should only sync the bounds of the last child,
+            // but every added child will be last, so we'll just sync now
+            // and revert the bounds of the previous one below
+            childSurface.bottom = this.bottom;
+            if (childSurface.index > 0) {
+                //revert the bottom of the previous one if we're not the first
+                var previousChild = this.children[childSurface.index - 1];
+                //revert the bottom of the previous child
+                previousChild.bottom = previousChild.realBottom;
+
+                //glue the two children together
+                var middle = Math.floor((previousChild.bottom + childSurface.top) / 2);
+                previousChild.bottom = middle;
+                childSurface.top = middle;
+            }
+        },
+        /**
+         * Adds a child to this horizontal-oriented parent surface
+         * @param childSurface
+         * @protected
+         */
+        _addHorizontalChild: function(childSurface)
+        {
+            childSurface.top = this.top;
+            childSurface.bottom = this.bottom;
+
+            if (childSurface.index == 0) {
+                childSurface.left = this.left;
+            }
+
+            //See comments above
+            childSurface.right = this.right;
+            if (childSurface.index > 0) {
+                //revert the bottom of the previous one if we're not the first
+                var previousChild = this.children[childSurface.index - 1];
+                previousChild.right = previousChild.realRight;
+
+                var middle = Math.floor((previousChild.right + childSurface.left) / 2);
+                previousChild.right = middle;
+                childSurface.left = middle;
+            }
+        },
         /**
          * Creates rows (if the flag is up) or blocks (if the flag is down) inside a parent (container or column)
          * and add them to the children array.
@@ -399,18 +451,13 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             var columns = this.element.children('[class*="col-"]');
 
             if (columns.length > 0) {
-                var rowWidth = 0;
-                for (var i = 0; i < columns.length; i++) {
-                    rowWidth += DOM.getColumnWidth($(columns[i]));
-                }
-
                 var oldColumn = null;
                 for (var i = 0; i < columns.length; i++) {
                     var col = $(columns[i]);
 
                     var newColumn = new blocks.elements.Column(col, this, i);
                     this.children.push(newColumn);
-                    
+
                     if (oldColumn != null) {
                         this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
                     }

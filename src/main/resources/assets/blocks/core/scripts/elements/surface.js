@@ -36,6 +36,16 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", function (Class)
         left: 0,
         right: 0,
 
+        // The values above don't necessarily represent
+        // the real bounds of this surface because we sometimes
+        // sync them with the bounds of their parents for a more natural
+        // look. The values below hold the original bounds
+        // that were used during construction.
+        realTop: 0,
+        realBottom: 0,
+        realLeft: 0,
+        realRight: 0,
+
         //-----CONSTRUCTORS-----
         /**
          * @param top the upper coordinate of this surface, relative to the document
@@ -62,6 +72,11 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", function (Class)
                 this.left = right;
                 this.right = left;
             }
+
+            this.realTop = this.top;
+            this.realBottom = this.bottom;
+            this.realLeft = this.left;
+            this.realRight = this.right;
         },
 
         //-----PUBLIC METHODS-----

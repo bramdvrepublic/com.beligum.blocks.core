@@ -35,12 +35,12 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (element, parent, index)
+        constructor: function (parentSurface, element)
         {
-            blocks.elements.Column.Super.call(this, element, parent, index);
+            blocks.elements.Column.Super.call(this, parentSurface, element);
 
             //this will find and create the blocks in this column
-            this._generateVerticalChildren(false);
+            //this._generateVerticalChildren(false);
         },
 
         //-----PUBLIC METHODS-----
@@ -58,9 +58,11 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         {
             if (side == Constants.SIDE.LEFT) {
                 return this.getPrevious();
-            } else if (side == Constants.SIDE.RIGHT) {
+            }
+            else if (side == Constants.SIDE.RIGHT) {
                 return this.getNext();
-            } else {
+            }
+            else {
                 return null;
             }
         },
@@ -76,10 +78,34 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
             if (this.isOuter(side) && this.parent != null) {
                 dropspots = this.parent.calculateDropspots(side, dropspots);
             }
+
             return dropspots;
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Add a block to this column
+         * @param blockSurface
+         * @private
+         * @override
+         */
+        _addChild: function (blockSurface)
+        {
+            blocks.elements.Column.Super.prototype._addChild.call(this, blockSurface);
 
+            this._addVerticalChild(blockSurface);
+
+            //TODO review this
+            //these two classes will remove the borders left and top so we don't
+            //have double borders when two blocks are next to each other
+            if (this.index > 0) {
+                blockSurface.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
+            }
+            if (blockSurface.index > 0 || this.parent.index > 0) {
+                blockSurface.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
+            }
+
+            return blockSurface;
+        }
     });
 }]);

@@ -34,9 +34,9 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (element, parent)
+        constructor: function (parentSurface, element)
         {
-            blocks.elements.Container.Super.call(this, element, parent, 0);
+            blocks.elements.Container.Super.call(this, parentSurface, element);
 
             //I guess this is here to allow for multiple levels down (old style of editing)
             if (this.parent != null && this.parent instanceof blocks.elements.Block) {
@@ -47,10 +47,10 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
             }
 
             //this will find and create the rows in this container
-            this._generateVerticalChildren(true);
+            //this._generateVerticalChildren(true);
 
             //iterate the rows and build their children
-            this._fillVerticalChildren();
+            //this._fillVerticalChildren();
         },
 
         //-----PUBLIC METHODS-----
@@ -69,10 +69,23 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         getContainer: function ()
         {
             return this;
-        }
+        },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Add a row to this container
+         * @param rowSurface
+         * @private
+         * @override
+         */
+        _addChild: function(rowSurface)
+        {
+            blocks.elements.Container.Super.prototype._addChild.call(this, rowSurface);
 
+            this._addVerticalChild(rowSurface);
+
+            return rowSurface;
+        }
     });
 
 }]);

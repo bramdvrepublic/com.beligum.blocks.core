@@ -37,42 +37,86 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            blocks.elements.Page.Super.call(this, $("." + Constants.PAGE_CONTENT_CLASS), null, 0);
+            blocks.elements.Page.Super.call(this, null, $("." + Constants.PAGE_CONTENT_CLASS));
+
+            //this will recursively trigger the entire sub-model
+            this._buildPageModel(this, this.element.children());
         },
 
         //-----IMPLEMENTED METHODS-----
-        _initChildren: function (parentEl, index)
+        // _initChildren: function (parentEl, index)
+        // {
+        //     //Note: this will only iterate all immediate children
+        //     //and recurse down (see below)
+        //     var children = parentEl.children();
+        //
+        //     for (var i = 0; i < children.length; i++) {
+        //         var child = $(children[i]);
+        //         //if we hit the main layout tag, find it's container
+        //         //TODO: we should change this to the data-property of the blocks-layout
+        //         if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
+        //             //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
+        //             var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
+        //             if (containerEls.length > 1) {
+        //                 Logger.warn('Encountered multiple container tags, only using first, please check this');
+        //             }
+        //
+        //             this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
+        //             index++;
+        //         }
+        //         else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
+        //             this.children.push(new blocks.elements.Property(child, this, index));
+        //             index++;
+        //         }
+        //         else if (child[0].tagName.indexOf("-") > 0) {
+        //             this.children.push(new blocks.elements.Block(child, this, index, false));
+        //             index++;
+        //         }
+        //         //recurse if the child has children of its own and is not one of the above
+        //         else if (child.children.length > 0) {
+        //             this._initChildren(child, index);
+        //         }
+        //     }
+        // },
+        /**
+         * Note: passing down a specific element (instead of using surface.element), allows us to
+         * iterate further down in the same surface context, trying to find deeper sub-children to
+         * connect to that parent surface context.
+         */
+        _buildPageModel: function (contextSurface, childElements)
         {
-            //Note: this will only iterate all immediate children
-            //and recurse down (see below)
-            var children = parentEl.children();
+            for (var i = 0; i < childElements.length; i++) {
 
-            for (var i = 0; i < children.length; i++) {
-                var child = $(children[i]);
-                //if we hit the main layout tag, find it's container
-                //TODO: we should change this to the data-property of the blocks-layout
-                if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
-                    //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
-                    var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
-                    if (containerEls.length > 1) {
-                        Logger.warn('Encountered multiple container tags, only using first, please check this');
-                    }
+                var child = $(childElements[i]);
 
-                    this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
-                    index++;
+                //this will hold the 'parent' surface in which we're creating children
+                var currentContextSurface = contextSurface;
+
+                if (contextSurface instanceof blocks.elements.Page && child.hasClass('container')) {
+                    Logger.info('container in page', child[0].outerHTML.split(child.html())[0]);
+                    currentContextSurface = contextSurface._addChild(new blocks.elements.Container(contextSurface, child));
                 }
-                else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
-                    this.children.push(new blocks.elements.Property(child, this, index));
-                    index++;
+                else if (contextSurface instanceof blocks.elements.Container && child.hasClass('row')) {
+                    Logger.info('row in container', child[0].outerHTML.split(child.html())[0]);
+                    currentContextSurface = contextSurface._addChild(new blocks.elements.Row(contextSurface, child));
                 }
-                else if (child[0].tagName.indexOf("-") > 0) {
-                    this.children.push(new blocks.elements.Block(child, this, index, false));
-                    index++;
+                else if (contextSurface instanceof blocks.elements.Row && child.is('[class*="col-"]')) {
+                    Logger.info('column in row', child[0].outerHTML.split(child.html())[0]);
+                    currentContextSurface = contextSurface._addChild(new blocks.elements.Column(contextSurface, child));
                 }
-                //recurse if the child has children of its own
-                else if (child.children.length > 0) {
-                    this._initChildren(child, index);
+                else if (contextSurface instanceof blocks.elements.Column && child[0].tagName.indexOf("-") > 0) {
+                    Logger.info('block in column', child[0].outerHTML.split(child.html())[0]);
+                    currentContextSurface = contextSurface._addChild(new blocks.elements.Block(contextSurface, child, true));
                 }
+                else if (contextSurface instanceof blocks.elements.Block && (child.hasAttribute("property") || child.hasAttribute("data-property"))) {
+                    Logger.info('property in block', child[0].outerHTML.split(child.html())[0]);
+                    currentContextSurface = contextSurface._addChild(new blocks.elements.Property(contextSurface, child));
+                }
+
+                //note: this means:
+                // - we iterate depth-first
+                // - we allow grandchildren to be part of the same context (eg. we support in-between divs)
+                this._buildPageModel(currentContextSurface, child.children());
             }
         },
 
@@ -88,8 +132,19 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
                 }
             }
             return retVal;
-        }
+        },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Add a container to this page
+         * @param containerSurface
+         * @private
+         * @override
+         */
+        _addChild: function(containerSurface)
+        {
+            return blocks.elements.Page.Super.prototype._addChild.call(this, containerSurface);
+        }
+
     });
 }]);

@@ -41,11 +41,11 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (element, parent, index)
+        constructor: function (parentSurface, element)
         {
-            blocks.elements.Property.Super.call(this, element, parent, index);
+            blocks.elements.Property.Super.call(this, parentSurface, element);
 
-            if (this.element.siblings().length == 0 && this.element.parent == parent.element) {
+            if (this.element.siblings().length == 0 && this.element.parent == parentSurface.element) {
                 this.left = this.parent.left;
                 this.right = this.parent.right;
                 this.top = this.parent.top;
@@ -73,19 +73,20 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             // Remove sides of layout lines to prevent overlap
             var block = this.parent.parent;
             if (!(this instanceof blocks.elements.Block) && block != null && block.overlay != null) {
-                if (this.isNear(block.left, this.left)) {
+                if (this._isNear(block.left, this.left)) {
                     this.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
                 }
-                if (this.isNear(block.top, this.top)) {
+                if (this._isNear(block.top, this.top)) {
                     this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
                 }
-                if (this.isNear(block.right, this.right)) {
+                if (this._isNear(block.right, this.right)) {
                     this.overlay.addClass(blocks.elements.LayoutElement.RIGHT_CLASS);
                 }
-                if (this.isNear(block.bottom, this.bottom)) {
+                if (this._isNear(block.bottom, this.bottom)) {
                     this.overlay.addClass(blocks.elements.LayoutElement.BOTTOM_CLASS);
                 }
-            } else if (this instanceof blocks.elements.Block) {
+            }
+            else if (this instanceof blocks.elements.Block) {
                 if (this.index == 0 && this.parent.parent.index == 0 && this.getContainer().parent != null && this.getContainer().parent.index > 0) {
                     this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
                 }
@@ -93,19 +94,10 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
         },
 
         //-----PUBLIC METHODS-----
-        isNear: function (one, two)
-        {
-            var retVal = false;
-            var THRESHOLD = 1;
-            if (Math.abs(one - two) <= THRESHOLD) {
-                retVal = true;
-            }
-            return retVal;
-        },
-
         // Easily walk the tree and find the block that contains the coordinates
         findElements: function (minSearchLevel, maxSearchLevel)
         {
+            //TODO this looks a lot like layout.findElements()...
             minSearchLevel = minSearchLevel == null ? 0 : minSearchLevel;
             maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
             var retVal = [];
@@ -126,16 +118,12 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
 
         isOuterTop: function ()
         {
-            retVal = this.element.prev().length == 0;
-
-            return retVal;
+            return this.element.prev().length == 0;
         },
 
         isOuterBottom: function ()
         {
-            retVal = this.element.next().length == 0;
-
-            return retVal;
+            return this.element.next().length == 0;
         },
 
         getElementAtSide: function (side)
@@ -143,49 +131,62 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
             if (DOM.isColumn(this.element)) {
                 if (side == BaseConstantsInternal.SIDE.LEFT) {
                     return this.getPrevious();
-                } else if (side == BaseConstantsInternal.SIDE.RIGHT) {
+                }
+                else if (side == BaseConstantsInternal.SIDE.RIGHT) {
                     return this.getNext();
-                } else {
+                }
+                else {
                     return null;
                 }
-            } else if (side == BaseConstantsInternal.SIDE.TOP) {
+            }
+            else if (side == BaseConstantsInternal.SIDE.TOP) {
                 return this.getPrevious();
-            } else if (side == BaseConstantsInternal.SIDE.BOTTOM) {
+            }
+            else if (side == BaseConstantsInternal.SIDE.BOTTOM) {
                 return this.getNext();
-            } else {
+            }
+            else {
                 return null;
             }
         },
 
-        //TODO refactor this (same code as in page.js)
-        _initChildren: function (parent, index)
-        {
-            var children = parent.children();
-
-            for (var i = 0; i < children.length; i++) {
-                var child = $(children[i]);
-
-                if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
-                    //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
-                    var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
-                    if (containerEls.length > 1) {
-                        Logger.warn('Encountered multiple container tags, only using first, please check this');
-                    }
-
-                    this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
-                    index++;
-                }
-                else if (child[0].tagName.indexOf("-") > 0) {
-                    this.children.push(new blocks.elements.Block(child, this, index, false));
-                    index++;
-                }
-                else if (child.children.length > 0) {
-                    this._initChildren(child, index);
-                }
-            }
-        }
-
         //-----PRIVATE METHODS-----
+        // //TODO refactor this (same code as in page.js)
+        // _initChildren: function (parent, index)
+        // {
+        //     var children = parent.children();
+        //
+        //     for (var i = 0; i < children.length; i++) {
+        //         var child = $(children[i]);
+        //
+        //         if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
+        //             //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
+        //             var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
+        //             if (containerEls.length > 1) {
+        //                 Logger.warn('Encountered multiple container tags, only using first, please check this');
+        //             }
+        //
+        //             this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
+        //             index++;
+        //         }
+        //         else if (child[0].tagName.indexOf("-") > 0) {
+        //             this.children.push(new blocks.elements.Block(child, this, index, false));
+        //             index++;
+        //         }
+        //         else if (child.children.length > 0) {
+        //             this._initChildren(child, index);
+        //         }
+        //     }
+        // },
+        _isNear: function (one, two)
+        {
+            var retVal = false;
+            var THRESHOLD = 1;
+            if (Math.abs(one - two) <= THRESHOLD) {
+                retVal = true;
+            }
+            return retVal;
+        },
 
     });
 

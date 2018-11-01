@@ -34,15 +34,15 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (element, parent, index)
+        constructor: function (parentSurface, element)
         {
-            blocks.elements.Row.Super.call(this, element, parent, index);
+            blocks.elements.Row.Super.call(this, parentSurface, element);
 
             // we need this to show the resizeHandles
             this.canDrag = true;
 
             //this will find and create the columns in this row
-            this._generateHorizontalChildren();
+            //this._generateHorizontalChildren();
         },
 
         //-----PUBLIC METHODS-----
@@ -60,9 +60,11 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         {
             if (side == Constants.SIDE.TOP) {
                 return this.getPrevious();
-            } else if (side == Constants.SIDE.BOTTOM) {
+            }
+            else if (side == Constants.SIDE.BOTTOM) {
                 return this.getNext();
-            } else {
+            }
+            else {
                 return null;
             }
         },
@@ -82,6 +84,7 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
 
         findElements: function (minSearchLevel, maxSearchLevel)
         {
+            //TODO this looks a lot like layout.findElements()...
             minSearchLevel = minSearchLevel == null ? 0 : minSearchLevel;
             maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
             var retVal = [];
@@ -115,7 +118,20 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Add a column to this row
+         * @param columnSurface
+         * @private
+         * @override
+         */
+        _addChild: function(columnSurface)
+        {
+            blocks.elements.Row.Super.prototype._addChild.call(this, columnSurface);
 
+            this._addHorizontalChild(columnSurface);
+
+            return columnSurface;
+        }
     });
 
 }]);

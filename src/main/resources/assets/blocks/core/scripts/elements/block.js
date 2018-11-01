@@ -34,9 +34,9 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (element, parent, index, canDrag)
+        constructor: function (parentSurface, element, canDrag)
         {
-            blocks.elements.Block.Super.call(this, element, parent, index);
+            blocks.elements.Block.Super.call(this, parentSurface, element);
 
             // if a block is editable does not depend on the parent
             var prev = element.prev();
@@ -72,10 +72,6 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         {
             this.horizontalDropspots = [];
             this.verticalDropspots = [];
-//                this.generateTriggersForSide(Constants.SIDE.TOP);
-//                this.generateTriggersForSide(Constants.SIDE.BOTTOM);
-//                this.generateTriggersForSide(Constants.SIDE.LEFT);
-//                this.generateTriggersForSide(Constants.SIDE.RIGHT);
 
             var i = 0;
             for (i = this.dropspots[Constants.SIDE.TOP].length - 1; i >= 0; i--) {
@@ -123,6 +119,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
                     }
                 }
             }
+
             return null;
         },
 
@@ -135,11 +132,14 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
 
                 if (direction == Constants.DIRECTION.UP) {
                     newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
-                } else if (direction == Constants.DIRECTION.DOWN) {
+                }
+                else if (direction == Constants.DIRECTION.DOWN) {
                     newDropspot = this.verticalDropspots[0];
-                } else if (direction == Constants.DIRECTION.LEFT) {
+                }
+                else if (direction == Constants.DIRECTION.LEFT) {
                     newDropspot = this.horizontalDropspots[this.horizontalDropspots.length - 1];
-                } else if (direction == Constants.DIRECTION.RIGHT) {
+                }
+                else if (direction == Constants.DIRECTION.RIGHT) {
                     newDropspot = this.horizontalDropspots[0];
                 }
 
@@ -154,22 +154,34 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         {
             if (side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) {
                 dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-            } else if (this.element.siblings().length > 0) {
+            }
+            else if (this.element.siblings().length > 0) {
                 dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
             }
 
-            if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
+            if (this.isOuter(side) && this.parent != null) {
+                dropspots = this.parent.calculateDropspots(side, dropspots);
+            }
+
             return dropspots;
         },
 
         getTotalBlocks: function ()
         {
-            var c = this.getContainer();
-            return c.getBlocks();
-        }
+            return this.getContainer().getBlocks();
+        },
 
         //-----PRIVATE METHODS-----
-
+        /**
+         * Add a property to this block
+         * @param propertySurface
+         * @private
+         * @override
+         */
+        _addChild: function(propertySurface)
+        {
+            return blocks.elements.Block.Super.prototype._addChild.call(this, propertySurface);
+        }
     });
 
 }]);
