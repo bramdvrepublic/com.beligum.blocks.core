@@ -40,6 +40,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             RIGHT_CLASS: 'right',
             TOP_CLASS: 'top',
             BOTTOM_CLASS: 'bottom',
+
+            ORIENTATION_NONE: 0,
+            ORIENTATION_HORIZONTAL: 1,
+            ORIENTATION_VERTICAL: 2,
         },
 
         //-----CONSTANTS-----
@@ -289,7 +293,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
 
         removeOverlay: function ()
         {
-            if (this.overlay != null){
+            if (this.overlay != null) {
                 this.overlay.remove();
             }
         },
@@ -304,6 +308,57 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         },
 
         //-----PRIVATE METHODS-----
+        _buildSubmodel: function ()
+        {
+            //Optimization: no need to search for sub-children if we can't have them
+            if (this._canHaveChildren()) {
+
+                //if a specific element is supplied, use that one
+                this._findChildren(this.element);
+
+                // Now iterate the layouted children again
+                // to build their sub-models
+                for (var i = 0; i < this.children.length; i++) {
+                    //Note how we switch context to the child surface
+                    this.children[i]._buildSubmodel();
+                }
+            }
+        },
+        _findChildren: function (parentElement)
+        {
+            var childElements = parentElement.children();
+
+            // Main idea is to iterate width-first instead of depth-first,
+            // because low-level surfaces depend on their parents to be
+            // layouted correctly, before building the sub-model
+            for (var i = 0; i < childElements.length; i++) {
+
+                var childElement = $(childElements[i]);
+
+                //Note: if we find an acceptable child, we stop recursion,
+                //because we iterate width-first
+                if (this._isAcceptableChild(childElement)) {
+                    this.children.push(this._layoutChild(this._newChildInstance(childElement)));
+                }
+                // This recursion allows grandchildren to be part of
+                // the same context (eg. we support in-between divs)
+                else {
+                    this._findChildren(childElement);
+                }
+            }
+        },
+        _newChildInstance: function (element)
+        {
+            return null;
+        },
+        _canHaveChildren: function ()
+        {
+            return true;
+        },
+        _isAcceptableChild: function (element)
+        {
+            return false;
+        },
         /**
          * Adds a new child surface to this parent.
          * To be overloaded by subclasses for extra initializing.
@@ -312,19 +367,37 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
          * @returns The child surface for chaining
          * @protected
          */
-        _addChild: function(childSurface)
+        _layoutChild: function (childSurface)
         {
-            this.children.push(childSurface);
+            switch (this._getChildOrientation()) {
+                case blocks.elements.LayoutElement.ORIENTATION_VERTICAL:
+                    this._layoutVerticalChild(childSurface);
+                    break;
+                case blocks.elements.LayoutElement.ORIENTATION_HORIZONTAL:
+                    this._layoutHorizontalChild(childSurface);
+                    break;
+            }
 
             //for chaining
             return childSurface;
+        },
+        /**
+         * Returns whether this children in this surface are layouted horizontally
+         * or vertically or no specific orientation is known beforehand.
+         *
+         * @returns {number}
+         * @private
+         */
+        _getChildOrientation: function ()
+        {
+            return blocks.elements.LayoutElement.ORIENTATION_NONE;
         },
         /**
          * Adds a child to this vertical-oriented parent surface
          * @param childSurface
          * @protected
          */
-        _addVerticalChild: function(childSurface)
+        _layoutVerticalChild: function (childSurface)
         {
             childSurface.left = this.left;
             childSurface.right = this.right;
@@ -354,7 +427,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
          * @param childSurface
          * @protected
          */
-        _addHorizontalChild: function(childSurface)
+        _layoutHorizontalChild: function (childSurface)
         {
             childSurface.top = this.top;
             childSurface.bottom = this.bottom;

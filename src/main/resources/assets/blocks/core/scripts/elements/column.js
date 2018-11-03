@@ -83,17 +83,23 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PRIVATE METHODS-----
+        _newChildInstance: function(element)
+        {
+            return new blocks.elements.Block(this, element, true);
+        },
+        _isAcceptableChild: function(element)
+        {
+            return element[0].tagName.indexOf("-") > 0;
+        },
         /**
          * Add a block to this column
          * @param blockSurface
          * @private
          * @override
          */
-        _addChild: function (blockSurface)
+        _layoutChild: function (blockSurface)
         {
-            blocks.elements.Column.Super.prototype._addChild.call(this, blockSurface);
-
-            this._addVerticalChild(blockSurface);
+            blocks.elements.Column.Super.prototype._layoutChild.call(this, blockSurface);
 
             //TODO review this
             //these two classes will remove the borders left and top so we don't
@@ -106,6 +112,10 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
             }
 
             return blockSurface;
-        }
+        },
+        _getChildOrientation: function()
+        {
+            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+        },
     });
 }]);

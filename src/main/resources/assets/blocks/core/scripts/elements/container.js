@@ -72,20 +72,18 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         },
 
         //-----PRIVATE METHODS-----
-        /**
-         * Add a row to this container
-         * @param rowSurface
-         * @private
-         * @override
-         */
-        _addChild: function(rowSurface)
+        _newChildInstance: function(element)
         {
-            blocks.elements.Container.Super.prototype._addChild.call(this, rowSurface);
-
-            this._addVerticalChild(rowSurface);
-
-            return rowSurface;
-        }
+            return new blocks.elements.Row(this, element);
+        },
+        _isAcceptableChild: function(element)
+        {
+            return element.hasClass('row');
+        },
+        _getChildOrientation: function()
+        {
+            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+        },
     });
 
 }]);

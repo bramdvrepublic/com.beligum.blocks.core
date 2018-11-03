@@ -118,20 +118,18 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
 
         //-----PRIVATE METHODS-----
-        /**
-         * Add a column to this row
-         * @param columnSurface
-         * @private
-         * @override
-         */
-        _addChild: function(columnSurface)
+        _newChildInstance: function(element)
         {
-            blocks.elements.Row.Super.prototype._addChild.call(this, columnSurface);
-
-            this._addHorizontalChild(columnSurface);
-
-            return columnSurface;
-        }
+            return new blocks.elements.Column(this, element);
+        },
+        _isAcceptableChild: function(element)
+        {
+            return element.is('[class*="col-"]');
+        },
+        _getChildOrientation: function()
+        {
+            return blocks.elements.LayoutElement.ORIENTATION_HORIZONTAL;
+        },
     });
 
 }]);

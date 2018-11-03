@@ -178,6 +178,14 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
         //         }
         //     }
         // },
+        _canHaveChildren: function ()
+        {
+            return false;
+        },
+        _isAcceptableChild: function(element)
+        {
+            return false;
+        },
         _isNear: function (one, two)
         {
             var retVal = false;

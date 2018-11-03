@@ -172,16 +172,18 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         },
 
         //-----PRIVATE METHODS-----
-        /**
-         * Add a property to this block
-         * @param propertySurface
-         * @private
-         * @override
-         */
-        _addChild: function(propertySurface)
+        _newChildInstance: function(element)
         {
-            return blocks.elements.Block.Super.prototype._addChild.call(this, propertySurface);
-        }
+            return new blocks.elements.Property(this, element);
+        },
+        _canHaveChildren: function ()
+        {
+            return true;
+        },
+        _isAcceptableChild: function(element)
+        {
+            return element.hasAttribute("property") || element.hasAttribute("data-property");
+        },
     });
 
 }]);
