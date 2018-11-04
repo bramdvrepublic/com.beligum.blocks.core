@@ -223,8 +223,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //re-add the button (but with a changed icon)
                 $("body").append(menuStartButton);
 
+                //allow the sidebar to be resized
                 enableSidebarDrag();
 
+                // should we warn the user if she navigates away (possibly without saving)?
                 if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
                     window.onbeforeunload = function(e) {
                         // Cancel the event as stated by the standard.
@@ -253,9 +255,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             menuStartButton.hide().removeClass("open");
             Sidebar.animateSidebarWidth(CLOSE_SIDEBAR_WIDTH, function (event)
             {
+                //don't allow the sidebar to be resized
                 disableSidebarDrag();
                 menuStartButton.show();
 
+                //disable navigate-away warning
                 if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
                     window.onbeforeunload = undefined;
                 }
@@ -365,7 +369,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         $(CONTAINERS_SELECTOR).css("width", "");
     };
 
-    // On Window resize
+    // On window resize (smart means the events are debounced, see dom.js)
     var sidebarWidth = sidebarElement.outerWidth();
     var resizing = false;
     $(window).smartresize(function (event)

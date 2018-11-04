@@ -105,6 +105,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var variance = 0;
     var prevTime = new Date().getTime();
 
+    var DEBUG = true;
+
     this.resetMouse = function ()
     {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
@@ -183,13 +185,17 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.right, block.top)) {
             return BaseConstantsInternal.DIRECTION.UP;
-        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
+        }
+        else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
             return BaseConstantsInternal.DIRECTION.DOWN;
-        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.left, block.bottom)) {
+        }
+        else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.left, block.bottom)) {
             return BaseConstantsInternal.DIRECTION.LEFT;
-        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.right, block.top, block.right, block.bottom)) {
+        }
+        else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.right, block.top, block.right, block.bottom)) {
             return BaseConstantsInternal.DIRECTION.RIGHT;
-        } else {
+        }
+        else {
             return BaseConstantsInternal.DIRECTION.NONE;
         }
     };
@@ -208,6 +214,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             if (event.which == 1) {
 
                 var creatingNew = false;
+
+                if (DEBUG) {
+                    $('body').append('<canvas id="canvas1" style="position: absolute; top: 0; left: 0;" width="' + $('body').width() + '" height="' + $('body').height() + '" />');
+                }
 
                 // this variable will more or less controls if we're dragging a new block or not,
                 // so make sure it's null when we're dragging the new-block button
@@ -282,6 +292,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var mouseUp = function (event)
     {
         if (active && event.which == 1) {
+
+            if (DEBUG) {
+                $('#canvas1').remove();
+            }
+
             if (draggingStatus != BaseConstantsInternal.DRAGGING.NOT_ALLOWED) {
 
                 //the low level html element we clicked on
@@ -419,7 +434,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             directionVector.y2 = directionVector.y1 - sin;
         }
         //Logger.debug(directionVector.x1 + ", "+directionVector.y1+ " - " +directionVector.x2 +", "+ directionVector.y2);
-        var angle = direction * (180 / Math.PI);
+        //var angle = direction * (180 / Math.PI);
         //Logger.debug("Angle: " + (angle).toFixed(0) + "° - variance: " + (variance).toFixed(0));
 
         return direction;
@@ -443,6 +458,27 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         index = (index + 1) % limit;
         prevX = curX;
         prevY = curY;
+
+        if (DEBUG) {
+            var speed = false;
+            var multiplier = speed ? (2 * speed) : 100;
+            var cos = (Math.cos(direction) * multiplier);
+            var sin = (Math.sin(direction) * multiplier);
+            var x2 = curX - cos;
+            var y2 = curY - sin;
+
+            Logger.info('(' + curX + ',' + curY + ')');
+            Logger.info('(' + x2 + ',' + y2 + ')');
+            var canvas = document.getElementById("canvas1");
+            var ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.moveTo(curX, curY);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#ff0000';
+            ctx.stroke();
+        }
     };
 
     var sum = function (array)

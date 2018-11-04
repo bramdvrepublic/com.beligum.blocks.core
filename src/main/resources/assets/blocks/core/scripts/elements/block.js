@@ -34,7 +34,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function (parentSurface, element, canDrag)
+        constructor: function (parentSurface, element)
         {
             blocks.elements.Block.Super.call(this, parentSurface, element);
 
@@ -42,14 +42,14 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
             var prev = element.prev();
             var next = element.next();
             if (prev.length > 0) {
-                this.top -= Math.floor((this.calculateBottom(prev) - this.top) / 2);
+                this.top -= Math.floor((this._calculateBottom(prev) - this.top) / 2);
                 this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
             }
             if (next.length > 0) {
-                this.bottom += Math.floor((this.calculateTop(next) - this.bottom) / 2);
+                this.bottom += Math.floor((this._calculateTop(next) - this.bottom) / 2);
             }
 
-            this.canDrag = canDrag;
+            this.canDrag = true;
             this.overlay.addClass(BlocksConstants.BLOCK_DRAGGABLE_CLASS);
             this.dropspots = {};
         },

@@ -51,10 +51,10 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
         //-----PUBLIC METHODS-----
         update: function ()
         {
-            var left = Math.floor((this.calculateLeft(this.rightColumn.element) + this.calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
+            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
             this.overlay.css("left", left);
             var siblings = this.leftColumn.parent.resizeHandles;
-            var height = this.calculateBottom(this.leftColumn.parent.element) - this.calculateTop(this.leftColumn.parent.element);
+            var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
             for (var i = 0; i < siblings.length; i++) {
                 siblings[i].overlay.css("height", height);
             }

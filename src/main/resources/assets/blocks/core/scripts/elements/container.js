@@ -45,12 +45,6 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
                 this.top = this.parent.top;
                 this.bottom = this.parent.bottom;
             }
-
-            //this will find and create the rows in this container
-            //this._generateVerticalChildren(true);
-
-            //iterate the rows and build their children
-            //this._fillVerticalChildren();
         },
 
         //-----PUBLIC METHODS-----

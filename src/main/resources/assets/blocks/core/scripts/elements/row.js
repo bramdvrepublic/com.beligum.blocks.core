@@ -40,9 +40,6 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
 
             // we need this to show the resizeHandles
             this.canDrag = true;
-
-            //this will find and create the columns in this row
-            //this._generateHorizontalChildren();
         },
 
         //-----PUBLIC METHODS-----
@@ -129,6 +126,16 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         _getChildOrientation: function()
         {
             return blocks.elements.LayoutElement.ORIENTATION_HORIZONTAL;
+        },
+        _layoutChild: function (childSurface)
+        {
+            blocks.elements.Row.Super.prototype._layoutChild.call(this, childSurface);
+
+            if (childSurface.index > 0) {
+                this.resizeHandles.push(new blocks.elements.ResizeHandle(this.children[childSurface.index - 1], childSurface));
+            }
+
+            return childSurface;
         },
     });
 

@@ -38,9 +38,9 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", function (Class)
 
         // The values above don't necessarily represent
         // the real bounds of this surface because we sometimes
-        // sync them with the bounds of their parents for a more natural
-        // look. The values below hold the original bounds
-        // that were used during construction.
+        // sync them with the bounds of their parents for a more intuitive
+        // look and feel. The values below hold the original bounds
+        // that were used during construction, so we can reset the ones above.
         realTop: 0,
         realBottom: 0,
         realLeft: 0,
@@ -80,42 +80,42 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", function (Class)
         },
 
         //-----PUBLIC METHODS-----
-
-        //-----PRIVATE METHODS-----
-        /**
-         * Calculates the top value for the constructor of the supplied element
-         */
-        calculateTop: function (element)
-        {
-            return element.offset().top
-        },
-        /**
-         * Calculates the bottom value for the constructor of the supplied element
-         */
-        calculateBottom: function (element)
-        {
-            return element.offset().top + element.outerHeight();
-        },
-        /**
-         * Calculates the left value for the constructor of the supplied element
-         */
-        calculateLeft: function (element)
-        {
-            return element.offset().left
-        },
-        /**
-         * Calculates the right value for the constructor of the supplied element
-         */
-        calculateRight: function (element)
-        {
-            return element.offset().left + element.outerWidth()
-        },
         /**
          * Returns true of the supplied coordinate is inside this surface, it's bounds included
          */
         isTriggered: function (x, y)
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
+        },
+
+        //-----PRIVATE METHODS-----
+        /**
+         * Calculates the top value for the constructor of the supplied element
+         */
+        _calculateTop: function (element)
+        {
+            return element.offset().top
+        },
+        /**
+         * Calculates the bottom value for the constructor of the supplied element
+         */
+        _calculateBottom: function (element)
+        {
+            return element.offset().top + element.outerHeight();
+        },
+        /**
+         * Calculates the left value for the constructor of the supplied element
+         */
+        _calculateLeft: function (element)
+        {
+            return element.offset().left
+        },
+        /**
+         * Calculates the right value for the constructor of the supplied element
+         */
+        _calculateRight: function (element)
+        {
+            return element.offset().left + element.outerWidth()
         },
     });
 

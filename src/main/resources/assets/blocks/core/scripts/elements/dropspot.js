@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-/*
+/**
  * Special element that indicates a trigger where a block could be dropped
  * on an other block. the dropspot is located on a SIDE of the block and the
  * MIN and MAX value that defines the area on that side
- * e.g. side = TOP and min =0 and max= 10 then this dropspot will be triggered with an
+ * e.g. side=TOP and min=0 and max=10 then this dropspot will be triggered with an
  * y coordinate of 6
  *
  * Created by wouter on 9/03/15.
  */
 base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
+    //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    //----CLASSES-----
     blocks.elements.Dropspot = Class.create({
 
+        //-----STATICS-----
+
+        //-----CONSTANTS-----
+
+        //-----VARIABLES-----
+
+        //-----CONSTRUCTORS-----
         constructor: function (side, anchor, index)
         {
             this.block = null;
@@ -38,27 +48,32 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base
             this.other = this.setOther();
             this.min = 0;
             this.max = 0;
+
             if (this.anchor.element.hasClass("column") && this.other != null) {
                 Logger.debug(this);
             }
         },
 
+        //-----PUBLIC METHODS-----
         setOther: function ()
         {
             var retVal = null;
+
             if (this.anchor != null) {
                 retVal = this.anchor.getElementAtSide(this.side);
             }
+
             return retVal;
         },
-
         makeTriggers: function (x, y, direction)
         {
             var BORDER_THRESHOLD = 15;
+
             if (this.side != direction && this.side != Constants.OPPOSITE_DIRECTION[direction]) {
                 Logger.debug("exit because droploc not on this side " + direction);
                 return false;
             }
+
             var left = 0;
             var right = 0;
             var current = 0;
@@ -148,7 +163,10 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base
                 retVal = true;
             }
             return retVal;
-        }
+        },
+
+        //-----PRIVATE METHODS-----
+
     });
 
 }]);

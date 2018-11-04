@@ -44,42 +44,6 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             this._buildSubmodel();
         },
 
-        //-----IMPLEMENTED METHODS-----
-        // _initChildren: function (parentEl, index)
-        // {
-        //     //Note: this will only iterate all immediate children
-        //     //and recurse down (see below)
-        //     var children = parentEl.children();
-        //
-        //     for (var i = 0; i < children.length; i++) {
-        //         var child = $(children[i]);
-        //         //if we hit the main layout tag, find it's container
-        //         //TODO: we should change this to the data-property of the blocks-layout
-        //         if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
-        //             //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
-        //             var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
-        //             if (containerEls.length > 1) {
-        //                 Logger.warn('Encountered multiple container tags, only using first, please check this');
-        //             }
-        //
-        //             this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
-        //             index++;
-        //         }
-        //         else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
-        //             this.children.push(new blocks.elements.Property(child, this, index));
-        //             index++;
-        //         }
-        //         else if (child[0].tagName.indexOf("-") > 0) {
-        //             this.children.push(new blocks.elements.Block(child, this, index, false));
-        //             index++;
-        //         }
-        //         //recurse if the child has children of its own and is not one of the above
-        //         else if (child.children.length > 0) {
-        //             this._initChildren(child, index);
-        //         }
-        //     }
-        // },
-
         //-----PUBLIC METHODS-----
         getLayoutContainer: function ()
         {

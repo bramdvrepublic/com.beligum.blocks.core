@@ -47,11 +47,16 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
     {
+        //start listening for mousedown, mouseup, mouseleave
         Mouse.activate();
+        //collapse selection, prevent text selection, disable ondragstart
         DOM.disableTextSelection();
+        //show surfaces
         Hover.showHoverOverlays();
+        //enable dragging
         DragDrop.setActive(true);
 
+        //fire up drag-and-drop subsystem if we have enough room
         var windowWidth = $(window).width();
         var MIN_SCREEN_DND_THRESHOLD = 1030;
         if (windowWidth >= MIN_SCREEN_DND_THRESHOLD) {

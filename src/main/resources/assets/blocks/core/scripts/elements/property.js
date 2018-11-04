@@ -151,33 +151,6 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
         },
 
         //-----PRIVATE METHODS-----
-        // //TODO refactor this (same code as in page.js)
-        // _initChildren: function (parent, index)
-        // {
-        //     var children = parent.children();
-        //
-        //     for (var i = 0; i < children.length; i++) {
-        //         var child = $(children[i]);
-        //
-        //         if (child[0].tagName.toLowerCase() == blocks.elements.LayoutElement.BLOCKS_LAYOUT_TAG) {
-        //             //Note: this only searches one level down, maybe it should be altered to find().first(), but beware of crossing another template tag
-        //             var containerEls = child.children("[property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "],[data-property=" + blocks.elements.LayoutElement.CONTAINER_PROPERTY + "]");
-        //             if (containerEls.length > 1) {
-        //                 Logger.warn('Encountered multiple container tags, only using first, please check this');
-        //             }
-        //
-        //             this.children.push(new blocks.elements.Container(containerEls.first(), this, index));
-        //             index++;
-        //         }
-        //         else if (child[0].tagName.indexOf("-") > 0) {
-        //             this.children.push(new blocks.elements.Block(child, this, index, false));
-        //             index++;
-        //         }
-        //         else if (child.children.length > 0) {
-        //             this._initChildren(child, index);
-        //         }
-        //     }
-        // },
         _canHaveChildren: function ()
         {
             return false;

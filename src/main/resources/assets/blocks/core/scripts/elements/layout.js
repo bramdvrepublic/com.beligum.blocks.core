@@ -68,10 +68,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         constructor: function (parentSurface, element)
         {
             blocks.elements.LayoutElement.Super.call(this,
-                this.calculateTop(element),
-                this.calculateBottom(element),
-                this.calculateLeft(element),
-                this.calculateRight(element));
+                this._calculateTop(element),
+                this._calculateBottom(element),
+                this._calculateLeft(element),
+                this._calculateRight(element));
 
             this.element = element;
             this.parent = parentSurface;
@@ -85,16 +85,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
 
             //this._initChildren(this.element, 0);
         },
-
-        //-----ABSTRACT METHODS-----
-        /**
-         * Search the sub-surfaces of this surface
-         * @param parentEl The parent jQuery element on which we'll iterate it's children
-         * @param index The index of this surface in it's parent
-         */
-        // _initChildren: function (parentEl, index)
-        // {
-        // },
 
         //-----PUBLIC METHODS-----
         // Easily walk the tree and find the block that contains the coordinates
@@ -276,18 +266,20 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 // see http://jsfiddle.net/ZCWvJ/7/ (from http://stackoverflow.com/questions/7286532/jquery-mouseenter-vs-mouseover)
                 // each time your mouse enters or leaves a child element, mouseover is triggered, but not mouseenter.
                 var _this = this;
-                this.overlay.mouseenter(function (event)
-                {
-                    $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
-                    Hover.setHoveredBlock(_this);
-                    Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
-                }).mouseleave(function (event)
-                {
-                    $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
-                    //this might be troublesome: what if the event is processed after the mouseenter of the next block?
-                    Hover.setHoveredBlock(null);
-                    Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, event, _this);
-                });
+                this.overlay
+                    .mouseenter(function (event)
+                    {
+                        $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
+                        Hover.setHoveredBlock(_this);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
+                    })
+                    .mouseleave(function (event)
+                    {
+                        $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
+                        //this might be troublesome: what if the event is processed after the mouseenter of the next block?
+                        Hover.setHoveredBlock(null);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, event, _this);
+                    });
             }
         },
 
@@ -308,6 +300,11 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Build the sub-surface-model for this surface
+         *
+         * @private
+         */
         _buildSubmodel: function ()
         {
             //Optimization: no need to search for sub-children if we can't have them
@@ -324,6 +321,12 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 }
             }
         },
+        /**
+         * Iterate the element width-first and populate the this.children array
+         *
+         * @param parentElement
+         * @private
+         */
         _findChildren: function (parentElement)
         {
             var childElements = parentElement.children();
@@ -347,14 +350,31 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 }
             }
         },
+        /**
+         * Implement in subclasses: instantiate a child-surface for this parent surface
+         * @param element
+         * @returns {null}
+         * @private
+         */
         _newChildInstance: function (element)
         {
             return null;
         },
+        /**
+         * If this surface typ can't have children, overload and return false
+         * @returns {boolean}
+         * @private
+         */
         _canHaveChildren: function ()
         {
             return true;
         },
+        /**
+         * If this surface accepts the element argument, return true (eg. a column in a row)
+         * @param element
+         * @returns {boolean}
+         * @private
+         */
         _isAcceptableChild: function (element)
         {
             return false;
@@ -448,123 +468,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 childSurface.left = middle;
             }
         },
-        /**
-         * Creates rows (if the flag is up) or blocks (if the flag is down) inside a parent (container or column)
-         * and add them to the children array.
-         */
-        _generateVerticalChildren: function (rows)
-        {
-            var children = rows ? this.element.children("." + blocks.elements.LayoutElement.ROW_CLASS) : this.element.children();
-
-            for (var i = 0; i < children.length; i++) {
-                // create zone for child
-                var child = $(children[i]);
-
-                if (rows) {
-                    this.children.push(new blocks.elements.Row(child, this, i));
-                }
-                else {
-                    this.children.push(new blocks.elements.Block(child, this, i, true));
-                }
-            }
-        },
-        /**
-         * Iterate the current children (which are expected to be rows or blocks)
-         * and create or initialize their sub-children.
-         */
-        _fillVerticalChildren: function ()
-        {
-            for (var i = 0; i < this.children.length; i++) {
-
-                var child = this.children[i];
-                var first = i == 0;
-                var last = (i + 1) == this.children.length;
-                child.left = this.left;
-                child.right = this.right;
-                if (first) {
-                    child.top = this.top;
-                }
-
-                //melt the edges with the parent or next because it feels
-                //more natural
-                if (last) {
-                    child.bottom = this.bottom;
-                }
-                else {
-                    var next = this.children[i + 1];
-                    var middle = Math.floor((child.bottom + next.top) / 2);
-                    next.top = middle;
-                    child.bottom = middle;
-                }
-
-                if (child instanceof blocks.elements.Row) {
-                    child._fillHorizontalChildren();
-                }
-                else if (child instanceof blocks.elements.Block) {
-                    //these two classes will remove the borders left and top so we don't
-                    //have double borders when two blocks are next to each other
-                    if (this.index > 0) {
-                        child.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
-                    }
-                    if (i > 0 || this.parent.index > 0) {
-                        child.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
-                    }
-                }
-                else {
-                    Logger.error('Encountered non-row and non-block as a vertical child, this shouldn\'t happen', child);
-                }
-            }
-        },
-        /**
-         * Creates columns inside a row and add them to the children array.
-         */
-        _generateHorizontalChildren: function ()
-        {
-            // check only for columns
-            var columns = this.element.children('[class*="col-"]');
-
-            if (columns.length > 0) {
-                var oldColumn = null;
-                for (var i = 0; i < columns.length; i++) {
-                    var col = $(columns[i]);
-
-                    var newColumn = new blocks.elements.Column(col, this, i);
-                    this.children.push(newColumn);
-
-                    if (oldColumn != null) {
-                        this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
-                    }
-                    oldColumn = newColumn;
-                }
-            }
-        },
-        _fillHorizontalChildren: function ()
-        {
-            for (var i = 0; i < this.children.length; i++) {
-                var child = this.children[i];
-
-                var last = (i + 1) == this.children.length;
-                var first = i == 0;
-                child.bottom = this.bottom;
-                child.top = this.top;
-                if (first) {
-                    child.left = this.left;
-                }
-                if (last) {
-                    child.right = this.right;
-                }
-                else {
-                    var next = this.children[i + 1];
-                    var middle = Math.floor((child.right + next.left) / 2);
-                    next.left = middle;
-                    child.right = middle;
-                }
-                if (child instanceof blocks.elements.Column) {
-                    child._fillVerticalChildren();
-                }
-            }
-        },
-
     });
 
 }]);

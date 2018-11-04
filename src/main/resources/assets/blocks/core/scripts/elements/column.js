@@ -38,9 +38,6 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         constructor: function (parentSurface, element)
         {
             blocks.elements.Column.Super.call(this, parentSurface, element);
-
-            //this will find and create the blocks in this column
-            //this._generateVerticalChildren(false);
         },
 
         //-----PUBLIC METHODS-----
@@ -85,37 +82,31 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         //-----PRIVATE METHODS-----
         _newChildInstance: function(element)
         {
-            return new blocks.elements.Block(this, element, true);
+            return new blocks.elements.Block(this, element);
         },
         _isAcceptableChild: function(element)
         {
             return element[0].tagName.indexOf("-") > 0;
         },
-        /**
-         * Add a block to this column
-         * @param blockSurface
-         * @private
-         * @override
-         */
-        _layoutChild: function (blockSurface)
+        _getChildOrientation: function()
         {
-            blocks.elements.Column.Super.prototype._layoutChild.call(this, blockSurface);
+            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+        },
+        _layoutChild: function (childSurface)
+        {
+            blocks.elements.Column.Super.prototype._layoutChild.call(this, childSurface);
 
             //TODO review this
             //these two classes will remove the borders left and top so we don't
             //have double borders when two blocks are next to each other
             if (this.index > 0) {
-                blockSurface.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
+                childSurface.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
             }
-            if (blockSurface.index > 0 || this.parent.index > 0) {
-                blockSurface.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
+            if (childSurface.index > 0 || this.parent.index > 0) {
+                childSurface.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
             }
 
-            return blockSurface;
-        },
-        _getChildOrientation: function()
-        {
-            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+            return childSurface;
         },
     });
 }]);
