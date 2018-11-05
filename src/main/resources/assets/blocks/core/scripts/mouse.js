@@ -76,17 +76,31 @@
  */
 base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI)
 {
-    // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
+    var Mouse = this;
+
+    //-----CONSTANTS-----
+    // The minimum number of pixels we need to move before real dragging starts.
+    // Note: watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
     var DRAGGING_THRESHOLD = 3;
+    var SHOW_DEBUG_LINES = true;
+    var DEBUG_CANVAS_ID = 'debug-canvas-1';
 
-    // flag if this module is active
-    var Mouse = this;
+    //-----VARIABLES-----
+    // flag to enable/disable this entire module (both clicking and dragging)
     var active = false;
-    // dragging options, kept here for parsedContent while waiting for drag
+
+    // flag to enable/disable layout functionality (create, resize, move and delete)
+    var enableLayout = false;
+
+    // flag to enable/disable editing of existing blocks (giving them focus to start editing)
+    var enableEdit = false;
+
+    //
     var draggingStatus = BaseConstantsInternal.DRAGGING.NO;
+
+    //keep the start event around to detect move threshold
     var draggingStartEvent = null;
-    var dblClickFound = false;
     var startBlock = null;
     var windowFrame = {width: 0, height: 0};
 
@@ -105,12 +119,231 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var variance = 0;
     var prevTime = new Date().getTime();
 
-    var DEBUG = true;
+    //-----PUBLIC METHODS-----
+    /**
+     * Activate this module and start listening for mouse click events (and DnD)
+     */
+    this.activate = function ()
+    {
+        if (!active) {
 
+            //put this as fast as possible to eliminate double event registering
+            active = true;
+
+            $(document).on("mousedown.blocks_core", function (event)
+            {
+                if (active) {
+                    if (event.which == 1) {
+                        _mouseDown(event);
+                    }
+                    else {
+                        _mouseCancel(event);
+                    }
+                }
+            });
+
+            $(document).on("mouseup.blocks_core", function (event)
+            {
+                if (active) {
+                    if (event.which == 1) {
+                        _mouseUp(event);
+                    }
+                    else {
+                        _mouseCancel(event);
+                    }
+                }
+            });
+
+            //this is important:
+            // - if we're dragging, we need a way to cancel and moving outside the window feels like a good escape-gesture
+            // - if we're dragging and we're switching context to another window (alt-tab), we should probably abort
+            $(document).on("mouseleave.blocks_core", function (event)
+            {
+                _mouseCancel(event);
+            });
+
+            Mouse.resetMouse();
+        }
+    };
+
+    /**
+     * Deactivate this module and stop listening for mouse click events (and DnD)
+     */
+    this.deactivate = function ()
+    {
+        if (active) {
+            active = false;
+
+            $(document).off("mousedown.blocks_core");
+            $(document).off("mouseup.blocks_core");
+            $(document).off("mousemove.blocks_core");
+            $(document).off("mouseleave.blocks_core");
+        }
+    };
+    this.enableLayout = function (enable)
+    {
+        enableLayout = enable;
+    };
+    this.enableEdit = function (enable)
+    {
+        enableEdit = enable;
+    };
+
+    //-----PRIVATE METHODS-----
+    /**
+     * Starts a mouse session that will result in one of:
+     *  - click a block (if the move-threshold is not exceeded before release)
+     *  - start dragging a block (if the move-threshold is exceeded)
+     *  - the create-block-button is dragged (and the move-threshold is exceeded)
+     * @param event
+     * @private
+     */
+    var _mouseDown = function (event)
+    {
+        if (SHOW_DEBUG_LINES) {
+            UI.body.append('<canvas id="'+DEBUG_CANVAS_ID+'" style="position: absolute; top: 0; left: 0;" width="' + UI.body.width() + '" height="' + UI.body.height() + '" />');
+        }
+
+        // this variable will more or less controls if we're dragging a new block or not,
+        // so make sure it's null when we're dragging the new-block button around
+        var block = null;
+        var creatingNew = false;
+        var target = $(event.target);
+        if (target.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || target.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+            creatingNew = true;
+        }
+        //if the element we click on has a registered ID in our surface model, we clicked on a valid surface (if we can find it)
+        else if (target.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
+            block = blocks.elements.Surface.INDEX[target.attr(blocks.elements.Surface.INDEX_ATTR)];
+        }
+
+        //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
+        //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button
+        // and because of this class being activated, the mouseUp event is never received...
+        //TODO still need this?
+        //$('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
+        if (draggingStatus == BaseConstantsInternal.DRAGGING.NO) {
+            //we're attempting to dnd an existing block
+            if (block != null && block.canDrag) {
+                // save the block we started on for future reference
+                // (because we're removing the events from the overlay classes for now)
+                startBlock = block;
+            }
+            else {
+                // Signal for dragging new block
+                startBlock = null;
+            }
+
+            //if we don't have a startblock, we must be dragging from the new-block button
+            if (startBlock != null || creatingNew) {
+                draggingStatus = BaseConstantsInternal.DRAGGING.WAITING;
+                draggingStartEvent = event;
+
+                //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
+                $(document).on("mousemove.blocks_core", function (event)
+                {
+                    mouseMove(event);
+                });
+            }
+        }
+        //this will happen when we eg. click on the page (or nothing at all, like outside the page)
+        else {
+            //Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
+            Mouse.resetMouse();
+
+            // this overload the resetMouse above and actually makes sense:
+            // it means we clicked down outside of any block hotspot (eg. just on the page) and if we start dragging now,
+            // (if that really does that, that's another question)
+            draggingStatus = BaseConstantsInternal.DRAGGING.TEXT_SELECTION;
+        }
+    };
+
+    /**
+     * Stops an active and successful mouse session and determine what to do.
+     *
+     * @param event
+     * @private
+     */
+    var _mouseUp = function (event)
+    {
+        if (SHOW_DEBUG_LINES) {
+            $('#'+DEBUG_CANVAS_ID).remove();
+        }
+
+        //TODO refactor this to use allowEdit/layout
+        if (draggingStatus != BaseConstantsInternal.DRAGGING.NOT_ALLOWED) {
+
+            //the low level html element we clicked on
+            var element = $(event.target);
+
+            if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
+                Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
+            }
+            // this means we were dragging, but haven't exceeded the threshold yet
+            // so, instead of starting to drag a block, we clicked one (or the create block button)
+            else if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING) {
+
+                //Note: when we drag the new block button, startBlock will be null (and the popover will do it's work)
+                if (startBlock != null) {
+                    var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
+                    if (hoverObj) {
+                        //this will mainly end up in sidebar.js
+                        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
+
+                        //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
+                        Hover.setHoveredBlock(null);
+                    }
+                    else {
+                        Logger.error("Got null object while creating a hover object; this shouldn't happen");
+                    }
+                }
+            }
+            // this means the mousedown happened outside of any block or other kind of hotspot
+            // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
+            else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
+                if (Hover.getFocusedBlock() != null) {
+                    //this will mainly end up in sidebar.js
+                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+                        //this is an alternative for launching a blur
+                        block: Hover.getPageBlock(),
+                        //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+                        element: element,
+                        //there is no property element for the pageBlock
+                        propertyElement: null
+                    });
+                }
+            }
+            else {
+                // do nothing
+            }
+        }
+
+        Mouse.resetMouse();
+    };
+
+    /**
+     * Cancels and resets an active mouse session
+     *
+     * @param event
+     */
+    var _mouseCancel = function (event)
+    {
+        if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
+            Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
+        }
+
+        Mouse.resetMouse();
+    };
+
+
+    //-----UNCHECKED-----
     this.resetMouse = function ()
     {
-        windowFrame = {width: document.innerWidth, height: document.innerHeight};
-        dblClickFound = false;
+        windowFrame = {
+            width: document.innerWidth,
+            height: document.innerHeight
+        };
         draggingStartEvent = null;
 
         startBlock = null;
@@ -124,55 +357,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         //since we're only listening for move events after clicking now, deregister this by default
         $(document).off("mousemove.blocks_core");
-    };
-
-    this.disallowDrag = function ()
-    {
-        draggingStatus = BaseConstantsInternal.DRAGGING.NOT_ALLOWED;
-    };
-
-    this.allowDrag = function ()
-    {
-        Mouse.resetMouse();
-    };
-
-    this.activate = function ()
-    {
-        Mouse.deactivate();
-        active = true;
-        $(document).on("mousedown.blocks_core", function (event)
-        {
-            if (event.which == 1) {
-                mouseDown(event);
-            }
-        });
-        $(document).on("mouseup.blocks_core", function (event)
-        {
-            if (event.which == 1) {
-                mouseUp(event);
-            }
-        });
-
-        $(document).on("mouseleave.blocks_core", function (event)
-        {
-            if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
-                Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
-            }
-            Mouse.resetMouse();
-
-            //Logger.debug("Mouse out of window. Cancel!");
-        });
-
-        Mouse.resetMouse();
-    };
-
-    this.deactivate = function ()
-    {
-        active = false;
-        $(document).off("mousedown.blocks_core");
-        $(document).off("mouseup.blocks_core");
-        $(document).off("mousemove.blocks_core");
-        $(document).off("mouseleave.blocks_core");
     };
 
     /**
@@ -201,154 +385,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     };
 
     /*
-     * on mousedown and dragging allowed and surface to drag selected:
-     *   - wait for drag
-     *   - disable selection
-     *   - keep current jQuery event as startevent
-     * */
-    var mouseDown = function (event)
-    {
-        if (active) {
-
-            // check for left mouse click
-            if (event.which == 1) {
-
-                var creatingNew = false;
-
-                if (DEBUG) {
-                    $('body').append('<canvas id="canvas1" style="position: absolute; top: 0; left: 0;" width="' + $('body').width() + '" height="' + $('body').height() + '" />');
-                }
-
-                // this variable will more or less controls if we're dragging a new block or not,
-                // so make sure it's null when we're dragging the new-block button
-                var block = Hover.getHoveredBlock();
-                var target = $(event.target);
-                if (target.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || target.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
-                    creatingNew = true;
-                    block = null;
-                }
-
-                //this is a good failsafe for the hovered block implementation
-                //this happens when eg. we hover a block, do Alt+TAB to another window, move the mouse, and come back on another page position
-                if (block != null && !block.isTriggered(event.pageX, event.pageY)) {
-                    block = null;
-                    Hover.setHoveredBlock(null);
-                }
-
-                //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-                //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button
-                // and because of this class being activated, the mouseUp event is never received...
-                $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
-
-                //we're attempting to dnd an existing block
-                if (draggingStatus == BaseConstantsInternal.DRAGGING.NO) {
-                    if (block != null && block.canDrag) {
-                        // save the block we started on for future reference
-                        // (because we're removing the events from the overlay classes for now)
-                        startBlock = block;
-                    }
-                    else {
-                        // Signal for dragging new block
-                        startBlock = null;
-                    }
-
-                    //if we don't have a startblock, we must be dragging from the new-block button
-                    if (startBlock != null || creatingNew) {
-                        draggingStatus = BaseConstantsInternal.DRAGGING.WAITING;
-                        draggingStartEvent = event;
-
-                        //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
-                        $(document).on("mousemove.blocks_core", function (event)
-                        {
-                            mouseMove(event);
-                        });
-                    }
-                }
-                //this will happen when we eg. click on the page (or nothing at all, like outside the page)
-                else {
-                    //Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
-                    Mouse.resetMouse();
-
-                    // this overload the resetMouse above and actually makes sense:
-                    // it means we clicked down outside of any block hotspot (eg. just on the page) and if we start dragging now,
-                    // (if that really does that, that's another question)
-                    draggingStatus = BaseConstantsInternal.DRAGGING.TEXT_SELECTION;
-                }
-            }
-            else {
-                // middle or right mouse button presses
-                //TODO ??
-                if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
-                    Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
-                }
-                Mouse.resetMouse();
-            }
-        }
-    };
-
-    /*
-     * If dragging send END_OF_DRAG and reset draggingOptions
-     * */
-    var mouseUp = function (event)
-    {
-        if (active && event.which == 1) {
-
-            if (DEBUG) {
-                $('#canvas1').remove();
-            }
-
-            if (draggingStatus != BaseConstantsInternal.DRAGGING.NOT_ALLOWED) {
-
-                //the low level html element we clicked on
-                var element = $(event.target);
-
-                if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
-                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
-                }
-                // this means we were dragging, but haven't exceeded the threshold yet
-                // so, instead of starting to drag a block, we clicked one (or the create block button)
-                else if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING) {
-
-                    //Note: when we drag the new block button, startBlock will be null (and the popover will do it's work)
-                    if (startBlock != null) {
-                        var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
-                        if (hoverObj) {
-                            //this will mainly end up in sidebar.js
-                            Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
-
-                            //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
-                            Hover.setHoveredBlock(null);
-                        }
-                        else {
-                            Logger.error("Got null object while creating a hover object; this shouldn't happen");
-                        }
-                    }
-                }
-                // this means the mousedown happened outside of any block or other kind of hotspot
-                // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
-                else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
-                    if (Hover.getFocusedBlock() != null) {
-                        //this will mainly end up in sidebar.js
-                        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-                            //this is an alternative for launching a blur
-                            block: Hover.getPageBlock(),
-                            //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
-                            element: element,
-                            //there is no property element for the pageBlock
-                            propertyElement: null
-                        });
-                    }
-                }
-                else {
-                    // do nothing
-                }
-            }
-        }
-
-        Mouse.resetMouse();
-    };
-
-    /*
      * While waiting for drag, check if threshold is activated to really start drag
      * */
     var enableDragAfterTreshold = function (event)
@@ -356,6 +392,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         //Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStartEvent.pageX - event.pageX) > DRAGGING_THRESHOLD ||
             Math.abs(draggingStartEvent.pageY - event.pageY) > DRAGGING_THRESHOLD) {
+
             draggingStatus = BaseConstantsInternal.DRAGGING.YES;
             //Logger.debug("Start drag");
 
@@ -376,6 +413,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     var mouseMove = function (event)
     {
+        Logger.info(event.which);
+
         if (active) {
             //first, update the direction and speed vectors
             calculateDirection(event);
@@ -459,7 +498,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         prevX = curX;
         prevY = curY;
 
-        if (DEBUG) {
+        if (SHOW_DEBUG_LINES) {
             var speed = false;
             var multiplier = speed ? (2 * speed) : 100;
             var cos = (Math.cos(direction) * multiplier);
@@ -467,9 +506,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             var x2 = curX - cos;
             var y2 = curY - sin;
 
-            Logger.info('(' + curX + ',' + curY + ')');
-            Logger.info('(' + x2 + ',' + y2 + ')');
-            var canvas = document.getElementById("canvas1");
+            // Logger.info('(' + curX + ',' + curY + ')');
+            // Logger.info('(' + x2 + ',' + y2 + ')');
+            var canvas = document.getElementById(DEBUG_CANVAS_ID);
             var ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();

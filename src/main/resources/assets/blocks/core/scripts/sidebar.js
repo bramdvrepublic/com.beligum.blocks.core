@@ -147,12 +147,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             var windowID = SideBar.createWindow(e.element, windowTitle, collapsed, disabled);
             var addedOptions = false;
 
-            // don't render the remove button for properties: only blocks can be deleted
-            if (!isPropertyInBlock && e.block instanceof blocks.elements.Block && e.block.canDrag && windowID) {
-                //this.addRemoveBlockButton(windowID, e.block);
-                //addedOptions = true;
-            }
-
             if (widget) {
                 // the focus method can return a list of UI widgets it needs to add to the window
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
@@ -270,27 +264,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 }
             }
         });
-    };
-
-    this.addRemoveBlockButton = function (windowID, property) {
-        //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
-        var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
-        var removeAction = $("<li><label>" + BlocksMessages.deleteBlockLabel + "</label></li>");
-        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
-        blockActions.append(removeAction);
-        removeAction.append(removeButton);
-
-        removeButton.click(function () {
-            //TODO let's not ask for a confirmation but implement an undo-function later on...
-            //confirm.removeClass("hidden");
-            //text.addClass("hidden");
-
-            //resetOld();
-            $("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
-            Layouter.removeBlock(property);
-        });
-
-        this.addUIForProperty(windowID, blockActions);
     };
 
     this.addUIForProperty = function (windowId, html) {

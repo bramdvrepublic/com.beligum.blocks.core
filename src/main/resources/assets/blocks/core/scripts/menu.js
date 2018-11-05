@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", "blocks.core.UI", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages, UI)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DOM", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", "blocks.core.UI", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages, UI)
 {
     var Frame = this;
 
@@ -36,21 +36,20 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var keysPressed = [];
 
     //----MORE OR LESS THE START OF EVERYTHING----
+    // Add the start button as only notice of our presence
     //note: the icon is set in blocks.less
-    var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>')
-        .attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+    UI.startButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>')
+        .attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE)
+        .appendTo(UI.body);
 
-    // Hide show bar on click of menu button
-    $(document).on("click", "." + BlocksConstants.BLOCKS_START_BUTTON, function (event)
+    // Hide/show sidebar when menu button is clicked
+    UI.startButton.on("click", function (event)
     {
-        toggleSidebar($("body").children("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
+        toggleSidebar(UI.body.find("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
     });
 
-    // Add the start button as only notice of our presence
-    $("body").append(menuStartButton);
-
-    var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
-    sidebarElement.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
+    UI.sidebar = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
+    UI.sidebar.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
     {
         if (status == 'success') {
             //check for a cookie and auto-open when the sidebar was active
@@ -72,16 +71,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         if (show) {
 
-            //about to start up the side bar and modify the HTML
-            Broadcaster.send(Broadcaster.EVENTS.PRE_START_BLOCKS);
-
-            cookieState = SIDEBAR_STATE_SHOW;
-
             // Remove the menu button while animating sidebar
-            menuStartButton.remove();
-
-            // put body content in wrapper
-            var body = $("body");
+            //note that we remove it because we'll call body.empty() below
+            UI.startButton.detach();
 
             // Needs some explaining:
             // If we wrap the body with our blocks-page-content element,
@@ -89,27 +81,32 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             // So we will pull them out of the body and insert them as siblings of the body.
             // Note that this is designed to wrap scripts that don't render anything out, so watch out
             // if you use it for other purposes; it will break the design/behaviour of the sidebar.
-            var ignoredBody = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
-            // When closing the sidebar, we need in-order insert-placeholders, so insert those here.
+            var ignoredBody = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
+            // We'll create a placeholder for the ignored body, just after it (while keeping the reference to the original in the variable)
+            // (note that we're re-using the same class for the placeholder) so we can look it up in the body and put it back
+            // in the same spot when the sidebar is closed
             ignoredBody.after('<div class="' + BlocksConstants.PAGE_IGNORE_CLASS + '" />');
             //detach is like remove() but without the releasing of memory structures
             ignoredBody.detach();
 
-            //Note: this means all previously installed event handlers will be lost!
-            //We should actually migrate to "body.clone(true).unwrap()" but the JS of the modules are not ready for that yet...
-            var bodyHtml = body.html();
-            body.empty();
-            //wrap the content of the body in the class and add that again to the body
-            body.append($('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />').append(bodyHtml));
+            //wrap the contents of the body in a separate wrapper element, so we can add the surfaces and sidebar too
+            UI.pageContent = $('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />');
+            UI.pageContent.append(UI.body.children().detach());
+            UI.body.append(UI.pageContent);
+            UI.body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
             //temporarily put them here
-            body.append(ignoredBody);
-            body.append(sidebarElement);
-            body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+            UI.body.append(ignoredBody);
+            UI.body.append(UI.sidebar);
+
+            UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
+            UI.surfaceWrapper = $('<div class="' + BlocksConstants.BLOCK_SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.handleWrapper = $('<div class="' + BlocksConstants.BLOCK_HANDLE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.dropspotWrapper = $('<div class="' + BlocksConstants.BLOCK_DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
 
             //set up perfect-scrollbar.js
             if (jQuery().perfectScrollbar) {
                 //only scroll from the tab content so the header doesn't scroll away
-                sidebarElement.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
+                UI.sidebar.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
             }
 
             // Prevent clicking on links while in editing mode
@@ -117,7 +114,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             // it's quite important this is effectively the click event, because it overloads a lot of necessary other clicks
             // Use the pierce trough class to work around it
             var preventEditNamespace = 'prevent_click_editing';
-            $(document).on("click."+preventEditNamespace, "a, button", function (e)
+            $(document).on("click." + preventEditNamespace, "a, button", function (e)
             {
                 //this is needed (instead of $(this)) to detect the [contenteditable]
                 var control = $(e.target);
@@ -214,21 +211,21 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 INIT_SIDEBAR_WIDTH = MIN_SIDEBAR_WIDTH;
             }
 
-            //make it a close cross
-            menuStartButton.addClass("open");
-
+            cookieState = SIDEBAR_STATE_SHOW;
+            //transform the button to a closing cross
             //slide open the sidebar and activate the callback when finished
             Sidebar.animateSidebarWidth(INIT_SIDEBAR_WIDTH, function (event)
             {
                 //re-add the button (but with a changed icon)
-                $("body").append(menuStartButton);
+                UI.startButton.addClass("open").appendTo(UI.body);
 
                 //allow the sidebar to be resized
                 enableSidebarDrag();
 
                 // should we warn the user if she navigates away (possibly without saving)?
                 if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
-                    window.onbeforeunload = function(e) {
+                    window.onbeforeunload = function (e)
+                    {
                         // Cancel the event as stated by the standard.
                         e.preventDefault();
                         // Chrome requires returnValue to be set.
@@ -238,52 +235,53 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     };
                 }
 
+                //Make sure to initialize all the elements before firing the event
+                //because a lot of boot-code will use them
+                UI.init();
+
                 Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS, event);
             });
 
         }
         //hide the sidebar
         else {
-            //about to stop up the side bar and modify the HTML
-            Broadcaster.send(Broadcaster.EVENTS.PRE_STOP_BLOCKS);
 
             //make sure all focused blocks are blurred in a clean manner
             Sidebar.reset();
 
             cookieState = SIDEBAR_STATE_HIDE;
             var CLOSE_SIDEBAR_WIDTH = 0.0;
-            menuStartButton.hide().removeClass("open");
+            //hide the button while animating
+            UI.startButton.removeClass("open").detach();
             Sidebar.animateSidebarWidth(CLOSE_SIDEBAR_WIDTH, function (event)
             {
                 //don't allow the sidebar to be resized
                 disableSidebarDrag();
-                menuStartButton.show();
 
                 //disable navigate-away warning
                 if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
                     window.onbeforeunload = undefined;
                 }
 
-                var body = $("body");
                 var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
 
                 //this will select all (original) ignored content tags, excluding the placeholders
-                var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
+                var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
                 ignoredContent.detach();
 
                 var content = content.html();
-                body.empty();
-                body.append(content);
+                UI.body.empty();
+                UI.body.append(content);
 
                 //this will loop the ignored content and put them back in the placeholders in-order
-                body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
+                UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
                 {
                     $(this).replaceWith(ignoredContent[idx]);
                 });
 
-                $(document).off("click."+preventEditNamespace);
-                body.append(menuStartButton);
-                body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+                $(document).off("click." + preventEditNamespace);
+                UI.body.append(UI.startButton);
+                UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
                 clearContainerWidth();
 
@@ -300,17 +298,17 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         $(document).on("mousedown.sidebar_resize", "." + BlocksConstants.PAGE_SIDEBAR_RESIZE_CLASS, function (event)
         {
             //needed because sometimes we hover out of the dragger while moving the sidebar (because of some lag)
-            $("body").addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
+            UI.body.addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
             var windowWidth = $(window).width();
             var pageContent = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
             $(document).on("mousemove.sidebar_resize", function (event)
             {
-                var X = event.pageX;
-                var sideWidth = windowWidth - X;
+                var x = event.pageX;
+                var sideWidth = windowWidth - x;
                 var pageWidth = windowWidth - sideWidth;
                 if (sideWidth > MIN_SIDEBAR_WIDTH && pageWidth > MIN_SIDEBAR_WIDTH) {
-                    sidebarElement.css("width", sideWidth + "px");
+                    UI.sidebar.css("width", sideWidth + "px");
                     pageContent.css("width", pageWidth + "px");
 
                     //tried to alter the viewport dynamically, but it didn't work (yet?) as expected...
@@ -328,10 +326,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $(document).off("mousemove.sidebar_resize");
                 $(document).off("mouseup.sidebar_resize");
 
-                $("body").removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
+                UI.body.removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
-                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width(), DEFAULT_COOKIE_OPTIONS);
+                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, UI.sidebar.width(), DEFAULT_COOKIE_OPTIONS);
             });
         });
     };
@@ -370,22 +368,22 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     };
 
     // On window resize (smart means the events are debounced, see dom.js)
-    var sidebarWidth = sidebarElement.outerWidth();
+    var sidebarWidth = UI.sidebar.outerWidth();
     var resizing = false;
     $(window).smartresize(function (event)
     {
         //boots the resizing
         if (!resizing) {
-            sidebarWidth = sidebarElement.outerWidth();
-            Hover.removeHoverOverlays();
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+            sidebarWidth = UI.sidebar.outerWidth();
+            //Hover.removeHoverOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
             resizing = true;
         }
         else {
             var windowWidth = $(window).width();
             $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
             resizing = false;
         }
     });
@@ -406,7 +404,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         //it's possible the content of the sidebar made it grow/shrink;
         //this will alter the content wrapper class if it did (and fire a re-layout)
-        var contentWidth = $(window).width() - sidebarElement.outerWidth();
+        var contentWidth = $(window).width() - UI.sidebar.outerWidth();
         if (wrapper.outerWidth() != contentWidth) {
             wrapper.css("width", contentWidth + "px");
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
@@ -418,7 +416,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
      * */
     $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function (event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
@@ -446,15 +444,15 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
         container.css("width", "");
         var content = container.html();
-        var body = savePage.find("body");
-        body.empty();
-        body.append(content);
-        body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+        var bodyCopy = savePage.find("body");
+        bodyCopy.empty();
+        bodyCopy.append(content);
+        bodyCopy.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
         //convert from jQuery to html string
         savePage = savePage[0].outerHTML;
 
-        //reset what we cleared cleared it above
+        //reset what we cleared above
         updateContainerWidth();
         DOM.disableTextSelection();
 
@@ -483,7 +481,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             .always(function ()
             {
                 dialog.close();
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             });
     });
 
@@ -492,7 +490,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
      * */
     $(document).on("click", "." + BlocksConstants.DELETE_PAGE_BUTTON, function (event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
         var onConfirm = function (deleteAllTranslations)
         {
             var dialog = new BootstrapDialog({
@@ -575,7 +573,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             ],
             onhide: function ()
             {
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             }
         });
 

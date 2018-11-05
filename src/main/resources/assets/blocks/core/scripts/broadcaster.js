@@ -58,7 +58,7 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
      */
     this.send = function (eventName, originalEvent, data)
     {
-        if (eventName == Broadcaster.EVENTS.START_BLOCKS || eventName == Broadcaster.EVENTS.PRE_START_BLOCKS) {
+        if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
             Broadcaster.active = true;
         }
 
@@ -86,14 +86,14 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
 
     this.EVENTS = {
 
-        //sent out when the edit page button was clicked, but the sidebar hasn't completed opening
-        PRE_START_BLOCKS: "PRE_START_BLOCKS",
-        //sent out when the edit page button was clicked, and the sidebar has completed opening
+        //sent out when the edit page button was clicked and the sidebar has completed opening
         START_BLOCKS: "START_BLOCKS",
-        //sent out when the sidebar was closed, but hasn't completed shutdown
-        PRE_STOP_BLOCKS: "PRE_STOP_BLOCKS",
-        //sent out when the sidebar was closed, and has completed shutdown
+        //sent out when the sidebar was closed and has completed shutdown
         STOP_BLOCKS: "STOP_BLOCKS",
+        //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
+        PAUSE_BLOCKS: "PAUSE_BLOCKS",
+        //sent out when the blocks editor system needs to be un-pauzed
+        RESUME_BLOCKS: "RESUME_BLOCKS",
 
         // Events with blockEvent as argument
         START_DRAG: "START_DRAG",
@@ -101,17 +101,6 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
         ABORT_DRAG: "ABORT_DRAG",
         DRAG_OVER_BLOCK: "DRAG_OVER_BLOCK",
         FOCUS_BLOCK: "FOCUS_BLOCK",
-
-        // Called when the mouse pointer enters/leaves a visible LayoutElement
-        HOVER_ENTER_OVERLAY: "HOVER_ENTER_OVERLAY",
-        HOVER_LEAVE_OVERLAY: "HOVER_LEAVE_OVERLAY",
-
-        ENABLE_DND: "ALLOW_DRAG",
-        DISABLE_DND: "DISABLE_DND",
-
-        // This (de)activates the mouse cf pauzes the templates layouter (used during dialogs, resizing, etc)
-        ACTIVATE_MOUSE: "ACTIVATE_MOUSE",
-        DEACTIVATE_MOUSE: "DEACTIVATE_MOUSE",
 
         // Events send when the the templates DOM tree in memory will/is/did rebuild
         DO_REFRESH_LAYOUT: "DO_REFRESH_LAYOUT",

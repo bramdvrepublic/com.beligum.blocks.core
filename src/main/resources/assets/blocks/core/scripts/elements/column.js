@@ -26,7 +26,7 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.Column = Class.create(blocks.elements.LayoutElement, {
+    blocks.elements.Column = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
 
@@ -41,15 +41,6 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PUBLIC METHODS-----
-        isOuterLeft: function ()
-        {
-            return this.element.prev().length == 0
-        },
-        isOuterRight: function ()
-        {
-            return this.element.next().length == 0
-        },
-
         // Override
         getElementAtSide: function (side)
         {
@@ -90,23 +81,15 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+            return blocks.elements.Surface.ORIENTATION_VERTICAL;
         },
-        _layoutChild: function (childSurface)
+        _isOuterLeft: function ()
         {
-            blocks.elements.Column.Super.prototype._layoutChild.call(this, childSurface);
-
-            //TODO review this
-            //these two classes will remove the borders left and top so we don't
-            //have double borders when two blocks are next to each other
-            if (this.index > 0) {
-                childSurface.overlay.addClass(blocks.elements.LayoutElement.LEFT_CLASS);
-            }
-            if (childSurface.index > 0 || this.parent.index > 0) {
-                childSurface.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
-            }
-
-            return childSurface;
+            return this.element.prev().length == 0
+        },
+        _isOuterRight: function ()
+        {
+            return this.element.next().length == 0
         },
     });
 }]);

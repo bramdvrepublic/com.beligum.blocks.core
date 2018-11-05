@@ -18,14 +18,14 @@
  * Region where templates can be dragged
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DomManipulation", function (Class, Constants, DOM)
+base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.Container = Class.create(blocks.elements.LayoutElement, {
+    blocks.elements.Container = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
 
@@ -37,14 +37,6 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         constructor: function (parentSurface, element)
         {
             blocks.elements.Container.Super.call(this, parentSurface, element);
-
-            //I guess this is here to allow for multiple levels down (old style of editing)
-            if (this.parent != null && this.parent instanceof blocks.elements.Block) {
-                this.left = this.parent.left;
-                this.right = this.parent.right;
-                this.top = this.parent.top;
-                this.bottom = this.parent.bottom;
-            }
         },
 
         //-----PUBLIC METHODS-----
@@ -76,7 +68,7 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.LayoutElement.ORIENTATION_VERTICAL;
+            return blocks.elements.Surface.ORIENTATION_VERTICAL;
         },
     });
 

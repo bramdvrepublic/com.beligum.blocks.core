@@ -30,7 +30,7 @@
  * DO_REFRESH_LAYOUT is for when the we have to rebuild the layout tree, but the dom did not change (e.g. window resize)
  * DOM_DID CHANGE is for ... well, ...
  */
-base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "blocks.core.DomManipulation", "blocks.core.Undo", function (Broadcaster, Constants, BlocksConstants, Hover, DOM, Undo)
+base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Undo", function (Broadcaster, Constants, BlocksConstants, Hover, DOM, Undo)
 {
     var Layouter = this;
 
@@ -196,7 +196,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
             {
                 droppedElement.css("display", "");
                 Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
 
                 if (onComplete) {
                     onComplete(droppedElement);
@@ -240,7 +240,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     this.changeBlockLocation = function (block, dropLocation, side)
     {
         // remove dropped block
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
         droppedElement = block.element;
         dropLocationElement = findDropLocationElement(dropLocation, side);
         drop(droppedElement, dropLocationElement, block.getContainer().element, dropLocation.getContainer().element, side);
@@ -250,7 +250,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     this.addNewBlockAtLocation = function (blockElement, dropLocation, side, onComplete)
     {
         dropLocationElement = dropLocationElement = findDropLocationElement(dropLocation, side);
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
 
         drop(blockElement, dropLocationElement, null, dropLocation.getContainer().element, side, onComplete);
 
@@ -262,14 +262,14 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     {
         if (block instanceof blocks.elements.Block) {
             var container = block.getContainer();
-            Hover.removeHoverOverlays();
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            //Hover.removeHoverOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
             DOM.removeBlock(block.element, 300, function ()
             {
                 DOM.cleanup(container.element, function ()
                 {
                     Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
-                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                    Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
                 });
             })
         }

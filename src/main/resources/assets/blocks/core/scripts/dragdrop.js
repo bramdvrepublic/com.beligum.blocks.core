@@ -22,7 +22,7 @@
  * drop between 2 blocks, we also overlay the other block (other)
  * We show arrows in the overlay to indicate the direction the block will move.
  */
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", "blocks.core.DomManipulation", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, Hover, BlocksMessages, Notification, Mouse, DOM)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", "blocks.core.DOM", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, Hover, BlocksMessages, Notification, Mouse, DOM)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -68,7 +68,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         sidebarLeft = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).offset().left;
 
-//        Broadcaster.zoom();
+        //Broadcaster.zoom();
         oldDirection = {
             dir: BaseConstantsInternal.DIRECTION.NONE,
             stamp: $.now()
@@ -87,7 +87,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             Hover.getFocusedBlock().createAllDropspots();
             createDropPointerElement();
             dragging = true;
-            Hover.removeResizeHandles();
+            //Hover.removeResizeHandles();
             // we have to set both
             // html for undefined area and baody to override default cursor of body.
 
@@ -97,7 +97,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         else if (currentDraggedBlock == null) {
             dragging = true;
             Hover.getFocusedBlock().createAllDropspots();
-            Hover.removeResizeHandles();
+            //Hover.removeResizeHandles();
             createDropPointerElement();
             $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         }
@@ -221,7 +221,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             // If we did not drop on ourself, change location
             if (currentDraggedBlock != null && lastDropLocation != null && !dropSpotInDraggedBlock(lastDropLocation) && insideWindow(dropX, dropY)) {
                 //Logger.debug("Drop block");
-                Hover.removeHoverOverlays();
+                //Hover.removeHoverOverlays();
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
             }
@@ -229,8 +229,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(dropX, dropY)) {
 
                 // We added a new block
-                Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, blockEvent);
-                Hover.removeHoverOverlays();
+                Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, blockEvent);
+                //Hover.removeHoverOverlays();
 
                 // show normal cursor during dialog
                 $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
@@ -291,7 +291,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                                         // Fixed with a patched version (see pom.xml)
                                         var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
 
-                                        Hover.removeHoverOverlays();
+                                        //Hover.removeHoverOverlays();
                                         resetDragDrop();
                                         cancelled = false;
                                         Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
@@ -331,15 +331,16 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     {
                         if (cancelled) {
                             DragDrop.dragAborted();
-                            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, blockEvent);
+                            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, blockEvent);
                         }
                     }
                 });
 
-            } else {
+            }
+            else {
                 //Logger.debug("No drop for block");
                 this.dragAborted();
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, blockEvent);
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, blockEvent);
             }
         }
 
@@ -490,7 +491,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         //Logger.debug("create droppointer ");
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='" + BlocksConstants.BLOCKS_DROPSPOT_CLASS + "' />");
-            //dropPointerElements.css("z-index", DOM.getMaxZIndex() + 3);
             dropPointerElements.css("position", "absolute");
             $("body").append(dropPointerElements);
         }

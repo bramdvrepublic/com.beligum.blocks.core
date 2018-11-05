@@ -18,10 +18,25 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
 {
     var UI = this;
 
+    this.body = $("body");
+    this.startButton = undefined;
+    this.sidebar = undefined;
+    this.pageContent = undefined;
+    this.overlayWrapper = undefined;
+    this.surfaceWrapper = undefined;
+    this.handleWrapper = undefined;
+    this.dropspotWrapper = undefined;
+
+    //this is called just before BLOCKS_START is fired
     this.init = function ()
     {
-        UI.sidebar = $('.' + BlocksConstants.PAGE_SIDEBAR_CLASS);
+        //this is created in page.js
         UI.newBlockBtn = $('.' + BlocksConstants.CREATE_BLOCK_CLASS);
+
+        //before we start building the surfaces, make sure the wrappers are empty
+        UI.surfaceWrapper.empty();
+        UI.handleWrapper.empty();
+        UI.dropspotWrapper.empty();
     };
 
 }]);

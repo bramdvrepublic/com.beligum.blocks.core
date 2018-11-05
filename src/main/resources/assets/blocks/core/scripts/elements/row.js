@@ -25,7 +25,7 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.Row = Class.create(blocks.elements.LayoutElement, {
+    blocks.elements.Row = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
 
@@ -43,15 +43,6 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
 
         //-----PUBLIC METHODS-----
-        isOuterTop: function ()
-        {
-            return this.element.prev().length == 0
-        },
-        isOuterBottom: function ()
-        {
-            return this.element.next().length == 0
-        },
-
         // Override
         getElementAtSide: function (side)
         {
@@ -79,41 +70,6 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
             return dropspots;
         },
 
-        findElements: function (minSearchLevel, maxSearchLevel)
-        {
-            //TODO this looks a lot like layout.findElements()...
-            minSearchLevel = minSearchLevel == null ? 0 : minSearchLevel;
-            maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
-            var retVal = [];
-            if (minSearchLevel <= 0) {
-                retVal.push(this);
-            }
-            if (maxSearchLevel != 0) {
-                for (var i = 0; i < this.children.length; i++) {
-                    var props = this.children[i].findElements(minSearchLevel, maxSearchLevel);
-                    for (var j = 0; j < props.length; j++) {
-                        retVal.push(props[j]);
-                    }
-                }
-            }
-
-            return retVal;
-        },
-
-        showOverlay: function ()
-        {
-            for (var j = 0; j < this.resizeHandles.length; j++) {
-                this.resizeHandles[j].showOverlay();
-            }
-        },
-
-        removeOverlay: function ()
-        {
-            for (var j = 0; j < this.resizeHandles.length; j++) {
-                this.resizeHandles[j].removeOverlay();
-            }
-        },
-
         //-----PRIVATE METHODS-----
         _newChildInstance: function(element)
         {
@@ -125,17 +81,26 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.LayoutElement.ORIENTATION_HORIZONTAL;
+            return blocks.elements.Surface.ORIENTATION_HORIZONTAL;
         },
         _layoutChild: function (childSurface)
         {
             blocks.elements.Row.Super.prototype._layoutChild.call(this, childSurface);
 
+            //if the new child has a previous column, put a resize handle between them
             if (childSurface.index > 0) {
                 this.resizeHandles.push(new blocks.elements.ResizeHandle(this.children[childSurface.index - 1], childSurface));
             }
 
             return childSurface;
+        },
+        _isOuterTop: function ()
+        {
+            return this.element.prev().length == 0
+        },
+        _isOuterBottom: function ()
+        {
+            return this.element.next().length == 0
         },
     });
 

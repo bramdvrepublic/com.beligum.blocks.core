@@ -73,7 +73,9 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
-.@{BLOCK_OVERLAYS_WRAPPER_CLASS} {
+.@{BLOCK_OVERLAY_WRAPPER_CLASS},
+.@{BLOCK_SURFACE_WRAPPER_CLASS},
+.@{BLOCK_HANDLE_WRAPPER_CLASS}{
   position: absolute;
   top: 0;
   left: 0;
@@ -154,7 +156,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
   //this is probably a good general choice
   cursor: pointer;
 
-  &.@{OVERLAY_HOVER_CLASS} {
+  &.@{OVERLAY_HOVER_CLASS},
+  &:hover {
     .box-shadow(0px 0px 10px @brand-primary);
     border: 1px solid fadeout(@brand-primary, 50%);
     background-color: fadeout(@brand-primary, 80%);
@@ -167,6 +170,34 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
   &.@{OVERLAY_DRAGGING_CLASS} {
     background-color: rgba(00, 102, 204, 0.5);
+  }
+}
+
+.@{PROPERTY_OVERLAY_CLASS} {
+  position: absolute;
+  border: 1px dotted rgba(100, 100, 100, 0.8);
+  cursor: text;
+  z-index: @blockOverlayZ + 1;
+
+  &.left {
+    border-left: none;
+  }
+
+  &.top {
+    border-top: none;
+  }
+
+  &.right {
+    border-right: none;
+  }
+
+  &.bottom {
+    border-bottom: none;
+  }
+
+  &.@{OVERLAY_HOVER_CLASS},
+  &:hover {
+    border: 1px solid rgba(0, 0, 0, 1);
   }
 }
 
@@ -238,32 +269,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(270) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
     background-position: left center;
     background-repeat: repeat-y;
-  }
-}
-
-.@{PROPERTY_OVERLAY_CLASS} {
-  position: absolute;
-  border: 1px dotted rgba(100, 100, 100, 0.8);
-  cursor: text;
-
-  &.left {
-    border-left: none;
-  }
-
-  &.top {
-    border-top: none;
-  }
-
-  &.right {
-    border-right: none;
-  }
-
-  &.bottom {
-    border-bottom: none;
-  }
-
-  &.@{OVERLAY_HOVER_CLASS} {
-    border: 1px solid rgba(0, 0, 0, 1);
   }
 }
 

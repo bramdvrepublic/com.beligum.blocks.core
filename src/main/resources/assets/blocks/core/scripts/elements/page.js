@@ -26,7 +26,7 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.Page = Class.create(blocks.elements.LayoutElement, {
+    blocks.elements.Page = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
 
@@ -41,6 +41,8 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
 
             //We manually call this for the top-level structure
             //to boot the entire subtree-generation
+            //Note: it makes sense to reset the ID lookup table before booting this up
+            blocks.elements.Surface.INDEX = {};
             this._buildSubmodel();
         },
 

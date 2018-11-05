@@ -27,7 +27,7 @@
  * this plugin does not send events of it's own
  *
  */
-base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
+base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DOM", function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;
 
@@ -70,7 +70,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     this.startDrag = function (handle)
     {
         if (!blockResizing) {
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
             activeResizeHandle = handle;
             DOM.disableTextSelection();
             DOM.disableContextMenu();
@@ -110,7 +110,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
             $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
             DOM.enableContextMenu();
             Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
         }
     };
 

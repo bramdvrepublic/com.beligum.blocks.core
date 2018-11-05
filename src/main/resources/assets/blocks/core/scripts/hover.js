@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManipulation", function (BlocksConstants, DOM)
+base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DOM", function (BlocksConstants, DOM)
 {
     var Hover = this;
 
@@ -26,17 +26,17 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
     var focusedBlock = null;
 
     //-----METHODS-----
-    this.setHoveredBlock = function (layoutElement)
+    this.setHoveredBlock = function (surface)
     {
-        hoveredBlock = layoutElement;
+        hoveredBlock = surface;
     };
     this.getHoveredBlock = function ()
     {
         return hoveredBlock;
     };
-    this.setFocusedBlock = function (layoutElement)
+    this.setFocusedBlock = function (surface)
     {
-        focusedBlock = layoutElement;
+        focusedBlock = surface;
     };
     this.getFocusedBlock = function ()
     {
@@ -48,8 +48,9 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         return pageBlock;
     };
 
-    // We create some sort of a heat map
-    // We define boxes for all draggable templates
+    // This will bootstrap some sort of a heat map.
+    // We define 'overlay boxes' for all draggable templates on the page.
+    // Rules:
     // we can add left and right from each column
     // and left and right from container if container has more than 1 row
     // select each row and add bottom
@@ -62,53 +63,53 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         return pageBlock;
     };
 
-    this.showHoverOverlays = function ()
-    {
-        if (Hover.getPageBlock() != null) {
-            var elements = Hover.getPageBlock().findElements(0, 9);
-            for (var i = 0; i < elements.length; i++) {
-                //only valid bootstrapped-layouted blocks can be dragged (eg. the first element in a column in a row)
-                if (elements[i].canDrag) {
-                    elements[i].showOverlay();
-                }
-            }
-        }
-    };
+    // this.showHoverOverlays = function ()
+    // {
+    //     if (Hover.getPageBlock() != null) {
+    //         var elements = Hover.getPageBlock().findElements(0, 9);
+    //         for (var i = 0; i < elements.length; i++) {
+    //             //only valid bootstrapped-layouted blocks can be dragged (eg. the first element in a column in a row)
+    //             if (elements[i].canDrag) {
+    //                 elements[i].showOverlay();
+    //             }
+    //         }
+    //     }
+    // };
+    //
+    // //TODO this gets called way too much and should be tied into some more general 'reset hover and focus' method
+    // this.removeHoverOverlays = function ()
+    // {
+    //     if (Hover.getPageBlock() != null) {
+    //         var elements = Hover.getPageBlock().findElements(0, 9);
+    //         for (var i = 0; i < elements.length; i++) {
+    //             elements[i].removeOverlay();
+    //         }
+    //     }
+    // };
 
-    //TODO this gets called way too much and should be tied into some more general 'reset hover and focus' method
-    this.removeHoverOverlays = function ()
-    {
-        if (Hover.getPageBlock() != null) {
-            var elements = Hover.getPageBlock().findElements(0, 9);
-            for (var i = 0; i < elements.length; i++) {
-                elements[i].removeOverlay();
-            }
-        }
-    };
-
-    this.removeResizeHandles = function ()
-    {
-        if (Hover.getPageBlock() != null) {
-            var elements = Hover.getPageBlock().findElements(0, 9);
-            for (var i = 0; i < elements.length; i++) {
-                if (elements[i] instanceof blocks.elements.Row) {
-                    elements[i].removeOverlay();
-                }
-            }
-        }
-    };
-
-    this.showResizeHandles = function ()
-    {
-        if (Hover.getPageBlock() != null) {
-            var elements = Hover.getPageBlock().findElements(0, 9);
-            for (var i = 0; i < elements.length; i++) {
-                if (elements[i] instanceof blocks.elements.Row) {
-                    elements[i].showOverlay();
-                }
-            }
-        }
-    };
+    // this.removeResizeHandles = function ()
+    // {
+    //     if (Hover.getPageBlock() != null) {
+    //         var elements = Hover.getPageBlock().findElements(0, 9);
+    //         for (var i = 0; i < elements.length; i++) {
+    //             if (elements[i] instanceof blocks.elements.Row) {
+    //                 elements[i].removeOverlay();
+    //             }
+    //         }
+    //     }
+    // };
+    //
+    // this.showResizeHandles = function ()
+    // {
+    //     if (Hover.getPageBlock() != null) {
+    //         var elements = Hover.getPageBlock().findElements(0, 9);
+    //         for (var i = 0; i < elements.length; i++) {
+    //             if (elements[i] instanceof blocks.elements.Row) {
+    //                 elements[i].showOverlay();
+    //             }
+    //         }
+    //     }
+    // };
 
     //note: these are not really overlays, but actually classes on siblings etc
     this.showFocusOverlays = function (selectedElement)
@@ -167,7 +168,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
             }
 
             retVal = {
-                //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
+                //this is the surface block all events started on (holds a reference to both the overlay and the template block)
                 block: block,
                 //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
                 element: element,

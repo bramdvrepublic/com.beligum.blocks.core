@@ -18,16 +18,19 @@
  * Special kind of row that can contains a template
  * Draggable templates are the elements inside a column
  */
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", function (Class, Constants, BlocksConstants)
+base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksConstants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.Block = Class.create(blocks.elements.Property, {
+    blocks.elements.Block = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
+        STATIC: {
+
+        },
 
         //-----CONSTANTS-----
 
@@ -38,23 +41,65 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         {
             blocks.elements.Block.Super.call(this, parentSurface, element);
 
-            // if a block is editable does not depend on the parent
-            var prev = element.prev();
-            var next = element.next();
-            if (prev.length > 0) {
-                this.top -= Math.floor((this._calculateBottom(prev) - this.top) / 2);
-                this.overlay.addClass(blocks.elements.LayoutElement.TOP_CLASS);
+            this.canDrag = true;
+            this.dropspots = {};
+
+            //if we're the only property in a parent, our bounds are the same as the bounds of the parent
+            // if (this.element.siblings().length == 0 && this.element.parent == parentSurface.element) {
+            //     this.left = this.parent.left;
+            //     this.right = this.parent.right;
+            //     this.top = this.parent.top;
+            //     this.bottom = this.parent.bottom;
+            // }
+
+            this.overlay = this._createOverlay();
+            this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
+
+            //these two classes will remove the borders left and top so we don't
+            //have double borders when two blocks are next to each other
+            if (this.parent.index > 0) {
+                //if we're not in the leftmost column, we remove the left border
+                //and use the right border of the blocks in the previous column
+                this.overlay.addClass(blocks.elements.Surface.LEFT_CLASS);
             }
-            if (next.length > 0) {
-                this.bottom += Math.floor((this._calculateTop(next) - this.bottom) / 2);
+            if (this.index > 0 || this.parent.parent.index > 0) {
+                //- If we're not the first block in the column, we remove the top border
+                //  and use the bottom border of the previous block in this column instead
+                //- Or if we are the first block, but we're not in the first row of the page,
+                //  we also remove it, because we use the bottom border of the last block in the
+                //  previous row instead.
+                this.overlay.addClass(blocks.elements.Surface.TOP_CLASS);
             }
 
-            this.canDrag = true;
-            this.overlay.addClass(BlocksConstants.BLOCK_DRAGGABLE_CLASS);
-            this.dropspots = {};
+            //draw the newly created overlay
+            this._redraw();
         },
 
         //-----PUBLIC METHODS-----
+        getElementAtSide: function (side)
+        {
+            if (DOM.isColumn(this.element)) {
+                if (side == Constants.SIDE.LEFT) {
+                    return this.getPrevious();
+                }
+                else if (side == Constants.SIDE.RIGHT) {
+                    return this.getNext();
+                }
+                else {
+                    return null;
+                }
+            }
+            else if (side == Constants.SIDE.TOP) {
+                return this.getPrevious();
+            }
+            else if (side == Constants.SIDE.BOTTOM) {
+                return this.getNext();
+            }
+            else {
+                return null;
+            }
+        },
+
         // gets all dropspots for this block and his parents, for each side
         // then generate the triggers (surfaces) for each dropspot
         generateDropspots: function ()
@@ -64,6 +109,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
             this.dropspots[Constants.SIDE.BOTTOM] = this.calculateDropspots(Constants.SIDE.BOTTOM, []);
             this.dropspots[Constants.SIDE.LEFT] = this.calculateDropspots(Constants.SIDE.LEFT, []);
             this.dropspots[Constants.SIDE.RIGHT] = this.calculateDropspots(Constants.SIDE.RIGHT, []);
+
             this.generateTriggers();
         },
 
@@ -183,6 +229,20 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         _isAcceptableChild: function(element)
         {
             return element.hasAttribute("property") || element.hasAttribute("data-property");
+        },
+        _isNear: function (one, two)
+        {
+            var THRESHOLD = 1;
+
+            return Math.abs(one - two) <= THRESHOLD;
+        },
+        _isOuterTop: function ()
+        {
+            return this.element.prev().length == 0;
+        },
+        _isOuterBottom: function ()
+        {
+            return this.element.next().length == 0;
         },
     });
 

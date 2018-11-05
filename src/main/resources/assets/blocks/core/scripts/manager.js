@@ -19,7 +19,7 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DomManipulation", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", function (BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
 {
     var Manager = this;
 
@@ -27,14 +27,17 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     //main entry point for blocks after all the GUI events are handled
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
-        //load in all the elements
-        UI.init();
-
         //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
-        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+        // Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
         //start off by showing the layouter
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+        // Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+
+        //start listening for clicks
+        Mouse.activate();
+        //by default, we allow the user to edit and layout
+        Mouse.enableEdit(true);
+        Mouse.enableLayout(true);
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
@@ -42,9 +45,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //some cleanup: helps bugs when closing the bar during focus
         focusSwitch(Hover.getPageBlock());
 
+        //TODO revise this (needs to be pause?)
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
 
+    //TODO revise (RESUME_BLOCKS)
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
     {
         //start listening for mousedown, mouseup, mouseleave
@@ -52,37 +57,35 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //collapse selection, prevent text selection, disable ondragstart
         DOM.disableTextSelection();
         //show surfaces
-        Hover.showHoverOverlays();
+        //Hover.showHoverOverlays();
         //enable dragging
         DragDrop.setActive(true);
 
+        //TODO move this to DO_REFRESH_LAYOUT?
         //fire up drag-and-drop subsystem if we have enough room
         var windowWidth = $(window).width();
+        //TODO make constant
         var MIN_SCREEN_DND_THRESHOLD = 1030;
         if (windowWidth >= MIN_SCREEN_DND_THRESHOLD) {
-            Broadcaster.send(Broadcaster.EVENTS.ENABLE_DND, event);
-            Mouse.allowDrag();
+            enableLayout(true);
         }
         else {
             Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " (" + windowWidth + "), disabling drag-and-drop.");
-            Broadcaster.send(Broadcaster.EVENTS.DISABLE_DND, event);
-            Mouse.disallowDrag();
+            enableLayout(false);
         }
     });
 
-    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function (event)
+    $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
     {
+        //TODO revise
         Mouse.deactivate();
-        Hover.removeHoverOverlays();
+        //Hover.removeHoverOverlays();
         DragDrop.setActive(false);
         DOM.enableTextSelection();
     });
 
     $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
     {
-        //update the max z-index of positioned elements
-        DOM.calculateMaxIndex();
-
         Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
     });
 
@@ -92,7 +95,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, event);
 
         //hide the overlays while redrawing
-        Hover.removeHoverOverlays();
+        //Hover.removeHoverOverlays();
 
         //make sure the page content wrapper block is at least the height of the body (to support good, natural blur, see comments below)
         updatePageContentHeight();
@@ -103,7 +106,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         focusSwitch(pageBlock, pageBlock.element, null);
 
         //redrawing done
-        Hover.showHoverOverlays();
+        //Hover.showHoverOverlays();
 
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, event);
     });
@@ -115,36 +118,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     //-----EVENTS FOR DRAGGING-----
     /**
-     * Called when we want to enable the whole drag-and-drop system
-     */
-    $(document).on(Broadcaster.EVENTS.ENABLE_DND, function (event)
-    {
-        Mouse.allowDrag();
-        DragDrop.setActive(true);
-        Resizer.activate(true);
-
-        if (UI.newBlockBtn) {
-            UI.newBlockBtn.removeAttr("disabled");
-        }
-    });
-
-    /**
-     * Called when we want to disable the whole drag-and-drop system
-     */
-    $(document).on(Broadcaster.EVENTS.DISABLE_DND, function (event)
-    {
-        Mouse.disallowDrag();
-        DragDrop.setActive(false);
-        Resizer.activate(false);
-
-        if (UI.newBlockBtn) {
-            UI.newBlockBtn.attr("disabled", "");
-            UI.newBlockBtn.attr("title", "Your window is not wide enough to drag and drop new blocks.");
-        }
-    });
-
-    /**
-     * Called when a user starts dragging a block
+     * Called when a user starts dragging a block (fired after a minimum threshold is exceeded)
      */
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, eventData)
     {
@@ -206,7 +180,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
             Hover.removeFocusOverlays();
             Hover.setFocusedBlock(Hover.getPageBlock());
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
         }
         else {
             //if we got a property, use it, otherwise focus the entire block
@@ -215,23 +189,24 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             Sidebar.focusBlock(block, selectedElement, hotspot, event);
             Hover.showFocusOverlays(block.element);
             Hover.setFocusedBlock(block);
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+            //TODO revise
+            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
             enableFocusBlurDetection(block, selectedElement);
         }
     };
 
-    var updatePageContentHeight = function()
+    var updatePageContentHeight = function ()
     {
         var body = $('html');
         var bodyBottom = body.position().top + body.outerHeight(true);
 
-        var page = $('.' + Constants.PAGE_CONTENT_CLASS);
+        var page = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
         var pageBottom = page.position().top + page.outerHeight(true);
         //Note: we must always set the out height to the body height (that's why it's commented out)
         // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
         //if (pageBottom<bodyBottom) {
-            page.outerHeight(bodyBottom - page.position().top);
+        page.outerHeight(bodyBottom - page.position().top);
         //}
     };
 
@@ -265,7 +240,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         // Because setting the height of the PAGE_CONTENT_CLASS element using css was too error prone, we decided to set it using scripting,
         // see above in updatePageContentHeight()
         //Note 2: we can't eg; make this $(document), because it would blur too fast (eg. when clicking on the sidebar or alert dialogs)
-        var page = $('.' + Constants.PAGE_CONTENT_CLASS);
+        var page = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
         page.on("mousedown.manager_focus_end", function (event)
         {
             event.preventDefault();
@@ -277,4 +252,31 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
         });
     };
+    /**
+     * Called when we want to enable/disable the layouting of the page
+     * (eg. the whole drag-and-drop system to create, move and/or resize surfaces)
+     */
+    var enableLayout = function (enable)
+    {
+        if (enable) {
+            Mouse.enableLayout(true);
+            DragDrop.setActive(true);
+            Resizer.activate(true);
+
+            if (UI.newBlockBtn) {
+                UI.newBlockBtn.removeAttr("disabled");
+            }
+        }
+        else {
+            Mouse.enableLayout(false);
+            DragDrop.setActive(false);
+            Resizer.activate(false);
+
+            if (UI.newBlockBtn) {
+                UI.newBlockBtn.attr("disabled", "");
+                UI.newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
+            }
+        }
+    };
+
 }]);

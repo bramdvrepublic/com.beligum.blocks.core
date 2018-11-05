@@ -19,7 +19,7 @@
  *
  * Created by bram on 19/10/18.
  */
-base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, Broadcaster, Hover)
+base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", "blocks.core.UI", function (Class, Constants, Broadcaster, Hover, UI)
 {
     var Undo = this;
 
@@ -456,14 +456,43 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     //Note: it makes sense to disable undo when the sidebar is closed;
     //otherwise, a ctrl-z keystroke on any page would try to do an undo,
     //but the user doesn't have any visual indication she's editing that page.
+    var oldPageHtml = '';
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
         Undo.enabled = true;
+        //initialize the html of the page now it's inside it's wrapper element
+        oldPageHtml = UI.pageContent.html();
     });
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
         Undo.enabled = false;
     });
+    //note: if another block executes a change, we need to make sure
+    //the old html is updated or we'll bypass that change and jump further back in time
+    $(document).on(Broadcaster.EVENTS.UNDO_RECORDED, function (event)
+    {
+        oldPageHtml = UI.pageContent.html();
+    });
+    // This handles the undo/redo of the general page layout (adding/removing blocks, relayout).
+    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event, extraData)
+    {
+        //Note: blocks-layout is moved around when the sidebar opens,
+        //so we need to re-fetch it every time the DOM changes to avoid stale references
+        var newPageHtml = UI.pageContent.html();
+        if (newPageHtml !== oldPageHtml) {
+            if (!extraData || !extraData.inSideUndoRedo) {
+                //note: executing this will trigger the update of oldBlocksHtml, see listener above
+                Undo.recordHtmlChange(UI.pageContent, oldPageHtml, null, null, null, function ()
+                {
+                    //note that we signal ourself to not store this event as an undo event too
+                    //but we can't use isInsideUndoRedo() because the events are sent async
+                    Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, null, {inSideUndoRedo: true});
+                });
+            }
+        }
+    });
+
+    //-----KEY BINDING-----
     //note that we need to use keydown in order to override the builtin shortcut (eg. contenteditable)
     $(document).bind("keydown", function KeyPress(e)
     {
@@ -495,35 +524,6 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
 
                         break;
                 }
-            }
-        }
-    });
-
-    /*
-     * The following code handles the undo/redo of the general page layout (adding/removing blocks, relayout).
-     */
-    var oldBlocksHtml = $('blocks-layout').html();
-    //note: if another block executes a change, we need to make sure
-    //the old html is updated or we'll bypass that change and jump further back in time
-    $(document).on(Broadcaster.EVENTS.UNDO_RECORDED, function (event)
-    {
-        oldBlocksHtml = $('blocks-layout').html();
-    });
-    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event, extraData)
-    {
-        //Note: blocks-layout is moved around when the sidebar opens,
-        //so we need to re-fetch it every time the DOM changes to avoid stale references
-        var blocksLayout = $('blocks-layout');
-        var newBlocksHtml = blocksLayout.html();
-        if (newBlocksHtml !== oldBlocksHtml) {
-            if (!extraData || !extraData.inSideUndoRedo) {
-                //note: executing this will trigger the update of oldBlocksHtml, see listener above
-                Undo.recordHtmlChange(blocksLayout, oldBlocksHtml, null, null, null, function ()
-                {
-                    //note that we signal ourself to not store this event as an undo event too
-                    //but we can't use isInsideUndoRedo() because the events are sent async
-                    Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, null, {inSideUndoRedo: true});
-                });
             }
         }
     });

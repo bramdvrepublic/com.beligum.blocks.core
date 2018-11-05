@@ -28,7 +28,7 @@
  *
  *
  */
-base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "constants.blocks.core", function (Constants, BlocksConstants)
+base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.blocks.core", function (Constants, BlocksConstants)
 {
     var DOM = this;
 
@@ -327,25 +327,6 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
             };
             doSetColumnWidth();
         }
-    };
-
-    /**
-     * Finds the maximum z-index in the DOM tree of elements that are relative or absolutely positioned.
-     * Returns 1 when no such elements were found.
-     */
-    this.calculateMaxIndex = function ()
-    {
-        maxZIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
-            {
-                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative') {
-                    return parseInt($(e).css('z-index')) || 1;
-                }
-            })
-        );
-    };
-    this.getMaxZIndex = function ()
-    {
-        return maxZIndex;
     };
 
     /*
