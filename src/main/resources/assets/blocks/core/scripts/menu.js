@@ -214,7 +214,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             cookieState = SIDEBAR_STATE_SHOW;
             //transform the button to a closing cross
             //slide open the sidebar and activate the callback when finished
-            Sidebar.animateSidebarWidth(INIT_SIDEBAR_WIDTH, function (event)
+            Sidebar.setWidth(INIT_SIDEBAR_WIDTH, function (event)
             {
                 //re-add the button (but with a changed icon)
                 UI.startButton.addClass("open").appendTo(UI.body);
@@ -253,7 +253,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             var CLOSE_SIDEBAR_WIDTH = 0.0;
             //hide the button while animating
             UI.startButton.removeClass("open").detach();
-            Sidebar.animateSidebarWidth(CLOSE_SIDEBAR_WIDTH, function (event)
+            Sidebar.setWidth(CLOSE_SIDEBAR_WIDTH, function (event)
             {
                 //don't allow the sidebar to be resized
                 disableSidebarDrag();
@@ -430,9 +430,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         clearContainerWidth();
 
         //clear special classes for disabling selection of text when the sidebar is open (will be reset later)
-        DOM.enableTextSelection();
+        DOM.enableTextSelection(true);
         //same reason as above; make sure this doesn't get saved accidentally
-        DOM.enableContextMenu();
+        DOM.enableContextMenu(true);
 
         //create a new node out of the full page html
         var savePage = $("html").clone();
@@ -454,7 +454,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         //reset what we cleared above
         updateContainerWidth();
-        DOM.disableTextSelection();
+        DOM.enableTextSelection(false);
 
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,

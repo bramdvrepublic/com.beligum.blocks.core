@@ -1365,14 +1365,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         }
                         Sidebar.unloadFinder();
                         // restore sidebar width
-                        Sidebar.animateSidebarWidth(sidebarWidth);
+                        Sidebar.setWidth(sidebarWidth);
                     };
 
                     finderOptions.onCancel = function ()
                     {
                         Sidebar.unloadFinder();
                         // restore sidebar width
-                        Sidebar.animateSidebarWidth(sidebarWidth);
+                        Sidebar.setWidth(sidebarWidth);
                     };
 
                     // save sidebar width
@@ -1382,7 +1382,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //first move the sidebar, then load it, because we don't have a watcher that updates the components-size
                     // (was problematic with the statusbar elements)
                     if (windowWidth / 2 > sidebarWidth) {
-                        Sidebar.animateSidebarWidth(windowWidth / 2, function ()
+                        Sidebar.setWidth(windowWidth / 2, function ()
                         {
                             Sidebar.loadFinder(finderOptions);
                         });

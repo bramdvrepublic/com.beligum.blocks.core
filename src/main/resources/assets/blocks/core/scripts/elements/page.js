@@ -19,7 +19,7 @@
  *
  * Created by wouter on 10/06/15.
  */
-base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.core", function (Class, Constants)
+base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "blocks.core.DOM", function (Class, Constants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -47,6 +47,8 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         getLayoutContainer: function ()
         {
             var retVal = null;

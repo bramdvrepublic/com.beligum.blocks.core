@@ -15,7 +15,14 @@
  */
 
 /**
- * The manager is the central point. here we catch all the events to keep an overview
+ * The manager is the central point of the editor and solves the circular dependency issue.
+ * It's basically a main dispatcher where all events arrive (and acted upon), so we can reach it from
+ * all other submodules by letting them send out events without having to inject this manager
+ * into them (and create a circular dependency).
+ *
+ * Rule of thumb: this manager will probably inject all submodules (to fire up their methods as a reaction
+ * on events), but this manager will never be injected as a dependency of a submodule, only be letting
+ * them send out events that are listened to in the manager.
  *
  * Created by wouter on 19/01/15.
  */
@@ -23,8 +30,15 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
 {
     var Manager = this;
 
-    //-----EVENTS-----
-    //main entry point for blocks after all the GUI events are handled
+    //-----CONSTANTS-----
+
+    //-----VARIABLES-----
+    var pageSurface = null;
+
+    //-----EVENT LISTENERS-----
+    /**
+     * Sent out by menu.js when the sidebar was opened and the editor needs to boot up
+     */
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
         //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
@@ -33,13 +47,21 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         //start off by showing the layouter
         // Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
 
+        //create the page model
+        pageSurface = new blocks.elements.Page();
+
         //start listening for clicks
         Mouse.activate();
-        //by default, we allow the user to edit and layout
+
+        //by default, we allow the user to edit and layout,
+        //to be edited in the future
         Mouse.enableEdit(true);
         Mouse.enableLayout(true);
     });
 
+    /**
+     * Sent out by menu.js when the sidebar was closed and the editor needs to shut down
+     */
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
         //some cleanup: helps bugs when closing the bar during focus
@@ -49,13 +71,81 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
 
+    /**
+     * Sent out by numerous modules when the editing of the page needs to be
+     * temporarily halted, eg. during saving, dialogs, resizing, etc.
+     * so the page is frozen while we wait for something to complete.
+     */
+    $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
+    {
+        Mouse.deactivate();
+
+        //TODO revise
+        //Hover.removeHoverOverlays();
+        // DragDrop.setActive(false);
+        // DOM.enableTextSelection(true);
+    });
+
+    /**
+     * Un-pause the editor
+     */
+    $(document).on(Broadcaster.EVENTS.RESUME_BLOCKS, function (event)
+    {
+        Mouse.activate();
+    });
+
+    /**
+     * Sent out by mouse.js when we click a surface and it needs to be focused
+     * so we can start editing it's contents.
+     */
+    $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
+    {
+        //focusSwitch(eventData.block, eventData.element, eventData.propertyElement, eventData.hotspot, event);
+        Sidebar.focusBlock(block, selectedElement, hotspot, event);
+    });
+
+    //-----PRIVATE METHODS-----
+    /**
+     * @param block the block that should get focus (not null)
+     * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
+     * @param propertyElement the first property element or template element on the way up from element (may be null)
+     * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
+     */
+    var focusSwitch = function (block, element, propertyElement, hotspot, event)
+    {
+        //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
+        // except when we click on an element that's inside the currently focused block
+        var previousFocusedBlock = Hover.getFocusedBlock();
+
+        if (previousFocusedBlock == null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
+            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
+            Hover.removeFocusOverlays();
+            Hover.setFocusedBlock(Hover.getPageBlock());
+            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
+        }
+        else {
+            //if we got a property, use it, otherwise focus the entire block
+            var selectedElement = propertyElement == null ? block.element : propertyElement;
+
+            Sidebar.focusBlock(block, selectedElement, hotspot, event);
+            Hover.showFocusOverlays(block.element);
+            Hover.setFocusedBlock(block);
+            //TODO revise
+            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
+            enableFocusBlurDetection(block, selectedElement);
+        }
+    };
+
+
+    //-----TODO UNCHECKED-----
     //TODO revise (RESUME_BLOCKS)
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
     {
         //start listening for mousedown, mouseup, mouseleave
         Mouse.activate();
         //collapse selection, prevent text selection, disable ondragstart
-        DOM.disableTextSelection();
+        DOM.enableTextSelection(false);
         //show surfaces
         //Hover.showHoverOverlays();
         //enable dragging
@@ -73,15 +163,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
             Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " (" + windowWidth + "), disabling drag-and-drop.");
             enableLayout(false);
         }
-    });
-
-    $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
-    {
-        //TODO revise
-        Mouse.deactivate();
-        //Hover.removeHoverOverlays();
-        DragDrop.setActive(false);
-        DOM.enableTextSelection();
     });
 
     $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
@@ -123,7 +204,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, eventData)
     {
         //Broadcaster.zoom();
-        DOM.disableContextMenu();
+        DOM.enableContextMenu(false);
         DragDrop.dragStarted(event, eventData);
     });
 
@@ -133,7 +214,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
     {
         //Broadcaster.unzoom();
-        DOM.enableContextMenu();
+        DOM.enableContextMenu(true);
         DragDrop.dragAborted(event);
     });
 
@@ -144,7 +225,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     {
         //Broadcaster.unzoom();
 
-        DOM.enableContextMenu();
+        DOM.enableContextMenu(true);
         DragDrop.dragEnded(event);
     });
 
@@ -159,43 +240,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     });
 
     //-----EVENTS FOR DRAGGING-----
-    $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
-    {
-        focusSwitch(eventData.block, eventData.element, eventData.propertyElement, eventData.hotspot, event);
-    });
-
-    /**
-     * @param block the block that should get focus (not null)
-     * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
-     * @param propertyElement the first property element or template element on the way up from element (may be null)
-     * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
-     */
-    var focusSwitch = function (block, element, propertyElement, hotspot, event)
-    {
-        //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
-        // except when we click on an element that's inside the currently focused block
-        var previousFocusedBlock = Hover.getFocusedBlock();
-
-        if (previousFocusedBlock == null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
-            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
-            Hover.removeFocusOverlays();
-            Hover.setFocusedBlock(Hover.getPageBlock());
-            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
-        }
-        else {
-            //if we got a property, use it, otherwise focus the entire block
-            var selectedElement = propertyElement == null ? block.element : propertyElement;
-
-            Sidebar.focusBlock(block, selectedElement, hotspot, event);
-            Hover.showFocusOverlays(block.element);
-            Hover.setFocusedBlock(block);
-            //TODO revise
-            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
-
-            enableFocusBlurDetection(block, selectedElement);
-        }
-    };
-
     var updatePageContentHeight = function ()
     {
         var body = $('html');

@@ -17,7 +17,7 @@
 /**
  * An element with 4 corners.
  */
-base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", "blocks.core.UI", function (Class, Commons, Constants, BlocksConstants, UI)
+base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", function (Class, Commons, Constants, BlocksConstants)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -32,9 +32,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
             INDEX: {},
             INDEX_ATTR: "data-index",
 
-            BLOCKS_LAYOUT_TAG: 'blocks-layout',
-            CONTAINER_PROPERTY: 'container',
-            ROW_CLASS: 'row',
             LEFT_CLASS: 'left',
             RIGHT_CLASS: 'right',
             TOP_CLASS: 'top',
@@ -93,30 +90,52 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
             this.canDrag = false; // only for first level blocks inside a container
             this.overlay = null;
 
-            var top = this._calculateTop(element);
-            var bottom = this._calculateBottom(element);
-            var left = this._calculateLeft(element);
-            var right = this._calculateRight(element);
+            //this allows us to call this constructor with no arguments
+            if (element) {
+                var top = this._calculateTop(element);
+                var bottom = this._calculateBottom(element);
+                var left = this._calculateLeft(element);
+                var right = this._calculateRight(element);
 
-            this.top = Math.min(top, bottom);
-            this.bottom = Math.max(top, bottom);
-            this.left = Math.min(left, right);
-            this.right = Math.max(left, right);
+                this.top = Math.min(top, bottom);
+                this.bottom = Math.max(top, bottom);
+                this.left = Math.min(left, right);
+                this.right = Math.max(left, right);
 
-            this.realTop = this.top;
-            this.realBottom = this.bottom;
-            this.realLeft = this.left;
-            this.realRight = this.right;
+                this.realTop = this.top;
+                this.realBottom = this.bottom;
+                this.realLeft = this.left;
+                this.realRight = this.right;
+            }
         },
 
         //-----PUBLIC METHODS-----
         /**
+         * Returns the first child we can find where the bounds wrap the supplied coordinate
+         * or null if no such child was found
+         */
+        childAt: function (x, y)
+        {
+            var retVal = null;
+
+            for (var i = 0; !retVal && i < this.children.length; i++) {
+                var child = this.children[i];
+                if (child.isInside(x, y)) {
+                    retVal = child;
+                }
+            }
+
+            return retVal;
+        },
+        /**
          * Returns true of the supplied coordinate is inside this surface, it's bounds included
          */
-        isTriggered: function (x, y)
+        isInside: function (x, y)
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
         },
+
+        //-----TODO UNCHECKED-----
         /**
          * Returns true if this surface has no sibling on the specified side
          * @param side
@@ -176,7 +195,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
                 return null;
             }
         },
-
         // find most left and right column and use them to calculate the width of the parent
         getFullWidth: function ()
         {
@@ -200,7 +218,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
 
             return retVal;
         },
-
         // find all dropspots for an element
         // is called for a block and returns all dropspots for this block and his parents.
         createAllDropspots: function ()
@@ -219,7 +236,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
                 this.container.createAllDropspots();
             }
         },
-
         getBlocks: function ()
         {
             if (this.totalBlocks != null) return this.totalBlocks;
@@ -233,7 +249,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
             }
             return this.totalBlocks;
         },
-
         // Container is a LayoutElement without a parent
         getContainer: function ()
         {
@@ -244,12 +259,10 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
 
             return parent;
         },
-
         calculateDropspots: function (side, dropspots)
         {
             return [];
         },
-
         generateDropspots: function ()
         {
         },
@@ -430,7 +443,7 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
 
             childSurface._redraw();
         },
-        _createOverlay: function()
+        _createOverlay: function ()
         {
             var retVal = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
 
@@ -439,11 +452,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Commo
 
             if (this.canDrag) {
                 retVal.addClass(BlocksConstants.BLOCK_DRAGGABLE_CLASS);
-            }
-
-            //append it to the DOM
-            if (UI.surfaceWrapper) {
-                UI.surfaceWrapper.append(retVal);
             }
 
             return retVal;

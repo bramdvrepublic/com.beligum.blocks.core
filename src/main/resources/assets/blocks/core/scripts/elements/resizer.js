@@ -19,10 +19,8 @@
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
-base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.UI", function (Class, BlocksConstants, Resizer, UI)
+base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.UI", function (Class, BlocksConstants, Resizer, UI)
 {
-    var body = $("body");
-
     //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
@@ -43,29 +41,35 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
         //-----CONSTRUCTORS-----
         constructor: function (leftColumn, rightColumn)
         {
+            blocks.elements.ResizeHandle.Super.call(this);
+
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
-            this.overlay = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS + " " + BlocksConstants.COLUMN_RESIZER_CLASS);
 
-            this._redraw();
+            this.overlay = this._createOverlay();
+            this.overlay.addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
             UI.handleWrapper.append(this.overlay);
 
-            var _this = this;
-            this.overlay.on("mousedown.resizehandle", function (event)
-            {
-                // only start drag on left click
-                if (event.which == 1) {
-                    Resizer.startDrag(_this);
-                    $(document).on("mouseup.resizehandle", function (event)
-                    {
-                        $(document).off("mouseup.resizehandle");
-                        Resizer.endDrag(null);
-                    });
-                }
-            });
+            this._redraw();
+
+            // var _this = this;
+            // this.overlay.on("mousedown.resizehandle", function (event)
+            // {
+            //     // only start drag on left click
+            //     if (event.which == 1) {
+            //         Resizer.startDrag(_this);
+            //         $(document).on("mouseup.resizehandle", function (event)
+            //         {
+            //             $(document).off("mouseup.resizehandle");
+            //             Resizer.endDrag(null);
+            //         });
+            //     }
+            // });
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         update: function ()
         {
             var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
@@ -76,30 +80,18 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
                 siblings[i].overlay.css("height", height);
             }
         },
-
-        showOverlay: function ()
-        {
-
-        },
-
         updateHeight: function ()
         {
             var height = this.leftColumn.parent.element.height();
             this.overlay.css("height", height);
         },
 
-        removeOverlay: function ()
-        {
-            this.overlay.off("mousedown.resizehandle");
-            this.overlay.remove();
-        },
-
         //-----PRIVATE METHODS-----
         _redraw: function()
         {
             if (this.overlay) {
-                var half_width = Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2);
-                var left = this.leftColumn.right - half_width;
+
+                var left = this.leftColumn.right - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2);
                 var top = this.leftColumn.top;
                 var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH;
                 var height = this.leftColumn.bottom - this.leftColumn.top;

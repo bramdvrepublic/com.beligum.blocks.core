@@ -18,7 +18,7 @@
  * A row inside a column or a container
  * Can only contain columns
  */
-base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
+base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -43,6 +43,8 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         // Override
         getElementAtSide: function (side)
         {
@@ -77,7 +79,7 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         },
         _isAcceptableChild: function(element)
         {
-            return element.is('[class*="col-"]');
+            return DOM.isColumn(element);
         },
         _getChildOrientation: function()
         {

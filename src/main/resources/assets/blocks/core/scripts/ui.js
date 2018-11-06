@@ -18,6 +18,9 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
 {
     var UI = this;
 
+    //-----CONSTANTS-----
+
+    //-----VARIABLES-----
     this.body = $("body");
     this.startButton = undefined;
     this.sidebar = undefined;
@@ -27,6 +30,7 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
     this.handleWrapper = undefined;
     this.dropspotWrapper = undefined;
 
+    //-----PUBLIC METHODS-----
     //this is called just before BLOCKS_START is fired
     this.init = function ()
     {
@@ -38,5 +42,19 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
         UI.handleWrapper.empty();
         UI.dropspotWrapper.empty();
     };
+
+    this.showOverlays = function(show)
+    {
+        if (this.overlayWrapper) {
+            if (show) {
+                this.overlayWrapper.show();
+            }
+            else {
+                this.overlayWrapper.hide();
+            }
+        }
+    };
+
+    //-----PRIVATE METHODS-----
 
 }]);

@@ -18,7 +18,7 @@
  * Special kind of row that can contains a template
  * Draggable templates are the elements inside a column
  */
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksConstants, DOM)
+base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DOM", "blocks.core.UI", function (Class, Constants, BlocksConstants, DOM, UI)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -54,6 +54,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
 
             this.overlay = this._createOverlay();
             this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
+            UI.surfaceWrapper.append(this.overlay);
 
             //these two classes will remove the borders left and top so we don't
             //have double borders when two blocks are next to each other
@@ -76,6 +77,9 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         },
 
         //-----PUBLIC METHODS-----
+
+
+        //-----TODO UNCHECKED-----
         getElementAtSide: function (side)
         {
             if (DOM.isColumn(this.element)) {
@@ -228,7 +232,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.co
         },
         _isAcceptableChild: function(element)
         {
-            return element.hasAttribute("property") || element.hasAttribute("data-property");
+            return DOM.isProperty(element);
         },
         _isNear: function (one, two)
         {

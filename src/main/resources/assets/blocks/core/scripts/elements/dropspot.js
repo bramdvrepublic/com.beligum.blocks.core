@@ -23,7 +23,7 @@
  *
  * Created by wouter on 9/03/15.
  */
-base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
+base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -55,6 +55,8 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         setOther: function ()
         {
             var retVal = null;
@@ -143,7 +145,6 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base
             }
             return true;
         },
-
         setTrigger: function (min, max)
         {
             if (min < max) {
@@ -154,7 +155,6 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base
                 this.min = max;
             }
         },
-
         // co is an x or y value that must be between min and max
         isTriggered: function (co)
         {

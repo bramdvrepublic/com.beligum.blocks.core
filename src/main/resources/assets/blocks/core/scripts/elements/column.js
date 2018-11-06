@@ -19,7 +19,7 @@
  *
  * Created by wouter on 9/03/15.
  */
-base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
+base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -41,6 +41,8 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         // Override
         getElementAtSide: function (side)
         {
@@ -77,7 +79,7 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
         },
         _isAcceptableChild: function(element)
         {
-            return element[0].tagName.indexOf("-") > 0;
+            return DOM.isBlock(element);
         },
         _getChildOrientation: function()
         {

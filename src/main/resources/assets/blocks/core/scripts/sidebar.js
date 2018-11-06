@@ -17,15 +17,22 @@
 /**
  * Created by wouter on 15/06/15.
  */
-base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages) {
-
+base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages)
+{
     var SideBar = this;
+
+    //-----CONSTANTS-----
+
+    //-----VARIABLES-----
+    //this will map IDs to config panels
     var configPanels = {};
-    var currentProperty = null;
-
     var activeBlocks = [];
+    //var currentProperty = null;
 
+    //-----PUBLIC METHODS-----
     /**
+     * Reset and initialize the sidebar's config panels for the supplied surface
+     *
      * @param block the block that should get focus (not null)
      * @param element one of these:
      *                - the first property element on the way up of the element that got clicked (inside the block)
@@ -34,8 +41,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
      * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
      * @param event the original event that triggered this all
      */
-    this.focusBlock = function (block, element, hotspot, event) {
-
+    this.focusBlock = function (block, element, hotspot, event)
+    {
         this.reset();
 
         var currBlock = block;
@@ -43,7 +50,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         activeBlocks = [];
 
         //little helper function to refactor things
-        var pushActiveBlock = function (currBlock, currElement) {
+        var pushActiveBlock = function (currBlock, currElement)
+        {
             activeBlocks.push({
                 block: currBlock,
                 element: currElement
@@ -64,8 +72,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         var lastRow = null;
         var firstColumn = null;
         var lastColumn = null;
-        //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
+        //we'll cycle through the parents until we hit the page, then reversing the order and creating panels, starting with the page
         while (currBlock != null) {
+
             if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block) {
                 pushActiveBlock(currBlock, currElement);
             }
@@ -111,7 +120,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 activeBlocks[i].widget = widget;
             }
 
-            //don't make windows for (real) properties, only blocks and pages
+            //don't make panels for (real) properties, only blocks and pages
             var isPropertyInBlock = !e.block.element.is(e.element);
             var blockTitle = isPropertyInBlock ? 'property' : 'block';
             if (widget) {
@@ -119,20 +128,20 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 blockTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : widget.getWindowName();
             }
 
-            var windowTitle = title;
+            var panelTitle = title;
             if (title == null) {
-                windowTitle = blockTitle;
+                panelTitle = blockTitle;
             }
             else {
-                windowTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
+                panelTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
             }
 
-            //we'll expand all windows by default, except the row and column
+            //we'll expand all panels by default, except the row and column
             var collapsed = false;
             if (e.block instanceof blocks.elements.Row || e.block instanceof blocks.elements.Column) {
                 collapsed = true;
             }
-            //if we're showing the controls for a block, close the window panel
+            //if we're showing the controls for a block, close the panel
             else if (block instanceof blocks.elements.Block && e.block instanceof blocks.elements.Page) {
                 collapsed = true;
             }
@@ -142,24 +151,25 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             //so we disable the 'page-entry' if a block is focused
             var disabled = !(block instanceof blocks.elements.Page) && e.block instanceof blocks.elements.Page;
 
-            // if a parent stopped the creation of sub-windows, keep executing the focus() method,
-            // but without a window ID (allowing for logic without UI consequences)
-            var windowID = SideBar.createWindow(e.element, windowTitle, collapsed, disabled);
+            // if a parent stopped the creation of sub-panels, keep executing the focus() method,
+            // but without a panel ID (allowing for logic without UI consequences)
+            var panelID = createConfigPanel(panelTitle, collapsed, disabled);
             var addedOptions = false;
 
             if (widget) {
-                // the focus method can return a list of UI widgets it needs to add to the window
+                // the focus method can return a list of UI widgets it needs to add to the panel
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
                 widget.focus(e.block, e.element, hotspot, event);
                 var optionsToAdd = widget.getConfigs(e.block, e.element);
                 if (optionsToAdd) {
                     if (addedOptions && optionsToAdd.length > 0) {
-                        this.addUIForProperty(windowID, '<hr>');
+                        addUIForProperty(panelID, '<hr>');
                         addedOptions = true;
                     }
 
                     //since we have a 'weight' setting, make sure we sort the array first
-                    optionsToAdd.sort(function (a, b) {
+                    optionsToAdd.sort(function (a, b)
+                    {
 
                         // 1: a is greater than b
                         //-1: a is less than b
@@ -198,7 +208,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                     });
 
                     for (var w = 0; w < optionsToAdd.length; w++) {
-                        this.addUIForProperty(windowID, optionsToAdd[w]);
+                        addUIForProperty(panelID, optionsToAdd[w]);
                         addedOptions = true;
                     }
                 }
@@ -208,15 +218,19 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 }
             }
 
-            //don't add an empty panel
+            //don't add empty panels
             if (addedOptions) {
-                this.appendWindowToSidebar(BlocksConstants.SIDEBAR_CONTEXT_ID, windowID);
-                title = windowTitle;
+                appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID);
+                title = panelTitle;
             }
         }
     };
 
-    this.reset = function () {
+    /**
+     * Resets the sidebar to a neutral state
+     */
+    this.reset = function ()
+    {
         this.unloadFinder();
 
         for (var i = 0; i < activeBlocks.length; i++) {
@@ -237,27 +251,90 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         sidebarContext.empty();
     };
 
-    /*
-     * Drill down and add functionality for each block
-     * */
-    var update = function (property) {
-        // property: add div
-        currentProperty = property;
-        setBlockFocus(property);
-        SideBar.refresh();
+    /**
+     * Loads the finder into the sidebar, passing the options to the finder init method
+     */
+    //TODO factor this away because the finder is no dependency of this project
+    this.loadFinder = function (options)
+    {
+        //general test if we have the media plugin available
+        var MediaConstants = base.getPlugin("constants.blocks.media.core");
+        if (MediaConstants) {
+            var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+            contextTab.addClass(BlocksConstants.LOADING_CLASS);
+            finderTab.removeClass(BlocksConstants.LOADING_CLASS);
+            //we'll start off with an empty container and let createConfigPanel() fill it
+            finderTab.empty();
+
+            //'switch' to the finder tab
+            $("#" + BlocksConstants.SIDEBAR_FILES_TAB_ID).tab('show');
+
+            //now create and add a new frame
+            var panelId = createConfigPanel(BlocksMessages.finderTabTitle);
+            appendConfigPanelToSidebar(panelId, BlocksConstants.SIDEBAR_FILES_ID);
+            //let's us do perform some css tweaks
+            var frame = getConfigPanelForId(panelId);
+            if (frame) {
+                frame.addClass(BlocksConstants.SIDEBAR_FINDER_PANEL_CLASS);
+            }
+            else {
+                Logger.error('Couldn\'t find a config panel with this id', panelId);
+            }
+
+            //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+            var finder = frame.find(".panel-body");
+            finder.load(MediaConstants.FINDER_INLINE_ENDPOINT, function (response, status, xhr)
+            {
+                if (status == "error") {
+                    var msg = "Error while loading the finder; ";
+                    Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+                    finder.removeClass(BlocksConstants.LOADING_CLASS);
+                }
+                else {
+                    Finder.init(options);
+                    //don't show the warning when clicking something in the finder
+                    finder.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+                    finder.removeClass(BlocksConstants.LOADING_CLASS);
+                }
+            });
+        }
     };
 
-    this.animateSidebarWidth = function (width, callback) {
-        var windowWidth = $(window).width();
+    /**
+     * If the finder tab is active in the sidebar, unload it.
+     */
+    this.unloadFinder = function ()
+    {
+        var MediaConstants = base.getPlugin("constants.blocks.media.core");
+        if (MediaConstants) {
+            //'switch' back to the context tab
+            $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
 
+            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+            if (!finderTab.is(':empty')) {
+                var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+                contextTab.removeClass(BlocksConstants.LOADING_CLASS);
+                finderTab.addClass(BlocksConstants.LOADING_CLASS);
+                finderTab.html('');
+            }
+        }
+    };
+
+    /**
+     * Sets the width of the sidebar to the specified value is pixels, animated.
+     */
+    this.setWidth = function (width, callback)
+    {
         var sidebarElement = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
         sidebarElement.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
         sidebarElement.css("width", (width) + "px");
         //one() = on() but only once
-        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event) {
+        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
+        {
             if ($(event.target).hasClass(BlocksConstants.PAGE_SIDEBAR_CLASS)) {
                 sidebarElement.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
-                $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
+                $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", ($(window).width() - width) + "px");
 
                 if (callback) {
                     callback(event);
@@ -266,9 +343,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         });
     };
 
-    this.addUIForProperty = function (windowId, html) {
-
-        var config = SideBar.getWindowForId(windowId);
+    //-----PRIVATE METHODS-----
+    var addUIForProperty = function (panelId, html)
+    {
+        var config = getConfigPanelForId(panelId);
         if (config) {
 
             //these are the defaults
@@ -294,21 +372,37 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             }
         }
         else {
-            Logger.error("Couldn't find window with ID " + windowId);
+            Logger.error('Couldn\'t find a config panel with this id', panelId);
         }
     };
 
-    this.createWindow = function (element, title, collapsed, disabled) {
+    /**
+     * Lookup the config panel for the supplied id
+     */
+    var getConfigPanelForId = function (id)
+    {
+        return configPanels[id];
+    };
 
+    /**
+     * Creates a new, uniform config panel
+     *
+     * @param title
+     * @param collapsed
+     * @param disabled
+     * @returns {*}
+     */
+    var createConfigPanel = function (title, collapsed, disabled)
+    {
         if (configPanels == null) {
             configPanels = {};
         }
 
-        var windowId = Commons.generateId();
-        if (configPanels[windowId] == null) {
+        var panelId = Commons.generateId();
+        if (configPanels[panelId] == null) {
 
-            var panelId = windowId + '-panel';
-            var bodyId = windowId + '-panel-body';
+            var panelId = panelId + '-panel';
+            var bodyId = panelId + '-panel-body';
             var div = $('<div id="' + panelId + '" class="panel panel-default' + (disabled ? ' disabled' : '') + '"/>');
             var header = $('<div class="panel-heading collapser' + (collapsed ? ' collapsed' : '') + '" data-toggle="collapse" data-target="#' + bodyId + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-controls="' + bodyId + '">' + title + '</div>').appendTo(div);
 
@@ -321,114 +415,41 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 var bodySimple = $('<div class="' + BlocksConstants.PANEL_BODY_SIMPLE_CLASS + '"/>').appendTo(body);
                 //note: the advanced container contains a control and a collapser
                 var bodyAdvanced = $('<div class="' + BlocksConstants.PANEL_BODY_ADVANCED_CLASS + '"/>').appendTo(body);
-                var bodyAdvancedBodyId = windowId + '-advanced';
+                var bodyAdvancedBodyId = panelId + '-advanced';
                 var bodyAdvancedCollapsed = true;
                 var bodyAdvancedHeader = $('<div class="collapser' + (bodyAdvancedCollapsed ? ' collapsed' : '') + '" data-toggle="collapse" data-target="#' + bodyAdvancedBodyId + '" aria-expanded="' + (bodyAdvancedCollapsed ? 'false' : 'true') + '" aria-controls="' + bodyAdvancedBodyId + '">' + BlocksMessages.sidebarPanelAdvancedTitle + '</div>').appendTo(bodyAdvanced);
                 var bodyAdvancedBodyWrapper = $('<div id="' + bodyAdvancedBodyId + '" class="collapse' + (bodyAdvancedCollapsed ? '' : ' in') + '">').appendTo(bodyAdvanced);
                 //same remark as above: better to have a wrapper around the content
                 var bodyAdvancedBody = $('<div>').appendTo(bodyAdvancedBodyWrapper);
-
-                if (element) {
-                    div.mouseenter(function () {
-                        highlight(element);
-                    });
-
-                    div.mouseleave(function () {
-                        unhighlight(element);
-                    });
-                }
             }
 
-            configPanels[windowId] = div;
+            configPanels[panelId] = div;
 
-            //note: real adding is done manually in appendWindowToSidebar()
+            //note: real adding is done manually in appendConfigPanelToSidebar()
         }
 
-        return windowId
+        return panelId
     };
 
-    this.getWindowForId = function (id) {
-        return configPanels[id];
-    };
+    /**
+     * Looks up the config panel with the supplied ID and adds it to the sidebar
+     * in the tab with the right ID.
+     */
+    var appendConfigPanelToSidebar = function (id, tabId)
+    {
+        var configPanel = getConfigPanelForId(id);
 
-    this.appendWindowToSidebar = function (type, id) {
-
-        var div = this.getWindowForId(id);
-
-        if (type == BlocksConstants.SIDEBAR_CONTEXT_ID) {
-            $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID).append(div);
-        }
-        else if (type == BlocksConstants.SIDEBAR_FILES_ID) {
-            $("#" + BlocksConstants.SIDEBAR_FILES_ID).append(div);
-        }
-
-        return div;
-    };
-
-    //TODO factor this away because the finder is no dependency of this project
-    this.loadFinder = function (options) {
-        //general test if we have the media plugin available
-        var MediaConstants = base.getPlugin("constants.blocks.media.core");
-        if (MediaConstants) {
-            var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
-            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
-            contextTab.addClass(BlocksConstants.LOADING_CLASS);
-            finderTab.removeClass(BlocksConstants.LOADING_CLASS);
-            //we'll start off with an empty container and let createWindow() fill it
-            finderTab.empty();
-
-            //'switch' to the finder tab
-            $("#" + BlocksConstants.SIDEBAR_FILES_TAB_ID).tab('show');
-
-            //now create and add a new frame
-            var windowID = SideBar.createWindow(null, BlocksMessages.finderTabTitle);
-            SideBar.appendWindowToSidebar(BlocksConstants.SIDEBAR_FILES_ID, windowID);
-            //let's us do perform some css tweaks
-            var frame = SideBar.getWindowForId(windowID);
-            frame.addClass(BlocksConstants.SIDEBAR_FINDER_PANEL_CLASS);
-
-            //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
-            var finder = frame.find(".panel-body");
-            finder.load(MediaConstants.FINDER_INLINE_ENDPOINT, function (response, status, xhr) {
-                if (status == "error") {
-                    var msg = "Error while loading the finder; ";
-                    Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
-                    finder.removeClass(BlocksConstants.LOADING_CLASS);
-                }
-                else {
-                    Finder.init(options);
-                    //don't show the warning when clicking something in the finder
-                    finder.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
-                    finder.removeClass(BlocksConstants.LOADING_CLASS);
-                }
-            });
-        }
-    };
-    this.unloadFinder = function () {
-        var MediaConstants = base.getPlugin("constants.blocks.media.core");
-        if (MediaConstants) {
-            //'switch' back to the context tab
-            $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
-
-            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
-            if (!finderTab.is(':empty')) {
-                var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
-                contextTab.removeClass(BlocksConstants.LOADING_CLASS);
-                finderTab.addClass(BlocksConstants.LOADING_CLASS);
-                finderTab.html('');
+        if (configPanel) {
+            if (tabId == BlocksConstants.SIDEBAR_CONTEXT_ID) {
+                $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID).append(configPanel);
+            }
+            else if (tabId == BlocksConstants.SIDEBAR_FILES_ID) {
+                $("#" + BlocksConstants.SIDEBAR_FILES_ID).append(configPanel);
             }
         }
-    };
-
-    // -----PRIVATE-----
-    var highlight = function (element) {
-        //don't highlight the entire page
-        if (!element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
-            element.addClass(BlocksConstants.HIGHLIGHT_CLASS);
+        else {
+            Logger.error('Couldn\'t find a config panel with this id', id);
         }
-    };
-    var unhighlight = function (element) {
-        element.removeClass(BlocksConstants.HIGHLIGHT_CLASS);
     };
 
 }]);

@@ -32,64 +32,124 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
 {
     var DOM = this;
 
-    // LOCAL CONSTANTS
+    //-----CONSTANTS-----
     this.COLUMN_WIDTH_CLASS = [
         {name: "col-xs-", min: 0, max: 767},
         {name: "col-sm-", min: 768, max: 991},
         {name: "col-md-", min: 992, max: 1199},
-        {name: "col-lg-", min: 120, max: 10000}
+        {name: "col-lg-", min: 1200, max: 10000}
     ];
+
     this.MAX_COLUMNS = 12;
 
-    var maxZIndex = 0;
-
-    $.fn.hasAttribute = function (name)
+    //-----PUBLIC METHODS-----
+    /**
+     * JQuery event listener for more performant window resizing.
+     * Use like this: $(window).smartresize(function (event) {});
+     */
+    $.fn["smartresize"] = function (fn)
     {
-        return this.attr(name) !== undefined;
+        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
     };
 
-    this.isRow = function (element)
+    /**
+     * JQuery event listener for more performant window resizing.
+     * Use like this: $(document).on("smartmousemove", function (event) {});
+     */
+    $.fn["smartmousemove"] = function (fn)
     {
-        return element.hasClass(BlocksConstants.ROW_CLASS);
+        return fn ? this.bind('mousemove', debounce(fn)) : this.trigger("smartmousemove");
     };
 
-    this.isColumn = function (element)
+    /**
+     * Enables/disables the selection of text in the page
+     * See http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+     */
+    this.enableTextSelection = function (enable)
     {
-        //TODO we should replace this with .is('[class*="col-"]')
-        var el = $(element);
-        var retVal = false;
-        var classList = el[0].className.split(/\s+/);
-        for (var i = 0; i < classList.length; i++) {
-            for (var j = 0; j < DOM.COLUMN_WIDTH_CLASS.length; j++) {
-                if (classList[i].indexOf(DOM.COLUMN_WIDTH_CLASS[j].name) == 0) {
-                    return true;
-                }
-            }
+        if (enable) {
+            $("html").removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+
+            window.ondragstart = function ()
+            {
+                return true;
+            };
         }
-        return retVal;
+        else {
+            //de-select existing selection
+            var sel = window.getSelection().removeAllRanges();
+
+            //add user-select: none; to the root html
+            $("html").addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+
+            //disable dragging
+            window.ondragstart = function ()
+            {
+                return false;
+            };
+        }
     };
 
+    /**
+     * Enables/disables the context menu
+     */
+    this.enableContextMenu = function (enable)
+    {
+        if (enable) {
+            $("html").removeAttr("oncontextmenu", "");
+            // IE < 10
+            $("html").removeAttr("onselectstart");
+        }
+        else {
+            $("html").attr("oncontextmenu", "return false;");
+            // IE < 10
+            $("html").attr("onselectstart", "return false;");
+        }
+    };
+
+    /**
+     * Returns true of the element is a bootstrap container
+     */
     this.isContainer = function (element)
     {
         return element.hasClass(BlocksConstants.CONTAINER_CLASS);
     };
 
-    //this.isBlock = function (element)
-    //{
-    //    return element.hasAttribute(Constants.IS_PROPERTY) || !(DOM.isColumn(element) && DOM.isRow(element));
-    //};
-
-    // TODO check tagname for '-'
-    this.isTemplate = function (element)
+    /**
+     * Returns true of the element is a bootstrap row
+     */
+    this.isRow = function (element)
     {
-        return element.hasAttribute(BlocksConstants.IS_ENTITY);
+        return element.hasClass(BlocksConstants.ROW_CLASS);
     };
 
-    //this.isProperty = function (element)
-    //{
-    //    return element.hasAttribute(Constants.IS_PROPERTY);
-    //};
+    /**
+     * Returns true of the element is a bootstrap column
+     */
+    this.isColumn = function (element)
+    {
+        return element.is('[class*="col-"]');
+    };
 
+    /**
+     * Returns true of the element is a template block
+     */
+    this.isBlock = function (element)
+    {
+        return element[0].tagName.indexOf("-") > 0;
+    };
+
+    /**
+     * Returns true of the element is a property element
+     */
+    this.isProperty = function (element)
+    {
+        return element.hasAttribute("property") || element.hasAttribute("data-property");
+    };
+
+    /**
+     * Returns the column width of the element in grid units
+     */
     this.getColumnWidth = function (element)
     {
         //extracts the class width number from the element,
@@ -130,11 +190,280 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
 
         return currentWidth;
     };
-
-    this.getColumnClass = function ()
+    /**
+     * Sets the column width in grid-units, not pixels
+     */
+    this.setColumnWidth = function (element, newWidth, animationTime, callback)
     {
-        // TODO Wouter: This should change with screen width
-        return "col-md-";
+        var currentClass = getColumnClass(this.getColumnWidth(element));
+        var newClass = getColumnClass(newWidth);
+        if (callback == null) {
+            element.removeClass(currentClass);
+            element.addClass(newClass);
+        } else {
+            if (currentClass != newClass) {
+                element.animate({width: (element.parent().innerWidth() / DOM.MAX_COLUMNS) * newWidth}, animationTime, function ()
+                {
+                    element.removeClass(currentClass);
+                    element.addClass(newClass);
+                    element.css("width", "");
+                    callback();
+                });
+            }
+            else {
+                callback();
+            }
+        }
+    };
+
+    this.cleanDown = function (element, callback)
+    {
+        // clean
+        var findNext = function (element, callback)
+        {
+            if (element.next().length > 0) {
+                DOM.cleanup(element.next(), callback);
+            }
+            else if (!DOM.isContainer(element)) {
+                DOM.cleanDown(element.parent(), callback);
+            }
+            else {
+                callback();
+            }
+        };
+
+        if (element.children().length == 0) {
+            element.toggle(50, function ()
+            {
+                var parent = element.parent();
+                element.remove();
+                DOM.cleanup(parent, callback);
+            });
+        }
+        else if (DOM.isColumn(element)) {
+            var childRows = element.children(".row");
+            if (childRows.length > 0 && DOM.isRow(element.parent()) && element.parent().children().length == 1) {
+                element.parent().replaceWith(childRows);
+                DOM.cleanup(childRows.first(), callback);
+            }
+            else {
+                findNext(element, callback);
+            }
+        }
+        else if (DOM.isRow(element)) {
+            var childColumns = element.children(".column");
+            if (childColumns.length > 0 && element.parent().children().length == 1) {
+                element.parent().replaceWith(childColumns);
+                DOM.cleanup(childColumns.first(), callback);
+            }
+            else {
+                distributeColumnsInRow(element, function ()
+                {
+                    findNext(element, callback);
+                });
+            }
+        }
+        else {
+            findNext(element, callback);
+        }
+    };
+
+    this.cleanup = function (element, callback)
+    {
+        var children;
+        if (DOM.isColumn(element) || DOM.isContainer(element)) {
+            children = element.children(".row");
+        } else if (DOM.isRow(element)) {
+            children = element.children();
+        }
+
+        if (children.first().length > 0) {
+            DOM.cleanup(children.first(), callback);
+        } else {
+            DOM.cleanDown(element, callback);
+        }
+    };
+
+    /**
+     * Function to insert a block and clean up
+     */
+    this.appendElement = function (blockElement, dropLocationElement, side, callback)
+    {
+        if (side == Constants.SIDE.RIGHT || side == Constants.SIDE.BOTTOM) {
+            dropLocationElement.after(blockElement)
+        } else if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
+            dropLocationElement.before(blockElement)
+        }
+        callback();
+    };
+
+    /**
+     * Function to remove a block and clean up
+     */
+    this.removeBlock = function (element, animationTime, callback)
+    {
+        element.toggle(animationTime, function ()
+        {
+            var blockElement = element.remove();
+            blockElement.toggle();
+            callback();
+
+        })
+    };
+
+    this.createRow = function ()
+    {
+        return $('<div class="' + BlocksConstants.ROW_CLASS + '"></div>');
+    };
+
+    this.createColumn = function (columnWidth)
+    {
+        return $('<div class="' + getColumnClass(columnWidth) + '"></div>');
+    };
+
+    this.wrapBlockInColumn = function (blockElement, columnWidth)
+    {
+        columnWidth = columnWidth == null ? DOM.MAX_COLUMNS : columnWidth;
+        var col = DOM.createColumn(columnWidth)
+        blockElement = blockElement.replaceWith(col);
+        col.append(blockElement);
+        return col;
+    };
+
+    this.wrapBlockInRow = function (blockElement)
+    {
+        var row = DOM.createRow();
+        blockElement = blockElement.replaceWith(row);
+        row.append(DOM.createColumn(DOM.MAX_COLUMNS).append(blockElement));
+        return row;
+    };
+
+    this.wrapColumnInRow = function (blockElement)
+    {
+        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
+        var row = DOM.createRow();
+        blockElement = blockElement.replaceWith(row);
+        row.append(blockElement);
+        return row;
+    };
+
+    this.wrapColumnInColumn = function (blockElement)
+    {
+        var width = DOM.getColumnWidth(blockElement);
+        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
+        var col = DOM.createColumn(width);
+        blockElement = blockElement.replaceWith(col);
+        col.append(DOM.createRow().append(blockElement));
+        return col;
+    };
+
+    this.wrapRowInColumn = function (blockElement)
+    {
+        return DOM.wrapBlockInColumn(blockElement, DOM.MAX_COLUMNS);
+    };
+
+    this.wrapRowInRow = function (blockElement)
+    {
+        return DOM.wrapColumnInRow(DOM.wrapRowInColumn(blockElement, DOM.MAX_COLUMNS));
+    };
+
+    /*
+     * When 1 column contains e.g. 6 templates and we drop a block
+     * to the right of the 3th block in that column,
+     * then we need to wrap all templates in rows
+     *
+     * We do this efficiently and in this example this method would wrap:
+     *  - block 1 & 2 in a row (with 1 column)
+     *  - block 3 in a row (with 1 column)
+     *  - 4,5,6 in 1 row (with 1 column)
+     *
+     * this method takes a block and wraps this block in a row
+     * and also wraps the other siblings in rows
+     *
+     * returns the blockelement(!) inside a new row and column
+     *
+     * */
+    this.wrapSiblingBlocksInRows = function (blockElement)
+    {
+        var parentColumnElement = blockElement.parent();
+        if (DOM.isColumn(parentColumnElement)) {
+            var before = [];
+            var current = null;
+            var after = [];
+            var children = parentColumnElement.children().remove();
+            var childCount = children.length;
+            var flag = false;
+            // grab all templates in the parent column
+            // put all siblings before our block in the before array
+            // put all siblings after our block in the after array
+            for (var i = 0; i < childCount; i++) {
+                var child = children[i];
+                if (child === blockElement[0]) {
+                    current = child;
+                    flag = true;
+                } else if (!flag) {
+                    before.push(child);
+                } else {
+                    after.push(child)
+                }
+            }
+            // wrap before, current and after in a row and re-append to the parent
+            if (before.length > 0) {
+                parentColumnElement.append(DOM.wrapBlockInRow($(before)));
+            }
+            parentColumnElement.append(DOM.wrapBlockInRow($(current)));
+            if (after.length > 0) {
+                parentColumnElement.append(DOM.wrapBlockInRow($(after)));
+            }
+
+            return blockElement;
+        }
+
+        return blockElement;
+    };
+
+    //-----PRIVATE METHODS-----
+    /**
+     * Debouncing function to make eventing more performant
+     * by amortizing quick successions together.
+     * See http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
+     * @param func
+     * @param threshold
+     * @param execAsap
+     * @returns {debounced}
+     */
+    var debounce = function (func, threshold, execAsap)
+    {
+        var timeout;
+
+        return function debounced()
+        {
+            var obj = this, args = arguments;
+
+            function delayed()
+            {
+                if (!execAsap)
+                    func.apply(obj, args);
+                timeout = null;
+            }
+
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+            else if (execAsap) {
+                func.apply(obj, args);
+            }
+
+            timeout = setTimeout(delayed, threshold || 50);
+        };
+    };
+    /**
+     * Returns the current column class prefix
+     */
+    var getColumnClass = function (width)
+    {
+        // TODO Ideally, this should probably change with screen width
+        return "col-md-" + width;
 
         // var colClass = null;
         // var docWidth = $(document).width();
@@ -149,33 +478,8 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
         // return colClass;
     };
 
-    // Sets the column width in grid-units, not pixels
-    this.setColumnWidth = function (element, newWidth, animationTime, callback)
-    {
-        var colClass = this.getColumnClass();
-        var currentClass = colClass + this.getColumnWidth(element);
-        var newClass = colClass + newWidth;
-        if (callback == null) {
-            element.removeClass(currentClass);
-            element.addClass(newClass);
-        } else {
-            var newWidth = (element.parent().innerWidth() / DOM.MAX_COLUMNS) * newWidth;
-            if (currentClass != newClass) {
-                element.animate({width: newWidth}, animationTime, function ()
-                {
-                    element.removeClass(currentClass);
-                    element.addClass(newClass);
-                    element.css("width", "");
-                    callback();
-                });
-            } else {
-                callback();
-            }
-        }
-    };
-
     // distributes the width of the columns in a row so they take the max nr of grid-units
-    this.distributeColumnsInRow = function (element, callback)
+    var distributeColumnsInRow = function (element, callback)
     {
         var tcolumns = element.children();
         var columns = [];
@@ -329,356 +633,4 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
         }
     };
 
-    /*
-     * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
-     * usefull after manipulating the layout
-     * */
-
-    // if Column or row is empty then delete
-    // when not deleting, try simplifying
-    //this.deleteEmptyElement = function (element, callback)
-    //{
-    //    var isLayout = (DOM.isColumn(element) || DOM.isRow(element));
-    //    if (isLayout && element.children().length == 0) {
-    //        var parent = element.parent();
-    //        element.toggle(150, function() {
-    //            element.remove();
-    //            DOM.deleteEmptyElement(parent, callback);
-    //        });
-    //
-    //    } else {
-    //        simplifyElement(element, callback);
-    //    }
-    //};
-    //
-    //// generic method to simplify columns and rows.
-    //var simplifyElement = function (element, callback)
-    //{
-    //    if (DOM.isRow(element)) {
-    //        simplifyColumnInColumn(element, callback);
-    //    } else if (DOM.isColumn(element)) {
-    //        simplifyRowInRow(element, callback);
-    //    }
-    //}
-    //
-    //// if: 1 column(A) in 1 row(B) in 1 column(C),
-    //// then we can put template of column A in Column C and delete A & B
-    //var simplifyColumnInColumn = function (element, callback)
-    //{
-    //    var parentColumn = element.parent();
-    //
-    //    if (element.children().length == 1) {
-    //        var childColumn = DOM.isColumn($(element.children()[0]));
-    //        if (DOM.isRow(element) &&
-    //            DOM.isColumn(parentColumn) &&
-    //            DOM.isColumn(childColumn) &&
-    //            parentColumn.children().length == 1)
-    //        {
-    //            parentColumn.children.remove();
-    //            parentColumn.append(childColumn.children());
-    //        } else {
-    //            DOM.changedRows.push(element);
-    //            callback();
-    //        }
-    //    } else {
-    //        if (DOM.isRow(element)) DOM.changedRows.push(element);
-    //        callback();
-    //    }
-    //};
-    //
-    //// if: 1 Row(A) in 1 Column(B) in 1 Row(C),
-    //// then we can put template of Row A in Row C and delete A & B
-    //var simplifyRowInRow = function (element, callback)
-    //{
-    //    var parentRow = element.parent();
-    //    // We have a column with 1 child that is a row and this column
-    //    //is the single child of the parent row
-    //    if (DOM.isColumn(element)) {
-    //        var childRows = element.children(".row");
-    //        if (childRows.length > 0 && DOM.isRow(childRow) && parentRow.children().length == 1) {
-    //            parentRow.replaceWith(childRows);
-    //            DOM.changedRows.push(parentRow);
-    //        } else {
-    //            callback();
-    //        }
-    //    } else {
-    //        callback();
-    //    }
-    //
-    //};
-
-    this.cleanDown = function (element, callback)
-    {
-        // clean
-        var findNext = function (element, callback)
-        {
-            if (element.next().length > 0) {
-                DOM.cleanup(element.next(), callback);
-            } else if (!DOM.isContainer(element)) {
-                DOM.cleanDown(element.parent(), callback);
-            } else {
-                callback();
-            }
-        };
-
-        if (element.children().length == 0) {
-            element.toggle(50, function ()
-            {
-                var parent = element.parent();
-                element.remove();
-                DOM.cleanup(parent, callback);
-            });
-        } else if (DOM.isColumn(element)) {
-            var childRows = element.children(".row");
-            if (childRows.length > 0 && DOM.isRow(element.parent()) && element.parent().children().length == 1) {
-                element.parent().replaceWith(childRows);
-                DOM.cleanup(childRows.first(), callback);
-            } else {
-                findNext(element, callback);
-            }
-        } else if (DOM.isRow(element)) {
-            var childColumns = element.children(".column");
-            if (childColumns.length > 0 && element.parent().children().length == 1) {
-                element.parent().replaceWith(childColumns);
-                DOM.cleanup(childColumns.first(), callback);
-            } else {
-                DOM.distributeColumnsInRow(element, function ()
-                {
-                    findNext(element, callback);
-                });
-            }
-        } else {
-            findNext(element, callback);
-        }
-
-    };
-
-    this.cleanup = function (element, callback)
-    {
-        var children;
-        if (DOM.isColumn(element) || DOM.isContainer(element)) {
-            children = element.children(".row");
-        } else if (DOM.isRow(element)) {
-            children = element.children();
-        }
-
-        if (children.first().length > 0) {
-            DOM.cleanup(children.first(), callback);
-        } else {
-            DOM.cleanDown(element, callback);
-        }
-    };
-
-
-    // function to insert a block and clean up
-    this.appendElement = function (blockElement, dropLocationElement, side, callback)
-    {
-        if (side == Constants.SIDE.RIGHT || side == Constants.SIDE.BOTTOM) {
-            dropLocationElement.after(blockElement)
-        } else if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
-            dropLocationElement.before(blockElement)
-        }
-        callback();
-    };
-
-    // Function to remove a block and clean up
-    this.removeBlock = function (element, animationTime, callback)
-    {
-        element.toggle(animationTime, function ()
-        {
-            var blockElement = element.remove();
-            blockElement.toggle();
-            callback();
-
-        })
-    };
-    /*
-     *  HELPER FUNCTIONS TO WRAP BLOCKS AND EASILY MANIPULATE LAYOUT
-     */
-    this.createRow = function ()
-    {
-        return $('<div class="' + BlocksConstants.ROW_CLASS + '"></div>');
-    };
-
-    this.createColumn = function (columnWidth)
-    {
-        return $('<div class="' + this.getColumnClass() + columnWidth + '"></div>');
-    };
-
-    this.wrapBlockInColumn = function (blockElement, columnWidth)
-    {
-        columnWidth = columnWidth == null ? DOM.MAX_COLUMNS : columnWidth;
-        var col = DOM.createColumn(columnWidth)
-        blockElement = blockElement.replaceWith(col);
-        col.append(blockElement);
-        return col;
-    };
-
-    this.wrapBlockInRow = function (blockElement)
-    {
-        var row = DOM.createRow();
-        blockElement = blockElement.replaceWith(row);
-        row.append(DOM.createColumn(DOM.MAX_COLUMNS).append(blockElement));
-        return row;
-    };
-
-    this.wrapColumnInRow = function (blockElement)
-    {
-        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
-        var row = DOM.createRow();
-        blockElement = blockElement.replaceWith(row);
-        row.append(blockElement);
-        return row;
-    };
-
-    this.wrapColumnInColumn = function (blockElement)
-    {
-        var width = DOM.getColumnWidth(blockElement);
-        DOM.setColumnWidth(blockElement, DOM.MAX_COLUMNS);
-        var col = DOM.createColumn(width);
-        blockElement = blockElement.replaceWith(col);
-        col.append(DOM.createRow().append(blockElement));
-        return col;
-    };
-
-    this.wrapRowInColumn = function (blockElement)
-    {
-        return DOM.wrapBlockInColumn(blockElement, DOM.MAX_COLUMNS);
-    };
-
-    this.wrapRowInRow = function (blockElement)
-    {
-        return DOM.wrapColumnInRow(DOM.wrapRowInColumn(blockElement, DOM.MAX_COLUMNS));
-    };
-
-    /*
-     * When 1 column contains e.g. 6 templates and we drop a block
-     * to the right of the 3th block in that column,
-     * then we need to wrap all templates in rows
-     *
-     * We do this efficiently and in this example this method would wrap:
-     *  - block 1 & 2 in a row (with 1 column)
-     *  - block 3 in a row (with 1 column)
-     *  - 4,5,6 in 1 row (with 1 column)
-     *
-     * this method takes a block and wraps this block in a row
-     * and also wraps the other siblings in rows
-     *
-     * returns the blockelement(!) inside a new row and column
-     *
-     * */
-    this.wrapSiblingBlocksInRows = function (blockElement)
-    {
-        var parentColumnElement = blockElement.parent();
-        if (DOM.isColumn(parentColumnElement)) {
-            var before = [];
-            var current = null;
-            var after = [];
-            var children = parentColumnElement.children().remove();
-            var childCount = children.length;
-            var flag = false;
-            // grab all templates in the parent column
-            // put all siblings before our block in the before array
-            // put all siblings after our block in the after array
-            for (var i = 0; i < childCount; i++) {
-                var child = children[i];
-                if (child === blockElement[0]) {
-                    current = child;
-                    flag = true;
-                } else if (!flag) {
-                    before.push(child);
-                } else {
-                    after.push(child)
-                }
-            }
-            // wrap before, current and after in a row and re-append to the parent
-            if (before.length > 0) {
-                parentColumnElement.append(DOM.wrapBlockInRow($(before)));
-            }
-            parentColumnElement.append(DOM.wrapBlockInRow($(current)));
-            if (after.length > 0) {
-                parentColumnElement.append(DOM.wrapBlockInRow($(after)));
-            }
-
-            return blockElement;
-        }
-
-        return blockElement;
-    };
-
-    // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-    this.disableTextSelection = function ()
-    {
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        var html = $("html");
-        html.addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
-        window.ondragstart = function ()
-        {
-            return false;
-        };
-    };
-
-    this.enableTextSelection = function ()
-    {
-        //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        var html = $("html");
-        html.removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
-        window.ondragstart = function ()
-        {
-            return true;
-        };
-    };
-
-    this.disableContextMenu = function ()
-    {
-        $("html").attr("oncontextmenu", "return false;");
-        // IE < 10
-        $("html").attr("onselectstart", "return false;");
-    };
-
-    this.enableContextMenu = function ()
-    {
-        $("html").removeAttr("oncontextmenu", "");
-        // IE < 10
-        $("html").removeAttr("onselectstart");
-    };
-
-    // debouncing function from John Hann
-    // http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
-    var debounce = function (func, threshold, execAsap)
-    {
-        var timeout;
-
-        return function debounced()
-        {
-            var obj = this, args = arguments;
-
-            function delayed()
-            {
-                if (!execAsap)
-                    func.apply(obj, args);
-                timeout = null;
-            };
-
-            if (timeout)
-                clearTimeout(timeout);
-            else if (execAsap)
-                func.apply(obj, args);
-
-            timeout = setTimeout(delayed, threshold || 50);
-        };
-    };
-
-    // smartresize
-    $.fn["smartresize"] = function (fn)
-    {
-        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
-    };
-
-    // smartresize
-    $.fn["smartmousemove"] = function (fn)
-    {
-        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartmousemove");
-    };
 }]);

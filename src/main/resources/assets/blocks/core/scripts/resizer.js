@@ -72,8 +72,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         if (!blockResizing) {
             Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
             activeResizeHandle = handle;
-            DOM.disableTextSelection();
-            DOM.disableContextMenu();
+            DOM.enableTextSelection(false);
+            DOM.enableContextMenu(false);
             $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 
             // Hide all resizers except the ones in the current row
@@ -108,7 +108,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         if (dragging) {
             dragging = false;
             $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
-            DOM.enableContextMenu();
+            DOM.enableContextMenu(true);
             Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
             Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
         }

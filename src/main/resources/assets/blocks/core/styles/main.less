@@ -122,167 +122,170 @@ body.@{BODY_EDIT_MODE_CLASS} {
 @blockOverlayZ: @zindex-navbar - 10;
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
-.@{BLOCK_OVERLAY_CLASS} {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  right: 0px;
-  bottom: 0px;
-  z-index: @blockOverlayZ;
+.@{BLOCK_OVERLAY_WRAPPER_CLASS} {
 
-  .defaultBorder() {
+  .@{BLOCK_OVERLAY_CLASS} {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    z-index: @blockOverlayZ;
 
-    border: 1px dashed fadeout(@brand-primary, 50%);
+    .defaultBorder() {
+
+      border: 1px dashed fadeout(@brand-primary, 50%);
+
+      &.left {
+        border-left: none;
+      }
+      &.top {
+        border-top: none;
+      }
+    }
+
+    .defaultBorder();
+
+    // This disables pointer events for the element itself,
+    // but 'bubbles up' lower cursors like the mouse would eg. hover over them
+    // Note that this sits in the way of using the hover-related events on these objects,
+    // so don't use them by default, but activate them on mousedown,
+    // so we can use the lower elements during the focus-phase (see mouse.js)
+    &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
+      pointer-events: none;
+    }
+
+    //this is probably a good general choice
+    cursor: pointer;
+
+    &.@{OVERLAY_HOVER_CLASS},
+    &:hover {
+      .box-shadow(0px 0px 10px @brand-primary);
+      border: 1px solid fadeout(@brand-primary, 50%);
+      background-color: fadeout(@brand-primary, 80%);
+
+      //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
+      &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
+        .box-shadow(none);
+        .defaultBorder();
+      }
+    }
+    &.@{OVERLAY_DRAGGING_CLASS} {
+      background-color: rgba(00, 102, 204, 0.5);
+    }
+  }
+
+  .@{PROPERTY_OVERLAY_CLASS} {
+    position: absolute;
+    border: 1px dotted rgba(100, 100, 100, 0.8);
+    cursor: text;
+    z-index: @blockOverlayZ + 1;
 
     &.left {
       border-left: none;
     }
+
     &.top {
       border-top: none;
     }
-  }
 
-  .defaultBorder();
+    &.right {
+      border-right: none;
+    }
 
-  // This disables pointer events for the element itself,
-  // but 'bubbles up' lower cursors like the mouse would eg. hover over them
-  // Note that this sits in the way of using the hover-related events on these objects,
-  // so don't use them by default, but activate them on mousedown,
-  // so we can use the lower elements during the focus-phase (see mouse.js)
-  &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
-    pointer-events: none;
-  }
+    &.bottom {
+      border-bottom: none;
+    }
 
-  //this is probably a good general choice
-  cursor: pointer;
-
-  &.@{OVERLAY_HOVER_CLASS},
-  &:hover {
-    .box-shadow(0px 0px 10px @brand-primary);
-    border: 1px solid fadeout(@brand-primary, 50%);
-    background-color: fadeout(@brand-primary, 80%);
-
-    //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
-    &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
-      .box-shadow(none);
-      .defaultBorder();
+    &.@{OVERLAY_HOVER_CLASS},
+    &:hover {
+      border: 1px solid rgba(0, 0, 0, 1);
     }
   }
-  &.@{OVERLAY_DRAGGING_CLASS} {
-    background-color: rgba(00, 102, 204, 0.5);
+
+  .@{BLOCKS_DROPSPOT_CLASS} {
+    @startColor: @brand-primary;
+    @startColorHex: argb(@startColor);
+    @stopColor: fadeout(@startColor, 100%);
+    @stopColorHex: argb(@stopColor);
+    @width: ~"@{BLOCKS_DROPSPOT_BORDER_WIDTH}px";
+    @style: solid;
+    @offsetPct: 5%;
+    @startPct: @offsetPct;
+    @stopPct: 100% - @offsetPct;
+
+    //the dropspot line should be in front of both the block overlay and the resizer
+    z-index: @blockOverlayZ + 2;
+
+    border: none;
+    //old styling
+    //&.@{BLOCKS_DROPSPOT_CLASS}-top,
+    //&.@{BLOCKS_DROPSPOT_CLASS}-bottom {
+    //  background: -moz-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    //  background: -webkit-gradient(linear, left top, right top, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
+    //  background: -webkit-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    //  background: -o-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    //  background: -ms-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    //  background: linear-gradient(to right, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+    //}
+    //&.@{BLOCKS_DROPSPOT_CLASS}-right,
+    //&.@{BLOCKS_DROPSPOT_CLASS}-left {
+    //  background: -moz-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    //  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
+    //  background: -webkit-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    //  background: -o-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    //  background: -ms-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    //  background: linear-gradient(to bottom, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+    //}
+
+    @border: 3px solid @startColor;
+    @arrowColor: fade(@startColor, 50%);
+    @imgWidth: @BLOCKS_DROPSPOT_BORDER_WIDTH - 1;
+    @imgWidthHalf: @imgWidth / 2;
+    @halfWidth: @imgWidthHalf * 1px;
+    &.@{BLOCKS_DROPSPOT_CLASS}-top {
+      margin-top: @halfWidth;
+      border-top: @border;
+      //cat /home/bram/Projects/Workspace/idea/com.beligum.blocks.core/src/main/resources/assets/blocks/core/images/arrow_up.svg | tr -d '\n' | tr '"' '\047'
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(0) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
+      background-position: center top;
+      background-repeat: repeat-x;
+    }
+    &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
+      margin-top: -@halfWidth;
+      border-bottom: @border;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(180) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
+      background-position: center bottom;
+      background-repeat: repeat-x;
+    }
+    &.@{BLOCKS_DROPSPOT_CLASS}-right {
+      margin-left: -@halfWidth;
+      border-right: @border;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(90) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
+      background-position: right center;
+      background-repeat: repeat-y;
+    }
+    &.@{BLOCKS_DROPSPOT_CLASS}-left {
+      margin-left: @halfWidth;
+      border-left: @border;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(270) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
+      background-position: left center;
+      background-repeat: repeat-y;
+    }
   }
-}
 
-.@{PROPERTY_OVERLAY_CLASS} {
-  position: absolute;
-  border: 1px dotted rgba(100, 100, 100, 0.8);
-  cursor: text;
-  z-index: @blockOverlayZ + 1;
+  .@{COLUMN_RESIZER_CLASS} {
+    @controlBgColor: #e8e8e8;
 
-  &.left {
-    border-left: none;
+    position: absolute;
+    cursor: col-resize;
+    background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
+    border-left: 1px solid darken(@controlBgColor, 15%);
+    border-right: 1px solid darken(@controlBgColor, 15%);
+
+    //the resizer should be in front of the block overlays
+    z-index: @blockOverlayZ + 1;
   }
-
-  &.top {
-    border-top: none;
-  }
-
-  &.right {
-    border-right: none;
-  }
-
-  &.bottom {
-    border-bottom: none;
-  }
-
-  &.@{OVERLAY_HOVER_CLASS},
-  &:hover {
-    border: 1px solid rgba(0, 0, 0, 1);
-  }
-}
-
-.@{BLOCKS_DROPSPOT_CLASS} {
-  @startColor: @brand-primary;
-  @startColorHex: argb(@startColor);
-  @stopColor: fadeout(@startColor, 100%);
-  @stopColorHex: argb(@stopColor);
-  @width: ~"@{BLOCKS_DROPSPOT_BORDER_WIDTH}px";
-  @style: solid;
-  @offsetPct: 5%;
-  @startPct: @offsetPct;
-  @stopPct: 100% - @offsetPct;
-
-  //the dropspot line should be in front of both the block overlay and the resizer
-  z-index: @blockOverlayZ + 2;
-
-  border: none;
-  //old styling
-  //&.@{BLOCKS_DROPSPOT_CLASS}-top,
-  //&.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-  //  background: -moz-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-  //  background: -webkit-gradient(linear, left top, right top, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
-  //  background: -webkit-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-  //  background: -o-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-  //  background: -ms-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-  //  background: linear-gradient(to right, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
-  //}
-  //&.@{BLOCKS_DROPSPOT_CLASS}-right,
-  //&.@{BLOCKS_DROPSPOT_CLASS}-left {
-  //  background: -moz-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-  //  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
-  //  background: -webkit-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-  //  background: -o-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-  //  background: -ms-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-  //  background: linear-gradient(to bottom, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
-  //}
-
-  @border: 3px solid @startColor;
-  @arrowColor: fade(@startColor, 50%);
-  @imgWidth: @BLOCKS_DROPSPOT_BORDER_WIDTH - 1;
-  @imgWidthHalf: @imgWidth / 2;
-  @halfWidth: @imgWidthHalf * 1px;
-  &.@{BLOCKS_DROPSPOT_CLASS}-top {
-    margin-top: @halfWidth;
-    border-top: @border;
-    //cat /home/bram/Projects/Workspace/idea/com.beligum.blocks.core/src/main/resources/assets/blocks/core/images/arrow_up.svg | tr -d '\n' | tr '"' '\047'
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(0) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
-    background-position: center top;
-    background-repeat: repeat-x;
-  }
-  &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-    margin-top: -@halfWidth;
-    border-bottom: @border;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(180) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
-    background-position: center bottom;
-    background-repeat: repeat-x;
-  }
-  &.@{BLOCKS_DROPSPOT_CLASS}-right {
-    margin-left: -@halfWidth;
-    border-right: @border;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(90) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
-    background-position: right center;
-    background-repeat: repeat-y;
-  }
-  &.@{BLOCKS_DROPSPOT_CLASS}-left {
-    margin-left: @halfWidth;
-    border-left: @border;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(270) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
-    background-position: left center;
-    background-repeat: repeat-y;
-  }
-}
-
-.@{COLUMN_RESIZER_CLASS} {
-  @controlBgColor: #e8e8e8;
-
-  position: absolute;
-  cursor: col-resize;
-  background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
-  border-left: 1px solid darken(@controlBgColor, 15%);
-  border-right: 1px solid darken(@controlBgColor, 15%);
-
-  //the resizer should be in front of the block overlays
-  z-index: @blockOverlayZ + 1;
 }
 
 .@{OPACITY_CLASS} {
@@ -320,7 +323,7 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
 }
 
 // Class put when a property is content-editable and active
-// so when cvan set the outline we want for this property
+// so when can set the outline we want for this property
 .@{PROPERTY_EDIT_CLASS} {
   outline: 3px dashed fadeout(@brand-primary, 50%);
 }

@@ -18,7 +18,7 @@
  * Region where templates can be dragged
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
+base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -40,6 +40,8 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         },
 
         //-----PUBLIC METHODS-----
+
+        //-----TODO UNCHECKED-----
         getElementAtSide: function (side)
         {
             return null;
@@ -64,7 +66,7 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
         },
         _isAcceptableChild: function(element)
         {
-            return element.hasClass('row');
+            return DOM.isRow(element);
         },
         _getChildOrientation: function()
         {

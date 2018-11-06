@@ -20,7 +20,7 @@
  *
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", function (Class)
+base.plugin("blocks.core.elements.Property", ["base.core.Class", function (Class)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
