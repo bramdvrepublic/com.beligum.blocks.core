@@ -124,6 +124,15 @@ body.@{BODY_EDIT_MODE_CLASS} {
 @initSidebarWidth: 0%;
 .@{BLOCK_OVERLAY_WRAPPER_CLASS} {
 
+  // This disables pointer events for the element itself,
+  // but 'bubbles up' lower cursors like the mouse would eg. hover over them
+  // Note that this sits in the way of using the hover-related events on these objects,
+  // so don't use them by default, but activate them on mousedown,
+  // so we can use the lower elements during the focus-phase (see mouse.js)
+  &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
+    pointer-events: none;
+  }
+
   .@{BLOCK_OVERLAY_CLASS} {
     position: absolute;
     top: 0px;
@@ -145,15 +154,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
 
     .defaultBorder();
-
-    // This disables pointer events for the element itself,
-    // but 'bubbles up' lower cursors like the mouse would eg. hover over them
-    // Note that this sits in the way of using the hover-related events on these objects,
-    // so don't use them by default, but activate them on mousedown,
-    // so we can use the lower elements during the focus-phase (see mouse.js)
-    &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
-      pointer-events: none;
-    }
 
     //this is probably a good general choice
     cursor: pointer;

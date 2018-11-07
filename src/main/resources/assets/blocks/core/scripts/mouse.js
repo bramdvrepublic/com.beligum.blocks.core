@@ -237,11 +237,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         //if both edit and layout are disabled, we have nothing to do
         if (enableEdit || enableLayout) {
-            // this variable will more or less controls if we're dragging a new block or not,
+            // this variable more or less controls if we're dragging a new block or not,
             // so make sure it's null when we're dragging the new-block button around
             var surface = null;
             var creatingNew = false;
             var element = $(event.target);
+            Logger.info('mousedown on ', event);
             if (element.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || element.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
                 creatingNew = true;
             }
@@ -254,26 +255,25 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             else if (element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
                 surface = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
 
-                //dig deeper
-                if (surface) {
-                    var propertySurface = surface.childAt(event.pageX, event.pageY);
-                    if (propertySurface) {
-                        surface = propertySurface;
-                    }
-                    else {
-                        //It's possible we didn't find a sub-property
-                        // eg. when it's a resize handle or we just
-                        // want to edit some attributes of the block itself
-                        // and it's saved by a parent property-element
-                    }
-                }
+                // //dig deeper
+                // if (surface) {
+                //
+                //     var propertySurface = surface.childAt(event.pageX, event.pageY);
+                //     if (propertySurface) {
+                //         surface = propertySurface;
+                //     }
+                //     else {
+                //         //It's possible we didn't find a sub-property
+                //         // eg. when it's a resize handle or we just
+                //         // want to edit some attributes of the block itself
+                //         // and it's saved by a parent property-element
+                //     }
+                // }
             }
 
             //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-            //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button
-            // and because of this class being activated, the mouseUp event is never received...
-            //TODO still need this?
-            //$('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+            //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button and because of this class being activated, the mouseUp event is never received...
+            //UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
             //four options:
             // 1) we clicked on a valid surface -> block holds a surface object and creatingNew is false
@@ -319,6 +319,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseMove = function (event)
     {
+        Logger.info('mouse move');
+
         //this should always be true since the mousemove is only installed on a correct mousedown
         //but let's check it anyway
         if (draggingStatus != BaseConstantsInternal.DRAGGING.NO) {
@@ -374,7 +376,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (draggingStatus != BaseConstantsInternal.DRAGGING.NO) {
 
             //the low level html element we clicked on
-            //var element = $(event.target);
+            var element = $(event.target);
+            Logger.info('mouseup on ', element[0]);
 
             if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
                 //Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
@@ -388,7 +391,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 // Also, if we can't edit, we just disable the focus of a block
                 if (enableEdit && draggingSurface) {
 
-                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, draggingSurface);
+                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+                        surface: draggingSurface,
+                        event: event,
+                    });
 
                     //Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, draggingSurface);
 

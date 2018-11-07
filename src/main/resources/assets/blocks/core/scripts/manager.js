@@ -101,7 +101,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
     {
         //focusSwitch(eventData.block, eventData.element, eventData.propertyElement, eventData.hotspot, event);
-        Sidebar.focusBlock(block, selectedElement, hotspot, event);
+        Sidebar.init(eventData.surface, eventData.event);
     });
 
     //-----PRIVATE METHODS-----
@@ -118,7 +118,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         var previousFocusedBlock = Hover.getFocusedBlock();
 
         if (previousFocusedBlock == null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
-            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
+            Sidebar.init(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
             Hover.removeFocusOverlays();
             Hover.setFocusedBlock(Hover.getPageBlock());
             Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
@@ -127,7 +127,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
             //if we got a property, use it, otherwise focus the entire block
             var selectedElement = propertyElement == null ? block.element : propertyElement;
 
-            Sidebar.focusBlock(block, selectedElement, hotspot, event);
+            Sidebar.init(block, selectedElement, hotspot, event);
             Hover.showFocusOverlays(block.element);
             Hover.setFocusedBlock(block);
             //TODO revise

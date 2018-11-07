@@ -19,110 +19,107 @@
  */
 base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages)
 {
-    var SideBar = this;
+    var Sidebar = this;
 
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
     //this will map IDs to config panels
     var configPanels = {};
-    var activeBlocks = [];
-    //var currentProperty = null;
+
+    //this will hold data structures for the currently showing config panels
+    var activePanels = [];
 
     //-----PUBLIC METHODS-----
     /**
-     * Reset and initialize the sidebar's config panels for the supplied surface
-     *
-     * @param block the block that should get focus (not null)
-     * @param element one of these:
-     *                - the first property element on the way up of the element that got clicked (inside the block)
-     *                - the template element (then element==block.element) that got clicked
-     *                - the page element
-     * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
-     * @param event the original event that triggered this all
+     * Reset and initialize the sidebar's config panels for the supplied (focused) surface
      */
-    this.focusBlock = function (block, element, hotspot, event)
+    this.init = function (focusedSurface, event)//(block, element, hotspot, event)
     {
         this.reset();
 
-        var currBlock = block;
-        var currElement = element;
-        activeBlocks = [];
-
-        //little helper function to refactor things
-        var pushActiveBlock = function (currBlock, currElement)
-        {
-            activeBlocks.push({
-                block: currBlock,
-                element: currElement
-            });
-
-            //we also push the properties inside a block
-            //note: this is evened out after the first cycle
-            if (!currElement.is(currBlock.element)) {
-                activeBlocks.push({
-                    block: currBlock,
-                    element: currBlock.element
-                });
-            }
-        };
-
-        //allows us to select only the last row and column in the tree
+        //allows us to select only the last row and column in the tree (on the way up)
         var firstRow = null;
         var lastRow = null;
         var firstColumn = null;
         var lastColumn = null;
-        //we'll cycle through the parents until we hit the page, then reversing the order and creating panels, starting with the page
-        while (currBlock != null) {
 
-            if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block) {
-                pushActiveBlock(currBlock, currElement);
-            }
-            else if (currBlock instanceof blocks.elements.Page) {
+        // We'll cycle through the parents until we hit the page, then reverse the order and create panels
+        // for all of them, starting with the page
+        var currSurface = focusedSurface;
+        while (currSurface != null) {
+
+            if (currSurface instanceof blocks.elements.Page) {
                 //we select the _first_ column, (instead of the last, see row below) because it's what
                 // we naturally expect in the GUI (the column closest around the block we're focusing)
                 if (firstColumn != null) {
-                    pushActiveBlock(firstColumn, firstColumn.element);
+                    activePanels.push({
+                        surface: firstColumn,
+                    });
                 }
                 //if we have a row, push that one first before closing with the page
                 if (lastRow != null) {
-                    pushActiveBlock(lastRow, lastRow.element);
+                    activePanels.push({
+                        surface: lastRow
+                    });
                 }
-                pushActiveBlock(currBlock, currElement);
+                activePanels.push({
+                    surface: currSurface
+                });
             }
-            else if (currBlock instanceof blocks.elements.Row) {
+            else if (currSurface instanceof blocks.elements.Container) {
+                //NOOP
+            }
+            else if (currSurface instanceof blocks.elements.Row) {
                 if (firstRow == null) {
-                    firstRow = currBlock;
+                    firstRow = currSurface;
                 }
-                lastRow = currBlock;
+                lastRow = currSurface;
             }
-            else if (currBlock instanceof blocks.elements.Column) {
+            else if (currSurface instanceof blocks.elements.Column) {
                 if (firstColumn == null) {
-                    firstColumn = currBlock;
+                    firstColumn = currSurface;
                 }
-                lastColumn = currBlock;
+                lastColumn = currSurface;
+            }
+            else if (currSurface instanceof blocks.elements.Block) {
+                activePanels.push({
+                    surface: currSurface
+                });
+            }
+            else if (currSurface instanceof blocks.elements.Property) {
+                activePanels.push({
+                    surface: currSurface
+                });
+            }
+            else {
+                Logger.error("Encountered unimplemented surface type; this shouldn't happen", currSurface);
             }
 
-            currBlock = currBlock.parent;
-            // if the element is not the same as block.element, the first loop will be different, but
-            // after one time, it will ease out
-            currElement = currBlock == null ? null : currBlock.element;
+            currSurface = currSurface.parent;
         }
 
         var title = null;
-        for (var i = activeBlocks.length - 1; i >= 0; i--) {
+        for (var i = activePanels.length - 1; i >= 0; i--) {
 
-            var e = activeBlocks[i];
+            var panel = activePanels[i];
 
-            var widget = Widget.Class.create(e.element);
+            var surface = panel.surface;
+            var element = surface.element;
+            // if (surface instanceof blocks.elements.Property) {
+            //     element = surface.parent.element;
+            // }
+
+            //Widget.create() is a statis factory method that iterates all registered
+            //tag selectors and returns the correct instance for the supplied element
+            var widget = Widget.Class.create(element);
             //save it for blur()
             if (widget) {
-                activeBlocks[i].widget = widget;
+                activePanels[i].widget = widget;
             }
 
             //don't make panels for (real) properties, only blocks and pages
-            var isPropertyInBlock = !e.block.element.is(e.element);
-            var blockTitle = isPropertyInBlock ? 'property' : 'block';
+            var blockTitle = 'TODO: change-this';
             if (widget) {
                 //all the rest is already lower case, make it uniform no matter what
                 blockTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : widget.getWindowName();
@@ -138,18 +135,18 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
             //we'll expand all panels by default, except the row and column
             var collapsed = false;
-            if (e.block instanceof blocks.elements.Row || e.block instanceof blocks.elements.Column) {
+            if (surface instanceof blocks.elements.Row || surface instanceof blocks.elements.Column) {
                 collapsed = true;
             }
             //if we're showing the controls for a block, close the panel
-            else if (block instanceof blocks.elements.Block && e.block instanceof blocks.elements.Page) {
+            else if (focusedSurface instanceof blocks.elements.Block && surface instanceof blocks.elements.Page) {
                 collapsed = true;
             }
 
             //we'll iterate the array in reverse order, but when focusing a block,
             //we don't want users to be able to save the page (it causes all kinds of problems),
             //so we disable the 'page-entry' if a block is focused
-            var disabled = !(block instanceof blocks.elements.Page) && e.block instanceof blocks.elements.Page;
+            var disabled = !(focusedSurface instanceof blocks.elements.Page) && surface instanceof blocks.elements.Page;
 
             // if a parent stopped the creation of sub-panels, keep executing the focus() method,
             // but without a panel ID (allowing for logic without UI consequences)
@@ -159,8 +156,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
             if (widget) {
                 // the focus method can return a list of UI widgets it needs to add to the panel
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
-                widget.focus(e.block, e.element, hotspot, event);
-                var optionsToAdd = widget.getConfigs(e.block, e.element);
+                //TODO refactor the last two (three?) away
+                if (surface instanceof blocks.elements.Property) {
+                    surface = surface.parent;
+                    element = surface.element;
+                }
+                widget.focus(surface, element, null, event);
+                var optionsToAdd = widget.getConfigs(surface, element);
                 if (optionsToAdd) {
                     if (addedOptions && optionsToAdd.length > 0) {
                         addUIForProperty(panelID, '<hr>');
@@ -212,10 +214,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                         addedOptions = true;
                     }
                 }
-
-                if (widget.getPropertyConfigs) {
-                    $.merge(optionsToAdd, widget.getPropertyConfigs(e.block, e.element));
-                }
             }
 
             //don't add empty panels
@@ -233,14 +231,17 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     {
         this.unloadFinder();
 
-        for (var i = 0; i < activeBlocks.length; i++) {
-            var e = activeBlocks[i];
+        // clean shutdown: call blur on all active surfaces
+        for (var i = 0; i < activePanels.length; i++) {
+            var e = activePanels[i];
             if (e.widget) {
-                e.widget.blur(e.block, e.element);
+                e.widget.blur(e.surface, e.surface.element);
             }
         }
+
+        //reset variables
         configPanels = {};
-        activeBlocks = [];
+        activePanels = [];
 
         //reset the sidebar and prepare for adding
         var sidebar = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
