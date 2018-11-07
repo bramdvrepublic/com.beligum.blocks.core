@@ -60,6 +60,10 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         },
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'container';
+        },
         _newChildInstance: function(element)
         {
             return new blocks.elements.Row(this, element);

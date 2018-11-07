@@ -46,6 +46,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
         //-----VARIABLES-----
         id: undefined,
+        type: undefined,
         parent: undefined,
         index: undefined,
         element: undefined,
@@ -81,6 +82,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             this.id = Commons.generateId();
             blocks.elements.Surface.INDEX[this.id] = this;
 
+            this.type = this._getType();
             this.element = element;
             this.parent = parentSurface;
             this.index = parentSurface ? parentSurface.children.length : 0;
@@ -110,6 +112,34 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
 
         //-----PUBLIC METHODS-----
+        /**
+         * These are shortcut functions to detect which kind of surface we're dealing with.
+         */
+        isPage: function()
+        {
+            return this instanceof blocks.elements.Page;
+        },
+        isContainer: function()
+        {
+            return this instanceof blocks.elements.Container;
+        },
+        isRow: function()
+        {
+            return this instanceof blocks.elements.Row;
+        },
+        isColumn: function()
+        {
+            return this instanceof blocks.elements.Column;
+        },
+        isBlock: function()
+        {
+            return this instanceof blocks.elements.Block;
+        },
+        isProperty: function()
+        {
+            return this instanceof blocks.elements.Property;
+        },
+
         /**
          * Returns the first child we can find where the bounds wrap the supplied coordinate
          * or null if no such child was found
@@ -222,7 +252,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         // is called for a block and returns all dropspots for this block and his parents.
         createAllDropspots: function ()
         {
-            if (this instanceof blocks.elements.Block) {
+            if (this.isBlock()) {
                 this.generateDropspots();
             }
             else {
@@ -241,9 +271,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             if (this.totalBlocks != null) return this.totalBlocks;
             this.totalBlocks = 0;
             for (var i = 0; i < this.children.length; i++) {
-                if (this.children[i] instanceof blocks.elements.Block) {
+                if (this.children[i].isBlock()) {
                     this.totalBlocks += 1;
-                } else {
+                }
+                else {
                     this.totalBlocks += this.children[i].getBlocks();
                 }
             }
@@ -253,7 +284,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         getContainer: function ()
         {
             var parent = this.parent;
-            while (parent != null && !(parent instanceof blocks.elements.Container)) {
+            while (parent != null && !parent.isContainer()) {
                 parent = parent.parent;
             }
 
@@ -268,6 +299,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Returns the type of this class in a human readable string.
+         * Overload in the subclasses.
+         * @returns {string}
+         * @private
+         */
+        _getType: function()
+        {
+            return 'surface';
+        },
         /**
          * Build the sub-surface-model for this surface
          *

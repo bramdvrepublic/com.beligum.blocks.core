@@ -42,7 +42,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
 
         // If we drop on the outer edge of the container we wrap everything inside a new container
         // Or we drop on the 1 element inside the container
-        if (dropLocation instanceof blocks.elements.Container) {
+        if (dropLocation.isContainer()) {
             var childrenRows = dropLocationElement.children();
             if (side == Constants.SIDE.TOP) {
                 retVal = $(childrenRows[0]);
@@ -260,7 +260,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     // remove block
     this.removeBlock = function (block)
     {
-        if (block instanceof blocks.elements.Block) {
+        if (block.isBlock()) {
             var container = block.getContainer();
             //Hover.removeHoverOverlays();
             Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);

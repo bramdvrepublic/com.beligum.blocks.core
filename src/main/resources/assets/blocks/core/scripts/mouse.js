@@ -83,29 +83,43 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     // Note: watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
     var DRAGGING_THRESHOLD = 3;
+
+    //show dragging direction
     var SHOW_DEBUG_LINES = true;
+
     //the size of the history window to keep during dragging
     var WINDOW_SIZE = 20;
+
+    //evict stats from the window that are older than this time diff
+    //set to -1 to disable evicting
+    var MAX_TIMEDIFF_MILLIS = 1000;
+
+    //multiplier for the direction line to calculate intersections will all possible block edges
     var DIRECTION_MULTIPLIER = 10000;
+
+    //this allows all variances to pass and enabling it seems to result in a more natural
+    //experience because you can always see 'where we go'. Smoothing the resulting direction
+    //vector is a better solution than filtering out high variances
+    var IGNORE_VARIANCE = true;
 
     //-----VARIABLES-----
     // flag to enable/disable this entire module (both clicking and dragging)
     var active = false;
 
-    // flag to enable/disable layout functionality (create, resize, move and delete)
-    var enableLayout = false;
-
-    // flag to enable/disable editing of existing blocks (giving them focus to start editing)
-    var enableEdit = false;
-
-    // if we're really dragging, clicking or nothing at all
+    // true if we really started dragging, past the threshold
     var draggingStatus = BaseConstantsInternal.DRAGGING.NO;
 
-    // the surface that's currently being dragged around
-    var draggingSurface = null;
+    //the current general (mean) direction vector we're dragging in
+    var dragVector = {};
 
-    // the original event that started the drag
-    var draggingStartEvent = null;
+    // the surface that's currently being dragged around
+    var mousedownSurface = null;
+
+    //the low-level element we really clicked on
+    var clickedElement = null;
+
+    // the original mousedown event that started the drag
+    var mousedownEvent = null;
 
     //this keeps aggregated values and an array of history entries of maximum size WINDOW_SIZE
     //that will keep track of the last mousemove event statistics
@@ -123,7 +137,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         //the floating sum of the total lengths
         totalLength: 0,
         //the floating sum of the timeDiffs
-        totalTime: 0,
+        totalTimeDiff: 0,
 
         //the circular variance of all the angles
         variance: 0,
@@ -131,12 +145,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         direction: 0,
         //the current speed in pixels per second
         speed: 0,
-    };
-
-    //the current general (mean) direction vector we're dragging in
-    var dragVector = {
-        x1: 0, y1: 0,
-        x2: 0, y2: 0
     };
 
     var debugCanvas = null;
@@ -208,20 +216,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
     };
 
-    /**
-     * enable/disable layout functionality (create, resize, move and delete)
-     */
-    this.enableLayout = function (enable)
+    this.enableDragging = function(enable)
     {
-        enableLayout = enable;
-    };
-
-    /**
-     * enable/disable editing of existing blocks (giving them focus to start editing)
-     */
-    this.enableEdit = function (enable)
-    {
-        enableEdit = enable;
+        draggingStatus = enable ? BaseConstantsInternal.DRAGGING.NO : BaseConstantsInternal.DRAGGING.DISABLED;
     };
 
     //-----PRIVATE METHODS-----
@@ -235,79 +232,75 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseDown = function (event)
     {
-        //if both edit and layout are disabled, we have nothing to do
-        if (enableEdit || enableLayout) {
-            // this variable more or less controls if we're dragging a new block or not,
-            // so make sure it's null when we're dragging the new-block button around
-            var surface = null;
-            var creatingNew = false;
-            var element = $(event.target);
-            Logger.info('mousedown on ', event);
-            if (element.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || element.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
-                creatingNew = true;
-            }
-            // If the element we click on has a registered ID attribute and we can find it in our surface model,
-            // we clicked on a valid surface. Note that we only have block and resizer surfaces, so we'll always
-            // click on one of them (or nothing at all), but this is good time to dig a little deeper and see
-            // if we didn't click on a property inside a block instead. Because those are the 'real' hotspots
-            // (the block overlays are just easier for the end-user to understand) and the only parts
-            // that will get saved after changing them, so it makes sense to work with them instead of the blocks.
-            else if (element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
-                surface = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
+        //before setting the tracking variables, we make sure we start with a clean slate because mousedown starts everything
+        _resetMouse();
 
-                // //dig deeper
-                // if (surface) {
-                //
-                //     var propertySurface = surface.childAt(event.pageX, event.pageY);
-                //     if (propertySurface) {
-                //         surface = propertySurface;
-                //     }
-                //     else {
-                //         //It's possible we didn't find a sub-property
-                //         // eg. when it's a resize handle or we just
-                //         // want to edit some attributes of the block itself
-                //         // and it's saved by a parent property-element
-                //     }
-                // }
-            }
+        //four options:
+        // 1) we clicked on a valid surface
+        // 2) we clicked on a resize handle
+        // 3) we clicked on the create new button
+        // 4) we clicked outside any surface
 
-            //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-            //TODO note: there's an error here and we should refactor this: eg. try to click on a video's play button and because of this class being activated, the mouseUp event is never received...
-            //UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+        //note that we are a low-level mouse event handler, so we track the mouse
+        //as long as we're activated, even if we didn't click on any particular element,
+        //because that will probably mean we need to reset some stuff in the manager
+        //that's why we always implement 'option 4':
+        mousedownEvent = event;
+        mousedownSurface = null;
 
-            //four options:
-            // 1) we clicked on a valid surface -> block holds a surface object and creatingNew is false
-            // 2) we clicked on a resize handle -> block holds a resizer surface object and creatingNew is false
-            // 3) we clicked on the create new button -> block is null and creatingNew is true
-            // 4) we clicked outside any surface -> block is undefined and creatingNew is false
+        //this will be one of these:
+        // - the overlay element if mousedown is on an overlay
+        // - the new button element if mousedown is on the new block button
+        // - a random other element if mousedown is not on one of two above
+        var element = $(event.target);
 
-            //before setting the tracking variables, we make sure we start with a clean slate because mousedown starts everything
-            _resetMouse();
+        //check if we're pressing on the new-block-button and create a new block if we are
+        //this will allow us to handle creating new blocks a lot like moving existing blocks
+        if (element.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || element.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+            mousedownSurface = new blocks.elements.Block();
+        }
+        // If the element we click on has a registered ID attribute and we can find it in our surface model,
+        // we clicked on a valid surface. Note that we only have block and resizer surfaces, so we'll always
+        // click on one of them (or nothing at all).
+        else if (element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
+            mousedownSurface = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
+        }
 
-            // options 1-3
-            if (surface || creatingNew) {
-                draggingStatus = BaseConstantsInternal.DRAGGING.WAITING;
-                draggingSurface = surface;
-                draggingStartEvent = event;
+        // if we clicked on a valid surface, we need to activate a few things extra
+        if (mousedownSurface) {
 
-                //start listening for mouse movement
-                $(document).on("mousemove.blocks_core", function (event)
-                {
-                    if (active) {
-                        // note: we don't check which mouse button is pressed
-                        // because docs say not all browsers set it and we already
-                        // set it during mousedown.
-                        // It should be safe for incoming drags (that weren't initiated by us),
-                        // because we abort on mouseleave and this mousemove is only booted here.
-                        // See https://stackoverflow.com/questions/322378/javascript-check-if-mouse-button-down
-                        _mouseMove(event);
-                    }
-                });
-            }
-            // option 4
-            else {
-                draggingStatus = BaseConstantsInternal.DRAGGING.NO;
-            }
+            // Important note:
+            // Clicking on a surface is not enough: we need to know on which low-level element inside
+            // (the element of) that surface we clicked (this can be any element, not just properties;
+            // for instance blocks-image registeres all <img> tags).
+            // Because the overlay is 'blocking' the event on the low-level element, we use a little trick
+            // by temporarily disable pointer events on the overlay by setting BLOCK_OVERLAY_NO_EVENTS_CLASS.
+            // This will allow next events to pass through the lower-level elements.
+            // Note that the first event that will use this is either the next move or the next mouseup.
+            // That low-level element will be tracked by setting clickedElement on the next event.
+            // In the mouseup event, we remove the event blocking on the overlay again.
+            // Also note that this will disable the hover events on the overlays while dragging,
+            // which is exactly what we want.
+            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
+            //start listening for mouse movement (even if dragging is disabled, to fill the clickedElement asap)
+            $(document).on("mousemove.blocks_core", function (event)
+            {
+                if (active) {
+                    // note: we don't check which mouse button is pressed
+                    // because docs say not all browsers set it and we already
+                    // set it during mousedown.
+                    // It should be safe for incoming drags (that weren't initiated by us),
+                    // because we abort on mouseleave and this mousemove is only booted here.
+                    // See https://stackoverflow.com/questions/322378/javascript-check-if-mouse-button-down
+                    _mouseMove(event);
+                }
+                //if we encounter the situation where we're still listening while the module
+                // is disabled, immediately reset ourself (unregistering while doing so)
+                else {
+                    _resetMouse();
+                }
+            });
         }
     };
 
@@ -319,19 +312,36 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseMove = function (event)
     {
-        Logger.info('mouse move');
+        // Save the first element we encounter after mousedown,
+        // either here or in mouseup. This way, we catch the closest
+        // element to the mousedown coordinate
+        if (!clickedElement) {
+            clickedElement = $(event.target);
+        }
 
-        //this should always be true since the mousemove is only installed on a correct mousedown
-        //but let's check it anyway
-        if (draggingStatus != BaseConstantsInternal.DRAGGING.NO) {
+        //if dnd was actually disabled, we'll unregister ourself immediately,
+        //only using this to fill the clickedElement below
+        if (draggingStatus === BaseConstantsInternal.DRAGGING.DISABLED) {
+            $(document).off("mousemove.blocks_core");
+        }
+        //if not, do our normal dnd tracking
+        else {
 
-            //first, update the statistics and direction and speed vectors
+            //first, update the statistics and vectors
+            updateStats(event);
             updateVector(event);
 
-            //we're waiting for the threshold to be exceeded, but only if we're allowed to layout, otherwise, we just allow a click
-            if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING && enableLayout && stats.totalLength > DRAGGING_THRESHOLD) {
+            //first, check if we need to activate dragging
+            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && stats.totalLength > DRAGGING_THRESHOLD) {
 
                 draggingStatus = BaseConstantsInternal.DRAGGING.YES;
+
+                //note: we'll also directly trigger a move, see below
+                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_START, event, {
+                    surface: mousedownSurface,
+                    element: clickedElement,
+                    event: mousedownEvent,
+                });
 
                 //var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
@@ -348,8 +358,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 //     block: startBlock
                 // });
             }
+
             //we're past the threshold and dragging a block around
-            else if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
+            if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
+
+                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
+                    surface: mousedownSurface,
+                    element: clickedElement,
+                    originalEvent: mousedownEvent,
+                });
 
                 // var block = Hover.getHoveredBlock();
                 //
@@ -373,66 +390,65 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             debugCanvas = null;
         }
 
-        if (draggingStatus != BaseConstantsInternal.DRAGGING.NO) {
-
-            //the low level html element we clicked on
-            var element = $(event.target);
-            Logger.info('mouseup on ', element[0]);
-
-            if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
-                //Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
-            }
-            // this means we were dragging, but haven't exceeded the threshold yet
-            // so, instead of starting a drag, we did a click
-            else if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING) {
-
-                //Note: when we click the new block button, draggingSurface will be null
-                // and the popover will do it's work, so we have no else clause
-                // Also, if we can't edit, we just disable the focus of a block
-                if (enableEdit && draggingSurface) {
-
-                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-                        surface: draggingSurface,
-                        event: event,
-                    });
-
-                    //Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, draggingSurface);
-
-                    //var hoverObj = Hover.createHoverClickObject(draggingSurface, element, event);
-                    // if (hoverObj) {
-                    //     //this will mainly end up in sidebar.js
-                    //     Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
-                    //
-                    //     //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
-                    //     Hover.setHoveredBlock(null);
-                    // }
-                    // else {
-                    //     Logger.error("Got null object while creating a hover object; this shouldn't happen");
-                    // }
-                }
-            }
-            // // this means the mousedown happened outside of any block or other kind of hotspot
-            // // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
-            // else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
-            //     if (Hover.getFocusedBlock() != null) {
-            //         //this will mainly end up in sidebar.js
-            //         Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-            //             //this is an alternative for launching a blur
-            //             block: Hover.getPageBlock(),
-            //             //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
-            //             element: element,
-            //             //there is no property element for the pageBlock
-            //             propertyElement: null
-            //         });
-            //     }
-            // }
-            // else {
-            //     // do nothing
-            // }
+        // if the clicked element wasn't set by now,
+        // we just use the target of the event because this
+        // means we clicked without moving at little bit
+        // (otherwise it's set during mousemove)
+        if (!clickedElement) {
+            clickedElement = $(event.target);
         }
 
-        //let's always reset the mouse when done
+        //if we didn't drag (or we weren't allowed to), we clicked
+        if (draggingStatus === BaseConstantsInternal.DRAGGING.NO || draggingStatus === BaseConstantsInternal.DRAGGING.DISABLED) {
+            //note that we use the mousedown event as the parent event,
+            // it're more intuitive when sending out a 'click' event
+            Broadcaster.send(Broadcaster.EVENTS.MOUSE.CLICK, event, {
+                surface: mousedownSurface,
+                element: clickedElement,
+                originalEvent: mousedownEvent,
+            });
+        }
+        else if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
+            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_STOP, event, {
+                surface: mousedownSurface,
+                element: clickedElement,
+                originalEvent: mousedownEvent,
+            });
+        }
+
+        //we always reset the mouse when done
         _resetMouse();
+
+        //var hoverObj = Hover.createHoverClickObject(draggingSurface, element, event);
+        // if (hoverObj) {
+        //     //this will mainly end up in sidebar.js
+        //     Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
+        //
+        //     //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
+        //     Hover.setHoveredBlock(null);
+        // }
+        // else {
+        //     Logger.error("Got null object while creating a hover object; this shouldn't happen");
+        // }
+
+        // // this means the mousedown happened outside of any block or other kind of hotspot
+        // // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
+        // else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
+        //     if (Hover.getFocusedBlock() != null) {
+        //         //this will mainly end up in sidebar.js
+        //         Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+        //             //this is an alternative for launching a blur
+        //             block: Hover.getPageBlock(),
+        //             //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+        //             element: element,
+        //             //there is no property element for the pageBlock
+        //             propertyElement: null
+        //         });
+        //     }
+        // }
+        // else {
+        //     // do nothing
+        // }
     };
 
     /**
@@ -442,7 +458,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseCancel = function (event)
     {
-        if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
+        if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
             Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
         }
 
@@ -456,28 +472,21 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _resetMouse = function ()
     {
-        draggingStatus = BaseConstantsInternal.DRAGGING.NO;
-        draggingSurface = null;
-        draggingStartEvent = null;
-        stats = {
-            idx: 0,
-            events: [],
-            sinSum: 0,
-            cosSum: 0,
-            totalLength: 0,
-            totalTime: 0,
-            variance: 0,
-            direction: 0,
-            speed: 0,
-        };
-
-        dragVector = {
-            x1: 0, y1: 0,
-            x2: 0, y2: 0
-        };
+        //don't reset the status of dnd is disabled, we need to do that explicitly
+        if (draggingStatus !== BaseConstantsInternal.DRAGGING.DISABLED) {
+            draggingStatus = BaseConstantsInternal.DRAGGING.NO;
+        }
+        mousedownSurface = null;
+        clickedElement = null;
+        mousedownEvent = null;
+        resetStats();
+        dragVector = {};
 
         //since we're only listening for move events after clicking now, deregister this by default
         $(document).off("mousemove.blocks_core");
+
+        //this will make sure the overlays always regain their events on reset
+        UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
         // windowFrame = {
         //     width: document.innerWidth,
@@ -500,8 +509,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * */
     var updateVector = function (event)
     {
-        updateStats(event.pageX, event.pageY);
-
         //draws the absolute current direction, including speed or not
         if (SHOW_DEBUG_LINES) {
             if (!debugCanvas) {
@@ -526,40 +533,64 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             ctx.stroke();
         }
 
-        dragVector.x1 = event.pageX;
-        dragVector.y1 = event.pageY;
+        // Note: it makes sense to only update the target direction of the vector if the variance of
+        // the angles is below a certain threshold, because only then we are 'really moving' in a certain
+        // direction. A high variance means there are too many angles pointing in different directions.
+        // Variances in the [0.5 - 1.0] range typically mean we abruptly changed direction, making the dragvector
+        // do a 180 degree turn, bouncing the intersecting edge around. You may want to hide this.
+        // Note though that during initial movement (just after dragging started), after pausing for longer than
+        // MAX_TIMEDIFF_MILLIS (and restarting) or while moving very slowly (typically speeds < 5 or < 10),
+        // the variance will also by high, so it's a bit of a tradeoff, hence the ignore flag...
+        if (IGNORE_VARIANCE || stats.variance < 0.50) {
 
-        //Note: it makes sense to only update the target direction of the vector if the variance of
-        //the angles is below a certain threshold, because only then we are 'really moving' in a certain
-        //direction. Otherwise, there are too many angles pointing in other directions
-        if (stats.variance < 0.2) {
-            //by using a large value (larger than the largest possible page), we're sure the resulting
-            //line will extend the page borders and thus intersecting will all possible block edges
-            //on that page (see later)
-            dragVector.x2 = dragVector.x1 - (Math.cos(stats.direction) * DIRECTION_MULTIPLIER);
-            dragVector.y2 = dragVector.y1 - (Math.sin(stats.direction) * DIRECTION_MULTIPLIER);
+            dragVector.x1 = event.pageX;
+            dragVector.y1 = event.pageY;
 
-            if (SHOW_DEBUG_LINES) {
-                var ctx = debugCanvas[0].getContext("2d");
-                ctx.clearRect(0, 0, debugCanvas[0].width, debugCanvas[0].height);
-                ctx.beginPath();
-                ctx.moveTo(dragVector.x1, dragVector.y1);
-                ctx.lineTo(dragVector.x2, dragVector.y2);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = '#00ff00';
-                ctx.stroke();
-            }
+            // by using a large multiplier (larger than the largest possible page), we're sure the resulting
+            // line will extend the page borders and thus intersecting will all possible block edges
+            // on that page (see later)
+            var x2 = dragVector.x1 - (Math.cos(stats.direction) * DIRECTION_MULTIPLIER);
+            var y2 = dragVector.y1 - (Math.sin(stats.direction) * DIRECTION_MULTIPLIER);
+
+            //note: averaging out the new value eases the signal down a lot
+            dragVector.x2 = (dragVector.x2 + x2) / 2;
+            dragVector.y2 = (dragVector.y2 + y2) / 2;
+        }
+
+        //always show the debug line, even if the dragVector isn't recalculated
+        if (SHOW_DEBUG_LINES) {
+            var ctx = debugCanvas[0].getContext("2d");
+            ctx.clearRect(0, 0, debugCanvas[0].width, debugCanvas[0].height);
+            ctx.beginPath();
+            ctx.moveTo(dragVector.x1, dragVector.y1);
+            ctx.lineTo(dragVector.x2, dragVector.y2);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#00ff00';
+            ctx.stroke();
         }
     };
 
-    var updateStats = function (curX, curY)
+    var resetStats = function ()
     {
-        var stat = {
+        stats.idx = 0;
+        stats.events = [];
+        stats.sinSum = 0;
+        stats.cosSum = 0;
+        stats.totalLength = 0;
+        stats.totalTimeDiff = 0;
+        stats.variance = 0;
+        stats.direction = 0;
+        stats.speed = 0;
+    };
+    var updateStats = function (event)
+    {
+        var newStat = {
+
             //Note: these are milliseconds
             time: new Date().getTime(),
 
-            x: curX,
-            y: curY,
+            x: event.pageX,
+            y: event.pageY,
 
             //time difference between this entry and the previous
             timeDiff: 0,
@@ -573,36 +604,69 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         //skip the very first event to fill the difference variables
         if (stats.events.length > 0) {
-            //calculate the index of the previous entry in the window
-            var prevIdx = (stats.idx - 1) % WINDOW_SIZE;
-            prevIdx = prevIdx < 0 ? stats.events.length - 1 : prevIdx;
 
+            // calculate the index of the previous entry in the window
+            // note: stats.idx is the index where we will place the new stat
+            var prevIdx = stats.idx > 0 ? stats.idx - 1 : stats.events.length - 1;
+
+            // clean up the old entries (if the mouse stands still, it feels more
+            // natural to 'forget' what we've done before after a certain time)
+            if (MAX_TIMEDIFF_MILLIS > 0) {
+                //note: if prevIdx equals stats.idx, we deleted all others
+                while (prevIdx !== stats.idx && stats.events[prevIdx] && newStat.time - stats.events[prevIdx].time > MAX_TIMEDIFF_MILLIS) {
+
+                    var p = stats.events[prevIdx];
+                    stats.sinSum -= p.sin;
+                    stats.cosSum -= p.cos;
+                    stats.totalLength -= p.length;
+                    stats.totalTimeDiff -= p.timeDiff;
+
+                    //remove the element from the window and move down the current
+                    //index if the index is before the current index
+                    stats.events.splice(prevIdx, 1);
+                    if (prevIdx < stats.idx) {
+                        stats.idx--;
+                    }
+
+                    prevIdx = prevIdx > 0 ? prevIdx - 1 : stats.events.length - 1;
+                }
+            }
+
+            //make sure we haven't cleaned up the full array in the previous step
             var prevStat = stats.events[prevIdx];
+            if (prevIdx !== stats.idx && prevStat) {
 
-            stat.timeDiff = stat.time - prevStat.time;
+                newStat.timeDiff = newStat.time - prevStat.time;
 
-            var xDiff = prevStat.x - stat.x;
-            var yDiff = prevStat.y - stat.y;
-            stat.length = Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+                var xDiff = prevStat.x - newStat.x;
+                var yDiff = prevStat.y - newStat.y;
+                newStat.length = Math.sqrt(xDiff * xDiff + yDiff * yDiff);
 
-            var angleWithPrev = Math.atan2(yDiff, xDiff);
-            stat.sin = Math.sin(angleWithPrev);
-            stat.cos = Math.cos(angleWithPrev);
+                var angleWithPrev = Math.atan2(yDiff, xDiff);
+                newStat.sin = Math.sin(angleWithPrev);
+                newStat.cos = Math.cos(angleWithPrev);
 
-            //calculate the index of the oldest entry in the window
-            var oldestIdx = stats.events.length < WINDOW_SIZE ? 0 : ((stats.idx + 1) % WINDOW_SIZE);
-            var oldestStat = stats.events[oldestIdx];
+                //calculate the index of the oldest entry in the window
+                var oldestIdx = stats.events.length < WINDOW_SIZE ? 0 : ((stats.idx + 1) % WINDOW_SIZE);
+                var oldestStat = stats.events[oldestIdx];
 
-            // Instead of re-summing all the the entries, we just calc a moving sum
-            // by substracting the last and adding the new value
-            stats.sinSum = stats.sinSum - oldestStat.sin + stat.sin;
-            stats.cosSum = stats.cosSum - oldestStat.cos + stat.cos;
-            stats.totalLength = stats.totalLength - oldestStat.length + stat.length;
-            stats.totalTime = stats.totalTime - oldestStat.timeDiff + stat.timeDiff;
+                // Instead of re-summing all the the entries, we just calc a moving sum
+                // by substracting the last and adding the new value
+                stats.sinSum = stats.sinSum - oldestStat.sin + newStat.sin;
+                stats.cosSum = stats.cosSum - oldestStat.cos + newStat.cos;
+                stats.totalLength = stats.totalLength - oldestStat.length + newStat.length;
+                stats.totalTimeDiff = stats.totalTimeDiff - oldestStat.timeDiff + newStat.timeDiff;
+            }
+            else {
+                //if the cleanup for some reason resulted in a funky invalid prevStat,
+                //we make sure the index numbering is reset
+                stats.idx = 0;
+            }
         }
 
         //store the statistic and move to the next
-        stats.events[stats.idx] = stat;
+        stats.events[stats.idx] = newStat;
+        //advance the index for the next stat
         stats.idx = (stats.idx + 1) % WINDOW_SIZE;
 
         //calculate the mean and the variance of the all the angles in the window;
@@ -610,11 +674,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         //     https://en.wikipedia.org/wiki/Directional_statistics
         stats.direction = Math.atan2(stats.sinSum / stats.events.length, stats.cosSum / stats.events.length);
         stats.variance = 1.0 - Math.sqrt(stats.sinSum * stats.sinSum + stats.cosSum * stats.cosSum) / stats.events.length;
-        //note: the resulting speed will be expressed as pixels per second
-        stats.speed = stats.totalLength / (stats.totalTime / 1000);
+        //note: the resulting speed will be expressed as pixels per second (avoiding division by zero)
+        stats.speed = stats.totalTimeDiff === 0 ? 0 : stats.totalLength / (stats.totalTimeDiff / 1000);
     };
 
-    //-----UNCHECKED-----
+    //-----TODO UNCHECKED-----
 
     /**
      * Calculates the direction of the current mouse vector for the supplied block.

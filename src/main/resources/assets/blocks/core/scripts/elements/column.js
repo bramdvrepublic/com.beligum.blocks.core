@@ -73,6 +73,10 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'column';
+        },
         _newChildInstance: function(element)
         {
             return new blocks.elements.Block(this, element);

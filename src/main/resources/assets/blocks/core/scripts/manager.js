@@ -33,7 +33,17 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    // flag to enable/disable layout functionality (create, resize, move and delete)
+    var allowLayout = true;
+
+    // flag to enable/disable editing of existing blocks (giving them focus to start editing)
+    var allowEdit = true;
+
+    //the surface of the page
     var pageSurface = null;
+
+    //the currently focused surface
+    var focusedSurface = null;
 
     //-----EVENT LISTENERS-----
     /**
@@ -50,13 +60,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         //create the page model
         pageSurface = new blocks.elements.Page();
 
+        //use the generalized method to put focus on the newly created page
+        switchFocus(pageSurface, pageSurface.element, event);
+
         //start listening for clicks
         Mouse.activate();
-
-        //by default, we allow the user to edit and layout,
-        //to be edited in the future
-        Mouse.enableEdit(true);
-        Mouse.enableLayout(true);
     });
 
     /**
@@ -95,16 +103,69 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     });
 
     /**
-     * Sent out by mouse.js when we click a surface and it needs to be focused
-     * so we can start editing it's contents.
+     * Sent out by mouse.js when a click is registered.
+     *
+     * @param eventData has this structure:
+     *   eventData.surface: the surface of the block
+     *   eventData.element: the low-level DOM element (in the block element) we clicked
+     *   eventData.originalEvent: the mousedown event that originated the click
      */
-    $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
+    $(document).on(Broadcaster.EVENTS.MOUSE.CLICK, function (event, eventData)
     {
-        //focusSwitch(eventData.block, eventData.element, eventData.propertyElement, eventData.hotspot, event);
-        Sidebar.init(eventData.surface, eventData.event);
+        // Logger.info(eventData.surface);
+        // Logger.info(eventData.element[0].outerHTML.split('>')[0]);
+
+        //option 1) check if we need to switch focus to a block
+        if (
+            //clicking on a surface is the first event to edit it, so block it if we don't have permission
+            allowEdit
+            //we don't allow to switch focus from one block to the next, let's always go back to the page first
+            && (!focusedSurface || focusedSurface == pageSurface)
+            //make sure the block we received is a valid block
+            && eventData.surface && eventData.surface.isBlock()
+            //if we click on (instead of dragging) the new block button, do nothing and let the popover do it's thing
+            && !eventData.surface.isNewBlock()) {
+
+            switchFocus(eventData.surface, eventData.element, eventData.originalEvent);
+        }
+        //option 2) we re-clicked on the focused surface (this should be impossible because pointer-events are disabled on focus)
+        else if (eventData.surface && focusedSurface && eventData.surface === focusedSurface) {
+            //NOOP
+        }
+        //option 3) since we disable pointer-events for the focused surface, additional clicks inside that surface will be tied to regular DOM elements inside the block;
+        //          make sure we don't switch back to the page so the user can interact with the content of the block
+        //          Note: $.closest() begins with the current element, so the block itself is also included.
+        else if (!eventData.surface && eventData.element && focusedSurface && focusedSurface.isBlock() && eventData.element.closest(focusedSurface.element).length > 0) {
+            //NOOP
+        }
+        //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
+        else if (!eventData.surface && eventData.element && focusedSurface && focusedSurface.isBlock() && eventData.element.closest(UI.pageContent).length == 0) {
+            //NOOP
+        }
+        //option 5) in all other cases, we switch back to the page
+        else {
+            switchFocus(pageSurface, pageSurface.element, eventData.originalEvent);
+        }
     });
 
     //-----PRIVATE METHODS-----
+    var switchFocus = function (surface, clickedElement, clickEvent)
+    {
+        focusedSurface = surface;
+
+        if (focusedSurface.isBlock()) {
+            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            focusedSurface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            Mouse.enableDragging(false);
+        }
+        else {
+            UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            Mouse.enableDragging(true);
+        }
+
+        Sidebar.init(surface, clickedElement, clickEvent);
+    };
     /**
      * @param block the block that should get focus (not null)
      * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
@@ -303,7 +364,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     var enableLayout = function (enable)
     {
         if (enable) {
-            Mouse.enableLayout(true);
+            //Mouse.enableLayout(true);
             DragDrop.setActive(true);
             Resizer.activate(true);
 
@@ -312,7 +373,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
             }
         }
         else {
-            Mouse.enableLayout(false);
+            //Mouse.enableLayout(false);
             DragDrop.setActive(false);
             Resizer.activate(false);
 

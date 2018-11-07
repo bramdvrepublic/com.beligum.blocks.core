@@ -35,6 +35,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        // this will allow to create new blocks in the same way as moving
+        // existing blocks
+        isNew: false,
 
         //-----CONSTRUCTORS-----
         constructor: function (parentSurface, element)
@@ -44,40 +47,41 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             this.canDrag = true;
             this.dropspots = {};
 
-            //if we're the only property in a parent, our bounds are the same as the bounds of the parent
-            // if (this.element.siblings().length == 0 && this.element.parent == parentSurface.element) {
-            //     this.left = this.parent.left;
-            //     this.right = this.parent.right;
-            //     this.top = this.parent.top;
-            //     this.bottom = this.parent.bottom;
-            // }
+            if (parentSurface && element) {
+                this.overlay = this._createOverlay();
+                this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
+                UI.surfaceWrapper.append(this.overlay);
 
-            this.overlay = this._createOverlay();
-            this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
-            UI.surfaceWrapper.append(this.overlay);
+                //these two classes will remove the borders left and top so we don't
+                //have double borders when two blocks are next to each other
+                if (this.parent.index > 0) {
+                    //if we're not in the leftmost column, we remove the left border
+                    //and use the right border of the blocks in the previous column
+                    this.overlay.addClass(blocks.elements.Surface.LEFT_CLASS);
+                }
+                if (this.index > 0 || this.parent.parent.index > 0) {
+                    //- If we're not the first block in the column, we remove the top border
+                    //  and use the bottom border of the previous block in this column instead
+                    //- Or if we are the first block, but we're not in the first row of the page,
+                    //  we also remove it, because we use the bottom border of the last block in the
+                    //  previous row instead.
+                    this.overlay.addClass(blocks.elements.Surface.TOP_CLASS);
+                }
 
-            //these two classes will remove the borders left and top so we don't
-            //have double borders when two blocks are next to each other
-            if (this.parent.index > 0) {
-                //if we're not in the leftmost column, we remove the left border
-                //and use the right border of the blocks in the previous column
-                this.overlay.addClass(blocks.elements.Surface.LEFT_CLASS);
+                //draw the newly created overlay
+                this._redraw();
             }
-            if (this.index > 0 || this.parent.parent.index > 0) {
-                //- If we're not the first block in the column, we remove the top border
-                //  and use the bottom border of the previous block in this column instead
-                //- Or if we are the first block, but we're not in the first row of the page,
-                //  we also remove it, because we use the bottom border of the last block in the
-                //  previous row instead.
-                this.overlay.addClass(blocks.elements.Surface.TOP_CLASS);
+            //if we call the constructor without arguments, we're creating a new block
+            else {
+                this.isNew = true;
             }
-
-            //draw the newly created overlay
-            this._redraw();
         },
 
         //-----PUBLIC METHODS-----
-
+        isNewBlock: function()
+        {
+            return this.isNew;
+        },
 
         //-----TODO UNCHECKED-----
         getElementAtSide: function (side)
@@ -222,6 +226,10 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         },
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'block';
+        },
         _newChildInstance: function(element)
         {
             return new blocks.elements.Property(this, element);

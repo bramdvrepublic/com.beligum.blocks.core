@@ -44,6 +44,10 @@ base.plugin("blocks.core.elements.Property", ["base.core.Class", function (Class
         //-----PUBLIC METHODS-----
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'property';
+        },
         _canHaveChildren: function ()
         {
             return false;

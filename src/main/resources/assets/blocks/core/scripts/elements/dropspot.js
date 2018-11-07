@@ -166,7 +166,10 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         },
 
         //-----PRIVATE METHODS-----
-
+        _getType: function()
+        {
+            return 'dropspot';
+        },
     });
 
 }]);

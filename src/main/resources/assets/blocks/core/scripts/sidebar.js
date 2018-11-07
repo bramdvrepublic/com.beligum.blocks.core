@@ -34,7 +34,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     /**
      * Reset and initialize the sidebar's config panels for the supplied (focused) surface
      */
-    this.init = function (focusedSurface, event)//(block, element, hotspot, event)
+    this.init = function (focusedSurface, clickedElement, mousedownEvent)//(block, element, hotspot, event)
     {
         this.reset();
 
@@ -49,7 +49,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         var currSurface = focusedSurface;
         while (currSurface != null) {
 
-            if (currSurface instanceof blocks.elements.Page) {
+            if (currSurface.isPage()) {
                 //we select the _first_ column, (instead of the last, see row below) because it's what
                 // we naturally expect in the GUI (the column closest around the block we're focusing)
                 if (firstColumn != null) {
@@ -67,27 +67,27 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                     surface: currSurface
                 });
             }
-            else if (currSurface instanceof blocks.elements.Container) {
+            else if (currSurface.isContainer()) {
                 //NOOP
             }
-            else if (currSurface instanceof blocks.elements.Row) {
+            else if (currSurface.isRow()) {
                 if (firstRow == null) {
                     firstRow = currSurface;
                 }
                 lastRow = currSurface;
             }
-            else if (currSurface instanceof blocks.elements.Column) {
+            else if (currSurface.isColumn()) {
                 if (firstColumn == null) {
                     firstColumn = currSurface;
                 }
                 lastColumn = currSurface;
             }
-            else if (currSurface instanceof blocks.elements.Block) {
+            else if (currSurface.isBlock()) {
                 activePanels.push({
                     surface: currSurface
                 });
             }
-            else if (currSurface instanceof blocks.elements.Property) {
+            else if (currSurface.isProperty()) {
                 activePanels.push({
                     surface: currSurface
                 });
@@ -106,7 +106,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
             var surface = panel.surface;
             var element = surface.element;
-            // if (surface instanceof blocks.elements.Property) {
+            // if (surface.isProperty()) {
             //     element = surface.parent.element;
             // }
 
@@ -135,18 +135,18 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
             //we'll expand all panels by default, except the row and column
             var collapsed = false;
-            if (surface instanceof blocks.elements.Row || surface instanceof blocks.elements.Column) {
+            if (surface.isRow() || surface.isColumn()) {
                 collapsed = true;
             }
             //if we're showing the controls for a block, close the panel
-            else if (focusedSurface instanceof blocks.elements.Block && surface instanceof blocks.elements.Page) {
+            else if (focusedSurface.isBlock() && surface.isPage()) {
                 collapsed = true;
             }
 
             //we'll iterate the array in reverse order, but when focusing a block,
             //we don't want users to be able to save the page (it causes all kinds of problems),
             //so we disable the 'page-entry' if a block is focused
-            var disabled = !(focusedSurface instanceof blocks.elements.Page) && surface instanceof blocks.elements.Page;
+            var disabled = !focusedSurface.isPage() && surface.isPage();
 
             // if a parent stopped the creation of sub-panels, keep executing the focus() method,
             // but without a panel ID (allowing for logic without UI consequences)
@@ -157,11 +157,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 // the focus method can return a list of UI widgets it needs to add to the panel
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
                 //TODO refactor the last two (three?) away
-                if (surface instanceof blocks.elements.Property) {
+                if (surface.isProperty()) {
                     surface = surface.parent;
                     element = surface.element;
                 }
-                widget.focus(surface, element, null, event);
+                widget.focus(surface, element, null, mousedownEvent);
                 var optionsToAdd = widget.getConfigs(surface, element);
                 if (optionsToAdd) {
                     if (addedOptions && optionsToAdd.length > 0) {

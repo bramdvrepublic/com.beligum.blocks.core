@@ -54,7 +54,7 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
             var retVal = null;
             for (var i = 0; i < this.children.length; i++) {
                 var child = this.children[i];
-                if (child instanceof blocks.elements.Container) {
+                if (child.isContainer()) {
                     retVal = child;
                     break;
                 }
@@ -63,6 +63,10 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         },
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'page';
+        },
         _newChildInstance: function(element)
         {
             return new blocks.elements.Container(this, element);

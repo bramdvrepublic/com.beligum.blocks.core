@@ -87,6 +87,10 @@ base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.
         },
 
         //-----PRIVATE METHODS-----
+        _getType: function()
+        {
+            return 'resizer';
+        },
         _redraw: function()
         {
             if (this.overlay) {

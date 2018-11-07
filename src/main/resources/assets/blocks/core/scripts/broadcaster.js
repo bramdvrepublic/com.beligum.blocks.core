@@ -95,6 +95,13 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function
         //sent out when the blocks editor system needs to be un-pauzed
         RESUME_BLOCKS: "RESUME_BLOCKS",
 
+        MOUSE: {
+            CLICK: "MOUSE_CLICK",
+            DRAG_START: "MOUSE_DRAG_START",
+            DRAG_MOVE: "MOUSE_DRAG_MOVE",
+            DRAG_STOP: "MOUSE_DRAG_STOP",
+        },
+
         // Events with blockEvent as argument
         START_DRAG: "START_DRAG",
         END_DRAG: "END_DRAG",

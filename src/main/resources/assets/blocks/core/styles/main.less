@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 // Overlay when editing and for dialogs
 @import (reference) "/constants/blocks/core?type=less";
 @import (reference) "/constants/blocks/media/core?type=less";
-
 //-----LIBRARIES-----
 @import (reference) "/assets/webjars/less-animate/1.0.0/source/pulse.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/variables.less";
@@ -31,7 +29,6 @@
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/list.less";
 @import (reference) "/assets/base/core/styles/loader.less";
 @import (reference) "/assets/blocks/media/core/styles/finder.less";
-
 //-----BASIC BOOTSTRAP MIXINS-----
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
@@ -49,13 +46,21 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/type.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
-// Mixins
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/text-overflow.less";
 
 //-----MIXINS-----
 @import (reference) "/assets/blocks/core/styles/mixins.less";
 
-//-----MAIN-----
+//-----VARIABLES-----
+//this is the starting point of our z-indexes
+@sidebarZ: @zindex-navbar;
+//the idea is that the overlay controls should slide under the navbar
+//and are always under modal notification panels
+@overlayZ: @sidebarZ - 10;
+@mainMenuHeight: 40px;
+@initSidebarWidth: 0%;
+
+  //-----MAIN-----
 html {
   position: relative;
   min-height: 100%;
@@ -71,16 +76,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
   iframe {
     pointer-events: none;
   }
-}
-
-.@{BLOCK_OVERLAY_WRAPPER_CLASS},
-.@{BLOCK_SURFACE_WRAPPER_CLASS},
-.@{BLOCK_HANDLE_WRAPPER_CLASS}{
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
 //setup feedback for save/delete/... buttons
@@ -116,21 +111,112 @@ body.@{BODY_EDIT_MODE_CLASS} {
   width: 4px;
 }
 
-//this is the starting point of our overlay z-indexes
-//the idea is that the overlay controls should slide under the navbar
-//and are always under modal notification panels
-@blockOverlayZ: @zindex-navbar - 10;
-@mainMenuHeight: 40px;
-@initSidebarWidth: 0%;
+.@{BLOCK_OVERLAY_WRAPPER_CLASS},
+.@{BLOCK_SURFACE_WRAPPER_CLASS},
+.@{BLOCK_HANDLE_WRAPPER_CLASS},
+.@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  //this will also make sure we don't click on the overlay
+  //(causing a focus switch) when we click in the sidebar
+  //because the sidebar will be in front of the overlays
+  z-index: @overlayZ;
+
+  // this will disable events on the wrappers:
+  // because they span the entire page, they'd always receive all events
+  // when clicked, while their sole functionality is to groups surfaces
+  pointer-events: none;
+
+  //this will re-enable the events on the real surfaces
+  //note that we can't include the overlay wrapper because
+  //the other three are children of it, and that would undo
+  //the statement above
+  .@{BLOCK_SURFACE_WRAPPER_CLASS},
+  .@{BLOCK_HANDLE_WRAPPER_CLASS},
+  .@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
+    & * {
+      pointer-events: auto;
+    }
+  }
+}
+
 .@{BLOCK_OVERLAY_WRAPPER_CLASS} {
 
-  // This disables pointer events for the element itself,
-  // but 'bubbles up' lower cursors like the mouse would eg. hover over them
-  // Note that this sits in the way of using the hover-related events on these objects,
-  // so don't use them by default, but activate them on mousedown,
-  // so we can use the lower elements during the focus-phase (see mouse.js)
+  //MIXINS FOR OVERLAYS
+  .defaultBorder(@blankEdges: true) {
+
+    border: 1px dashed fadeout(@brand-primary, 50%);
+
+    &.left when (@blankEdges) {
+      border-left: none;
+    }
+    &.top when (@blankEdges) {
+      border-top: none;
+    }
+  }
+
+  // This disables pointer events for the overlay element,
+  // and passes them along to lower element (those under the overlay)
+  // acting like the overlays don't exist and enables us to detect
+  // on which element we really clicked, while keeping to the overlay
+  // visible. See mouse.js
   &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
     pointer-events: none;
+  }
+
+  //the BLOCK_FOCUSED_CLASS will be used both on the wrapper
+  //and the overlay to indicate we have something focused and which
+  //one we focused.
+  &.@{BLOCK_FOCUSED_CLASS} {
+
+    //this enables us to 'move into' the block when it's focused
+    //note that we can't put this on the
+
+    .@{BLOCK_OVERLAY_CLASS} {
+
+      background-color: rgba(255, 255, 255, 0.9);
+      border-color: transparent;
+      .transition(background-color 100ms ease-in-out);
+
+      &.@{BLOCK_FOCUSED_CLASS} {
+        .defaultBorder(false);
+        background-color: transparent;
+
+        // we can basically choose between these two:
+        // - the first will completely remove the block, passing all events
+        //   to the inner elements
+        // - the second will simulate the same, without removing the surface,
+        //   still able to eg. show it's border
+        // For now, let's start with the second and see what happens
+        //display: none;
+        pointer-events: none;
+      }
+    }
+
+    .@{COLUMN_RESIZER_CLASS} {
+      visibility: hidden;
+    }
+  }
+
+  &:not(.@{BLOCK_FOCUSED_CLASS}) {
+    .@{BLOCK_OVERLAY_CLASS} {
+      &:hover {
+        .box-shadow(0px 0px 10px @brand-primary);
+        border: 1px solid fadeout(@brand-primary, 50%);
+        background-color: fadeout(@brand-primary, 80%);
+
+        //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
+        &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
+          .box-shadow(none);
+          .defaultBorder();
+        }
+      }
+    }
   }
 
   .@{BLOCK_OVERLAY_CLASS} {
@@ -139,37 +225,25 @@ body.@{BODY_EDIT_MODE_CLASS} {
     left: 0px;
     right: 0px;
     bottom: 0px;
-    z-index: @blockOverlayZ;
-
-    .defaultBorder() {
-
-      border: 1px dashed fadeout(@brand-primary, 50%);
-
-      &.left {
-        border-left: none;
-      }
-      &.top {
-        border-top: none;
-      }
-    }
+    z-index: @overlayZ;
 
     .defaultBorder();
 
     //this is probably a good general choice
     cursor: pointer;
 
-    &.@{OVERLAY_HOVER_CLASS},
-    &:hover {
-      .box-shadow(0px 0px 10px @brand-primary);
-      border: 1px solid fadeout(@brand-primary, 50%);
-      background-color: fadeout(@brand-primary, 80%);
-
-      //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
-      &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
-        .box-shadow(none);
-        .defaultBorder();
-      }
-    }
+    //&.@{OVERLAY_HOVER_CLASS},
+    //&:hover {
+    //  .box-shadow(0px 0px 10px @brand-primary);
+    //  border: 1px solid fadeout(@brand-primary, 50%);
+    //  background-color: fadeout(@brand-primary, 80%);
+    //
+    //  //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
+    //  &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
+    //    .box-shadow(none);
+    //    .defaultBorder();
+    //  }
+    //}
     &.@{OVERLAY_DRAGGING_CLASS} {
       background-color: rgba(00, 102, 204, 0.5);
     }
@@ -179,7 +253,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     position: absolute;
     border: 1px dotted rgba(100, 100, 100, 0.8);
     cursor: text;
-    z-index: @blockOverlayZ + 1;
+    z-index: @overlayZ + 1;
 
     &.left {
       border-left: none;
@@ -215,7 +289,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     @stopPct: 100% - @offsetPct;
 
     //the dropspot line should be in front of both the block overlay and the resizer
-    z-index: @blockOverlayZ + 2;
+    z-index: @overlayZ + 2;
 
     border: none;
     //old styling
@@ -284,7 +358,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     border-right: 1px solid darken(@controlBgColor, 15%);
 
     //the resizer should be in front of the block overlays
-    z-index: @blockOverlayZ + 1;
+    z-index: @overlayZ + 1;
   }
 }
 
@@ -407,7 +481,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   //which makes sense, because the content of the surface blocks (the html)
   //will also be under the sidebar. Otherwise, the dotted lines hover over the sidebar
   //and this doesn't make sense.
-  z-index: @zindex-navbar;
+  z-index: @sidebarZ;
   padding-left: @resizerWidth;
   .drop-shadow(-1px, 0px, 4px, 0.4);
   background-color: @bgColor;

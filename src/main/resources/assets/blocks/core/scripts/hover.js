@@ -92,7 +92,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DOM", fu
     //     if (Hover.getPageBlock() != null) {
     //         var elements = Hover.getPageBlock().findElements(0, 9);
     //         for (var i = 0; i < elements.length; i++) {
-    //             if (elements[i] instanceof blocks.elements.Row) {
+    //             if (elements[i].isRow()) {
     //                 elements[i].removeOverlay();
     //             }
     //         }
@@ -104,7 +104,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DOM", fu
     //     if (Hover.getPageBlock() != null) {
     //         var elements = Hover.getPageBlock().findElements(0, 9);
     //         for (var i = 0; i < elements.length; i++) {
-    //             if (elements[i] instanceof blocks.elements.Row) {
+    //             if (elements[i].isRow()) {
     //                 elements[i].showOverlay();
     //             }
     //         }
