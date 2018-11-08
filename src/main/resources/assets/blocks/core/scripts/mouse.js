@@ -80,9 +80,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     //-----CONSTANTS-----
     // The minimum number of pixels we need to move before real dragging starts.
-    // Note: watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
-    // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
-    var DRAGGING_THRESHOLD = 3;
+    var DRAGGING_THRESHOLD = 5;
 
     //show dragging direction
     var SHOW_DEBUG_LINES = true;
@@ -216,7 +214,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
     };
 
-    this.enableDragging = function(enable)
+    this.enableDragging = function (enable)
     {
         draggingStatus = enable ? BaseConstantsInternal.DRAGGING.NO : BaseConstantsInternal.DRAGGING.DISABLED;
     };
@@ -232,6 +230,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseDown = function (event)
     {
+        //TODO can't decide if we need this
+        //event.preventDefault();
+        //event.stopPropagation();
+
         //before setting the tracking variables, we make sure we start with a clean slate because mousedown starts everything
         _resetMouse();
 
@@ -320,7 +322,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
 
         //if dnd was actually disabled, we'll unregister ourself immediately,
-        //only using this to fill the clickedElement below
+        //only using this to fill the clickedElement above
         if (draggingStatus === BaseConstantsInternal.DRAGGING.DISABLED) {
             $(document).off("mousemove.blocks_core");
         }
@@ -509,30 +511,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * */
     var updateVector = function (event)
     {
-        //draws the absolute current direction, including speed or not
-        if (SHOW_DEBUG_LINES) {
-            if (!debugCanvas) {
-                debugCanvas = $('<canvas style="position: absolute; top: 0; left: 0;" width="' + UI.body.width() + '" height="' + UI.body.height() + '" />').appendTo(UI.body);
-            }
-
-            //whether you want to visualize the speed or not
-            var showSpeed = true;
-            var multiplier = showSpeed ? stats.speed : DIRECTION_MULTIPLIER;
-            var x1 = event.pageX;
-            var y1 = event.pageY;
-            var x2 = x1 - (Math.cos(stats.direction) * multiplier);
-            var y2 = y1 - (Math.sin(stats.direction) * multiplier);
-
-            var ctx = debugCanvas[0].getContext("2d");
-            ctx.clearRect(0, 0, debugCanvas[0].width, debugCanvas[0].height);
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#0000ff';
-            ctx.stroke();
-        }
-
         // Note: it makes sense to only update the target direction of the vector if the variance of
         // the angles is below a certain threshold, because only then we are 'really moving' in a certain
         // direction. A high variance means there are too many angles pointing in different directions.
@@ -552,6 +530,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             var x2 = dragVector.x1 - (Math.cos(stats.direction) * DIRECTION_MULTIPLIER);
             var y2 = dragVector.y1 - (Math.sin(stats.direction) * DIRECTION_MULTIPLIER);
 
+            //initialize the 2nd coordinate if it doesn't exist
+            dragVector.x2 = dragVector.x2 ? dragVector.x2 : 0;
+            dragVector.y2 = dragVector.y2 ? dragVector.y2 : 0;
+
             //note: averaging out the new value eases the signal down a lot
             dragVector.x2 = (dragVector.x2 + x2) / 2;
             dragVector.y2 = (dragVector.y2 + y2) / 2;
@@ -559,13 +541,37 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         //always show the debug line, even if the dragVector isn't recalculated
         if (SHOW_DEBUG_LINES) {
+
+            //draws the absolute current direction, including speed or not
+            if (!debugCanvas) {
+                debugCanvas = $('<canvas style="position: absolute; top: 0; left: 0;" width="' + UI.body.width() + '" height="' + UI.body.height() + '" />').appendTo(UI.body);
+            }
+
             var ctx = debugCanvas[0].getContext("2d");
+
+            //start over
             ctx.clearRect(0, 0, debugCanvas[0].width, debugCanvas[0].height);
+
+            //draw the direction vector in green
             ctx.beginPath();
             ctx.moveTo(dragVector.x1, dragVector.y1);
             ctx.lineTo(dragVector.x2, dragVector.y2);
             ctx.lineWidth = 1;
             ctx.strokeStyle = '#00ff00';
+            ctx.stroke();
+
+            //draw the raw speed vector on top of the direction vector in blue
+            //whether you want to visualize the speed or not
+            var showSpeed = true;
+            var multiplier = showSpeed ? stats.speed : DIRECTION_MULTIPLIER;
+            var x2 = dragVector.x1 - (Math.cos(stats.direction) * multiplier);
+            var y2 = dragVector.y1 - (Math.sin(stats.direction) * multiplier);
+
+            ctx.beginPath();
+            ctx.moveTo(dragVector.x1, dragVector.y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#0000ff';
             ctx.stroke();
         }
     };

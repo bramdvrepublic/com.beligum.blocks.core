@@ -19,7 +19,7 @@
  *
  * Created by wouter on 10/06/15.
  */
-base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "blocks.core.DOM", function (Class, Constants, DOM)
+base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.DOM", function (Class, BlocksConstants, BlocksMessages, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -37,7 +37,7 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            blocks.elements.Page.Super.call(this, null, $("." + Constants.PAGE_CONTENT_CLASS));
+            blocks.elements.Page.Super.call(this, null, $("." + BlocksConstants.PAGE_CONTENT_CLASS));
 
             //We manually call this for the top-level structure
             //to boot the entire subtree-generation
@@ -66,6 +66,10 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         _getType: function()
         {
             return 'page';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfacePageName;
         },
         _newChildInstance: function(element)
         {

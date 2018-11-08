@@ -19,7 +19,7 @@
  *
  * Created by wouter on 9/03/15.
  */
-base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
+base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.core.internal", "messages.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksMessages, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -76,6 +76,10 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         _getType: function()
         {
             return 'column';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfaceColumnName;
         },
         _newChildInstance: function(element)
         {

@@ -144,13 +144,14 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     }
                 }
 
+                //TODO unchecked
                 //check if we clicked on the link, or on something inside a link
                 //and pass through if we didn't click on a link itself
-                if (!pierceThrough) {
-                    if (!control.is($(this))) {
-                        pierceThrough = true;
-                    }
-                }
+                // if (!pierceThrough) {
+                //     if (!control.is($(this))) {
+                //         pierceThrough = true;
+                //     }
+                // }
 
                 //since the selector of this handler only manages <a> and <button>, we only have two options
                 var newLocation = null;

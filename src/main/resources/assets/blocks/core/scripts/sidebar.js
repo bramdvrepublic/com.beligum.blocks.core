@@ -25,201 +25,99 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
     //-----VARIABLES-----
     //this will map IDs to config panels
-    var configPanels = {};
+    var configPanelMap = {};
 
     //this will hold data structures for the currently showing config panels
     var activePanels = [];
 
     //-----PUBLIC METHODS-----
     /**
-     * Reset and initialize the sidebar's config panels for the supplied (focused) surface
+     * Reset and initialize the sidebar's config panels for the supplied (focused) surface.
+     * @param focusedSurface The currently focused surface
+     * @param clickedElement The specific element (inside the surface) we clicked on
+     * @param mousedownEvent The original mousedown event that cause the focus switch
      */
-    this.init = function (focusedSurface, clickedElement, mousedownEvent)//(block, element, hotspot, event)
+    this.init = function (focusedSurface, clickedElement, mousedownEvent)
     {
         this.reset();
 
-        //allows us to select only the last row and column in the tree (on the way up)
-        var firstRow = null;
-        var lastRow = null;
-        var firstColumn = null;
-        var lastColumn = null;
+        // First, we build a data structure that allows for easy iteration:
+        // Starting at the clicked element, we 'go up' and search for registered widget selectors.
+        // Once we reach the focused surface (note that this means the clicked element should always
+        // be inside the element of the focused surface), we 'go up' faster by taking the parent of the
+        // surface (instead of iterating each DOM element) until we hit the page surface.
+        // This is done in reversed order so we have the page at the top.
+        // Note that we select the column closest around the block we're focusing,
+        // because it's what we naturally expect in the GUI.
+        // Similarly, we select the row furthest from the focused block; the last row before we switch to the page.
 
-        // We'll cycle through the parents until we hit the page, then reverse the order and create panels
-        // for all of them, starting with the page
+        //keep track of the current surface and element (inside the surface.element)
         var currSurface = focusedSurface;
+        var currElement = clickedElement;
+        var firstColumn = null;
+
         while (currSurface != null) {
 
-            if (currSurface.isPage()) {
-                //we select the _first_ column, (instead of the last, see row below) because it's what
-                // we naturally expect in the GUI (the column closest around the block we're focusing)
-                if (firstColumn != null) {
+            //note that we don't let properties be surfaces for config widgets; we start at block-level
+            var validSurface = currSurface.isPage()
+                || (currSurface.isRow() && currSurface.parent.isContainer())
+                || (currSurface.isColumn() && !firstColumn && (firstColumn = currSurface))
+                || (currSurface.isBlock());
+
+            if (validSurface) {
+
+                //check if we have a widget registered for the current element
+                var widget = Widget.Class.create(currElement);
+
+                if (widget) {
+
+                    //save it for blur()
                     activePanels.push({
-                        surface: firstColumn,
-                    });
-                }
-                //if we have a row, push that one first before closing with the page
-                if (lastRow != null) {
-                    activePanels.push({
-                        surface: lastRow
-                    });
-                }
-                activePanels.push({
-                    surface: currSurface
-                });
-            }
-            else if (currSurface.isContainer()) {
-                //NOOP
-            }
-            else if (currSurface.isRow()) {
-                if (firstRow == null) {
-                    firstRow = currSurface;
-                }
-                lastRow = currSurface;
-            }
-            else if (currSurface.isColumn()) {
-                if (firstColumn == null) {
-                    firstColumn = currSurface;
-                }
-                lastColumn = currSurface;
-            }
-            else if (currSurface.isBlock()) {
-                activePanels.push({
-                    surface: currSurface
-                });
-            }
-            else if (currSurface.isProperty()) {
-                activePanels.push({
-                    surface: currSurface
-                });
-            }
-            else {
-                Logger.error("Encountered unimplemented surface type; this shouldn't happen", currSurface);
-            }
-
-            currSurface = currSurface.parent;
-        }
-
-        var title = null;
-        for (var i = activePanels.length - 1; i >= 0; i--) {
-
-            var panel = activePanels[i];
-
-            var surface = panel.surface;
-            var element = surface.element;
-            // if (surface.isProperty()) {
-            //     element = surface.parent.element;
-            // }
-
-            //Widget.create() is a statis factory method that iterates all registered
-            //tag selectors and returns the correct instance for the supplied element
-            var widget = Widget.Class.create(element);
-            //save it for blur()
-            if (widget) {
-                activePanels[i].widget = widget;
-            }
-
-            //don't make panels for (real) properties, only blocks and pages
-            var blockTitle = 'TODO: change-this';
-            if (widget) {
-                //all the rest is already lower case, make it uniform no matter what
-                blockTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : widget.getWindowName();
-            }
-
-            var panelTitle = title;
-            if (title == null) {
-                panelTitle = blockTitle;
-            }
-            else {
-                panelTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
-            }
-
-            //we'll expand all panels by default, except the row and column
-            var collapsed = false;
-            if (surface.isRow() || surface.isColumn()) {
-                collapsed = true;
-            }
-            //if we're showing the controls for a block, close the panel
-            else if (focusedSurface.isBlock() && surface.isPage()) {
-                collapsed = true;
-            }
-
-            //we'll iterate the array in reverse order, but when focusing a block,
-            //we don't want users to be able to save the page (it causes all kinds of problems),
-            //so we disable the 'page-entry' if a block is focused
-            var disabled = !focusedSurface.isPage() && surface.isPage();
-
-            // if a parent stopped the creation of sub-panels, keep executing the focus() method,
-            // but without a panel ID (allowing for logic without UI consequences)
-            var panelID = createConfigPanel(panelTitle, collapsed, disabled);
-            var addedOptions = false;
-
-            if (widget) {
-                // the focus method can return a list of UI widgets it needs to add to the panel
-                // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
-                //TODO refactor the last two (three?) away
-                if (surface.isProperty()) {
-                    surface = surface.parent;
-                    element = surface.element;
-                }
-                widget.focus(surface, element, null, mousedownEvent);
-                var optionsToAdd = widget.getConfigs(surface, element);
-                if (optionsToAdd) {
-                    if (addedOptions && optionsToAdd.length > 0) {
-                        addUIForProperty(panelID, '<hr>');
-                        addedOptions = true;
-                    }
-
-                    //since we have a 'weight' setting, make sure we sort the array first
-                    optionsToAdd.sort(function (a, b)
-                    {
-
-                        // 1: a is greater than b
-                        //-1: a is less than b
-                        // 0: a must be equal to b
-
-                        var aConfig = a.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
-                        var bConfig = b.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
-
-                        if (typeof aConfig == 'undefined' && typeof bConfig == 'undefined') {
-                            return 0;
-                        }
-                        else if (typeof aConfig == 'undefined') {
-                            return 1;
-                        }
-                        else if (typeof bConfig == 'undefined') {
-                            return -1;
-                        }
-                        else {
-                            var aWeight = aConfig[BlocksConstants.SIDEBAR_CONFIG_WEIGHT_KEY];
-                            var bWeight = bConfig[BlocksConstants.SIDEBAR_CONFIG_WEIGHT_KEY];
-
-                            if (typeof aWeight == 'undefined' && typeof bWeight == 'undefined') {
-                                return 0;
-                            }
-                            else if (typeof aWeight == 'undefined') {
-                                return 1;
-                            }
-                            else if (typeof bWeight == 'undefined') {
-                                return -1;
-                            }
-                            else {
-                                //this means: higher weights will bubble to the top of the array
-                                return bWeight - aWeight;
-                            }
-                        }
+                        widget: widget,
+                        surface: currSurface,
+                        element: currElement,
                     });
 
-                    for (var w = 0; w < optionsToAdd.length; w++) {
-                        addUIForProperty(panelID, optionsToAdd[w]);
-                        addedOptions = true;
+                    //we'll iterate the array in reverse order, but when focusing a block,
+                    //we don't want users to be able to save the page (it causes all kinds of problems),
+                    //so we disable the 'page-entry' if a block is focused
+                    var disabled = currSurface.isPage() && !focusedSurface.isPage();
+
+                    //we'll expand all panels by default, except the page, row and column (but the page will be disabled)
+                    var collapsed = currSurface.isRow() || currSurface.isColumn() || disabled;
+
+                    //if we can find a specialized title, use it, otherwise just use the name of the surface
+                    var panelTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : currSurface.name;
+
+                    var panelID = createConfigPanel(panelTitle, collapsed, disabled);
+
+                    widget.focus(currSurface, currElement, null, mousedownEvent);
+                    var optionsToAdd = widget.getConfigs(currSurface, currElement);
+                    if (optionsToAdd && optionsToAdd.length > 0) {
+
+                        //since we have a 'weight' setting, make sure we sort the array first
+                        optionsToAdd.sort(configOptionsSorter);
+
+                        for (var w = 0; w < optionsToAdd.length; w++) {
+                            appendToConfigPanel(panelID, optionsToAdd[w]);
+                        }
+
+                        //we use prepend because we're reversing the order
+                        appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID, true);
                     }
                 }
             }
 
-            //don't add empty panels
-            if (addedOptions) {
-                appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID);
-                title = panelTitle;
+            // we 'go up' element by element until we reach the element of the surface,
+            // then we go up surface by surface
+            if (currElement.is(currSurface.element)) {
+                currSurface = currSurface.parent;
+                currElement = currSurface ? currSurface.element : null;
+            }
+            else {
+                //otherwise, we leave the surface be and iterate the elements first
+                //(this should only happen at the block-level)
+                currElement = currElement.parent();
             }
         }
     };
@@ -235,12 +133,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         for (var i = 0; i < activePanels.length; i++) {
             var e = activePanels[i];
             if (e.widget) {
-                e.widget.blur(e.surface, e.surface.element);
+                e.widget.blur(e.surface, e.element);
             }
         }
 
         //reset variables
-        configPanels = {};
+        configPanelMap = {};
         activePanels = [];
 
         //reset the sidebar and prepare for adding
@@ -345,10 +243,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     };
 
     //-----PRIVATE METHODS-----
-    var addUIForProperty = function (panelId, html)
+    var appendToConfigPanel = function (panelId, html)
     {
-        var config = getConfigPanelForId(panelId);
-        if (config) {
+        var configPanel = getConfigPanelForId(panelId);
+        if (configPanel) {
 
             //these are the defaults
             var htmlConfig = {};
@@ -364,12 +262,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
             if (htmlConfig[BlocksConstants.SIDEBAR_CONFIG_ADVANCED_KEY]) {
                 //the body of the advanced panel is collapsable, so make sure we add them to a sub-container
-                config.find(".panel-body ." + BlocksConstants.PANEL_BODY_ADVANCED_CLASS + ' .collapse > div').append(html);
+                configPanel.find(".panel-body ." + BlocksConstants.PANEL_BODY_ADVANCED_CLASS + ' .collapse > div').append(html);
                 //the advanced panel is hidden when it has no members
-                config.find(".panel-body ." + BlocksConstants.PANEL_BODY_ADVANCED_CLASS).show();
+                configPanel.find(".panel-body ." + BlocksConstants.PANEL_BODY_ADVANCED_CLASS).show();
             }
             else {
-                config.find('.panel-body .' + BlocksConstants.PANEL_BODY_SIMPLE_CLASS).append(html);
+                configPanel.find('.panel-body .' + BlocksConstants.PANEL_BODY_SIMPLE_CLASS).append(html);
             }
         }
         else {
@@ -382,7 +280,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
      */
     var getConfigPanelForId = function (id)
     {
-        return configPanels[id];
+        return configPanelMap[id];
     };
 
     /**
@@ -395,12 +293,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
      */
     var createConfigPanel = function (title, collapsed, disabled)
     {
-        if (configPanels == null) {
-            configPanels = {};
+        if (configPanelMap == null) {
+            configPanelMap = {};
         }
 
         var panelId = Commons.generateId();
-        if (configPanels[panelId] == null) {
+        if (configPanelMap[panelId] == null) {
 
             var panelId = panelId + '-panel';
             var bodyId = panelId + '-panel-body';
@@ -424,7 +322,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 var bodyAdvancedBody = $('<div>').appendTo(bodyAdvancedBodyWrapper);
             }
 
-            configPanels[panelId] = div;
+            configPanelMap[panelId] = div;
 
             //note: real adding is done manually in appendConfigPanelToSidebar()
         }
@@ -433,19 +331,71 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
     };
 
     /**
+     * Sorts two config options based on their assigned weight value
+     * where higher weights will bubble to the top config panel
+     */
+    var configOptionsSorter = function (a, b)
+    {
+        // 1: a is greater than b
+        //-1: a is less than b
+        // 0: a must be equal to b
+
+        var aConfig = a.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
+        var bConfig = b.data(BlocksConstants.SIDEBAR_CONFIG_KEY);
+
+        if (typeof aConfig == 'undefined' && typeof bConfig == 'undefined') {
+            return 0;
+        }
+        else if (typeof aConfig == 'undefined') {
+            return 1;
+        }
+        else if (typeof bConfig == 'undefined') {
+            return -1;
+        }
+        else {
+            var aWeight = aConfig[BlocksConstants.SIDEBAR_CONFIG_WEIGHT_KEY];
+            var bWeight = bConfig[BlocksConstants.SIDEBAR_CONFIG_WEIGHT_KEY];
+
+            if (typeof aWeight == 'undefined' && typeof bWeight == 'undefined') {
+                return 0;
+            }
+            else if (typeof aWeight == 'undefined') {
+                return 1;
+            }
+            else if (typeof bWeight == 'undefined') {
+                return -1;
+            }
+            else {
+                //this means: higher weights will bubble to the top of the array
+                return bWeight - aWeight;
+            }
+        }
+    };
+
+    /**
      * Looks up the config panel with the supplied ID and adds it to the sidebar
      * in the tab with the right ID.
      */
-    var appendConfigPanelToSidebar = function (id, tabId)
+    var appendConfigPanelToSidebar = function (id, tabId, prepend)
     {
         var configPanel = getConfigPanelForId(id);
 
         if (configPanel) {
+            var tab = null;
             if (tabId == BlocksConstants.SIDEBAR_CONTEXT_ID) {
-                $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID).append(configPanel);
+                tab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
             }
             else if (tabId == BlocksConstants.SIDEBAR_FILES_ID) {
-                $("#" + BlocksConstants.SIDEBAR_FILES_ID).append(configPanel);
+                tab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+            }
+
+            if (tab) {
+                if (prepend) {
+                    tab.prepend(configPanel);
+                }
+                else {
+                    tab.append(configPanel);
+                }
             }
         }
         else {
@@ -453,4 +403,5 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         }
     };
 
-}]);
+}
+]);

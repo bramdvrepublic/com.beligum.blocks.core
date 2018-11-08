@@ -20,7 +20,7 @@
  *
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.elements.Property", ["base.core.Class", function (Class)
+base.plugin("blocks.core.elements.Property", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -47,6 +47,10 @@ base.plugin("blocks.core.elements.Property", ["base.core.Class", function (Class
         _getType: function()
         {
             return 'property';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfacePropertyName;
         },
         _canHaveChildren: function ()
         {

@@ -18,7 +18,7 @@
  * Region where templates can be dragged
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
+base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.base.core.internal", "messages.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksMessages, DOM)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -63,6 +63,10 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         _getType: function()
         {
             return 'container';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfaceContainerName;
         },
         _newChildInstance: function(element)
         {

@@ -18,7 +18,7 @@
  * Special kind of row that can contains a template
  * Draggable templates are the elements inside a column
  */
-base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DOM", "blocks.core.UI", function (Class, Constants, BlocksConstants, DOM, UI)
+base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.DOM", "blocks.core.UI", function (Class, Constants, BlocksConstants, BlocksMessages, DOM, UI)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -229,6 +229,10 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         _getType: function()
         {
             return 'block';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfaceBlockName;
         },
         _newChildInstance: function(element)
         {

@@ -115,35 +115,50 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         // Logger.info(eventData.surface);
         // Logger.info(eventData.element[0].outerHTML.split('>')[0]);
 
-        //option 1) check if we need to switch focus to a block
-        if (
-            //clicking on a surface is the first event to edit it, so block it if we don't have permission
-            allowEdit
-            //we don't allow to switch focus from one block to the next, let's always go back to the page first
-            && (!focusedSurface || focusedSurface == pageSurface)
-            //make sure the block we received is a valid block
-            && eventData.surface && eventData.surface.isBlock()
-            //if we click on (instead of dragging) the new block button, do nothing and let the popover do it's thing
-            && !eventData.surface.isNewBlock()) {
+        var switchToPage = true;
 
-            switchFocus(eventData.surface, eventData.element, eventData.originalEvent);
+        //we clicked on a surface
+        if (eventData.surface) {
+
+            //option 1) check if we need to switch focus to a block
+            if (
+                //clicking on a surface is the first event to edit it, so block it if we don't have permission
+                allowEdit
+                //we don't allow to switch focus from one block to the next, let's always go back to the page first
+                && (!focusedSurface || focusedSurface === pageSurface)
+                //make sure the block we received is a valid block
+                && eventData.surface.isBlock()
+                //if we click on (instead of dragging) the new block button, do nothing and let the popover do it's thing
+                && !eventData.surface.isNewBlock()) {
+
+                switchFocus(eventData.surface, eventData.element, eventData.originalEvent);
+
+                switchToPage = false;
+            }
+            //option 2) we re-clicked on the focused surface (this should be impossible because pointer-events are disabled on focus)
+            else if (focusedSurface && eventData.surface === focusedSurface) {
+                switchToPage = false;
+            }
         }
-        //option 2) we re-clicked on the focused surface (this should be impossible because pointer-events are disabled on focus)
-        else if (eventData.surface && focusedSurface && eventData.surface === focusedSurface) {
-            //NOOP
+        //we didn't click on a surface
+        else if (!eventData.surface) {
+            // there's currently focus on a block
+            if (focusedSurface.isBlock()) {
+                //option 3) since we disable pointer-events for the focused surface, additional clicks inside that surface will be tied to regular DOM elements inside the block;
+                //          make sure we don't switch back to the page so the user can interact with the content of the block
+                //          Note: $.closest() begins with the current element, so the block itself is also included.
+                if (eventData.element.closest(focusedSurface.element).length > 0) {
+                    switchToPage = false;
+                }
+                //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
+                else if (eventData.element.closest(UI.pageContent).length == 0) {
+                    switchToPage = false;
+                }
+            }
         }
-        //option 3) since we disable pointer-events for the focused surface, additional clicks inside that surface will be tied to regular DOM elements inside the block;
-        //          make sure we don't switch back to the page so the user can interact with the content of the block
-        //          Note: $.closest() begins with the current element, so the block itself is also included.
-        else if (!eventData.surface && eventData.element && focusedSurface && focusedSurface.isBlock() && eventData.element.closest(focusedSurface.element).length > 0) {
-            //NOOP
-        }
-        //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
-        else if (!eventData.surface && eventData.element && focusedSurface && focusedSurface.isBlock() && eventData.element.closest(UI.pageContent).length == 0) {
-            //NOOP
-        }
-        //option 5) in all other cases, we switch back to the page
-        else {
+
+        // in all other cases, we switch back to the page
+        if (switchToPage && !focusedSurface.isPage()) {
             switchFocus(pageSurface, pageSurface.element, eventData.originalEvent);
         }
     });
@@ -151,11 +166,13 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     //-----PRIVATE METHODS-----
     var switchFocus = function (surface, clickedElement, clickEvent)
     {
-        focusedSurface = surface;
+        //since the css below is animated, the sidebar will be filled by the time
+        //the animation is finished, so boot it first
+        Sidebar.init(surface, clickedElement, clickEvent);
 
-        if (focusedSurface.isBlock()) {
+        if (surface.isBlock()) {
             UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            focusedSurface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            surface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
             Mouse.enableDragging(false);
         }
         else {
@@ -164,7 +181,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
             Mouse.enableDragging(true);
         }
 
-        Sidebar.init(surface, clickedElement, clickEvent);
+        focusedSurface = surface;
     };
     /**
      * @param block the block that should get focus (not null)

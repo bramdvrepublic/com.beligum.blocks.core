@@ -131,18 +131,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
   // because they span the entire page, they'd always receive all events
   // when clicked, while their sole functionality is to groups surfaces
   pointer-events: none;
-
-  //this will re-enable the events on the real surfaces
-  //note that we can't include the overlay wrapper because
-  //the other three are children of it, and that would undo
-  //the statement above
-  .@{BLOCK_SURFACE_WRAPPER_CLASS},
-  .@{BLOCK_HANDLE_WRAPPER_CLASS},
-  .@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
-    & * {
-      pointer-events: auto;
-    }
-  }
 }
 
 .@{BLOCK_OVERLAY_WRAPPER_CLASS} {
@@ -160,13 +148,21 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
   }
 
-  // This disables pointer events for the overlay element,
-  // and passes them along to lower element (those under the overlay)
+  // The BLOCK_OVERLAY_NO_EVENTS_CLASS class will be set on the overlay wrapper
+  // when we want to disable events on all overlays (both the wrappers and surfaces).
+  // This way, the events will pas along to lower elements (those under the overlay)
   // acting like the overlays don't exist and enables us to detect
   // on which element we really clicked, while keeping to the overlay
   // visible. See mouse.js
-  &.@{BLOCK_OVERLAY_NO_EVENTS_CLASS} {
-    pointer-events: none;
+  &:not(.@{BLOCK_OVERLAY_NO_EVENTS_CLASS}) {
+    // By default, we'll (re-)enable events on the real surfaces.
+    .@{BLOCK_SURFACE_WRAPPER_CLASS},
+    .@{BLOCK_HANDLE_WRAPPER_CLASS},
+    .@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
+      & * {
+        pointer-events: auto;
+      }
+    }
   }
 
   //the BLOCK_FOCUSED_CLASS will be used both on the wrapper

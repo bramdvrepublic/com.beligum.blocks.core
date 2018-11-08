@@ -23,7 +23,7 @@
  *
  * Created by wouter on 9/03/15.
  */
-base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
+base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base.core.internal", "messages.blocks.core", function (Class, Constants, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -169,6 +169,10 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         _getType: function()
         {
             return 'dropspot';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfaceDropspotName;
         },
     });
 

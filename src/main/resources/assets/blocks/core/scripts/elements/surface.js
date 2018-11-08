@@ -17,7 +17,7 @@
 /**
  * An element with 4 corners.
  */
-base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", function (Class, Commons, Constants, BlocksConstants)
+base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", function (Class, Commons, Constants, BlocksConstants, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -47,6 +47,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         //-----VARIABLES-----
         id: undefined,
         type: undefined,
+        name: undefined,
         parent: undefined,
         index: undefined,
         element: undefined,
@@ -83,6 +84,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             blocks.elements.Surface.INDEX[this.id] = this;
 
             this.type = this._getType();
+            this.name = this._getName();
             this.element = element;
             this.parent = parentSurface;
             this.index = parentSurface ? parentSurface.children.length : 0;
@@ -310,6 +312,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return 'surface';
         },
         /**
+         * Returns the i18n name of this class.
+         * Overload in the subclasses.
+         * @returns {string}
+         * @private
+         */
+        _getName: function()
+        {
+            return BlocksMessages.surfaceName;
+        },
+        /**
          * Build the sub-surface-model for this surface
          *
          * @private
@@ -445,7 +457,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 previousChild.bottom = previousChild.realBottom;
 
                 //glue the two children together
-                var middle = Math.floor((previousChild.bottom + childSurface.top) / 2);
+                var middle = (previousChild.bottom + childSurface.top) / 2;
                 previousChild.bottom = middle;
                 childSurface.top = middle;
 
@@ -475,7 +487,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 var previousChild = this.children[childSurface.index - 1];
                 previousChild.right = previousChild.realRight;
 
-                var middle = Math.floor((previousChild.right + childSurface.left) / 2);
+                var middle = (previousChild.right + childSurface.left) / 2;
                 previousChild.right = middle;
                 childSurface.left = middle;
 

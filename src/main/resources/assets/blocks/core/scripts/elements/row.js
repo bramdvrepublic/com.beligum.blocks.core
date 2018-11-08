@@ -18,7 +18,7 @@
  * A row inside a column or a container
  * Can only contain columns
  */
-base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", function (Class, Constants, DOM)
+base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", "messages.blocks.core", function (Class, Constants, DOM, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -76,6 +76,10 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         _getType: function()
         {
             return 'row';
+        },
+        _getName: function()
+        {
+            return BlocksMessages.surfaceRowName;
         },
         _newChildInstance: function(element)
         {
