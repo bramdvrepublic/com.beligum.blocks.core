@@ -117,27 +117,27 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         /**
          * These are shortcut functions to detect which kind of surface we're dealing with.
          */
-        isPage: function()
+        isPage: function ()
         {
             return this instanceof blocks.elements.Page;
         },
-        isContainer: function()
+        isContainer: function ()
         {
             return this instanceof blocks.elements.Container;
         },
-        isRow: function()
+        isRow: function ()
         {
             return this instanceof blocks.elements.Row;
         },
-        isColumn: function()
+        isColumn: function ()
         {
             return this instanceof blocks.elements.Column;
         },
-        isBlock: function()
+        isBlock: function ()
         {
             return this instanceof blocks.elements.Block;
         },
-        isProperty: function()
+        isProperty: function ()
         {
             return this instanceof blocks.elements.Property;
         },
@@ -159,12 +159,40 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             return retVal;
         },
+
         /**
          * Returns true of the supplied coordinate is inside this surface, it's bounds included
          */
         isInside: function (x, y)
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
+        },
+
+        /**
+         * Calculates the side of this surface that intersects with the supplied vector.
+         * Note that this only returns one side, even if two sides would intersect. The order that is
+         * checked is top, bottom, left, right
+         *
+         * @param vector The vector (having x1, y1, x2, y2 properties)
+         * @returns BaseConstantsInternal.DIRECTION
+         */
+        findIntersectingSide: function (vector)
+        {
+            if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
+                return Constants.DIRECTION.UP;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
+                return Constants.DIRECTION.DOWN;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
+                return Constants.DIRECTION.LEFT;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
+                return Constants.DIRECTION.RIGHT;
+            }
+            else {
+                return Constants.DIRECTION.NONE;
+            }
         },
 
         //-----TODO UNCHECKED-----
@@ -307,7 +335,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * @returns {string}
          * @private
          */
-        _getType: function()
+        _getType: function ()
         {
             return 'surface';
         },
@@ -317,7 +345,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * @returns {string}
          * @private
          */
-        _getName: function()
+        _getName: function ()
         {
             return BlocksMessages.surfaceName;
         },
@@ -601,6 +629,31 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         _isOuterBottom: function ()
         {
             return true
+        },
+        /**
+         * Checks if two line segments (seg1 and seg2) intersect with each other.
+         * See https://gist.github.com/Joncom/e8e8d18ebe7fe55c3894
+         */
+        _intersects: function (seg1StartX, seg1StartY, seg1EndX, seg1EndY, seg2StartX, seg2StartY, seg2EndX, seg2EndY)
+        {
+            var s1_x, s1_y, s2_x, s2_y;
+            s1_x = seg1EndX - seg1StartX;
+            s1_y = seg1EndY - seg1StartY;
+            s2_x = seg2EndX - seg2StartX;
+            s2_y = seg2EndY - seg2StartY;
+
+            var s, t;
+            s = (-s1_y * (seg1StartX - seg2StartX) + s1_x * (seg1StartY - seg2StartY)) / (-s2_x * s1_y + s1_x * s2_y);
+            t = (s2_x * (seg1StartY - seg2StartY) - s2_y * (seg1StartX - seg2StartX)) / (-s2_x * s1_y + s1_x * s2_y);
+
+            // Collision detected
+            if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+                return true;
+            }
+            // No collision
+            else {
+                return false;
+            }
         },
     });
 

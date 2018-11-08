@@ -74,7 +74,7 @@
  *
  *
  */
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", "blocks.core.DOM", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI, DOM)
 {
     var Mouse = this;
 
@@ -314,11 +314,13 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      */
     var _mouseMove = function (event)
     {
+        var targetElement = $(event.target);
+
         // Save the first element we encounter after mousedown,
         // either here or in mouseup. This way, we catch the closest
         // element to the mousedown coordinate
         if (!clickedElement) {
-            clickedElement = $(event.target);
+            clickedElement = targetElement;
         }
 
         //if dnd was actually disabled, we'll unregister ourself immediately,
@@ -337,6 +339,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && stats.totalLength > DRAGGING_THRESHOLD) {
 
                 draggingStatus = BaseConstantsInternal.DRAGGING.YES;
+
+                DOM.enableTextSelection(false);
+
+                //this will re-activate the overlays because if we're dragging, we need them to
+                //figure out which surface we're hovering on
+                UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 //note: we'll also directly trigger a move, see below
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_START, event, {
@@ -364,10 +372,25 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //we're past the threshold and dragging a block around
             if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
 
+                //search the surface we're hovering on
+                var hoverSurface = null;
+                if (targetElement.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
+                    hoverSurface = blocks.elements.Surface.INDEX[targetElement.attr(blocks.elements.Surface.INDEX_ATTR)];
+                }
+
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
+                    //this is the surface we started on
                     surface: mousedownSurface,
                     element: clickedElement,
                     originalEvent: mousedownEvent,
+
+                    hoverSurface: hoverSurface,
+
+                    dragVector: dragVector,
+                    dragStats: stats,
+                    //stats.variance
+                    //stats.direction
+                    //stats.speed
                 });
 
                 // var block = Hover.getHoveredBlock();
@@ -490,6 +513,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         //this will make sure the overlays always regain their events on reset
         UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
+        //re-enable the text selection that was disabled during drag
+        DOM.enableTextSelection(true);
+
         // windowFrame = {
         //     width: document.innerWidth,
         //     height: document.innerHeight
@@ -544,7 +570,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
             //draws the absolute current direction, including speed or not
             if (!debugCanvas) {
-                debugCanvas = $('<canvas style="position: absolute; top: 0; left: 0;" width="' + UI.body.width() + '" height="' + UI.body.height() + '" />').appendTo(UI.body);
+                debugCanvas = $('<canvas style="position: absolute; top: 0; left: 0; pointer-events: none;" width="' + UI.body.width() + '" height="' + UI.body.height() + '" />').appendTo(UI.body);
             }
 
             var ctx = debugCanvas[0].getContext("2d");
@@ -682,54 +708,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         stats.variance = 1.0 - Math.sqrt(stats.sinSum * stats.sinSum + stats.cosSum * stats.cosSum) / stats.events.length;
         //note: the resulting speed will be expressed as pixels per second (avoiding division by zero)
         stats.speed = stats.totalTimeDiff === 0 ? 0 : stats.totalLength / (stats.totalTimeDiff / 1000);
-    };
-
-    //-----TODO UNCHECKED-----
-
-    /**
-     * Calculates the direction of the current mouse vector for the supplied block.
-     * Eg. the side of thet that block should be 'highlighted' based on the current mouse movements
-     * @param block The block for which you want to calulate it
-     * @returns BaseConstantsInternal.DIRECTION
-     */
-    this.directionForBlock = function (block)
-    {
-        if (intersects(dragVector.x1, dragVector.y1, dragVector.x2, dragVector.y2, block.left, block.top, block.right, block.top)) {
-            return BaseConstantsInternal.DIRECTION.UP;
-        }
-        else if (intersects(dragVector.x1, dragVector.y1, dragVector.x2, dragVector.y2, block.left, block.bottom, block.right, block.bottom)) {
-            return BaseConstantsInternal.DIRECTION.DOWN;
-        }
-        else if (intersects(dragVector.x1, dragVector.y1, dragVector.x2, dragVector.y2, block.left, block.top, block.left, block.bottom)) {
-            return BaseConstantsInternal.DIRECTION.LEFT;
-        }
-        else if (intersects(dragVector.x1, dragVector.y1, dragVector.x2, dragVector.y2, block.right, block.top, block.right, block.bottom)) {
-            return BaseConstantsInternal.DIRECTION.RIGHT;
-        }
-        else {
-            return BaseConstantsInternal.DIRECTION.NONE;
-        }
-    };
-
-    // https://gist.github.com/Joncom/e8e8d18ebe7fe55c3894
-    var intersects = function (p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y)
-    {
-        var s1_x, s1_y, s2_x, s2_y;
-        s1_x = p1_x - p0_x;
-        s1_y = p1_y - p0_y;
-        s2_x = p3_x - p2_x;
-        s2_y = p3_y - p2_y;
-
-        var s, t;
-        s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-        t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
-
-        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-            // Collision detected
-            return 1;
-        }
-
-        return 0; // No collision
     };
 
 }]);

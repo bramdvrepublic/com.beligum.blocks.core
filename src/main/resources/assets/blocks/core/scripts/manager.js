@@ -26,7 +26,7 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", function (BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
+base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
 {
     var Manager = this;
 
@@ -163,6 +163,43 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         }
     });
 
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_START, function (event, eventData)
+    {
+        UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_HOVER_CLASS);
+        UI.handleWrapper.hide();
+    });
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
+    {
+        if (eventData.hoverSurface) {
+            var activeSide = eventData.hoverSurface.findIntersectingSide(eventData.dragVector);
+
+            eventData.hoverSurface.overlay.css('border-top', 'none');
+            eventData.hoverSurface.overlay.css('border-right', 'none');
+            eventData.hoverSurface.overlay.css('border-bottom', 'none');
+            eventData.hoverSurface.overlay.css('border-left', 'none');
+
+            switch (activeSide) {
+                case Constants.DIRECTION.UP:
+                    eventData.hoverSurface.overlay.css('border-top', '1px solid red');
+                    break;
+                case Constants.DIRECTION.RIGHT:
+                    eventData.hoverSurface.overlay.css('border-right', '1px solid red');
+                    break;
+                case Constants.DIRECTION.DOWN:
+                    eventData.hoverSurface.overlay.css('border-bottom', '1px solid red');
+                    break;
+                case Constants.DIRECTION.LEFT:
+                    eventData.hoverSurface.overlay.css('border-left', '1px solid red');
+                    break;
+            }
+        }
+    });
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)
+    {
+        UI.handleWrapper.show();
+        UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_HOVER_CLASS);
+    });
+
     //-----PRIVATE METHODS-----
     var switchFocus = function (surface, clickedElement, clickEvent)
     {
@@ -214,7 +251,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
             enableFocusBlurDetection(block, selectedElement);
         }
     };
-
 
     //-----TODO UNCHECKED-----
     //TODO revise (RESUME_BLOCKS)

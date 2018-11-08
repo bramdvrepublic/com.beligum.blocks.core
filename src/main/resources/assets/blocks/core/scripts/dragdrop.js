@@ -121,7 +121,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             var dropSpot = null;
 
             if (dropBlock != null && dropBlock.canDrag) {
-                var direction = Mouse.directionForBlock(dropBlock);
+                var direction = Mouse.intersectingSide(dropBlock);
 
                 // when outside container block of last droplocation is null
                 var now = $.now();
