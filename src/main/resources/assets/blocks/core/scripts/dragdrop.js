@@ -432,7 +432,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         removeDropPointerElements();
-        $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS + '.' + BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        $('.' + BlocksConstants.OVERLAY_CLASS + '.' + BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
         //removeDraggedOverlay();
         draggingEnabled = false;
         dragging = false;

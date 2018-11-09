@@ -17,11 +17,50 @@
 /**
  * An element with 4 corners.
  */
-base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", function (Class, Commons, Constants, BlocksConstants, BlocksMessages)
+base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, Commons, Constants, BlocksConstants, BlocksMessages, UI)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
+
+    var _ORIENTATION_NONE = 0;
+    var _ORIENTATION_VERTICAL = 1;
+    var _ORIENTATION_HORIZONTAL = 2;
+
+    var _SIDE_NONE = {
+        id: 0,
+        opposite: undefined,
+        orientation: _ORIENTATION_NONE,
+        cssClass: '',
+    };
+    var _SIDE_TOP = {
+        id: 1,
+        opposite: undefined,
+        orientation: _ORIENTATION_VERTICAL,
+        cssClass: 'top',
+    };
+    var _SIDE_RIGHT = {
+        id: 2,
+        opposite: undefined,
+        orientation: _ORIENTATION_HORIZONTAL,
+        cssClass: 'right',
+    };
+    var _SIDE_BOTTOM = {
+        id: 3,
+        opposite: undefined,
+        orientation: _ORIENTATION_VERTICAL,
+        cssClass: 'bottom',
+    };
+    var _SIDE_LEFT = {
+        id: 4,
+        opposite: undefined,
+        orientation: _ORIENTATION_HORIZONTAL,
+        cssClass: 'left',
+    };
+    _SIDE_TOP.opposite = _SIDE_BOTTOM;
+    _SIDE_BOTTOM.opposite = _SIDE_TOP;
+    _SIDE_RIGHT.opposite = _SIDE_LEFT;
+    _SIDE_LEFT.opposite = _SIDE_RIGHT;
 
     //----CLASSES-----
     blocks.elements.Surface = Class.create({
@@ -37,9 +76,19 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             TOP_CLASS: 'top',
             BOTTOM_CLASS: 'bottom',
 
-            ORIENTATION_NONE: 0,
-            ORIENTATION_HORIZONTAL: 1,
-            ORIENTATION_VERTICAL: 2,
+            ORIENTATION: {
+                NONE: _ORIENTATION_NONE,
+                VERTICAL: _ORIENTATION_VERTICAL,
+                HORIZONTAL: _ORIENTATION_HORIZONTAL,
+            },
+
+            SIDE: {
+                NONE: _SIDE_NONE,
+                TOP: _SIDE_TOP,
+                RIGHT: _SIDE_RIGHT,
+                BOTTOM: _SIDE_BOTTOM,
+                LEFT: _SIDE_LEFT,
+            },
         },
 
         //-----CONSTANTS-----
@@ -56,6 +105,9 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         totalBlocks: undefined,
         canDrag: undefined,
         overlay: undefined,
+
+        dropspot: undefined,
+        layoutParents: undefined,
 
         top: 0,
         bottom: 0,
@@ -93,6 +145,13 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             this.totalBlocks = null;
             this.canDrag = false; // only for first level blocks inside a container
             this.overlay = null;
+
+            this.dropspot = null;
+            this.layoutParents = {};
+            this.layoutParents[blocks.elements.Surface.SIDE.TOP] = null;
+            this.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = null;
+            this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = null;
+            this.layoutParents[blocks.elements.Surface.SIDE.LEFT] = null;
 
             //this allows us to call this constructor with no arguments
             if (element) {
@@ -144,7 +203,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
         /**
          * Returns the first child we can find where the bounds wrap the supplied coordinate
-         * or null if no such child was found
+         * (bounds included) or null if no such child was found.
          */
         childAt: function (x, y)
         {
@@ -168,31 +227,59 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
         },
 
-        /**
-         * Calculates the side of this surface that intersects with the supplied vector.
-         * Note that this only returns one side, even if two sides would intersect. The order that is
-         * checked is top, bottom, left, right
-         *
-         * @param vector The vector (having x1, y1, x2, y2 properties)
-         * @returns BaseConstantsInternal.DIRECTION
-         */
-        findIntersectingSide: function (vector)
+        showDropspot: function (vector)
         {
-            if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
-                return Constants.DIRECTION.UP;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
-                return Constants.DIRECTION.DOWN;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
-                return Constants.DIRECTION.LEFT;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
-                return Constants.DIRECTION.RIGHT;
+            var side = this._findIntersectingSide(vector);
+
+            if (side !== blocks.elements.Surface.SIDE.NONE) {
+                //note: don't reset and re-set the dropspot if it's already set
+                if (!this.dropspot || this.dropspot.side != side) {
+                    this.resetDropspots();
+                    this.dropspot = new blocks.elements.Dropspot(this, side);
+                }
             }
             else {
-                return Constants.DIRECTION.NONE;
+                //small optimization
+                if (this.dropspot) {
+                    this.resetDropspots();
+                }
             }
+
+            // if (side !== blocks.elements.Surface.SIDE.NONE) {
+            //     var layoutParent = this.layoutParents[side];
+            //
+            // }
+
+            //if (this.overlay) {
+            // this.overlay.removeClass('top- right- bottom- left-');
+            // switch (side) {
+            //     case blocks.elements.Surface.SIDE.TOP:
+            //         this.overlay.addClass('top-');
+            //         break;
+            //     case blocks.elements.Surface.SIDE.RIGHT:
+            //         this.overlay.addClass('right-');
+            //         break;
+            //     case blocks.elements.Surface.SIDE.BOTTOM:
+            //         this.overlay.addClass('bottom-');
+            //         break;
+            //     case blocks.elements.Surface.SIDE.LEFT:
+            //         this.overlay.addClass('left-');
+            //         break;
+            // }
+            //}
+        },
+
+        resetDropspots: function ()
+        {
+            UI.dropspotWrapper.empty();
+            this.dropspot = null;
+
+            // if (this.overlay) {
+            //     this.overlay.css('border-top', 'none');
+            //     this.overlay.css('border-right', 'none');
+            //     this.overlay.css('border-bottom', 'none');
+            //     this.overlay.css('border-left', 'none');
+            // }
         },
 
         //-----TODO UNCHECKED-----
@@ -438,11 +525,11 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         _layoutChild: function (childSurface)
         {
             switch (this._getChildOrientation()) {
-                case blocks.elements.Surface.ORIENTATION_VERTICAL:
-                    this._layoutVerticalChild(childSurface);
+                case blocks.elements.Surface.ORIENTATION.VERTICAL:
+                    this._layoutChildVertically(childSurface);
                     break;
-                case blocks.elements.Surface.ORIENTATION_HORIZONTAL:
-                    this._layoutHorizontalChild(childSurface);
+                case blocks.elements.Surface.ORIENTATION.HORIZONTAL:
+                    this._layoutChildHorizontally(childSurface);
                     break;
             }
 
@@ -450,39 +537,46 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return childSurface;
         },
         /**
-         * Returns whether this children in this surface are layouted horizontally
-         * or vertically or have no specific orientation
+         * Returns whether this children in this surface are layouted
+         * horizontally, vertically or have no specific orientation.
          *
          * @returns {number}
          * @private
          */
         _getChildOrientation: function ()
         {
-            return blocks.elements.Surface.ORIENTATION_NONE;
+            return blocks.elements.Surface.ORIENTATION.NONE;
         },
         /**
          * Adds a child to this vertical-oriented parent surface
+         *
          * @param childSurface
          * @protected
          */
-        _layoutVerticalChild: function (childSurface)
+        _layoutChildVertically: function (childSurface)
         {
             childSurface.left = this.left;
             childSurface.right = this.right;
 
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this;
+
             if (childSurface.index == 0) {
                 childSurface.top = this.top;
+                childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP] = this;
             }
 
             // We should only sync the bounds of the last child,
             // but every added child will be last, so we'll just sync now
             // and revert the bounds of the previous one below
             childSurface.bottom = this.bottom;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = this;
             if (childSurface.index > 0) {
                 //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
                 //revert the bottom of the previous child
                 previousChild.bottom = previousChild.realBottom;
+                previousChild.layoutParents[blocks.elements.Surface.SIDE.TOP] = null;
 
                 //glue the two children together
                 var middle = (previousChild.bottom + childSurface.top) / 2;
@@ -499,21 +593,27 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * @param childSurface
          * @protected
          */
-        _layoutHorizontalChild: function (childSurface)
+        _layoutChildHorizontally: function (childSurface)
         {
             childSurface.top = this.top;
             childSurface.bottom = this.bottom;
 
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = this;
+
             if (childSurface.index == 0) {
                 childSurface.left = this.left;
+                childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT] = this;
             }
 
             //See comments above
             childSurface.right = this.right;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this;
             if (childSurface.index > 0) {
                 //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
                 previousChild.right = previousChild.realRight;
+                previousChild.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = null;
 
                 var middle = (previousChild.right + childSurface.left) / 2;
                 previousChild.right = middle;
@@ -629,6 +729,32 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         _isOuterBottom: function ()
         {
             return true
+        },
+        /**
+         * Calculates the side of this surface that intersects with the supplied vector.
+         * Note that this only returns one side, even if two sides would intersect.
+         * The order that is checked is top, bottom, left, right.
+         *
+         * @param vector The vector (having x1, y1, x2, y2 properties)
+         * @returns BaseConstantsInternal.DIRECTION
+         */
+        _findIntersectingSide: function (vector)
+        {
+            if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
+                return blocks.elements.Surface.SIDE.TOP;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
+                return blocks.elements.Surface.SIDE.BOTTOM;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
+                return blocks.elements.Surface.SIDE.LEFT;
+            }
+            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
+                return blocks.elements.Surface.SIDE.RIGHT;
+            }
+            else {
+                return blocks.elements.Surface.SIDE.NONE;
+            }
         },
         /**
          * Checks if two line segments (seg1 and seg2) intersect with each other.

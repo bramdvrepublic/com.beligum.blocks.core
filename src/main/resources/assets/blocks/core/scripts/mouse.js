@@ -80,7 +80,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     //-----CONSTANTS-----
     // The minimum number of pixels we need to move before real dragging starts.
-    var DRAGGING_THRESHOLD = 5;
+    var DRAGGING_THRESHOLD = 3;
 
     //show dragging direction
     var SHOW_DEBUG_LINES = true;
@@ -115,6 +115,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     //the low-level element we really clicked on
     var clickedElement = null;
+
+    //the surface we're currently hovering on during dragging
+    var hoveredSurface = null;
 
     // the original mousedown event that started the drag
     var mousedownEvent = null;
@@ -276,14 +279,14 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             // (the element of) that surface we clicked (this can be any element, not just properties;
             // for instance blocks-image registeres all <img> tags).
             // Because the overlay is 'blocking' the event on the low-level element, we use a little trick
-            // by temporarily disable pointer events on the overlay by setting BLOCK_OVERLAY_NO_EVENTS_CLASS.
+            // by temporarily disable pointer events on the overlay by setting OVERLAY_NO_EVENTS_CLASS.
             // This will allow next events to pass through the lower-level elements.
             // Note that the first event that will use this is either the next move or the next mouseup.
             // That low-level element will be tracked by setting clickedElement on the next event.
             // In the mouseup event, we remove the event blocking on the overlay again.
             // Also note that this will disable the hover events on the overlays while dragging,
             // which is exactly what we want.
-            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+            UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
             //start listening for mouse movement (even if dragging is disabled, to fill the clickedElement asap)
             $(document).on("mousemove.blocks_core", function (event)
@@ -344,7 +347,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
                 //this will re-activate the overlays because if we're dragging, we need them to
                 //figure out which surface we're hovering on
-                UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+                UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
                 //note: we'll also directly trigger a move, see below
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_START, event, {
@@ -353,12 +356,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     event: mousedownEvent,
                 });
 
-                //var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
+                //var overlays = $('.' + BlocksConstants.OVERLAY_CLASS);
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-                //overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+                //overlays.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
                 //don't show the hover effects while dragging; it blocks the visibility of the lines in between
-                //overlays.addClass(BlocksConstants.BLOCK_OVERLAY_BLOCK_HOVER);
+                //overlays.addClass(BlocksConstants.OVERLAY_BLOCK_HOVER);
 
                 //UI.showOverlays(false);
 
@@ -372,10 +375,13 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //we're past the threshold and dragging a block around
             if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
 
-                //search the surface we're hovering on
-                var hoverSurface = null;
+                //keep track of the surfaces we're hovering on
+                var prevHoveredSurface = hoveredSurface;
                 if (targetElement.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
-                    hoverSurface = blocks.elements.Surface.INDEX[targetElement.attr(blocks.elements.Surface.INDEX_ATTR)];
+                    hoveredSurface = blocks.elements.Surface.INDEX[targetElement.attr(blocks.elements.Surface.INDEX_ATTR)];
+                }
+                else {
+                    hoveredSurface = null;
                 }
 
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
@@ -384,7 +390,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     element: clickedElement,
                     originalEvent: mousedownEvent,
 
-                    hoverSurface: hoverSurface,
+                    prevHoveredSurface: prevHoveredSurface,
+                    hoveredSurface: hoveredSurface,
 
                     dragVector: dragVector,
                     dragStats: stats,
@@ -438,6 +445,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 surface: mousedownSurface,
                 element: clickedElement,
                 originalEvent: mousedownEvent,
+
+                hoveredSurface: hoveredSurface,
             });
         }
 
@@ -503,6 +512,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
         mousedownSurface = null;
         clickedElement = null;
+        hoveredSurface = null;
         mousedownEvent = null;
         resetStats();
         dragVector = {};
@@ -511,7 +521,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         $(document).off("mousemove.blocks_core");
 
         //this will make sure the overlays always regain their events on reset
-        UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+        UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
         //re-enable the text selection that was disabled during drag
         DOM.enableTextSelection(true);
@@ -526,8 +536,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         // draggingStatus = BaseConstantsInternal.DRAGGING.NO;
         //
         // //re-enable (or reset) the events of the overlays to work
-        // var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
-        // overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+        // var overlays = $('.' + BlocksConstants.OVERLAY_CLASS);
+        // overlays.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
         //
         // overlays.removeClass("invisible");
     };
@@ -578,7 +588,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //start over
             ctx.clearRect(0, 0, debugCanvas[0].width, debugCanvas[0].height);
 
-            //draw the direction vector in green
+            //draw the resulting direction vector in green
             ctx.beginPath();
             ctx.moveTo(dragVector.x1, dragVector.y1);
             ctx.lineTo(dragVector.x2, dragVector.y2);
@@ -587,15 +597,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             ctx.stroke();
 
             //draw the raw speed vector on top of the direction vector in blue
-            //whether you want to visualize the speed or not
-            var showSpeed = true;
-            var multiplier = showSpeed ? stats.speed : DIRECTION_MULTIPLIER;
-            var x2 = dragVector.x1 - (Math.cos(stats.direction) * multiplier);
-            var y2 = dragVector.y1 - (Math.sin(stats.direction) * multiplier);
-
             ctx.beginPath();
             ctx.moveTo(dragVector.x1, dragVector.y1);
-            ctx.lineTo(x2, y2);
+            ctx.lineTo(dragVector.x1 - (Math.cos(stats.direction) * stats.speed),
+                dragVector.y1 - (Math.sin(stats.direction) * stats.speed));
             ctx.lineWidth = 1;
             ctx.strokeStyle = '#0000ff';
             ctx.stroke();
@@ -644,6 +649,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             // clean up the old entries (if the mouse stands still, it feels more
             // natural to 'forget' what we've done before after a certain time)
             if (MAX_TIMEDIFF_MILLIS > 0) {
+
                 //note: if prevIdx equals stats.idx, we deleted all others
                 while (prevIdx !== stats.idx && stats.events[prevIdx] && newStat.time - stats.events[prevIdx].time > MAX_TIMEDIFF_MILLIS) {
 

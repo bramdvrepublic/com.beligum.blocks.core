@@ -91,7 +91,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.Surface.ORIENTATION_VERTICAL;
+            return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
         _isOuterLeft: function ()
         {

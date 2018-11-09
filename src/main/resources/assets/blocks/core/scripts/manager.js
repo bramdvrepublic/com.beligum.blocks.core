@@ -165,39 +165,25 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_START, function (event, eventData)
     {
-        UI.overlayWrapper.addClass(BlocksConstants.BLOCK_OVERLAY_NO_HOVER_CLASS);
-        UI.handleWrapper.hide();
+        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
     {
-        if (eventData.hoverSurface) {
-            var activeSide = eventData.hoverSurface.findIntersectingSide(eventData.dragVector);
+        // if (eventData.prevHoveredSurface) {
+        //     eventData.prevHoveredSurface.resetDropspots();
+        // }
 
-            eventData.hoverSurface.overlay.css('border-top', 'none');
-            eventData.hoverSurface.overlay.css('border-right', 'none');
-            eventData.hoverSurface.overlay.css('border-bottom', 'none');
-            eventData.hoverSurface.overlay.css('border-left', 'none');
-
-            switch (activeSide) {
-                case Constants.DIRECTION.UP:
-                    eventData.hoverSurface.overlay.css('border-top', '1px solid red');
-                    break;
-                case Constants.DIRECTION.RIGHT:
-                    eventData.hoverSurface.overlay.css('border-right', '1px solid red');
-                    break;
-                case Constants.DIRECTION.DOWN:
-                    eventData.hoverSurface.overlay.css('border-bottom', '1px solid red');
-                    break;
-                case Constants.DIRECTION.LEFT:
-                    eventData.hoverSurface.overlay.css('border-left', '1px solid red');
-                    break;
-            }
+        if (eventData.hoveredSurface) {
+            eventData.hoveredSurface.showDropspot(eventData.dragVector);
         }
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)
     {
-        UI.handleWrapper.show();
-        UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_HOVER_CLASS);
+        UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+
+        if (eventData.hoveredSurface) {
+            //eventData.hoveredSurface.resetDropspots();
+        }
     });
 
     //-----PRIVATE METHODS-----

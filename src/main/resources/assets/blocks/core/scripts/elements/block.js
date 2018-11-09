@@ -49,7 +49,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
 
             if (parentSurface && element) {
                 this.overlay = this._createOverlay();
-                this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
+                this.overlay.addClass(BlocksConstants.OVERLAY_CLASS);
                 UI.surfaceWrapper.append(this.overlay);
 
                 //these two classes will remove the borders left and top so we don't

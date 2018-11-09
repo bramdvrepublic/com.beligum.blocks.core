@@ -91,7 +91,7 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.Surface.ORIENTATION_HORIZONTAL;
+            return blocks.elements.Surface.ORIENTATION.HORIZONTAL;
         },
         _layoutChild: function (childSurface)
         {

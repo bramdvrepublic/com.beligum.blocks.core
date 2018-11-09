@@ -47,7 +47,6 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins/text-overflow.less";
-
 //-----MIXINS-----
 @import (reference) "/assets/blocks/core/styles/mixins.less";
 
@@ -60,7 +59,7 @@
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
 
-  //-----MAIN-----
+//-----MAIN-----
 html {
   position: relative;
   min-height: 100%;
@@ -106,7 +105,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
-//some scrollbar tweaking
+//some perfect scrollbar tweaking
 .ps-container > .ps-scrollbar-y-rail > .ps-scrollbar-y {
   width: 4px;
 }
@@ -148,32 +147,31 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
   }
 
-  // The BLOCK_OVERLAY_NO_EVENTS_CLASS class will be set on the overlay wrapper
+  // The OVERLAY_NO_EVENTS_CLASS class will be set on the overlay wrapper
   // when we want to disable events on all overlays (both the wrappers and surfaces).
   // This way, the events will pas along to lower elements (those under the overlay)
   // acting like the overlays don't exist and enables us to detect
   // on which element we really clicked, while keeping to the overlay
   // visible. See mouse.js
-  &:not(.@{BLOCK_OVERLAY_NO_EVENTS_CLASS}) {
+  &:not(.@{OVERLAY_NO_EVENTS_CLASS}) {
     // By default, we'll (re-)enable events on the real surfaces.
+    //Note: dropspots shouldn't receive events,
+    //they're just ornamental
     .@{BLOCK_SURFACE_WRAPPER_CLASS},
-    .@{BLOCK_HANDLE_WRAPPER_CLASS},
-    .@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
+    .@{BLOCK_HANDLE_WRAPPER_CLASS} {
       & * {
         pointer-events: auto;
       }
     }
   }
 
-  //the BLOCK_FOCUSED_CLASS will be used both on the wrapper
-  //and the overlay to indicate we have something focused and which
-  //one we focused.
+  //Note that below, the BLOCK_FOCUSED_CLASS will be used both on the wrapper
+  //and the overlay to indicate:
+  // - we have an overlay focused inside the overlay wrapper (hide the resizers if we do)
+  // - which overlay is currently focused (disable events on that overlay)
   &.@{BLOCK_FOCUSED_CLASS} {
 
-    //this enables us to 'move into' the block when it's focused
-    //note that we can't put this on the
-
-    .@{BLOCK_OVERLAY_CLASS} {
+    .@{OVERLAY_CLASS} {
 
       background-color: rgba(255, 255, 255, 0.9);
       border-color: transparent;
@@ -194,28 +192,25 @@ body.@{BODY_EDIT_MODE_CLASS} {
       }
     }
 
+    //hide the resizers when a block is focused
     .@{COLUMN_RESIZER_CLASS} {
-      visibility: hidden;
+      display: none;
     }
   }
 
-  &:not(.@{BLOCK_FOCUSED_CLASS}):not(.@{BLOCK_OVERLAY_NO_HOVER_CLASS}) {
-    .@{BLOCK_OVERLAY_CLASS} {
-      &:hover {
-        .box-shadow(0px 0px 10px @brand-primary);
-        border: 1px solid fadeout(@brand-primary, 50%);
-        background-color: fadeout(@brand-primary, 80%);
+  //This means:
+  // - there's no overlay focused inside the wrapper
+  // - we're not dragging any overlay around
+  &:not(.@{BLOCK_FOCUSED_CLASS}):not(.@{OVERLAY_DRAGGING_CLASS}) {
 
-        //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
-        &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
-          .box-shadow(none);
-          .defaultBorder();
-        }
-      }
+    .@{OVERLAY_CLASS}:hover {
+      .box-shadow(0px 0px 10px @brand-primary);
+      border: 1px solid fadeout(@brand-primary, 50%);
+      background-color: fadeout(@brand-primary, 80%);
     }
   }
 
-  .@{BLOCK_OVERLAY_CLASS} {
+  .@{OVERLAY_CLASS} {
 
     position: absolute;
     top: 0px;
@@ -236,13 +231,27 @@ body.@{BODY_EDIT_MODE_CLASS} {
     //  background-color: fadeout(@brand-primary, 80%);
     //
     //  //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
-    //  &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
+    //  &.@{OVERLAY_BLOCK_HOVER} {
     //    .box-shadow(none);
     //    .defaultBorder();
     //  }
     //}
     &.@{OVERLAY_DRAGGING_CLASS} {
       background-color: rgba(00, 102, 204, 0.5);
+    }
+
+    border: none;
+    &.top- {
+      border-top: 1px solid red !important;
+    }
+    &.right- {
+      border-right: 1px solid red !important;
+    }
+    &.bottom- {
+      border-bottom: 1px solid red !important;
+    }
+    &.left- {
+      border-left: 1px solid red !important;
     }
   }
 
@@ -275,6 +284,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 
   .@{BLOCKS_DROPSPOT_CLASS} {
+
     @startColor: @brand-primary;
     @startColorHex: argb(@startColor);
     @stopColor: fadeout(@startColor, 100%);
@@ -285,6 +295,11 @@ body.@{BODY_EDIT_MODE_CLASS} {
     @startPct: @offsetPct;
     @stopPct: 100% - @offsetPct;
 
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
     //the dropspot line should be in front of both the block overlay and the resizer
     z-index: @overlayZ + 2;
 
@@ -314,30 +329,39 @@ body.@{BODY_EDIT_MODE_CLASS} {
     @imgWidth: @BLOCKS_DROPSPOT_BORDER_WIDTH - 1;
     @imgWidthHalf: @imgWidth / 2;
     @halfWidth: @imgWidthHalf * 1px;
-    &.@{BLOCKS_DROPSPOT_CLASS}-top {
-      margin-top: @halfWidth;
+
+    //&.@{BLOCKS_DROPSPOT_CLASS}-top {
+    &.top {
+      height: @width;
+      //margin-top: @halfWidth;
       border-top: @border;
       //cat /home/bram/Projects/Workspace/idea/com.beligum.blocks.core/src/main/resources/assets/blocks/core/images/arrow_up.svg | tr -d '\n' | tr '"' '\047'
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(0) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
       background-position: center top;
       background-repeat: repeat-x;
     }
-    &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-      margin-top: -@halfWidth;
+    //&.@{BLOCKS_DROPSPOT_CLASS}-bottom {
+    &.bottom {
+      height: @width;
+      //margin-top: -@halfWidth;
       border-bottom: @border;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(180) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
       background-position: center bottom;
       background-repeat: repeat-x;
     }
-    &.@{BLOCKS_DROPSPOT_CLASS}-right {
-      margin-left: -@halfWidth;
+    //&.@{BLOCKS_DROPSPOT_CLASS}-right {
+    &.right {
+      width: @width;
+      //margin-left: -@halfWidth;
       border-right: @border;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(90) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
       background-position: right center;
       background-repeat: repeat-y;
     }
-    &.@{BLOCKS_DROPSPOT_CLASS}-left {
-      margin-left: @halfWidth;
+    //&.@{BLOCKS_DROPSPOT_CLASS}-left {
+    &.left {
+      width: @width;
+      //margin-left: @halfWidth;
       border-left: @border;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='@{imgWidth}' height='@{imgWidth}' viewBox='0 0 @{imgWidth} @{imgWidth}'><g><g transform='translate(@{imgWidthHalf} @{imgWidthHalf}) scale(0.69 0.69) rotate(270) translate(-@{imgWidthHalf} -@{imgWidthHalf})'><svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' version='1.1' style='shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;' viewBox='0 0 301 355' x='0px' y='0px' fill-rule='evenodd' clip-rule='evenodd'><defs><style type='text/css'>.fil0 {fill:@{arrowColor}}</style></defs><g><path class='fil0' d='M182 116l0 216c1,30 -62,31 -63,0l0 -216 -71 71c-5,4 -11,4 -15,0l-30 -29c-4,-4 -4,-11 0,-15l140 -140c4,-4 11,-4 15,0l140 140c4,4 4,11 0,15l-30 29c-4,4 -11,4 -15,0l-71 -71z'></path></g></svg></g></g></svg>");
       background-position: left center;
@@ -356,6 +380,13 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
     //the resizer should be in front of the block overlays
     z-index: @overlayZ + 1;
+  }
+
+  //hide the resizers when we're dragging
+  &.@{OVERLAY_DRAGGING_CLASS} {
+    .@{COLUMN_RESIZER_CLASS} {
+      display: none;
+    }
   }
 }
 

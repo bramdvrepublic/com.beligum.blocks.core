@@ -78,7 +78,7 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         },
         _getChildOrientation: function()
         {
-            return blocks.elements.Surface.ORIENTATION_VERTICAL;
+            return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
     });
 
