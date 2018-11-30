@@ -174,7 +174,7 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         // }
 
         if (eventData.hoveredSurface) {
-            eventData.hoveredSurface.showDropspot(eventData.dragVector);
+            eventData.hoveredSurface.showDropspot(eventData.surface, eventData.dragVector);
         }
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)

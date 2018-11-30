@@ -351,8 +351,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
                 //note: we'll also directly trigger a move, see below
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_START, event, {
+                    //this is the surface we're dragging around
                     surface: mousedownSurface,
+                    //this is the DOM element we started our drag on
                     element: clickedElement,
+                    //this is the original mousedown event that started the drag
                     event: mousedownEvent,
                 });
 
@@ -385,19 +388,22 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 }
 
                 Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
-                    //this is the surface we started on
+                    //this is the surface we started the drag on
                     surface: mousedownSurface,
+                    //this is the DOM element we started our drag on
                     element: clickedElement,
+                    //this is the original mousedown event that started the drag
                     originalEvent: mousedownEvent,
 
+                    //this is the surface we previously hovered on
                     prevHoveredSurface: prevHoveredSurface,
+                    //this is the surface we're currently hovering on
                     hoveredSurface: hoveredSurface,
 
+                    //the current dragvector (x1,y1,x2,y2)
                     dragVector: dragVector,
+                    //the statistics of the dragvector (variance, direction, speed)
                     dragStats: stats,
-                    //stats.variance
-                    //stats.direction
-                    //stats.speed
                 });
 
                 // var block = Hover.getHoveredBlock();

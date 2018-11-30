@@ -41,6 +41,13 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         side: undefined,
 
         //-----CONSTRUCTORS-----
+        /**
+         * A dropspot is a place between two surfaces where we can drop another surface.
+         * This constructor immediately draws the new dropspot on the page.
+         *
+         * @param anchor The parent surface of this dropspot
+         * @param side The side (top, right, bottom left) of the dropspot, relative to the anchor
+         */
         constructor: function (anchor, side)
         {
             blocks.elements.Dropspot.Super.call(this);
@@ -75,8 +82,9 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
                     break;
             }
 
+            //we add the dropspot to the dom, but start out hidden
+            this.hide();
             UI.dropspotWrapper.append(this.overlay);
-
         },
         // constructor: function (side, anchor, index)
         // {
@@ -94,6 +102,14 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         // },
 
         //-----PUBLIC METHODS-----
+        show: function()
+        {
+            this.overlay.show();
+        },
+        hide: function()
+        {
+            this.overlay.hide();
+        },
 
         //-----TODO UNCHECKED-----
 //         setOther: function ()

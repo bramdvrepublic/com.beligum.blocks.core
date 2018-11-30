@@ -107,6 +107,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         overlay: undefined,
 
         dropspot: undefined,
+        //this holds a data structure of parent-surfaces for each side
         layoutParents: undefined,
 
         top: 0,
@@ -148,10 +149,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             this.dropspot = null;
             this.layoutParents = {};
-            this.layoutParents[blocks.elements.Surface.SIDE.TOP] = null;
-            this.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = null;
-            this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = null;
-            this.layoutParents[blocks.elements.Surface.SIDE.LEFT] = null;
 
             //this allows us to call this constructor with no arguments
             if (element) {
@@ -220,29 +217,37 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
 
         /**
-         * Returns true of the supplied coordinate is inside this surface, it's bounds included
+         * Returns true if the supplied coordinate is inside this surface, it's bounds included
          */
         isInside: function (x, y)
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
         },
-
-        showDropspot: function (vector)
+        /**
+         * Show the best dropspot for the supplied vector
+         *
+         * @param surface The surface that's being dragged around (and is hovering over this surface)
+         * @param vector Data structure with (x1, y1) and (x2, y2) properties
+         */
+        showDropspot: function (surface, vector)
         {
             var side = this._findIntersectingSide(vector);
 
             if (side !== blocks.elements.Surface.SIDE.NONE) {
-                //note: don't reset and re-set the dropspot if it's already set
-                if (!this.dropspot || this.dropspot.side != side) {
+                //note: don't reset and re-set the dropspot if it's already set on the same side
+                //if (!this.dropspot || this.dropspot.side != side) {
                     this.resetDropspots();
-                    this.dropspot = new blocks.elements.Dropspot(this, side);
-                }
+                    var dropspots = this._createDropspots(surface, side, null);
+                    var idx = this._selectDropspot(vector, surface, side, dropspots);
+                    if (idx >= 0) {
+                        this.dropspot = dropspots[idx];
+                        this.dropspot.show();
+                    }
+                //}
             }
+            //this probably won't happen
             else {
-                //small optimization
-                if (this.dropspot) {
-                    this.resetDropspots();
-                }
+                this.resetDropspots();
             }
 
             // if (side !== blocks.elements.Surface.SIDE.NONE) {
@@ -558,25 +563,25 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             childSurface.left = this.left;
             childSurface.right = this.right;
 
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT] = this;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
 
             if (childSurface.index == 0) {
                 childSurface.top = this.top;
-                childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP] = this;
+                childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
             }
 
             // We should only sync the bounds of the last child,
             // but every added child will be last, so we'll just sync now
             // and revert the bounds of the previous one below
             childSurface.bottom = this.bottom;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
             if (childSurface.index > 0) {
                 //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
                 //revert the bottom of the previous child
                 previousChild.bottom = previousChild.realBottom;
-                previousChild.layoutParents[blocks.elements.Surface.SIDE.TOP] = null;
+                previousChild.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = null;
 
                 //glue the two children together
                 var middle = (previousChild.bottom + childSurface.top) / 2;
@@ -598,22 +603,22 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             childSurface.top = this.top;
             childSurface.bottom = this.bottom;
 
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP] = this;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
 
             if (childSurface.index == 0) {
                 childSurface.left = this.left;
-                childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT] = this;
+                childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
             }
 
             //See comments above
             childSurface.right = this.right;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this;
+            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
             if (childSurface.index > 0) {
                 //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
                 previousChild.right = previousChild.realRight;
-                previousChild.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = null;
+                previousChild.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = null;
 
                 var middle = (previousChild.right + childSurface.left) / 2;
                 previousChild.right = middle;
@@ -624,6 +629,12 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             childSurface._redraw();
         },
+        /**
+         * Uniform superclass implementation for all overlay elements.
+         * Call this method from the subclasses and extend from here.
+         * @returns {jQuery}
+         * @private
+         */
         _createOverlay: function ()
         {
             var retVal = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
@@ -779,6 +790,109 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             // No collision
             else {
                 return false;
+            }
+        },
+        /**
+         * Recursively create the dropspots of this surface (and the parents) on the specified side.
+         * @param surface The surface that's being dragged around
+         * @param side The side of this surface to show dropspots for
+         * @param prevSurface The previous surface in the recursive call on the way to the top page surface
+         * @returns {Array}
+         * @private
+         */
+        _createDropspots: function (surface, side, prevSurface)
+        {
+            var retval = [];
+
+            //if we have a previous surface (on the way to the top surface, eg. the page),
+            //and that surface has the same dimensions as this, we prefer to show that one
+            //(the most inward one) and not show it's parents with the same dimension
+            var show = !(prevSurface && this._getDimension(side) === prevSurface._getDimension(side));
+
+            //we don't show dropspots on the sides of the block that is being dragged around
+            show &= surface !== this;
+
+            if (show) {
+                retval.push(new blocks.elements.Dropspot(this, side));
+            }
+
+            var layoutParent = this.layoutParents[side.id];
+            if (layoutParent) {
+                retval = retval.concat(layoutParent._createDropspots(surface, side, this));
+            }
+
+            return retval;
+        },
+        /**
+         * Selects the dropspot to use, based on the data in the vector
+         *
+         * @param vector The vector that's currently dragging
+         * @param surface The surface that's being dragged around
+         * @param side The side on the surface the vector is pointing to as calculated with _findIntersectingSide()
+         * @param dropspots The array of dropspots that are available for the current vector and surface
+         * @returns {int} The index in the dropspots array
+         * @private
+         */
+        _selectDropspot: function (vector, surface, side, dropspots)
+        {
+            var retVal = -1;
+
+            if (dropspots.length > 0) {
+
+                // The idea is to calculate the fraction of the dragging position
+                // relative to the full width/height in the same direction and to
+                // use that fraction to calculate the relative index in the array
+                // of dropspots
+                // Note: using halfHeight/halfWidth instead of the full,
+                // we 'start counting' only from the middle of the block;
+                // (eg. the fraction interval will be [0, 2] instead of [0, 1])
+                // and by capping the negative fractions to zero, the innermost
+                // dropspot will be selection up until the middle+fraction of the block
+                var width = this.right - this.left;
+                var halfWidth = width / 2.0;
+                var height = this.bottom - this.top;
+                var halfHeight = height / 2.0;
+                var fraction = 0;
+                switch (side.id) {
+                    case blocks.elements.Surface.SIDE.TOP.id:
+                        fraction = (vector.y1 - this.top) / halfHeight;
+                        break;
+                    case blocks.elements.Surface.SIDE.BOTTOM.id:
+                        fraction = (this.bottom - vector.y1) / halfHeight;
+                        break;
+                    case blocks.elements.Surface.SIDE.LEFT.id:
+                        fraction = (vector.x1 - this.left) / halfWidth;
+                        break;
+                    case blocks.elements.Surface.SIDE.RIGHT.id:
+                        fraction = (this.right - vector.x1) / halfWidth;
+                        break;
+                }
+
+                Logger.info(fraction);
+
+                retVal = Math.ceil(dropspots.length * fraction) - 1;
+
+                retVal = Math.min(Math.max(retVal, 0), dropspots.length - 1);
+            }
+
+            return retVal;
+        },
+        /**
+         * Returns the dimension of this surface on the indicated side
+         *
+         * @param side
+         * @returns {number}
+         * @private
+         */
+        _getDimension: function (side)
+        {
+            switch (side.id) {
+                case blocks.elements.Surface.SIDE.TOP.id:
+                case blocks.elements.Surface.SIDE.BOTTOM.id:
+                    return this.right - this.left;
+                case blocks.elements.Surface.SIDE.RIGHT.id:
+                case blocks.elements.Surface.SIDE.LEFT.id:
+                    return this.bottom - this.top;
             }
         },
     });
