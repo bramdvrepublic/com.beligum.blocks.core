@@ -233,21 +233,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             var side = this._findIntersectingSide(vector);
 
+            //start out by removing the existing dropspots
+            this.resetDropspots();
+
             if (side !== blocks.elements.Surface.SIDE.NONE) {
-                //note: don't reset and re-set the dropspot if it's already set on the same side
-                //if (!this.dropspot || this.dropspot.side != side) {
-                    this.resetDropspots();
-                    var dropspots = this._createDropspots(surface, side, null);
-                    var idx = this._selectDropspot(vector, surface, side, dropspots);
-                    if (idx >= 0) {
-                        this.dropspot = dropspots[idx];
-                        this.dropspot.show();
-                    }
-                //}
-            }
-            //this probably won't happen
-            else {
-                this.resetDropspots();
+                var dropspots = this._createDropspots(surface, side, null);
+                var idx = this._selectDropspot(vector, surface, side, dropspots);
+                if (idx >= 0) {
+                    this.dropspot = dropspots[idx];
+                    this.dropspot.show();
+                }
             }
 
             // if (side !== blocks.elements.Surface.SIDE.NONE) {
@@ -843,42 +838,45 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 // relative to the full width/height in the same direction and to
                 // use that fraction to calculate the relative index in the array
                 // of dropspots
-                // Note: using halfHeight/halfWidth instead of the full,
-                // we 'start counting' only from the middle of the block;
-                // (eg. the fraction interval will be [0, 2] instead of [0, 1])
-                // and by capping the negative fractions to zero, the innermost
-                // dropspot will be selection up until the middle+fraction of the block
                 var width = this.right - this.left;
-                var halfWidth = width / 2.0;
                 var height = this.bottom - this.top;
-                var halfHeight = height / 2.0;
                 var fraction = 0;
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
-                        fraction = (vector.y1 - this.top) / halfHeight;
+                        fraction = (vector.y1 - this.top) / height;
                         break;
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
-                        fraction = (this.bottom - vector.y1) / halfHeight;
+                        fraction = (this.bottom - vector.y1) / height;
                         break;
                     case blocks.elements.Surface.SIDE.LEFT.id:
-                        fraction = (vector.x1 - this.left) / halfWidth;
+                        fraction = (vector.x1 - this.left) / width;
                         break;
                     case blocks.elements.Surface.SIDE.RIGHT.id:
-                        fraction = (this.right - vector.x1) / halfWidth;
+                        fraction = (this.right - vector.x1) / width;
                         break;
                 }
 
-                Logger.info(fraction);
+                //convert the [1..0] range to [0..1]
+                fraction = 1.0 - fraction;
 
-                retVal = Math.ceil(dropspots.length * fraction) - 1;
+                //only use half of the dimension;
+                //eg. when dragging right, the full left half of the block
+                //will return index 0 (the innermost dropspot) since this one
+                //is most likely to be wanted by the user. The surface of the
+                //right half will be divided by the number of dropspots available
+                fraction = Math.max(fraction - 0.5, 0) * 2.0;
 
+                //convert the fraction to an index in the array
+                retVal = Math.floor(dropspots.length * fraction);
+
+                //failsafe, shouldn't happen
                 retVal = Math.min(Math.max(retVal, 0), dropspots.length - 1);
             }
 
             return retVal;
         },
         /**
-         * Returns the dimension of this surface on the indicated side
+         * Returns the dimension of the side of this surface
          *
          * @param side
          * @returns {number}
