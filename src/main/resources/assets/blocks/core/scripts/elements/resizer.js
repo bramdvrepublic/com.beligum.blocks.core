@@ -15,18 +15,18 @@
  */
 
 /*
- * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hover over it
+ * defines a resizer. The surface of the resizer is the are that triggers when you hover over it
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
-base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.UI", "messages.blocks.core", function (Class, BlocksConstants, Resizer, UI, BlocksMessages)
+base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.UI", "messages.blocks.core", function (Class, BlocksConstants, Resizer, UI, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    blocks.elements.ResizeHandle = Class.create(blocks.elements.Surface, {
+    blocks.elements.Resizer = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
         STATIC: {
@@ -41,7 +41,7 @@ base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.
         //-----CONSTRUCTORS-----
         constructor: function (leftColumn, rightColumn)
         {
-            blocks.elements.ResizeHandle.Super.call(this);
+            blocks.elements.Resizer.Super.call(this);
 
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
@@ -53,14 +53,14 @@ base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.
             this._redraw();
 
             // var _this = this;
-            // this.overlay.on("mousedown.resizehandle", function (event)
+            // this.overlay.on("mousedown.resizer", function (event)
             // {
             //     // only start drag on left click
             //     if (event.which == 1) {
             //         Resizer.startDrag(_this);
-            //         $(document).on("mouseup.resizehandle", function (event)
+            //         $(document).on("mouseup.resizer", function (event)
             //         {
-            //             $(document).off("mouseup.resizehandle");
+            //             $(document).off("mouseup.resizer");
             //             Resizer.endDrag(null);
             //         });
             //     }
@@ -68,13 +68,17 @@ base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.
         },
 
         //-----PUBLIC METHODS-----
+        previewMoveTo: function (surface, vector)
+        {
+            Logger.info('resizer');
+        },
 
         //-----TODO UNCHECKED-----
         update: function ()
         {
-            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
+            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.TRIGGER_WIDTH / 2)
             this.overlay.css("left", left);
-            var siblings = this.leftColumn.parent.resizeHandles;
+            var siblings = this.leftColumn.parent.resizers;
             var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
             for (var i = 0; i < siblings.length; i++) {
                 siblings[i].overlay.css("height", height);
@@ -99,9 +103,9 @@ base.plugin("blocks.core.elements.ResizeHandle", ["base.core.Class", "constants.
         {
             if (this.overlay) {
 
-                var left = this.leftColumn.right - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2);
+                var left = this.leftColumn.right - Math.floor(blocks.elements.Resizer.TRIGGER_WIDTH / 2);
                 var top = this.leftColumn.top;
-                var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH;
+                var width = blocks.elements.Resizer.TRIGGER_WIDTH;
                 var height = this.leftColumn.bottom - this.leftColumn.top;
 
                 this.overlay.css("top", top);

@@ -165,25 +165,38 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_START, function (event, eventData)
     {
-        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        //add a general and a typed dragging class to the overlay wrapper
+        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS + '-' + eventData.surface.type);
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
     {
-        // if (eventData.prevHoveredSurface) {
-        //     eventData.prevHoveredSurface.resetDropspots();
-        // }
+        //this clears all previous dropspot indicators (for all surfaces)
+        blocks.elements.Surface.resetMoveToPreview();
 
-        if (eventData.hoveredSurface) {
-            eventData.hoveredSurface.showDropspot(eventData.surface, eventData.dragVector);
-        }
+        //offer the user a preview of what would happen when the active surface would be moved
+        //to the surface we're currently hovering over (in the direction indicated by the vector)
+        eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)
     {
-        UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        //Remove the classes that were set during DRAG_START
+        //removeClass() with function allows for a prefix-remove;
+        // eg. it will remove both the 'drag' and typed 'drag-block' classes
+        UI.overlayWrapper.removeClass(function (index, className)
+        {
+            //note: \s matches whitespace (spaces, tabs and new lines). \S is negated \s
+            return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
+        });
 
-        if (eventData.hoveredSurface) {
-            //eventData.hoveredSurface.resetDropspots();
+        //note that eg. resizers don't have dropspots, their preview is immediate
+        var activeDropspot = blocks.elements.Surface.getActiveDropspot();
+        if (activeDropspot) {
+            eventData.surface.moveTo(activeDropspot.anchor, activeDropspot.side);
         }
+
+        //this clears all previous dropspot indicators (for all surfaces)
+        blocks.elements.Surface.resetMoveToPreview();
     });
 
     //-----PRIVATE METHODS-----

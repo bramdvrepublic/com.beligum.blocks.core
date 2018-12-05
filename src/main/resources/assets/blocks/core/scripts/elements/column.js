@@ -29,15 +29,35 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
     blocks.elements.Column = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
+        STATIC: {
+
+            //the prefix of the bootstrap column class (sync with the regex below)
+            CLASS_PREFIX: 'col',
+
+            // \b = beginning of a word
+            // \d = digit
+            // g: global
+            // i: ignore case
+            DIMS_REGEX: new RegExp('\\bcol-([^-]*)-(\\d+)', 'gi'),
+
+        },
 
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        //this will be filled with the full class
+        columnClass: undefined,
+        //this will be filled with xs, sm, md or lg
+        columnSize: undefined,
+        //this will be filled with the bootstrap grid width number: [1-12]
+        columnWidth: undefined,
 
         //-----CONSTRUCTORS-----
         constructor: function (parentSurface, element)
         {
             blocks.elements.Column.Super.call(this, parentSurface, element);
+
+            this._updateColumnDimensions();
         },
 
         //-----PUBLIC METHODS-----
@@ -100,6 +120,39 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         _isOuterRight: function ()
         {
             return this.element.next().length == 0
+        },
+        /**
+         * Extracts the class width number from the element,
+         * searching for a supplied clazz prefix eg. 'col-md-', 'col-xs-', etc
+         * and extracting the size (xs, sm, md, lg) and the width ([1-12])
+         * @private
+         */
+        _updateColumnDimensions: function ()
+        {
+            this.columnClass = undefined;
+            this.columnSize = undefined;
+            this.columnWidth = undefined;
+
+            //Note that we'll investigate the full class attribute
+            var classes = this.element.attr("class");
+
+            var match = blocks.elements.Column.DIMS_REGEX.exec(classes);
+            //Note: no while loop means we'll only take the first match!
+            if (match != null) {
+                // matched text: match[0]
+                // match start: match.index
+                // capturing group n: match[n]
+
+                this.columnClass = match[0];
+                this.columnSize = match[1];
+                this.columnWidth = match[2];
+
+                //test if we had more and log a warning
+                match = blocks.elements.Column.DIMS_REGEX.exec(classes);
+                if (match != null) {
+                    Logger.info('Found an element with multiple bootstrap classes, this shouldn\'t happen', this.element);
+                }
+            }
         },
     });
 }]);

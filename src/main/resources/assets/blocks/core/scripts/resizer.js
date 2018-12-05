@@ -18,7 +18,7 @@
  * Resize handles are the handles to resize columns
  * A row contains all the possible resize handles
  *
- * this plugin shows the resizehandle when hovering over it and allows for resizing columns
+ * this plugin shows the resizer when hovering over it and allows for resizing columns
  * by dragging the handles.
  *
  * initDrag: here we initialize the triggers to resize the columns while dragging a handle
@@ -36,7 +36,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     var dragging = false;
     var dragColumns = [];
     var currentDragColumn;
-    var activeResizeHandle;
+    var activeResizer;
     var minColumn;
     var maxColumn;
     var blockResizing = false;
@@ -47,7 +47,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         active = value;
         dragColumns = [];
         currentDragColumn = 0;
-        activeResizeHandle = null;
+        activeResizer = null;
         minColumn = null;
         maxColumn = null;
     };
@@ -71,14 +71,14 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     {
         if (!blockResizing) {
             Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
-            activeResizeHandle = handle;
+            activeResizer = handle;
             DOM.enableTextSelection(false);
             DOM.enableContextMenu(false);
             $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 
             // Hide all resizers except the ones in the current row
             activeRowElement = handle.leftColumn.parent.element;
-            var handles = handle.leftColumn.parent.resizeHandles || [];
+            var handles = handle.leftColumn.parent.resizers || [];
             for (var i = 0; i < handles.length; i++) {
                 //handles[i].overlay.show();
                 handles[i].showOverlay();
@@ -88,12 +88,12 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
             setCursor(false);
 
             setCursor(true);
-            $(document).on("mousemove.resizehandledrag", function (event)
+            $(document).on("mousemove.resizerdrag", function (event)
             {
                 doDrag(event)
             });
 
-            initDrag(activeResizeHandle);
+            initDrag(activeResizer);
             dragging = true;
         }
     };
@@ -135,16 +135,16 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
      * Before dragging calculate all the possible columns
      *
      * */
-    var initDrag = function (resizeHandle)
+    var initDrag = function (resizer)
     {
-        activeResizeHandle = resizeHandle;
+        activeResizer = resizer;
         var row;
-        if (resizeHandle.leftColumn != null) {
-            row = resizeHandle.leftColumn.parent;
-        } else if (resizeHandle.rightColumn != null) {
-            row = resizeHandle.rightColumn.parent;
+        if (resizer.leftColumn != null) {
+            row = resizer.leftColumn.parent;
+        } else if (resizer.rightColumn != null) {
+            row = resizer.rightColumn.parent;
         } else {
-            // left and right column of resizehandle have different parents !!!
+            // left and right column of resizer have different parents !!!
             // strange things happening, should never happen
             endDrag();
             return;
@@ -158,21 +158,21 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         var widthRightColumn = 0;
 
         for (var i = 0; i < columns.length; i++) {
-            if (columns[i] == resizeHandle.leftColumn) {
+            if (columns[i] == resizer.leftColumn) {
                 widthLeftColumn = DOM.getColumnWidth(columns[i].element);
-                if (resizeHandle.rightColumn != null) {
+                if (resizer.rightColumn != null) {
                     widthRightColumn = DOM.getColumnWidth(columns[i + 1].element);
                 }
                 break;
-            } else if (resizeHandle.leftColumn == null && columns[i] != resizeHandle.rightColumn) {
+            } else if (resizer.leftColumn == null && columns[i] != resizer.rightColumn) {
                 widthRightColumn = DOM.getColumnWidth(columns[i].element);
                 break;
-            } else if (resizeHandle.leftColumn != null) {
+            } else if (resizer.leftColumn != null) {
                 offsetLeft += DOM.getColumnWidth(columns[i].element);
             }
         }
 
-        // current location of the resizehandle
+        // current location of the resizer
         var currentPosition = offsetLeft + widthLeftColumn;
         var offsetRight = currentPosition + widthRightColumn;
 
@@ -217,27 +217,27 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
                 if (event.pageX > dragColumns[currentDragColumn + diff].start &&
                     event.pageX < dragColumns[currentDragColumn + diff].end) {
                     currentDragColumn = currentDragColumn + diff;
-                    if (activeResizeHandle.leftColumn == null) {
+                    if (activeResizer.leftColumn == null) {
                         var element = $('<div class="col-md-1"><div></div></div>');
-                        activeResizeHandle.rightColumn.element.before(element);
-                        activeResizeHandle.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
-                        DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
-                        activeResizeHandle.updateHeight();
+                        activeResizer.rightColumn.element.before(element);
+                        activeResizer.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
+                        DOM.setColumnWidth(activeResizer.rightColumn.element, DOM.getColumnWidth(activeResizer.rightColumn.element) - diff);
+                        activeResizer.updateHeight();
 
-                    } else if (activeResizeHandle.rightColumn == null) {
-                        activeResizeHandle.rightColumn = {};
-                        activeResizeHandle.rightColumn.element = $('<div class="col-md-1"><div></div></div>');
-                        DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
-                        activeResizeHandle.leftColumn.element.after(activeResizeHandle.rightColumn.element);
-                        activeResizeHandle.updateHeight();
+                    } else if (activeResizer.rightColumn == null) {
+                        activeResizer.rightColumn = {};
+                        activeResizer.rightColumn.element = $('<div class="col-md-1"><div></div></div>');
+                        DOM.setColumnWidth(activeResizer.leftColumn.element, DOM.getColumnWidth(activeResizer.leftColumn.element) + diff);
+                        activeResizer.leftColumn.element.after(activeResizer.rightColumn.element);
+                        activeResizer.updateHeight();
                     } else {
-                        DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
-                        DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
-                        activeResizeHandle.updateHeight();
+                        DOM.setColumnWidth(activeResizer.leftColumn.element, DOM.getColumnWidth(activeResizer.leftColumn.element) + diff);
+                        DOM.setColumnWidth(activeResizer.rightColumn.element, DOM.getColumnWidth(activeResizer.rightColumn.element) - diff);
+                        activeResizer.updateHeight();
                     }
 
-                    // move resizehandle and update all handles in the current row
-                    activeResizeHandle.update();
+                    // move resizer and update all handles in the current row
+                    activeResizer.update();
 
                     break;
                 }

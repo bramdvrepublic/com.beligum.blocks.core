@@ -92,13 +92,19 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     //set to -1 to disable evicting
     var MAX_TIMEDIFF_MILLIS = 1000;
 
-    //multiplier for the direction line to calculate intersections will all possible block edges
+    //multiplier for the DOM direction line to calculate intersections will all possible block edges
     var DIRECTION_MULTIPLIER = 10000;
 
     //this allows all variances to pass and enabling it seems to result in a more natural
     //experience because you can always see 'where we go'. Smoothing the resulting direction
     //vector is a better solution than filtering out high variances
+    //For a smooth experience, either set this to false or set a relatively high threshold below
     var IGNORE_VARIANCE = true;
+
+    //this is the maximum variance (region [0..1]) that's tolerated
+    //during mouse vector updates. All updates with larger variances
+    //won't result in a vector recalculation
+    var VARIANCE_THRESHOLD = 0.50;
 
     //-----VARIABLES-----
     // flag to enable/disable this entire module (both clicking and dragging)
@@ -264,11 +270,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (element.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || element.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
             mousedownSurface = new blocks.elements.Block();
         }
-        // If the element we click on has a registered ID attribute and we can find it in our surface model,
-        // we clicked on a valid surface. Note that we only have block and resizer surfaces, so we'll always
-        // click on one of them (or nothing at all).
-        else if (element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
-            mousedownSurface = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
+        else {
+            // If the element we click on has a registered ID attribute and we can find it in our surface model,
+            // we clicked on a valid surface. Note that we only have block and resizer surfaces, so we'll always
+            // click on one of them (or nothing at all).
+            mousedownSurface = blocks.elements.Surface.lookup(element);
         }
 
         // if we clicked on a valid surface, we need to activate a few things extra
@@ -339,7 +345,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             updateVector(event);
 
             //first, check if we need to activate dragging
-            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && stats.totalLength > DRAGGING_THRESHOLD) {
+            //note that we only start dragging after a certain pixel threshold, except for the resizers because
+            //sometimes they need very fine dragging (col in row in col)
+            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLength > DRAGGING_THRESHOLD)) {
 
                 draggingStatus = BaseConstantsInternal.DRAGGING.YES;
 
@@ -375,36 +383,39 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 // });
             }
 
-            //we're past the threshold and dragging a block around
+            //we're past the threshold and are dragging a block around
             if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
 
                 //keep track of the surfaces we're hovering on
                 var prevHoveredSurface = hoveredSurface;
-                if (targetElement.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
-                    hoveredSurface = blocks.elements.Surface.INDEX[targetElement.attr(blocks.elements.Surface.INDEX_ATTR)];
+
+                //Note: this will be null for the very first move, because the OVERLAY_NO_EVENTS_CLASS was still
+                //active when the dragging status changed to yes and causing the targetElement to be the low-level
+                //DOM element causing the event instead of the overlay.
+                //We choose to skip this first event (probably just one pixel) and only fire when we have a valid surface,
+                //which is what we expect anyway
+                hoveredSurface = blocks.elements.Surface.lookup(targetElement);
+
+                if (hoveredSurface) {
+                    Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
+                        //this is the surface we started the drag on
+                        surface: mousedownSurface,
+                        //this is the DOM element we started our drag on
+                        element: clickedElement,
+                        //this is the original mousedown event that started the drag
+                        originalEvent: mousedownEvent,
+
+                        //this is the surface we previously hovered on
+                        prevHoveredSurface: prevHoveredSurface,
+                        //this is the surface we're currently hovering on
+                        hoveredSurface: hoveredSurface,
+
+                        //the current dragvector (x1,y1,x2,y2)
+                        dragVector: dragVector,
+                        //the statistics of the dragvector (variance, direction, speed)
+                        dragStats: stats,
+                    });
                 }
-                else {
-                    hoveredSurface = null;
-                }
-
-                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
-                    //this is the surface we started the drag on
-                    surface: mousedownSurface,
-                    //this is the DOM element we started our drag on
-                    element: clickedElement,
-                    //this is the original mousedown event that started the drag
-                    originalEvent: mousedownEvent,
-
-                    //this is the surface we previously hovered on
-                    prevHoveredSurface: prevHoveredSurface,
-                    //this is the surface we're currently hovering on
-                    hoveredSurface: hoveredSurface,
-
-                    //the current dragvector (x1,y1,x2,y2)
-                    dragVector: dragVector,
-                    //the statistics of the dragvector (variance, direction, speed)
-                    dragStats: stats,
-                });
 
                 // var block = Hover.getHoveredBlock();
                 //
@@ -441,17 +452,23 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //note that we use the mousedown event as the parent event,
             // it're more intuitive when sending out a 'click' event
             Broadcaster.send(Broadcaster.EVENTS.MOUSE.CLICK, event, {
+                //the surface we clicked on
                 surface: mousedownSurface,
+                //the low-level DOM element we clicked on
                 element: clickedElement,
+                //the original mouse down event
                 originalEvent: mousedownEvent,
             });
         }
         else if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
             Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_STOP, event, {
+                //this is the surface we dragged around
                 surface: mousedownSurface,
+                //the low-level DOM element we ended our drag on
                 element: clickedElement,
+                //the original mouse down event
                 originalEvent: mousedownEvent,
-
+                //the last surface we were hovering on
                 hoveredSurface: hoveredSurface,
             });
         }
@@ -561,7 +578,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         // Note though that during initial movement (just after dragging started), after pausing for longer than
         // MAX_TIMEDIFF_MILLIS (and restarting) or while moving very slowly (typically speeds < 5 or < 10),
         // the variance will also by high, so it's a bit of a tradeoff, hence the ignore flag...
-        if (IGNORE_VARIANCE || stats.variance < 0.50) {
+        if (IGNORE_VARIANCE || stats.variance < VARIANCE_THRESHOLD) {
 
             dragVector.x1 = event.pageX;
             dragVector.y1 = event.pageY;

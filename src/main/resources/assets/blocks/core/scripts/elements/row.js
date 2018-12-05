@@ -38,7 +38,7 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         {
             blocks.elements.Row.Super.call(this, parentSurface, element);
 
-            // we need this to show the resizeHandles
+            // we need this to show the resizers
             this.canDrag = true;
         },
 
@@ -99,7 +99,7 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
 
             //if the new child has a previous column, put a resize handle between them
             if (childSurface.index > 0) {
-                this.resizeHandles.push(new blocks.elements.ResizeHandle(this.children[childSurface.index - 1], childSurface));
+                this.resizers.push(new blocks.elements.Resizer(this.children[childSurface.index - 1], childSurface));
             }
 
             return childSurface;

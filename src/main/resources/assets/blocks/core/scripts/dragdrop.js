@@ -82,12 +82,12 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             //currentDraggedBlock.getContainer().createAllDropspots();
 
             //mark the current overlay as being dragged
-            currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+            currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
 
             Hover.getFocusedBlock().createAllDropspots();
             createDropPointerElement();
             dragging = true;
-            //Hover.removeResizeHandles();
+            //Hover.removeResizers();
             // we have to set both
             // html for undefined area and baody to override default cursor of body.
 
@@ -97,7 +97,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         else if (currentDraggedBlock == null) {
             dragging = true;
             Hover.getFocusedBlock().createAllDropspots();
-            //Hover.removeResizeHandles();
+            //Hover.removeResizers();
             createDropPointerElement();
             $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         }
@@ -432,7 +432,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         removeDropPointerElements();
-        $('.' + BlocksConstants.OVERLAY_CLASS + '.' + BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        $('.' + BlocksConstants.OVERLAY_CLASS + '.' + BlocksConstants.OVERLAY_DRAG_CLASS).removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
         //removeDraggedOverlay();
         draggingEnabled = false;
         dragging = false;

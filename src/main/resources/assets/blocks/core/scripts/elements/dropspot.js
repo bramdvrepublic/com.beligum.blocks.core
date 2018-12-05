@@ -37,7 +37,9 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        //the parent surface of this dropspot
         anchor: undefined,
+        //the side on the anchor
         side: undefined,
 
         //-----CONSTRUCTORS-----
@@ -82,9 +84,12 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
                     break;
             }
 
-            //we add the dropspot to the dom, but start out hidden
+            //start out hidden
             this.hide();
+
+            //add the dropspot to the dom
             UI.dropspotWrapper.append(this.overlay);
+
         },
         // constructor: function (side, anchor, index)
         // {

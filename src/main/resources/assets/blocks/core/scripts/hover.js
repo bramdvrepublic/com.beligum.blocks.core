@@ -87,7 +87,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DOM", fu
     //     }
     // };
 
-    // this.removeResizeHandles = function ()
+    // this.removeResizers = function ()
     // {
     //     if (Hover.getPageBlock() != null) {
     //         var elements = Hover.getPageBlock().findElements(0, 9);
@@ -99,7 +99,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DOM", fu
     //     }
     // };
     //
-    // this.showResizeHandles = function ()
+    // this.showResizers = function ()
     // {
     //     if (Hover.getPageBlock() != null) {
     //         var elements = Hover.getPageBlock().findElements(0, 9);

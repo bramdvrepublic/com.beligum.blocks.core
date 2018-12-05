@@ -89,6 +89,38 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 BOTTOM: _SIDE_BOTTOM,
                 LEFT: _SIDE_LEFT,
             },
+
+            /**
+             * Reverse-lookup the surface belonging to the supplied element based on it's id attribute
+             *
+             * @param element
+             */
+            lookup: function (element)
+            {
+                var retVal = null;
+
+                //note that only the active dropspot is visible (and there should only be one)
+                if (element && element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
+                    retVal = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
+                }
+
+                return retVal;
+            },
+            /**
+             * Reset all dropspots (of all surfaces)
+             */
+            resetMoveToPreview: function ()
+            {
+                UI.dropspotWrapper.empty();
+            },
+            /**
+             * Returns the currently selected dropspot
+             */
+            getActiveDropspot: function ()
+            {
+                //note that only the active dropspot is visible (and there should only be one)
+                return blocks.elements.Surface.lookup(UI.dropspotWrapper.children(':visible').first());
+            },
         },
 
         //-----CONSTANTS-----
@@ -101,12 +133,11 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         index: undefined,
         element: undefined,
         children: undefined,
-        resizeHandles: undefined,
+        resizers: undefined,
         totalBlocks: undefined,
         canDrag: undefined,
         overlay: undefined,
 
-        dropspot: undefined,
         //this holds a data structure of parent-surfaces for each side
         layoutParents: undefined,
 
@@ -142,12 +173,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             this.parent = parentSurface;
             this.index = parentSurface ? parentSurface.children.length : 0;
             this.children = [];
-            this.resizeHandles = [];
+            this.resizers = [];
             this.totalBlocks = null;
             this.canDrag = false; // only for first level blocks inside a container
             this.overlay = null;
-
-            this.dropspot = null;
             this.layoutParents = {};
 
             //this allows us to call this constructor with no arguments
@@ -197,6 +226,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             return this instanceof blocks.elements.Property;
         },
+        isResizer: function ()
+        {
+            return this instanceof blocks.elements.Resizer;
+        },
+        isDropspot: function ()
+        {
+            return this instanceof blocks.elements.Dropspot;
+        },
 
         /**
          * Returns the first child we can find where the bounds wrap the supplied coordinate
@@ -223,63 +260,93 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
         },
-        /**
-         * Show the best dropspot for the supplied vector
-         *
-         * @param surface The surface that's being dragged around (and is hovering over this surface)
-         * @param vector Data structure with (x1, y1) and (x2, y2) properties
-         */
-        showDropspot: function (surface, vector)
-        {
-            var side = this._findIntersectingSide(vector);
+        // /**
+        //  * Show the best dropspot for the supplied vector
+        //  *
+        //  * @param surface The surface that's being dragged around (and is hovering over this surface)
+        //  * @param vector Data structure with (x1, y1) and (x2, y2) properties
+        //  */
+        // showDropspot: function (surface, vector)
+        // {
+        //     var side = this._findIntersectingSide(vector);
+        //
+        //     //start out by removing the existing dropspots
+        //     this.resetDropspots();
+        //
+        //     if (side !== blocks.elements.Surface.SIDE.NONE) {
+        //         var dropspots = this._createDropspots(surface, side, null);
+        //         var idx = this._selectDropspot(vector, surface, side, dropspots);
+        //         if (idx >= 0) {
+        //             this.dropspot = dropspots[idx];
+        //             this.dropspot.show();
+        //         }
+        //     }
+        // },
+        //
+        // /**
+        //  * Reset all active dropspots of this surface
+        //  */
+        // resetDropspots: function ()
+        // {
+        //     // note: this will clear all dropspots in the DOM,
+        //     // even the ones not attached to this surface
+        //     UI.dropspotWrapper.empty();
+        //
+        //     this.dropspot = null;
+        // },
 
-            //start out by removing the existing dropspots
-            this.resetDropspots();
+        /**
+         * Create a visual preview of what would happen if this surface would be moved in the direction of
+         * the indicated vector, over the supplied surface
+         *
+         * @param surface
+         * @param vector
+         */
+        previewMoveTo: function (surface, vector)
+        {
+            //find out on which side the vector intersects with the hovered surface
+            var side = surface._findIntersectingSide(vector);
 
             if (side !== blocks.elements.Surface.SIDE.NONE) {
-                var dropspots = this._createDropspots(surface, side, null);
-                var idx = this._selectDropspot(vector, surface, side, dropspots);
+                //create a list of possible dropspots on the given side
+                var dropspots = surface._createDropspots(this, side, null);
+
+                //select the optimal dropspot
+                var idx = surface._selectDropspot(vector, this, side, dropspots);
+
                 if (idx >= 0) {
-                    this.dropspot = dropspots[idx];
-                    this.dropspot.show();
+                    dropspots[idx].show();
                 }
             }
-
-            // if (side !== blocks.elements.Surface.SIDE.NONE) {
-            //     var layoutParent = this.layoutParents[side];
-            //
-            // }
-
-            //if (this.overlay) {
-            // this.overlay.removeClass('top- right- bottom- left-');
-            // switch (side) {
-            //     case blocks.elements.Surface.SIDE.TOP:
-            //         this.overlay.addClass('top-');
-            //         break;
-            //     case blocks.elements.Surface.SIDE.RIGHT:
-            //         this.overlay.addClass('right-');
-            //         break;
-            //     case blocks.elements.Surface.SIDE.BOTTOM:
-            //         this.overlay.addClass('bottom-');
-            //         break;
-            //     case blocks.elements.Surface.SIDE.LEFT:
-            //         this.overlay.addClass('left-');
-            //         break;
-            // }
-            //}
         },
 
-        resetDropspots: function ()
+        /**
+         * Effectively move this surface to the indicated side of the supplied surface.
+         *
+         * @param surface
+         * @param side
+         */
+        moveTo: function (surface, side)
         {
-            UI.dropspotWrapper.empty();
-            this.dropspot = null;
-
-            // if (this.overlay) {
-            //     this.overlay.css('border-top', 'none');
-            //     this.overlay.css('border-right', 'none');
-            //     this.overlay.css('border-bottom', 'none');
-            //     this.overlay.css('border-left', 'none');
+            // switch (side.id) {
+            //     case blocks.elements.Surface.SIDE.TOP.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.BOTTOM.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.LEFT.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.RIGHT.id:
+            //
+            //         break;
             // }
+            if (this.isBlock() && surface.isBlock()) {
+                if (side.id === blocks.elements.Surface.SIDE.RIGHT.id) {
+                    Logger.info('move');
+                }
+            }
         },
 
         //-----TODO UNCHECKED-----
@@ -813,6 +880,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             var layoutParent = this.layoutParents[side.id];
             if (layoutParent) {
+                //adds the resulting parent array to the retVal array
                 retval = retval.concat(layoutParent._createDropspots(surface, side, this));
             }
 

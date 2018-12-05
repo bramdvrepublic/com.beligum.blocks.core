@@ -201,7 +201,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   //This means:
   // - there's no overlay focused inside the wrapper
   // - we're not dragging any overlay around
-  &:not(.@{BLOCK_FOCUSED_CLASS}):not(.@{OVERLAY_DRAGGING_CLASS}) {
+  &:not(.@{BLOCK_FOCUSED_CLASS}):not(.@{OVERLAY_DRAG_CLASS}) {
 
     .@{OVERLAY_CLASS}:hover {
       .box-shadow(0px 0px 10px @brand-primary);
@@ -236,7 +236,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     //    .defaultBorder();
     //  }
     //}
-    &.@{OVERLAY_DRAGGING_CLASS} {
+    &.@{OVERLAY_DRAG_CLASS} {
       background-color: rgba(00, 102, 204, 0.5);
     }
 
@@ -382,8 +382,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
     z-index: @overlayZ + 1;
   }
 
-  //hide the resizers when we're dragging
-  &.@{OVERLAY_DRAGGING_CLASS} {
+  //hide the resizers when we're dragging, except if we're dragging a resizer
+  &.@{OVERLAY_DRAG_CLASS}:not(.@{OVERLAY_DRAG_CLASS}-resizer) {
     .@{COLUMN_RESIZER_CLASS} {
       display: none;
     }
