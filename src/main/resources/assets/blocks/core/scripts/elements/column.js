@@ -26,19 +26,20 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
+    var classPrefix = 'col';
     blocks.elements.Column = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
         STATIC: {
 
-            //the prefix of the bootstrap column class (sync with the regex below)
-            CLASS_PREFIX: 'col',
+            //the prefix of the bootstrap column class
+            CLASS_PREFIX: classPrefix,
 
             // \b = beginning of a word
             // \d = digit
             // g: global
             // i: ignore case
-            DIMS_REGEX: new RegExp('\\bcol-([^-]*)-(\\d+)', 'gi'),
+            DIMS_REGEX: new RegExp('\\b' + classPrefix + '-([^-]*)-(\\d+)', 'gi'),
 
         },
 
@@ -61,6 +62,26 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PUBLIC METHODS-----
+        /**
+         * Updates the Bootstrap-width of this column in the [1-12] range
+         * according to the current size
+         *
+         * @param colWidth
+         */
+        setColumnWidth: function (colWidth)
+        {
+            //make sure it's in the right range
+            colWidth = Math.max(Math.min(colWidth, 12), 1);
+
+            var newClass = blocks.elements.Column.CLASS_PREFIX + '-' + this.columnSize + '-' + colWidth;
+
+            this.element.removeClass(this.columnClass);
+            this.element.addClass(newClass);
+
+            //don't forget to sync the variables
+            this.columnClass = newClass;
+            this.columnWidth = colWidth;
+        },
 
         //-----TODO UNCHECKED-----
         // Override
@@ -93,23 +114,23 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----PRIVATE METHODS-----
-        _getType: function()
+        _getType: function ()
         {
             return 'column';
         },
-        _getName: function()
+        _getName: function ()
         {
             return BlocksMessages.surfaceColumnName;
         },
-        _newChildInstance: function(element)
+        _newChildInstance: function (element)
         {
             return new blocks.elements.Block(this, element);
         },
-        _isAcceptableChild: function(element)
+        _isAcceptableChild: function (element)
         {
             return DOM.isBlock(element);
         },
-        _getChildOrientation: function()
+        _getChildOrientation: function ()
         {
             return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
@@ -145,7 +166,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
 
                 this.columnClass = match[0];
                 this.columnSize = match[1];
-                this.columnWidth = match[2];
+                this.columnWidth = parseInt(match[2]);
 
                 //test if we had more and log a warning
                 match = blocks.elements.Column.DIMS_REGEX.exec(classes);

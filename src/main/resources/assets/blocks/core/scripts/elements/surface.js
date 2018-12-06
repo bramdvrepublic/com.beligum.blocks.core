@@ -179,23 +179,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             this.overlay = null;
             this.layoutParents = {};
 
-            //this allows us to call this constructor with no arguments
-            if (element) {
-                var top = this._calculateTop(element);
-                var bottom = this._calculateBottom(element);
-                var left = this._calculateLeft(element);
-                var right = this._calculateRight(element);
-
-                this.top = Math.min(top, bottom);
-                this.bottom = Math.max(top, bottom);
-                this.left = Math.min(left, right);
-                this.right = Math.max(left, right);
-
-                this.realTop = this.top;
-                this.realBottom = this.bottom;
-                this.realLeft = this.left;
-                this.realRight = this.right;
-            }
+            //fill the bounds variables
+            this._refresh();
         },
 
         //-----PUBLIC METHODS-----
@@ -233,6 +218,23 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         isDropspot: function ()
         {
             return this instanceof blocks.elements.Dropspot;
+        },
+
+        width: function ()
+        {
+            return this.right - this.left;
+        },
+        realWidth: function ()
+        {
+            return this.realRight - this.realLeft;
+        },
+        height: function ()
+        {
+            return this.bottom - this.top;
+        },
+        realHeight: function ()
+        {
+            return this.realBottom - this.realTop;
         },
 
         /**
@@ -711,6 +713,40 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return retVal;
         },
         /**
+         * Refreshes all possible variables of this surface. Usually, this is called
+         * when the bounds/classes/properties of the underlying element were altered and
+         * new variables must be calculated. However, it can also be used to refresh the position
+         * of element-less surfaces (like resizers)
+         *
+         * @private
+         */
+        _refresh: function ()
+        {
+            //this allows us to call this constructor with no arguments
+            if (this.element) {
+                var top = this._calculateTop(this.element);
+                var bottom = this._calculateBottom(this.element);
+                var left = this._calculateLeft(this.element);
+                var right = this._calculateRight(this.element);
+
+                this.top = Math.min(top, bottom);
+                this.bottom = Math.max(top, bottom);
+                this.left = Math.min(left, right);
+                this.right = Math.max(left, right);
+
+                this.realTop = this.top;
+                this.realBottom = this.bottom;
+                this.realLeft = this.left;
+                this.realRight = this.right;
+            }
+
+            this._redraw();
+
+            for (var i = 0; i < this.children.length; i++) {
+                this.children[i]._refresh();
+            }
+        },
+        /**
          * Redraws the UI surface if we have one
          * @private
          */
@@ -718,14 +754,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             if (this.overlay) {
 
-                var top = this.top;
-                var left = this.left;
-                var width = this.right - this.left;
-                var height = this.bottom - this.top;
+                var width = this.width();
+                var height = this.height();
 
-                if (this.element && this.element.is(':visible') && width * height > 0) {
-                    this.overlay.css("top", top + "px");
-                    this.overlay.css("left", left + "px");
+                //the surface is visible if it either has no element attached or it's attached element is visible
+                //and the surface is larger than zero
+                if ((!this.element || this.element.is(':visible')) && width * height > 0) {
+                    this.overlay.css("top", this.top + "px");
+                    this.overlay.css("left", this.left + "px");
                     this.overlay.css("width", width + "px");
                     this.overlay.css("height", height + "px");
                     this.overlay.show();

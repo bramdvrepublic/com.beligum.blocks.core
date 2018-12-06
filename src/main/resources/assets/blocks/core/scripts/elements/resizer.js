@@ -26,17 +26,21 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
+    var tempWidth = 6;
     blocks.elements.Resizer = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
         STATIC: {
-            DRAW_WIDTH: 30,
-            TRIGGER_WIDTH: 6
+            WIDTH: tempWidth,
+            HALF_WIDTH: Math.floor(tempWidth / 2.0),
         },
 
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        center: undefined,
+        leftColumn: undefined,
+        rightColumn: undefined,
 
         //-----CONSTRUCTORS-----
         constructor: function (leftColumn, rightColumn)
@@ -45,6 +49,10 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
 
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
+
+            //re-call the refresh (it's also called from the super constructor)
+            //now we have set the left and right columns
+            this._refresh();
 
             this.overlay = this._createOverlay();
             this.overlay.addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
@@ -70,13 +78,37 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         //-----PUBLIC METHODS-----
         previewMoveTo: function (surface, vector)
         {
-            Logger.info('resizer');
+            //the number of horizontal pixels we've dragged from the center of the resizer
+            var offsetPx = vector.x1 - this.center;
+            //right is positive, left is negative
+            var side = Math.sign(offsetPx);
+            //now we've stored the sign, cut it off
+            offsetPx = Math.abs(offsetPx);
+
+            var row = this.leftColumn.parent;
+            //the width of one column in pixels in the parent row
+            var oneColPx = row.realWidth() / 12;
+            //the absolute number of columns we're dragging left or right
+            //Note that this 'floor' will prevent flickering between two states
+            //because it forces the amount of dragged pixels to exceed the width
+            //of one column, and when the resizer 'jumps', the next call of this method
+            //will result in zero columns because of this floor()
+            var cols = Math.floor(offsetPx / oneColPx);
+
+            if (cols > 0) {
+                this.leftColumn.setColumnWidth(this.leftColumn.columnWidth + (side * cols));
+                this.rightColumn.setColumnWidth(this.rightColumn.columnWidth - (side * cols));
+
+                this.leftColumn._refresh();
+                this.rightColumn._refresh();
+                this._refresh();
+            }
         },
 
         //-----TODO UNCHECKED-----
         update: function ()
         {
-            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.TRIGGER_WIDTH / 2)
+            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2)
             this.overlay.css("left", left);
             var siblings = this.leftColumn.parent.resizers;
             var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
@@ -91,28 +123,27 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         },
 
         //-----PRIVATE METHODS-----
-        _getType: function()
+        _getType: function ()
         {
             return 'resizer';
         },
-        _getName: function()
+        _getName: function ()
         {
             return BlocksMessages.surfaceResizerName;
         },
-        _redraw: function()
+        _refresh: function()
         {
-            if (this.overlay) {
+            if (this.leftColumn && this.rightColumn) {
+                this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
+                this.left = this.leftColumn.right - blocks.elements.Resizer.HALF_WIDTH;
+                this.right = this.left + blocks.elements.Resizer.WIDTH;
+                this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
 
-                var left = this.leftColumn.right - Math.floor(blocks.elements.Resizer.TRIGGER_WIDTH / 2);
-                var top = this.leftColumn.top;
-                var width = blocks.elements.Resizer.TRIGGER_WIDTH;
-                var height = this.leftColumn.bottom - this.leftColumn.top;
-
-                this.overlay.css("top", top);
-                this.overlay.css("height", height);
-                this.overlay.css("left", left);
-                this.overlay.css("width", width);
+                //extra variable for easy deciding sidies
+                this.center = this.left + blocks.elements.Resizer.HALF_WIDTH;
             }
+
+            this._redraw();
         },
     });
 }]);
