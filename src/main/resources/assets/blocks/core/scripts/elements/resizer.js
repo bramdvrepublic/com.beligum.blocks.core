@@ -93,15 +93,20 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
             //because it forces the amount of dragged pixels to exceed the width
             //of one column, and when the resizer 'jumps', the next call of this method
             //will result in zero columns because of this floor()
-            var cols = Math.floor(offsetPx / oneColPx);
+            var colOffset = Math.floor(offsetPx / oneColPx);
 
-            if (cols > 0) {
-                this.leftColumn.setColumnWidth(this.leftColumn.columnWidth + (side * cols));
-                this.rightColumn.setColumnWidth(this.rightColumn.columnWidth - (side * cols));
+            if (colOffset > 0) {
+                var colOffsetSigned = side * colOffset;
+                var newLeftCols = this.leftColumn.columnWidth + colOffsetSigned;
+                var newRightCols = this.rightColumn.columnWidth - colOffsetSigned;
 
-                this.leftColumn._refresh();
-                this.rightColumn._refresh();
-                this._refresh();
+                //make sure we don't create zero-width columns
+                if (Math.min(newLeftCols, newRightCols) > 0) {
+                    this.leftColumn.setColumnWidth(newLeftCols);
+                    this.rightColumn.setColumnWidth(newRightCols);
+
+                    this._refresh();
+                }
             }
         },
 
@@ -134,9 +139,12 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         _refresh: function()
         {
             if (this.leftColumn && this.rightColumn) {
-                this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
-                this.left = this.leftColumn.right - blocks.elements.Resizer.HALF_WIDTH;
+                //important: don't use the right of the columns, since they seem to substract the
+                //margin between two columns and don't return absolute bounds
+                this.left = this.rightColumn.left - blocks.elements.Resizer.HALF_WIDTH;
                 this.right = this.left + blocks.elements.Resizer.WIDTH;
+
+                this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
                 this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
 
                 //extra variable for easy deciding sidies

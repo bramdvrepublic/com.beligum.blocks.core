@@ -624,38 +624,24 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         _layoutChildVertically: function (childSurface)
         {
-            childSurface.left = this.left;
-            childSurface.right = this.right;
-
             childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
             childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
 
             if (childSurface.index == 0) {
-                childSurface.top = this.top;
                 childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
             }
 
             // We should only sync the bounds of the last child,
             // but every added child will be last, so we'll just sync now
-            // and revert the bounds of the previous one below
-            childSurface.bottom = this.bottom;
+            // and revert the bounds of the previous child below
             childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
             if (childSurface.index > 0) {
-                //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
-                //revert the bottom of the previous child
-                previousChild.bottom = previousChild.realBottom;
                 previousChild.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = null;
-
-                //glue the two children together
-                var middle = (previousChild.bottom + childSurface.top) / 2;
-                previousChild.bottom = middle;
-                childSurface.top = middle;
-
-                previousChild._redraw();
+                previousChild._refresh();
             }
 
-            childSurface._redraw();
+            childSurface._refresh();
         },
         /**
          * Adds a child to this horizontal-oriented parent surface
@@ -664,34 +650,22 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         _layoutChildHorizontally: function (childSurface)
         {
-            childSurface.top = this.top;
-            childSurface.bottom = this.bottom;
-
             childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
             childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
 
             if (childSurface.index == 0) {
-                childSurface.left = this.left;
                 childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
             }
 
-            //See comments above
-            childSurface.right = this.right;
+            //See comments above in _layoutChildVertically()
             childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
             if (childSurface.index > 0) {
-                //revert the bottom of the previous one if we're not the first
                 var previousChild = this.children[childSurface.index - 1];
-                previousChild.right = previousChild.realRight;
                 previousChild.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = null;
-
-                var middle = (previousChild.right + childSurface.left) / 2;
-                previousChild.right = middle;
-                childSurface.left = middle;
-
-                previousChild._redraw();
+                previousChild._refresh();
             }
 
-            childSurface._redraw();
+            childSurface._refresh();
         },
         /**
          * Uniform superclass implementation for all overlay elements.
@@ -720,30 +694,48 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @private
          */
-        _refresh: function ()
+        _refresh: function (deep)
         {
             //this allows us to call this constructor with no arguments
             if (this.element) {
-                var top = this._calculateTop(this.element);
-                var bottom = this._calculateBottom(this.element);
-                var left = this._calculateLeft(this.element);
-                var right = this._calculateRight(this.element);
+                var tempTop = this._calculateTop(this.element);
+                var tempBottom = this._calculateBottom(this.element);
+                var tempLeft = this._calculateLeft(this.element);
+                var tempRight = this._calculateRight(this.element);
 
-                this.top = Math.min(top, bottom);
-                this.bottom = Math.max(top, bottom);
-                this.left = Math.min(left, right);
-                this.right = Math.max(left, right);
+                this.top = Math.min(tempTop, tempBottom);
+                this.bottom = Math.max(tempTop, tempBottom);
+                this.left = Math.min(tempLeft, tempRight);
+                this.right = Math.max(tempLeft, tempRight);
 
                 this.realTop = this.top;
                 this.realBottom = this.bottom;
                 this.realLeft = this.left;
                 this.realRight = this.right;
+
+                // if we have a parent layout element, it looks a lot nicer (more intuitive)
+                // to sync the side of this surface to the side of that parent
+                // (see _layoutChildVertically() and _layoutChildHorizontally())
+                if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
+                    this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
+                }
+                if (this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id]) {
+                    this.right = this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id].right;
+                }
+                if (this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id]) {
+                    this.bottom = this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id].bottom;
+                }
+                if (this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id]) {
+                    this.left = this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id].left;
+                }
             }
 
             this._redraw();
 
-            for (var i = 0; i < this.children.length; i++) {
-                this.children[i]._refresh();
+            if (deep) {
+                for (var i = 0; i < this.children.length; i++) {
+                    this.children[i]._refresh(deep);
+                }
             }
         },
         /**

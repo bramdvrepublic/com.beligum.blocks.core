@@ -81,6 +81,9 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             //don't forget to sync the variables
             this.columnClass = newClass;
             this.columnWidth = colWidth;
+
+            //Note that we need to do a deep refresh to also refresh the blocks in this column
+            this._refresh(true);
         },
 
         //-----TODO UNCHECKED-----
