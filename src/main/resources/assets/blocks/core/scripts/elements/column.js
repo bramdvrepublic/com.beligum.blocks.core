@@ -81,9 +81,6 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             //don't forget to sync the variables
             this.columnClass = newClass;
             this.columnWidth = colWidth;
-
-            //Note that we need to do a deep refresh to also refresh the blocks in this column
-            this._refresh(true);
         },
 
         //-----TODO UNCHECKED-----
@@ -137,14 +134,14 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         {
             return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
-        _isOuterLeft: function ()
-        {
-            return this.element.prev().length == 0
-        },
-        _isOuterRight: function ()
-        {
-            return this.element.next().length == 0
-        },
+        // _isOuterLeft: function ()
+        // {
+        //     return this.element.prev().length == 0
+        // },
+        // _isOuterRight: function ()
+        // {
+        //     return this.element.next().length == 0
+        // },
         /**
          * Extracts the class width number from the element,
          * searching for a supplied clazz prefix eg. 'col-md-', 'col-xs-', etc

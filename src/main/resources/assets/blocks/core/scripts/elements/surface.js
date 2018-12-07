@@ -29,30 +29,35 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
     var _SIDE_NONE = {
         id: 0,
+        name: 'none',
         opposite: undefined,
         orientation: _ORIENTATION_NONE,
         cssClass: '',
     };
     var _SIDE_TOP = {
         id: 1,
+        name: 'top',
         opposite: undefined,
         orientation: _ORIENTATION_VERTICAL,
         cssClass: 'top',
     };
     var _SIDE_RIGHT = {
         id: 2,
+        name: 'right',
         opposite: undefined,
         orientation: _ORIENTATION_HORIZONTAL,
         cssClass: 'right',
     };
     var _SIDE_BOTTOM = {
         id: 3,
+        name: 'bottom',
         opposite: undefined,
         orientation: _ORIENTATION_VERTICAL,
         cssClass: 'bottom',
     };
     var _SIDE_LEFT = {
         id: 4,
+        name: 'left',
         opposite: undefined,
         orientation: _ORIENTATION_HORIZONTAL,
         cssClass: 'left',
@@ -324,31 +329,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
         /**
          * Effectively move this surface to the indicated side of the supplied surface.
+         * Overload to implement for a specific type.
          *
          * @param surface
          * @param side
          */
         moveTo: function (surface, side)
         {
-            // switch (side.id) {
-            //     case blocks.elements.Surface.SIDE.TOP.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.BOTTOM.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.LEFT.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.RIGHT.id:
-            //
-            //         break;
-            // }
-            if (this.isBlock() && surface.isBlock()) {
-                if (side.id === blocks.elements.Surface.SIDE.RIGHT.id) {
-                    Logger.info('move');
-                }
-            }
+            //NOOP
         },
 
         //-----TODO UNCHECKED-----
@@ -698,20 +686,22 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             //this allows us to call this constructor with no arguments
             if (this.element) {
-                var tempTop = this._calculateTop(this.element);
-                var tempBottom = this._calculateBottom(this.element);
-                var tempLeft = this._calculateLeft(this.element);
-                var tempRight = this._calculateRight(this.element);
 
-                this.top = Math.min(tempTop, tempBottom);
-                this.bottom = Math.max(tempTop, tempBottom);
-                this.left = Math.min(tempLeft, tempRight);
-                this.right = Math.max(tempLeft, tempRight);
+                //note: these are the core dimension translations of an element to
+                //a surface. Eg. we don't include margins.
+                var topLeft = this.element.offset();
+                var width = this.element.outerWidth();
+                var height = this.element.outerHeight();
+
+                this.top = topLeft.top;
+                this.right = topLeft.left + width;
+                this.bottom = topLeft.top + height;
+                this.left = topLeft.left;
 
                 this.realTop = this.top;
+                this.realRight = this.right;
                 this.realBottom = this.bottom;
                 this.realLeft = this.left;
-                this.realRight = this.right;
 
                 // if we have a parent layout element, it looks a lot nicer (more intuitive)
                 // to sync the side of this surface to the side of that parent
@@ -763,74 +753,74 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 }
             }
         },
-        /**
-         * Calculates the top value for the constructor of the supplied element
-         */
-        _calculateTop: function (element)
-        {
-            return element.offset().top
-        },
-        /**
-         * Calculates the bottom value for the constructor of the supplied element
-         */
-        _calculateBottom: function (element)
-        {
-            return element.offset().top + element.outerHeight();
-        },
-        /**
-         * Calculates the left value for the constructor of the supplied element
-         */
-        _calculateLeft: function (element)
-        {
-            return element.offset().left
-        },
-        /**
-         * Calculates the right value for the constructor of the supplied element
-         */
-        _calculateRight: function (element)
-        {
-            return element.offset().left + element.outerWidth()
-        },
-        /**
-         * Returns true if this block has no sibling on his left
-         * (to be overridden by subclasses)
-         * @returns {boolean}
-         * @private
-         */
-        _isOuterLeft: function ()
-        {
-            return true
-        },
-        /**
-         * Returns true if this block has no sibling on his right
-         * (to be overridden by subclasses)
-         * @returns {boolean}
-         * @private
-         */
-        _isOuterRight: function ()
-        {
-            return true
-        },
-        /**
-         * Returns true if this block has no sibling on his top
-         * (to be overridden by subclasses)
-         * @returns {boolean}
-         * @private
-         */
-        _isOuterTop: function ()
-        {
-            return true
-        },
-        /**
-         * Returns true if this block has no sibling on his bottom
-         * (to be overridden by subclasses)
-         * @returns {boolean}
-         * @private
-         */
-        _isOuterBottom: function ()
-        {
-            return true
-        },
+        // /**
+        //  * Calculates the top value for the constructor of the supplied element
+        //  */
+        // _calculateTop: function (element)
+        // {
+        //     return element.offset().top;
+        // },
+        // /**
+        //  * Calculates the bottom value for the constructor of the supplied element
+        //  */
+        // _calculateBottom: function (element)
+        // {
+        //     return element.offset().top + element.outerHeight();
+        // },
+        // /**
+        //  * Calculates the left value for the constructor of the supplied element
+        //  */
+        // _calculateLeft: function (element)
+        // {
+        //     return element.offset().left;
+        // },
+        // /**
+        //  * Calculates the right value for the constructor of the supplied element
+        //  */
+        // _calculateRight: function (element)
+        // {
+        //     return element.offset().left + element.outerWidth();
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his left
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterLeft: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his right
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterRight: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his top
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterTop: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his bottom
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterBottom: function ()
+        // {
+        //     return true;
+        // },
         /**
          * Calculates the side of this surface that intersects with the supplied vector.
          * Note that this only returns one side, even if two sides would intersect.

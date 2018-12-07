@@ -102,8 +102,16 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
 
                 //make sure we don't create zero-width columns
                 if (Math.min(newLeftCols, newRightCols) > 0) {
+
+                    //note: these don't automatically refresh; see remark below
                     this.leftColumn.setColumnWidth(newLeftCols);
                     this.rightColumn.setColumnWidth(newRightCols);
+
+                    //Note that we need to do a deep refresh to also refresh the blocks in this column
+                    //Also note that this needs to happen _after_ both updates are done, because the one pushes
+                    //forward and the other needs to make room for the first to change width
+                    this.leftColumn._refresh(true);
+                    this.rightColumn._refresh(true);
 
                     this._refresh();
                 }
@@ -113,7 +121,7 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         //-----TODO UNCHECKED-----
         update: function ()
         {
-            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2)
+            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2);
             this.overlay.css("left", left);
             var siblings = this.leftColumn.parent.resizers;
             var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
@@ -136,7 +144,7 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         {
             return BlocksMessages.surfaceResizerName;
         },
-        _refresh: function()
+        _refresh: function ()
         {
             if (this.leftColumn && this.rightColumn) {
                 //important: don't use the right of the columns, since they seem to substract the

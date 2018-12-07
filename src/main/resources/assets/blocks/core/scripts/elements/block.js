@@ -83,6 +83,41 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             return this.isNew;
         },
 
+        /**
+         * Effectively move this block to the indicated side of the supplied surface.
+         *
+         * @param surface
+         * @param side
+         */
+        moveTo: function (surface, side)
+        {
+            // switch (side.id) {
+            //     case blocks.elements.Surface.SIDE.TOP.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.BOTTOM.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.LEFT.id:
+            //
+            //         break;
+            //     case blocks.elements.Surface.SIDE.RIGHT.id:
+            //
+            //         break;
+            // }
+
+            Logger.info('move ' + this.type + ' to ' + side.name + ' of ' + surface.type);
+
+            // if (surface.isBlock()) {
+            //
+            //     Logger.info('move block to block');
+            //
+            //     if (side.id === blocks.elements.Surface.SIDE.RIGHT.id) {
+            //         Logger.info('move');
+            //     }
+            // }
+        },
+
         //-----TODO UNCHECKED-----
         getElementAtSide: function (side)
         {
