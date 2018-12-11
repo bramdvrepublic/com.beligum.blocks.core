@@ -42,22 +42,22 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         //-----PUBLIC METHODS-----
 
         //-----TODO UNCHECKED-----
-        getElementAtSide: function (side)
-        {
-            return null;
-        },
-        calculateDropspots: function (side, dropspots)
-        {
-            if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
-                dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-            }
-
-            return dropspots;
-        },
-        getContainer: function ()
-        {
-            return this;
-        },
+        // getElementAtSide: function (side)
+        // {
+        //     return null;
+        // },
+        // calculateDropspots: function (side, dropspots)
+        // {
+        //     if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
+        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
+        //     }
+        //
+        //     return dropspots;
+        // },
+        // getContainer: function ()
+        // {
+        //     return this;
+        // },
 
         //-----PRIVATE METHODS-----
         _getType: function()

@@ -32,86 +32,89 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        //an array with references to the resizers of the columns in this row
+        resizers: undefined,
 
         //-----CONSTRUCTORS-----
         constructor: function (parentSurface, element)
         {
             blocks.elements.Row.Super.call(this, parentSurface, element);
 
-            // we need this to show the resizers
-            this.canDrag = true;
+            this.resizers = [];
         },
 
         //-----PUBLIC METHODS-----
 
         //-----TODO UNCHECKED-----
-        // Override
-        getElementAtSide: function (side)
-        {
-            if (side == Constants.SIDE.TOP) {
-                return this.getPrevious();
-            }
-            else if (side == Constants.SIDE.BOTTOM) {
-                return this.getNext();
-            }
-            else {
-                return null;
-            }
-        },
-
-        // find all dropspots for an element
-        // is called for a block and returns all dropspots for this block and his parents.
-        calculateDropspots: function (side, dropspots)
-        {
-            var isOuter = this.isOuter(side);
-            if ((side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) && this.children.length > 1) {
-                dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-            }
-
-            if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
-            return dropspots;
-        },
+        // // Override
+        // getElementAtSide: function (side)
+        // {
+        //     if (side == Constants.SIDE.TOP) {
+        //         return this.getPrevious();
+        //     }
+        //     else if (side == Constants.SIDE.BOTTOM) {
+        //         return this.getNext();
+        //     }
+        //     else {
+        //         return null;
+        //     }
+        // },
+        //
+        // // find all dropspots for an element
+        // // is called for a block and returns all dropspots for this block and his parents.
+        // calculateDropspots: function (side, dropspots)
+        // {
+        //     var isOuter = this.isOuter(side);
+        //     if ((side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) && this.children.length > 1) {
+        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
+        //     }
+        //
+        //     if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
+        //     return dropspots;
+        // },
 
         //-----PRIVATE METHODS-----
-        _getType: function()
+        _getType: function ()
         {
             return 'row';
         },
-        _getName: function()
+        _getName: function ()
         {
             return BlocksMessages.surfaceRowName;
         },
-        _newChildInstance: function(element)
+        _newChildInstance: function (element)
         {
-            return new blocks.elements.Column(this, element);
+            var retVal = new blocks.elements.Column(this, element);
+
+            //if the new child has a previous column, put a resize handle between them
+            if (retVal.index > 0) {
+                this.resizers.push(new blocks.elements.Resizer(this.children[retVal.index - 1], retVal));
+            }
+
+            return retVal;
         },
-        _isAcceptableChild: function(element)
+        _isAcceptableChild: function (element)
         {
             return DOM.isColumn(element);
         },
-        _getChildOrientation: function()
+        _getChildOrientation: function ()
         {
             return blocks.elements.Surface.ORIENTATION.HORIZONTAL;
         },
-        _layoutChild: function (childSurface)
+        _refresh: function ()
         {
-            blocks.elements.Row.Super.prototype._layoutChild.call(this, childSurface);
+            var retVal = blocks.elements.Row.Super.prototype._refresh.call(this);
 
-            //if the new child has a previous column, put a resize handle between them
-            if (childSurface.index > 0) {
-                this.resizers.push(new blocks.elements.Resizer(this.children[childSurface.index - 1], childSurface));
+            //we only refresh the resizers if we refreshed the row
+            if (retVal) {
+                //next to refreshing this row, we also need to refresh the resizers
+                for (var i = 0; i < this.resizers.length; i++) {
+                    this.resizers[i]._refresh();
+                }
             }
 
-            return childSurface;
-        },
-        _isOuterTop: function ()
-        {
-            return this.element.prev().length == 0
-        },
-        _isOuterBottom: function ()
-        {
-            return this.element.next().length == 0
-        },
+            return retVal;
+        }
     });
 
 }]);

@@ -38,8 +38,11 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
+        //the horizontal center of this resizer, for easy recalculations
         center: undefined,
+        //a pointer to the left column-surface
         leftColumn: undefined,
+        //a pointer to the right column-surface
         rightColumn: undefined,
 
         //-----CONSTRUCTORS-----
@@ -50,15 +53,8 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
 
-            //re-call the refresh (it's also called from the super constructor)
-            //now we have set the left and right columns
-            this._refresh();
-
-            this.overlay = this._createOverlay();
+            this.overlay = this._createOverlay(UI.handleWrapper);
             this.overlay.addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
-            UI.handleWrapper.append(this.overlay);
-
-            this._redraw();
 
             // var _this = this;
             // this.overlay.on("mousedown.resizer", function (event)
@@ -119,21 +115,21 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         },
 
         //-----TODO UNCHECKED-----
-        update: function ()
-        {
-            var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2);
-            this.overlay.css("left", left);
-            var siblings = this.leftColumn.parent.resizers;
-            var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
-            for (var i = 0; i < siblings.length; i++) {
-                siblings[i].overlay.css("height", height);
-            }
-        },
-        updateHeight: function ()
-        {
-            var height = this.leftColumn.parent.element.height();
-            this.overlay.css("height", height);
-        },
+        // update: function ()
+        // {
+        //     var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2);
+        //     this.overlay.css("left", left);
+        //     var siblings = this.leftColumn.parent.resizers;
+        //     var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
+        //     for (var i = 0; i < siblings.length; i++) {
+        //         siblings[i].overlay.css("height", height);
+        //     }
+        // },
+        // updateHeight: function ()
+        // {
+        //     var height = this.leftColumn.parent.element.height();
+        //     this.overlay.css("height", height);
+        // },
 
         //-----PRIVATE METHODS-----
         _getType: function ()
@@ -146,20 +142,34 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         },
         _refresh: function ()
         {
-            if (this.leftColumn && this.rightColumn) {
-                //important: don't use the right of the columns, since they seem to substract the
-                //margin between two columns and don't return absolute bounds
-                this.left = this.rightColumn.left - blocks.elements.Resizer.HALF_WIDTH;
-                this.right = this.left + blocks.elements.Resizer.WIDTH;
+            var retVal = false;
 
-                this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
-                this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
+            if (this.needsRefresh) {
+                if (this.leftColumn && this.rightColumn) {
 
-                //extra variable for easy deciding sidies
-                this.center = this.left + blocks.elements.Resizer.HALF_WIDTH;
+                    //make sure both columns are in the latest state
+                    this.leftColumn._refresh();
+                    this.rightColumn._refresh();
+
+                    this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
+                    this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
+
+                    //important: don't use the right of the columns, since they seem to subtract the
+                    //margin between two columns and don't return absolute bounds
+                    this.left = this.rightColumn.left - blocks.elements.Resizer.HALF_WIDTH;
+                    this.right = this.left + blocks.elements.Resizer.WIDTH;
+
+                    //extra variable for easy deciding sidies
+                    this.center = this.left + blocks.elements.Resizer.HALF_WIDTH;
+                }
+
+                this._redrawOverlay();
+
+                retVal = true;
+                this.needsRefresh = false;
             }
 
-            this._redraw();
+            return retVal;
         },
     });
 }]);

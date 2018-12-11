@@ -58,7 +58,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         {
             blocks.elements.Column.Super.call(this, parentSurface, element);
 
-            this._updateColumnDimensions();
+            this._extractColumnDimensions();
         },
 
         //-----PUBLIC METHODS-----
@@ -84,34 +84,34 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
 
         //-----TODO UNCHECKED-----
-        // Override
-        getElementAtSide: function (side)
-        {
-            if (side == Constants.SIDE.LEFT) {
-                return this.getPrevious();
-            }
-            else if (side == Constants.SIDE.RIGHT) {
-                return this.getNext();
-            }
-            else {
-                return null;
-            }
-        },
-
-        // find all dropspots for an element
-        // is called for a block and returns all dropspots for this block and his parents.
-        calculateDropspots: function (side, dropspots)
-        {
-            if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT)) {
-                dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-            }
-
-            if (this.isOuter(side) && this.parent != null) {
-                dropspots = this.parent.calculateDropspots(side, dropspots);
-            }
-
-            return dropspots;
-        },
+        // // Override
+        // getElementAtSide: function (side)
+        // {
+        //     if (side == Constants.SIDE.LEFT) {
+        //         return this.getPrevious();
+        //     }
+        //     else if (side == Constants.SIDE.RIGHT) {
+        //         return this.getNext();
+        //     }
+        //     else {
+        //         return null;
+        //     }
+        // },
+        //
+        // // find all dropspots for an element
+        // // is called for a block and returns all dropspots for this block and his parents.
+        // calculateDropspots: function (side, dropspots)
+        // {
+        //     if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT)) {
+        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
+        //     }
+        //
+        //     if (this.isOuter(side) && this.parent != null) {
+        //         dropspots = this.parent.calculateDropspots(side, dropspots);
+        //     }
+        //
+        //     return dropspots;
+        // },
 
         //-----PRIVATE METHODS-----
         _getType: function ()
@@ -134,21 +134,13 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         {
             return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
-        // _isOuterLeft: function ()
-        // {
-        //     return this.element.prev().length == 0
-        // },
-        // _isOuterRight: function ()
-        // {
-        //     return this.element.next().length == 0
-        // },
         /**
          * Extracts the class width number from the element,
          * searching for a supplied clazz prefix eg. 'col-md-', 'col-xs-', etc
          * and extracting the size (xs, sm, md, lg) and the width ([1-12])
          * @private
          */
-        _updateColumnDimensions: function ()
+        _extractColumnDimensions: function ()
         {
             this.columnClass = undefined;
             this.columnSize = undefined;
@@ -171,7 +163,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
                 //test if we had more and log a warning
                 match = blocks.elements.Column.DIMS_REGEX.exec(classes);
                 if (match != null) {
-                    Logger.info('Found an element with multiple bootstrap classes, this shouldn\'t happen', this.element);
+                    Logger.error('Found an element with multiple bootstrap classes, this shouldn\'t happen', this.element);
                 }
             }
         },

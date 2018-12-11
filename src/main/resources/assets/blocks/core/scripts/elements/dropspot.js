@@ -57,7 +57,7 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
             this.anchor = anchor;
             this.side = side;
 
-            this.overlay = this._createOverlay();
+            this.overlay = this._createOverlay(UI.dropspotWrapper);
             this.overlay.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS);
             this.overlay.addClass(side.cssClass);
 
@@ -86,9 +86,6 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
 
             //start out hidden
             this.hide();
-
-            //add the dropspot to the dom
-            UI.dropspotWrapper.append(this.overlay);
 
         },
         // constructor: function (side, anchor, index)

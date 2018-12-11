@@ -60,14 +60,6 @@ base.plugin("blocks.core.elements.Property", ["base.core.Class", "messages.block
         {
             return false;
         },
-        _isOuterTop: function ()
-        {
-            return this.element.prev().length == 0;
-        },
-        _isOuterBottom: function ()
-        {
-            return this.element.next().length == 0;
-        },
     });
 
 }]);

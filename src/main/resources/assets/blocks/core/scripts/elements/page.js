@@ -39,28 +39,30 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         {
             blocks.elements.Page.Super.call(this, null, $("." + BlocksConstants.PAGE_CONTENT_CLASS));
 
-            //We manually call this for the top-level structure
-            //to boot the entire subtree-generation
-            //Note: it makes sense to reset the ID lookup table before booting this up
+            //Note: it makes sense to reset the ID lookup table before booting up the submodel
             blocks.elements.Surface.INDEX = {};
+
+            //We manually call this for the top-level structure (the page) to bootstrap the subtree-generation
             this._buildSubmodel();
+
+            //this._refresh(true);
         },
 
         //-----PUBLIC METHODS-----
 
         //-----TODO UNCHECKED-----
-        getLayoutContainer: function ()
-        {
-            var retVal = null;
-            for (var i = 0; i < this.children.length; i++) {
-                var child = this.children[i];
-                if (child.isContainer()) {
-                    retVal = child;
-                    break;
-                }
-            }
-            return retVal;
-        },
+        // getLayoutContainer: function ()
+        // {
+        //     var retVal = null;
+        //     for (var i = 0; i < this.children.length; i++) {
+        //         var child = this.children[i];
+        //         if (child.isContainer()) {
+        //             retVal = child;
+        //             break;
+        //         }
+        //     }
+        //     return retVal;
+        // },
 
         //-----PRIVATE METHODS-----
         _getType: function()

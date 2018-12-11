@@ -99,7 +99,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     //experience because you can always see 'where we go'. Smoothing the resulting direction
     //vector is a better solution than filtering out high variances
     //For a smooth experience, either set this to false or set a relatively high threshold below
-    var IGNORE_VARIANCE = true;
+    var IGNORE_VARIANCE = false;
 
     //this is the maximum variance (region [0..1]) that's tolerated
     //during mouse vector updates. All updates with larger variances

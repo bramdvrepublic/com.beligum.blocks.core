@@ -138,13 +138,12 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         index: undefined,
         element: undefined,
         children: undefined,
-        resizers: undefined,
-        totalBlocks: undefined,
-        canDrag: undefined,
         overlay: undefined,
-
         //this holds a data structure of parent-surfaces for each side
         layoutParents: undefined,
+
+        //optimization flag to decide if we really need to refresh
+        needsRefresh: undefined,
 
         top: 0,
         bottom: 0,
@@ -178,14 +177,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             this.parent = parentSurface;
             this.index = parentSurface ? parentSurface.children.length : 0;
             this.children = [];
-            this.resizers = [];
-            this.totalBlocks = null;
-            this.canDrag = false; // only for first level blocks inside a container
             this.overlay = null;
             this.layoutParents = {};
 
-            //fill the bounds variables
-            this._refresh();
+            //note: we explicitly don't call refresh() here because
+            //we want to build all siblings in the parent first and then
+            //call refresh on them (so we know if we're last or not)
+            //Instead, we set this 'dirty' flag
+            this.needsRefresh = true;
         },
 
         //-----PUBLIC METHODS-----
@@ -267,40 +266,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             return this.top <= y && y <= this.bottom && this.left <= x && x <= this.right;
         },
-        // /**
-        //  * Show the best dropspot for the supplied vector
-        //  *
-        //  * @param surface The surface that's being dragged around (and is hovering over this surface)
-        //  * @param vector Data structure with (x1, y1) and (x2, y2) properties
-        //  */
-        // showDropspot: function (surface, vector)
-        // {
-        //     var side = this._findIntersectingSide(vector);
-        //
-        //     //start out by removing the existing dropspots
-        //     this.resetDropspots();
-        //
-        //     if (side !== blocks.elements.Surface.SIDE.NONE) {
-        //         var dropspots = this._createDropspots(surface, side, null);
-        //         var idx = this._selectDropspot(vector, surface, side, dropspots);
-        //         if (idx >= 0) {
-        //             this.dropspot = dropspots[idx];
-        //             this.dropspot.show();
-        //         }
-        //     }
-        // },
-        //
-        // /**
-        //  * Reset all active dropspots of this surface
-        //  */
-        // resetDropspots: function ()
-        // {
-        //     // note: this will clear all dropspots in the DOM,
-        //     // even the ones not attached to this surface
-        //     UI.dropspotWrapper.empty();
-        //
-        //     this.dropspot = null;
-        // },
 
         /**
          * Create a visual preview of what would happen if this surface would be moved in the direction of
@@ -337,139 +302,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         moveTo: function (surface, side)
         {
             //NOOP
-        },
-
-        //-----TODO UNCHECKED-----
-        /**
-         * Returns true if this surface has no sibling on the specified side
-         * @param side
-         * @returns {*|boolean}
-         */
-        isOuter: function (side)
-        {
-            if (side == Constants.SIDE.TOP) {
-                return this._isOuterTop();
-            }
-            else if (side == Constants.SIDE.BOTTOM) {
-                return this._isOuterBottom();
-            }
-            else if (side == Constants.SIDE.LEFT) {
-                return this._isOuterLeft();
-            }
-            else if (side == Constants.SIDE.RIGHT) {
-                return this._isOuterRight();
-            }
-        },
-        /**
-         * Returns the element at specified side, general function for getNext, getPrevious
-         * @param side
-         * @returns {*}
-         */
-        getElementAtSide: function (side)
-        {
-            if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
-                return this.getPrevious();
-            }
-            else {
-                return this.getNext();
-            }
-        },
-        getNext: function ()
-        {
-            if (this.parent == null) {
-                return null;
-            }
-
-            if (this.index + 1 < this.parent.children.length) {
-                return this.parent.children[this.index + 1];
-            }
-            else {
-                return null;
-            }
-        },
-        getPrevious: function ()
-        {
-            if (this.parent == null) {
-                return null;
-            }
-            if (this.index - 1 >= 0) {
-                return this.parent.children[this.index - 1];
-            }
-            else {
-                return null;
-            }
-        },
-        // find most left and right column and use them to calculate the width of the parent
-        getFullWidth: function ()
-        {
-            var retVal = 0;
-
-            if (this.parent != null) {
-                var outerleft = this;
-                var outerright = this;
-                while (!this._isOuterLeft() && this.parent != null) {
-                    outerleft = this.parent;
-                }
-                while (!this._isOuterRight() && this.parent != null) {
-                    outerright = this.parent;
-                }
-                retVal = outerright.right - outerleft.left;
-
-            }
-            else {
-                retVal = this.right - this.left;
-            }
-
-            return retVal;
-        },
-        // find all dropspots for an element
-        // is called for a block and returns all dropspots for this block and his parents.
-        createAllDropspots: function ()
-        {
-            if (this.isBlock()) {
-                this.generateDropspots();
-            }
-            else {
-                if (this.children.length > 0) {
-                    for (var i = 0; i < this.children.length; i++) {
-                        this.children[i].createAllDropspots();
-                    }
-                }
-            }
-            if (this.container != null) {
-                this.container.createAllDropspots();
-            }
-        },
-        getBlocks: function ()
-        {
-            if (this.totalBlocks != null) return this.totalBlocks;
-            this.totalBlocks = 0;
-            for (var i = 0; i < this.children.length; i++) {
-                if (this.children[i].isBlock()) {
-                    this.totalBlocks += 1;
-                }
-                else {
-                    this.totalBlocks += this.children[i].getBlocks();
-                }
-            }
-            return this.totalBlocks;
-        },
-        // Container is a LayoutElement without a parent
-        getContainer: function ()
-        {
-            var parent = this.parent;
-            while (parent != null && !parent.isContainer()) {
-                parent = parent.parent;
-            }
-
-            return parent;
-        },
-        calculateDropspots: function (side, dropspots)
-        {
-            return [];
-        },
-        generateDropspots: function ()
-        {
+            Logger.error('Unimplemented DnD action called: move ' + this.type + ' to ' + side.name + ' of ' + surface.type);
         },
 
         //-----PRIVATE METHODS-----
@@ -503,24 +336,33 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //Optimization: no need to search for sub-children if this subclass can't have them
             if (this._canHaveChildren()) {
 
-                //if a specific element is supplied, use that one
-                this._findChildren(this.element);
+                //if a specific element is supplied, use that one as the parent context element
+                this._initChildren(this.element);
 
-                // Now iterate the layouted children again to build their sub-models
+                //before we start building the submodel, we need to make sure
+                //our bounds are initialized and correct, because the new children will sometimes
+                //need to 'pull open' their bounds to match their parent
+                this._refresh();
+
+                // Now we know the order of the children (eg. which one is first
+                // and last), we iterate the children again to refresh them
+                // and build their sub-models
                 for (var i = 0; i < this.children.length; i++) {
-                    //Note how we switch context to the child surface
+                    //Note how the recursion context switches to the child surface
+                    //Also note that the child will be refreshed first-thing
                     this.children[i]._buildSubmodel();
                 }
             }
         },
         /**
-         * Iterate the element width-first and populate the this.children array
+         * Iterate the element width-first and populate the children array
          *
          * @param parentElement
          * @private
          */
-        _findChildren: function (parentElement)
+        _initChildren: function (parentElement)
         {
+            //note: children() does not return text nodes
             var childElements = parentElement.children();
 
             // Main idea is to iterate width-first instead of depth-first,
@@ -530,15 +372,17 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
                 var childElement = $(childElements[i]);
 
-                //Note: if we find an acceptable child, we stop recursion,
-                //because we iterate width-first
+                //Note: if we find an acceptable child,
+                // we won't dig deeper because we iterate width-first
                 if (this._isAcceptableChild(childElement)) {
-                    this.children.push(this._layoutChild(this._newChildInstance(childElement)));
+                    this.children.push(this._newChildInstance(childElement));
+                    this._needsRefresh();
                 }
                 // This recursion allows grandchildren to be part of
-                // the same context (eg. we support in-between divs)
+                // the same parent-element context
+                // (eg. because of this, we support in-between divs)
                 else {
-                    this._findChildren(childElement);
+                    this._initChildren(childElement);
                 }
             }
         },
@@ -572,29 +416,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return false;
         },
         /**
-         * Adds a new child surface to this parent.
-         * To be overloaded by subclasses for extra initializing.
-         *
-         * @param childSurface The surface to add to this parent
-         * @returns The child surface for chaining
-         * @protected
-         */
-        _layoutChild: function (childSurface)
-        {
-            switch (this._getChildOrientation()) {
-                case blocks.elements.Surface.ORIENTATION.VERTICAL:
-                    this._layoutChildVertically(childSurface);
-                    break;
-                case blocks.elements.Surface.ORIENTATION.HORIZONTAL:
-                    this._layoutChildHorizontally(childSurface);
-                    break;
-            }
-
-            //for chaining
-            return childSurface;
-        },
-        /**
-         * Returns whether this children in this surface are layouted
+         * Returns whether the children in this surface are layouted
          * horizontally, vertically or have no specific orientation.
          *
          * @returns {number}
@@ -605,55 +427,87 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return blocks.elements.Surface.ORIENTATION.NONE;
         },
         /**
-         * Adds a child to this vertical-oriented parent surface
+         * Initializes the layout parents data structure. It is used to
+         * make this surface fit nicely with the bounds of the parent and to
+         * easily walk surfaces to show (and eliminate) possible dropspots.
          *
-         * @param childSurface
          * @protected
          */
-        _layoutChildVertically: function (childSurface)
+        _initLayoutParents: function ()
         {
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
+            //start out with a fresh structure
+            this.layoutParents = {};
 
-            if (childSurface.index == 0) {
-                childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
+            //we can't have layout parents of we don't have a parent
+            if (this.parent) {
+                switch (this.parent._getChildOrientation()) {
+                    case blocks.elements.Surface.ORIENTATION.VERTICAL:
+                        this._layoutVertically();
+                        break;
+                    case blocks.elements.Surface.ORIENTATION.HORIZONTAL:
+                        this._layoutHorizontally();
+                        break;
+                }
+            }
+        },
+        /**
+         * Adds a child to this vertical-oriented parent surface
+         *
+         * @param surface
+         * @protected
+         */
+        _layoutVertically: function ()
+        {
+            this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this.parent;
+            this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
+
+            if (this.index === 0) {
+                this.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this.parent;
             }
 
-            // We should only sync the bounds of the last child,
-            // but every added child will be last, so we'll just sync now
-            // and revert the bounds of the previous child below
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
-            if (childSurface.index > 0) {
-                var previousChild = this.children[childSurface.index - 1];
-                previousChild.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = null;
-                previousChild._refresh();
+            if (this.index === this.parent.children.length - 1) {
+                this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this.parent;
             }
 
-            childSurface._refresh();
+            // // We should only sync the bounds of the last child,
+            // // but every added child will be last, so we'll just sync now
+            // // and revert the bounds of the previous child below
+            // this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this.parent;
+            // if (this.index > 0) {
+            //     var previousSibling = this.parent.children[this.index - 1];
+            //     previousSibling.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = null;
+            //     //previousSibling._refresh();
+            // }
+            //
+            // // this._refresh();
         },
         /**
          * Adds a child to this horizontal-oriented parent surface
-         * @param childSurface
+         * @param surface
          * @protected
          */
-        _layoutChildHorizontally: function (childSurface)
+        _layoutHorizontally: function ()
         {
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this;
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this;
+            this.layoutParents[blocks.elements.Surface.SIDE.TOP.id] = this.parent;
+            this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this.parent;
 
-            if (childSurface.index == 0) {
-                childSurface.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this;
+            if (this.index === 0) {
+                this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id] = this.parent;
             }
 
-            //See comments above in _layoutChildVertically()
-            childSurface.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this;
-            if (childSurface.index > 0) {
-                var previousChild = this.children[childSurface.index - 1];
-                previousChild.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = null;
-                previousChild._refresh();
+            if (this.index === this.parent.children.length - 1) {
+                this.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this.parent;
             }
 
-            childSurface._refresh();
+            // //See comments above in _layoutChildVertically()
+            // this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
+            // if (this.index > 0) {
+            //     var previousSibling = this.parent.children[this.index - 1];
+            //     previousSibling.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = null;
+            //     //previousSibling._refresh();
+            // }
+            //
+            // // this._refresh();
         },
         /**
          * Uniform superclass implementation for all overlay elements.
@@ -661,15 +515,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * @returns {jQuery}
          * @private
          */
-        _createOverlay: function ()
+        _createOverlay: function (containerElement)
         {
             var retVal = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
 
             //this will allow us to do a reverse lookup starting from the element
             retVal.attr(blocks.elements.Surface.INDEX_ATTR, this.id);
 
-            if (this.canDrag) {
-                retVal.addClass(BlocksConstants.BLOCK_DRAGGABLE_CLASS);
+            if (containerElement) {
+                containerElement.append(retVal);
             }
 
             return retVal;
@@ -682,65 +536,91 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @private
          */
-        _refresh: function (deep)
+        _refresh: function (deep, force)
         {
-            //this allows us to call this constructor with no arguments
-            if (this.element) {
+            //this will return true if we really refreshed
+            var retVal = false;
 
-                //note: these are the core dimension translations of an element to
-                //a surface. Eg. we don't include margins.
-                var topLeft = this.element.offset();
-                var width = this.element.outerWidth();
-                var height = this.element.outerHeight();
+            if (this.needsRefresh || force) {
 
-                this.top = topLeft.top;
-                this.right = topLeft.left + width;
-                this.bottom = topLeft.top + height;
-                this.left = topLeft.left;
+                retVal = true;
+                this.needsRefresh = false;
 
-                this.realTop = this.top;
-                this.realRight = this.right;
-                this.realBottom = this.bottom;
-                this.realLeft = this.left;
+                //this allows us to call the constructor with no arguments
+                if (this.element) {
 
-                // if we have a parent layout element, it looks a lot nicer (more intuitive)
-                // to sync the side of this surface to the side of that parent
-                // (see _layoutChildVertically() and _layoutChildHorizontally())
-                if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
-                    this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
+                    //note: these are the core dimension translations of an element to
+                    //a surface. Eg. we don't include margins.
+                    var topLeft = this.element.offset();
+                    var width = this.element.outerWidth();
+                    var height = this.element.outerHeight();
+
+                    this.top = topLeft.top;
+                    this.right = topLeft.left + width;
+                    this.bottom = topLeft.top + height;
+                    this.left = topLeft.left;
+
+                    //backup the bounds before they are (possibly) altered below
+                    this.realTop = this.top;
+                    this.realRight = this.right;
+                    this.realBottom = this.bottom;
+                    this.realLeft = this.left;
+
+                    this._initLayoutParents();
+
+                    // if we have a parent layout element, it looks a lot nicer (more intuitive)
+                    // to sync the side of this surface to the side of that parent
+                    // (see _layoutChildVertically() and _layoutChildHorizontally())
+                    if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
+                        this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
+                    }
+                    if (this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id]) {
+                        this.right = this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id].right;
+                    }
+                    if (this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id]) {
+                        this.bottom = this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id].bottom;
+                    }
+                    if (this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id]) {
+                        this.left = this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id].left;
+                    }
                 }
-                if (this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id]) {
-                    this.right = this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id].right;
-                }
-                if (this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id]) {
-                    this.bottom = this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id].bottom;
-                }
-                if (this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id]) {
-                    this.left = this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id].left;
-                }
+
+                //now we have updated the bounds, it's time to redraw the overlay element
+                this._redrawOverlay();
             }
 
-            this._redraw();
-
+            //If a deep refresh is requested, refresh the children too
+            //Note that we keep this apart from the needsRefresh
             if (deep) {
                 for (var i = 0; i < this.children.length; i++) {
-                    this.children[i]._refresh(deep);
+                    this.children[i]._refresh(deep, force);
                 }
             }
+
+            return retVal;
+        },
+        /**
+         * We turned this into a function for better maintenance.
+         * @private
+         */
+        _needsRefresh: function()
+        {
+            this.needsRefresh = true;
         },
         /**
          * Redraws the UI surface if we have one
          * @private
          */
-        _redraw: function ()
+        _redrawOverlay: function ()
         {
             if (this.overlay) {
 
                 var width = this.width();
                 var height = this.height();
 
-                //the surface is visible if it either has no element attached or it's attached element is visible
-                //and the surface is larger than zero
+                //the surface is visible if one of these is true:
+                // - it either has no element attached at all (eg. a resizer)
+                // - it's attached element is visible and the area is larger than zero
                 if ((!this.element || this.element.is(':visible')) && width * height > 0) {
                     this.overlay.css("top", this.top + "px");
                     this.overlay.css("left", this.left + "px");
@@ -753,74 +633,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 }
             }
         },
-        // /**
-        //  * Calculates the top value for the constructor of the supplied element
-        //  */
-        // _calculateTop: function (element)
-        // {
-        //     return element.offset().top;
-        // },
-        // /**
-        //  * Calculates the bottom value for the constructor of the supplied element
-        //  */
-        // _calculateBottom: function (element)
-        // {
-        //     return element.offset().top + element.outerHeight();
-        // },
-        // /**
-        //  * Calculates the left value for the constructor of the supplied element
-        //  */
-        // _calculateLeft: function (element)
-        // {
-        //     return element.offset().left;
-        // },
-        // /**
-        //  * Calculates the right value for the constructor of the supplied element
-        //  */
-        // _calculateRight: function (element)
-        // {
-        //     return element.offset().left + element.outerWidth();
-        // },
-        // /**
-        //  * Returns true if this block has no sibling on his left
-        //  * (to be overridden by subclasses)
-        //  * @returns {boolean}
-        //  * @private
-        //  */
-        // _isOuterLeft: function ()
-        // {
-        //     return true;
-        // },
-        // /**
-        //  * Returns true if this block has no sibling on his right
-        //  * (to be overridden by subclasses)
-        //  * @returns {boolean}
-        //  * @private
-        //  */
-        // _isOuterRight: function ()
-        // {
-        //     return true;
-        // },
-        // /**
-        //  * Returns true if this block has no sibling on his top
-        //  * (to be overridden by subclasses)
-        //  * @returns {boolean}
-        //  * @private
-        //  */
-        // _isOuterTop: function ()
-        // {
-        //     return true;
-        // },
-        // /**
-        //  * Returns true if this block has no sibling on his bottom
-        //  * (to be overridden by subclasses)
-        //  * @returns {boolean}
-        //  * @private
-        //  */
-        // _isOuterBottom: function ()
-        // {
-        //     return true;
-        // },
         /**
          * Calculates the side of this surface that intersects with the supplied vector.
          * Note that this only returns one side, even if two sides would intersect.
@@ -979,6 +791,295 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                     return this.bottom - this.top;
             }
         },
+        /**
+         * Adds a new child at the indicated index and re-layouts all children.
+         *
+         * @param surface
+         * @param index
+         * @private
+         */
+        _addChild: function (surface, index)
+        {
+            //remove zero elements from the specified index, then add surface at that index
+            this.children.splice(index, 0, surface);
+
+            //sync the relationship-variables
+            surface.index = index;
+            surface.parent = this;
+
+            //add one to all next children to keep the index in sync
+            for (var i = index + 1; i < this.children.length; i++) {
+                this.children[i].index++;
+            }
+
+            //force a deep refresh
+            this._refresh(true, true);
+        },
+        /**
+         * Removed the child at the indicated index and re-layouts all children.
+         *
+         * @param surface
+         * @private
+         */
+        _removeChild: function (surface)
+        {
+            // This should always be true
+            // Note: JS object-equality checks by reference
+            if (this.children[surface.index] === surface) {
+
+                //remove one child at the specified index
+                this.children.splice(surface.index, 1);
+
+                //subtract one from all next children to keep the index in sync
+                for (var i = surface.index; i < this.children.length; i++) {
+                    this.children[i].index--;
+                }
+
+                //'detach' the child surface from the parent
+                surface.index = -1;
+                surface.parent = null;
+
+                //force a deep refresh
+                this._refresh(true, true);
+            }
+            else {
+                Logger.error('Encountered a situation where a child surface is out of sync with its parent, this shouldn\'t happen');
+            }
+        },
+        //-----TODO UNCHECKED-----
+        // /**
+        //  * Returns true if this surface has no sibling on the specified side
+        //  * @param side
+        //  * @returns {*|boolean}
+        //  */
+        // isOuter: function (side)
+        // {
+        //     if (side == Constants.SIDE.TOP) {
+        //         return this._isOuterTop();
+        //     }
+        //     else if (side == Constants.SIDE.BOTTOM) {
+        //         return this._isOuterBottom();
+        //     }
+        //     else if (side == Constants.SIDE.LEFT) {
+        //         return this._isOuterLeft();
+        //     }
+        //     else if (side == Constants.SIDE.RIGHT) {
+        //         return this._isOuterRight();
+        //     }
+        // },
+        // /**
+        //  * Returns the element at specified side, general function for getNext, getPrevious
+        //  * @param side
+        //  * @returns {*}
+        //  */
+        // getElementAtSide: function (side)
+        // {
+        //     if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
+        //         return this.getPrevious();
+        //     }
+        //     else {
+        //         return this.getNext();
+        //     }
+        // },
+        // getNext: function ()
+        // {
+        //     if (this.parent == null) {
+        //         return null;
+        //     }
+        //
+        //     if (this.index + 1 < this.parent.children.length) {
+        //         return this.parent.children[this.index + 1];
+        //     }
+        //     else {
+        //         return null;
+        //     }
+        // },
+        // getPrevious: function ()
+        // {
+        //     if (this.parent == null) {
+        //         return null;
+        //     }
+        //     if (this.index - 1 >= 0) {
+        //         return this.parent.children[this.index - 1];
+        //     }
+        //     else {
+        //         return null;
+        //     }
+        // },
+        // // find most left and right column and use them to calculate the width of the parent
+        // getFullWidth: function ()
+        // {
+        //     var retVal = 0;
+        //
+        //     if (this.parent != null) {
+        //         var outerleft = this;
+        //         var outerright = this;
+        //         while (!this._isOuterLeft() && this.parent != null) {
+        //             outerleft = this.parent;
+        //         }
+        //         while (!this._isOuterRight() && this.parent != null) {
+        //             outerright = this.parent;
+        //         }
+        //         retVal = outerright.right - outerleft.left;
+        //
+        //     }
+        //     else {
+        //         retVal = this.right - this.left;
+        //     }
+        //
+        //     return retVal;
+        // },
+        // // find all dropspots for an element
+        // // is called for a block and returns all dropspots for this block and his parents.
+        // createAllDropspots: function ()
+        // {
+        //     if (this.isBlock()) {
+        //         this.generateDropspots();
+        //     }
+        //     else {
+        //         if (this.children.length > 0) {
+        //             for (var i = 0; i < this.children.length; i++) {
+        //                 this.children[i].createAllDropspots();
+        //             }
+        //         }
+        //     }
+        //     if (this.container != null) {
+        //         this.container.createAllDropspots();
+        //     }
+        // },
+        // getBlocks: function ()
+        // {
+        //     if (this.totalBlocks != null) return this.totalBlocks;
+        //     this.totalBlocks = 0;
+        //     for (var i = 0; i < this.children.length; i++) {
+        //         if (this.children[i].isBlock()) {
+        //             this.totalBlocks += 1;
+        //         }
+        //         else {
+        //             this.totalBlocks += this.children[i].getBlocks();
+        //         }
+        //     }
+        //     return this.totalBlocks;
+        // },
+        // // Container is a LayoutElement without a parent
+        // getContainer: function ()
+        // {
+        //     var parent = this.parent;
+        //     while (parent != null && !parent.isContainer()) {
+        //         parent = parent.parent;
+        //     }
+        //
+        //     return parent;
+        // },
+        // calculateDropspots: function (side, dropspots)
+        // {
+        //     return [];
+        // },
+        // generateDropspots: function ()
+        // {
+        // },
+        // /**
+        //  * Show the best dropspot for the supplied vector
+        //  *
+        //  * @param surface The surface that's being dragged around (and is hovering over this surface)
+        //  * @param vector Data structure with (x1, y1) and (x2, y2) properties
+        //  */
+        // showDropspot: function (surface, vector)
+        // {
+        //     var side = this._findIntersectingSide(vector);
+        //
+        //     //start out by removing the existing dropspots
+        //     this.resetDropspots();
+        //
+        //     if (side !== blocks.elements.Surface.SIDE.NONE) {
+        //         var dropspots = this._createDropspots(surface, side, null);
+        //         var idx = this._selectDropspot(vector, surface, side, dropspots);
+        //         if (idx >= 0) {
+        //             this.dropspot = dropspots[idx];
+        //             this.dropspot.show();
+        //         }
+        //     }
+        // },
+        //
+        // /**
+        //  * Reset all active dropspots of this surface
+        //  */
+        // resetDropspots: function ()
+        // {
+        //     // note: this will clear all dropspots in the DOM,
+        //     // even the ones not attached to this surface
+        //     UI.dropspotWrapper.empty();
+        //
+        //     this.dropspot = null;
+        // },
+        // /**
+        //  * Calculates the top value for the constructor of the supplied element
+        //  */
+        // _calculateTop: function (element)
+        // {
+        //     return element.offset().top;
+        // },
+        // /**
+        //  * Calculates the bottom value for the constructor of the supplied element
+        //  */
+        // _calculateBottom: function (element)
+        // {
+        //     return element.offset().top + element.outerHeight();
+        // },
+        // /**
+        //  * Calculates the left value for the constructor of the supplied element
+        //  */
+        // _calculateLeft: function (element)
+        // {
+        //     return element.offset().left;
+        // },
+        // /**
+        //  * Calculates the right value for the constructor of the supplied element
+        //  */
+        // _calculateRight: function (element)
+        // {
+        //     return element.offset().left + element.outerWidth();
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his left
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterLeft: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his right
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterRight: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his top
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterTop: function ()
+        // {
+        //     return true;
+        // },
+        // /**
+        //  * Returns true if this block has no sibling on his bottom
+        //  * (to be overridden by subclasses)
+        //  * @returns {boolean}
+        //  * @private
+        //  */
+        // _isOuterBottom: function ()
+        // {
+        //     return true;
+        // },
     });
 
 }]);
