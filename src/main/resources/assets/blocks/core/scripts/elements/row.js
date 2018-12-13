@@ -18,7 +18,7 @@
  * A row inside a column or a container
  * Can only contain columns
  */
-base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", "messages.blocks.core", function (Class, Constants, DOM, BlocksMessages)
+base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", "constants.blocks.core", "messages.blocks.core", function (Class, Constants, DOM, BlocksConstants, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -28,6 +28,12 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
     blocks.elements.Row = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
+        STATIC: {
+            createElement: function (tagName)
+            {
+                return $('<' + (tagName ? tagName : blocks.elements.Surface.DEFAULT_TAG) + ' class="' + BlocksConstants.ROW_CLASS + '" />');
+            },
+        },
 
         //-----CONSTANTS-----
 
@@ -95,25 +101,20 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         },
         _isAcceptableChild: function (element)
         {
-            return DOM.isColumn(element);
+            return blocks.elements.Surface.isColumn(element);
         },
         _getChildOrientation: function ()
         {
             return blocks.elements.Surface.ORIENTATION.HORIZONTAL;
         },
-        _refresh: function ()
+        _refresh: function (deep)
         {
-            var retVal = blocks.elements.Row.Super.prototype._refresh.call(this);
+            blocks.elements.Row.Super.prototype._refresh.call(this, deep);
 
-            //we only refresh the resizers if we refreshed the row
-            if (retVal) {
-                //next to refreshing this row, we also need to refresh the resizers
-                for (var i = 0; i < this.resizers.length; i++) {
-                    this.resizers[i]._refresh();
-                }
+            //next to refreshing this row, we also need to refresh the resizers
+            for (var i = 0; i < this.resizers.length; i++) {
+                this.resizers[i]._refresh(deep);
             }
-
-            return retVal;
         }
     });
 

@@ -79,7 +79,7 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         },
         _isAcceptableChild: function(element)
         {
-            return element.hasClass('container');
+            return blocks.elements.Surface.isContainer(element);
         },
     });
 }]);

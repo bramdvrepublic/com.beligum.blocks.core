@@ -103,13 +103,11 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
                     this.leftColumn.setColumnWidth(newLeftCols);
                     this.rightColumn.setColumnWidth(newRightCols);
 
-                    //Note that we need to do a deep refresh to also refresh the blocks in this column
+                    //Force a deep refresh on the entire page because the height of the entire page can change when
+                    //a columns gets resized.
                     //Also note that this needs to happen _after_ both updates are done, because the one pushes
                     //forward and the other needs to make room for the first to change width
-                    this.leftColumn._refresh(true);
-                    this.rightColumn._refresh(true);
-
-                    this._refresh();
+                    this.leftColumn._getParent(blocks.elements.Page)._refresh(true);
                 }
             }
         },
@@ -140,36 +138,30 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         {
             return BlocksMessages.surfaceResizerName;
         },
-        _refresh: function ()
+        _refresh: function (deep)
         {
-            var retVal = false;
+            if (this.leftColumn && this.rightColumn) {
 
-            if (this.needsRefresh) {
-                if (this.leftColumn && this.rightColumn) {
+                //this is a rare situation where a parent surface (this resizer is a child of the parent row,
+                // so is this resizer, so it's actually a sibling of the columns, but hey...)
+                // depends on the bounds of it's children and not the other way around, so make sure
+                // they are refreshed before we re-build the bounds of this resizer
+                this.leftColumn._refresh();
+                this.rightColumn._refresh();
 
-                    //make sure both columns are in the latest state
-                    this.leftColumn._refresh();
-                    this.rightColumn._refresh();
+                this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
+                this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
 
-                    this.top = Math.min(this.leftColumn.top, this.rightColumn.top);
-                    this.bottom = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
+                //important: don't use the right of the columns, since they seem to subtract the
+                //margin between two columns and don't return absolute bounds
+                this.left = this.rightColumn.left - blocks.elements.Resizer.HALF_WIDTH;
+                this.right = this.left + blocks.elements.Resizer.WIDTH;
 
-                    //important: don't use the right of the columns, since they seem to subtract the
-                    //margin between two columns and don't return absolute bounds
-                    this.left = this.rightColumn.left - blocks.elements.Resizer.HALF_WIDTH;
-                    this.right = this.left + blocks.elements.Resizer.WIDTH;
-
-                    //extra variable for easy deciding sidies
-                    this.center = this.left + blocks.elements.Resizer.HALF_WIDTH;
-                }
-
-                this._redrawOverlay();
-
-                retVal = true;
-                this.needsRefresh = false;
+                //extra variable for easy deciding sidies
+                this.center = this.left + blocks.elements.Resizer.HALF_WIDTH;
             }
 
-            return retVal;
+            this._redrawOverlay();
         },
     });
 }]);

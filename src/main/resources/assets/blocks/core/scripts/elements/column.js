@@ -26,7 +26,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
     blocks.elements = blocks.elements || {};
 
     //----CLASSES-----
-    var classPrefix = 'col';
+    var classPrefix = 'col-';
     blocks.elements.Column = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
@@ -39,14 +39,30 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             // \d = digit
             // g: global
             // i: ignore case
-            DIMS_REGEX: new RegExp('\\b' + classPrefix + '-([^-]*)-(\\d+)', 'gi'),
+            DIMS_REGEX: new RegExp('\\b' + classPrefix + '([^-]*)-(\\d+)', 'gi'),
 
+            /**
+             * Create the correct class name for a column with the specified size and width
+             *
+             * @param columnSize
+             * @param columnWidth
+             * @returns {string}
+             * @private
+             */
+            _createClass: function (columnSize, columnWidth)
+            {
+                return blocks.elements.Column.CLASS_PREFIX + columnSize + '-' + columnWidth;
+            },
+            createElement: function (columnSize, columnWidth, tagName)
+            {
+                return $('<' + (tagName ? tagName : blocks.elements.Surface.DEFAULT_TAG) + ' class="' + blocks.elements.Column._createClass(columnSize, columnWidth) + '" />');
+            },
         },
 
         //-----CONSTANTS-----
 
         //-----VARIABLES-----
-        //this will be filled with the full class
+        //this will be filled with the full class, eg. col-md-4
         columnClass: undefined,
         //this will be filled with xs, sm, md or lg
         columnSize: undefined,
@@ -73,7 +89,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             //make sure it's in the right range
             colWidth = Math.max(Math.min(colWidth, 12), 1);
 
-            var newClass = blocks.elements.Column.CLASS_PREFIX + '-' + this.columnSize + '-' + colWidth;
+            var newClass = blocks.elements.Column.CLASS_PREFIX + this.columnSize + '-' + colWidth;
 
             this.element.removeClass(this.columnClass);
             this.element.addClass(newClass);
@@ -124,11 +140,11 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         },
         _newChildInstance: function (element)
         {
-            return new blocks.elements.Block(this, element);
+            return blocks.elements.Surface.isRow(element) ? new blocks.elements.Row(this, element) : new blocks.elements.Block(this, element);
         },
         _isAcceptableChild: function (element)
         {
-            return DOM.isBlock(element);
+            return blocks.elements.Surface.isRow(element) || blocks.elements.Surface.isBlock(element);
         },
         _getChildOrientation: function ()
         {

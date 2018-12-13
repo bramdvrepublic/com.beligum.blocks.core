@@ -81,6 +81,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             TOP_CLASS: 'top',
             BOTTOM_CLASS: 'bottom',
 
+            //when we create new elements and don't specify the tag name,
+            //this is the tag we'll use by default
+            DEFAULT_TAG: 'div',
+
             ORIENTATION: {
                 NONE: _ORIENTATION_NONE,
                 VERTICAL: _ORIENTATION_VERTICAL,
@@ -111,6 +115,47 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
                 return retVal;
             },
+
+            /**
+             * Returns true of the element is a bootstrap container
+             */
+            isContainer: function (element)
+            {
+                return element.hasClass(BlocksConstants.CONTAINER_CLASS);
+            },
+
+            /**
+             * Returns true of the element is a bootstrap row
+             */
+            isRow: function (element)
+            {
+                return element.hasClass(BlocksConstants.ROW_CLASS);
+            },
+
+            /**
+             * Returns true of the element is a bootstrap column
+             */
+            isColumn: function (element)
+            {
+                return element.is('[class*="' + blocks.elements.Column.CLASS_PREFIX + '"]');
+            },
+
+            /**
+             * Returns true of the element is a template block
+             */
+            isBlock: function (element)
+            {
+                return element[0].tagName.indexOf("-") > 0;
+            },
+
+            /**
+             * Returns true of the element is a property element
+             */
+            isProperty: function (element)
+            {
+                return element.hasAttribute("property") || element.hasAttribute("data-property");
+            },
+
             /**
              * Reset all dropspots (of all surfaces)
              */
@@ -118,6 +163,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             {
                 UI.dropspotWrapper.empty();
             },
+
             /**
              * Returns the currently selected dropspot
              */
@@ -141,9 +187,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         overlay: undefined,
         //this holds a data structure of parent-surfaces for each side
         layoutParents: undefined,
-
-        //optimization flag to decide if we really need to refresh
-        needsRefresh: undefined,
 
         top: 0,
         bottom: 0,
@@ -183,8 +226,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //note: we explicitly don't call refresh() here because
             //we want to build all siblings in the parent first and then
             //call refresh on them (so we know if we're last or not)
-            //Instead, we set this 'dirty' flag
-            this.needsRefresh = true;
         },
 
         //-----PUBLIC METHODS-----
@@ -327,6 +368,36 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return BlocksMessages.surfaceName;
         },
         /**
+         * Returns the first parent of this surface with the specified class or null if it couldn't be found.
+         * @private
+         */
+        _getParent: function (parentClass)
+        {
+            var retVal = this;
+
+            while (retVal && !(retVal instanceof parentClass)) {
+                retVal = retVal.parent;
+            }
+
+            return retVal;
+        },
+        /**
+         * Uniformly returns the native tag name of this surface if it has a valid element or null if it doesn't.
+         *
+         * @returns {*}
+         * @private
+         */
+        _getTagName: function()
+        {
+            var retVal = null;
+
+            if (this.element && this.element.length > 0) {
+                retVal = this.element[0].tagName;
+            }
+
+            return retVal;
+        },
+        /**
          * Build the sub-surface-model for this surface
          *
          * @private
@@ -376,7 +447,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 // we won't dig deeper because we iterate width-first
                 if (this._isAcceptableChild(childElement)) {
                     this.children.push(this._newChildInstance(childElement));
-                    this._needsRefresh();
                 }
                 // This recursion allows grandchildren to be part of
                 // the same parent-element context
@@ -536,76 +606,56 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @private
          */
-        _refresh: function (deep, force)
+        _refresh: function (deep)
         {
-            //this will return true if we really refreshed
-            var retVal = false;
+            //this allows us to call the constructor with no arguments
+            if (this.element) {
 
-            if (this.needsRefresh || force) {
+                //note: these are the core dimension translations of an element to
+                //a surface. Eg. we don't include margins.
+                var topLeft = this.element.offset();
+                var width = this.element.outerWidth();
+                var height = this.element.outerHeight();
 
-                retVal = true;
-                this.needsRefresh = false;
+                this.top = topLeft.top;
+                this.right = topLeft.left + width;
+                this.bottom = topLeft.top + height;
+                this.left = topLeft.left;
 
-                //this allows us to call the constructor with no arguments
-                if (this.element) {
+                //backup the bounds before they are (possibly) altered below
+                this.realTop = this.top;
+                this.realRight = this.right;
+                this.realBottom = this.bottom;
+                this.realLeft = this.left;
 
-                    //note: these are the core dimension translations of an element to
-                    //a surface. Eg. we don't include margins.
-                    var topLeft = this.element.offset();
-                    var width = this.element.outerWidth();
-                    var height = this.element.outerHeight();
+                this._initLayoutParents();
 
-                    this.top = topLeft.top;
-                    this.right = topLeft.left + width;
-                    this.bottom = topLeft.top + height;
-                    this.left = topLeft.left;
-
-                    //backup the bounds before they are (possibly) altered below
-                    this.realTop = this.top;
-                    this.realRight = this.right;
-                    this.realBottom = this.bottom;
-                    this.realLeft = this.left;
-
-                    this._initLayoutParents();
-
-                    // if we have a parent layout element, it looks a lot nicer (more intuitive)
-                    // to sync the side of this surface to the side of that parent
-                    // (see _layoutChildVertically() and _layoutChildHorizontally())
-                    if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
-                        this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
-                    }
-                    if (this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id]) {
-                        this.right = this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id].right;
-                    }
-                    if (this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id]) {
-                        this.bottom = this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id].bottom;
-                    }
-                    if (this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id]) {
-                        this.left = this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id].left;
-                    }
+                // if we have a parent layout element, it looks a lot nicer (more intuitive)
+                // to sync the side of this surface to the side of that parent
+                // (see _layoutChildVertically() and _layoutChildHorizontally())
+                if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
+                    this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
                 }
-
-                //now we have updated the bounds, it's time to redraw the overlay element
-                this._redrawOverlay();
+                if (this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id]) {
+                    this.right = this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id].right;
+                }
+                if (this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id]) {
+                    this.bottom = this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id].bottom;
+                }
+                if (this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id]) {
+                    this.left = this.layoutParents[blocks.elements.Surface.SIDE.LEFT.id].left;
+                }
             }
 
-            //If a deep refresh is requested, refresh the children too
-            //Note that we keep this apart from the needsRefresh
+            //now we have updated the bounds, it's time to redraw the overlay element
+            this._redrawOverlay();
+
+            //If a deep refresh is requested, force a refresh on the children too
             if (deep) {
                 for (var i = 0; i < this.children.length; i++) {
-                    this.children[i]._refresh(deep, force);
+                    this.children[i]._refresh(deep);
                 }
             }
-
-            return retVal;
-        },
-        /**
-         * We turned this into a function for better maintenance.
-         * @private
-         */
-        _needsRefresh: function()
-        {
-            this.needsRefresh = true;
         },
         /**
          * Redraws the UI surface if we have one
@@ -792,31 +842,50 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             }
         },
         /**
-         * Adds a new child at the indicated index and re-layouts all children.
+         * Adds a new child at the indicated index (defaults to appending).
+         * Note: this doesn't perform a refresh!
          *
          * @param surface
          * @param index
+         * @param before
          * @private
          */
         _addChild: function (surface, index)
         {
-            //remove zero elements from the specified index, then add surface at that index
-            this.children.splice(index, 0, surface);
+            //if we don't supply an index, we default to appending
+            index = Commons.isUnset(index) ? this.children.length : index;
+
+            //if we have children, we need to decide where to put the new surface
+            //also the index should point to a valid existing child, otherwise we just append
+            if (this.children.length > 0 && this.children[index]) {
+
+                //we always add the child _before_ the element at the index,
+                //because we will push back all the others (see below)
+                this.children[index].element.before(surface.element);
+
+                //remove zero elements from the specified index, then add surface at that index
+                this.children.splice(index, 0, surface);
+
+                //add one to all next children to keep the index in sync
+                for (var i = index + 1; i < this.children.length; i++) {
+                    this.children[i].index++;
+                }
+            }
+            //if we don't have children, we can just append the new child
+            else {
+                this.element.append(surface.element);
+                this.children.push(surface);
+            }
 
             //sync the relationship-variables
             surface.index = index;
             surface.parent = this;
-
-            //add one to all next children to keep the index in sync
-            for (var i = index + 1; i < this.children.length; i++) {
-                this.children[i].index++;
-            }
-
-            //force a deep refresh
-            this._refresh(true, true);
         },
         /**
-         * Removed the child at the indicated index and re-layouts all children.
+         * Removed the supplied child surface from this surface
+         * (does nothing and logs an error if the supplied surface doesn't match the child of this parent).
+         * Note: this also detaches a possible element from the DOM.
+         * Note: this doesn't perform a refresh!
          *
          * @param surface
          * @private
@@ -839,13 +908,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 surface.index = -1;
                 surface.parent = null;
 
-                //force a deep refresh
-                this._refresh(true, true);
+                if (surface.element) {
+                    surface.element.detach();
+                }
             }
             else {
                 Logger.error('Encountered a situation where a child surface is out of sync with its parent, this shouldn\'t happen');
             }
         },
+
+
         //-----TODO UNCHECKED-----
         // /**
         //  * Returns true if this surface has no sibling on the specified side

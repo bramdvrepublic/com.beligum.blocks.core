@@ -74,7 +74,7 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         },
         _isAcceptableChild: function(element)
         {
-            return DOM.isRow(element);
+            return blocks.elements.Surface.isRow(element);
         },
         _getChildOrientation: function()
         {

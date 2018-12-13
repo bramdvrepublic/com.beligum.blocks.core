@@ -28,9 +28,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
     blocks.elements.Block = Class.create(blocks.elements.Surface, {
 
         //-----STATICS-----
-        STATIC: {
-
-        },
+        STATIC: {},
 
         //-----CONSTANTS-----
 
@@ -74,7 +72,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         },
 
         //-----PUBLIC METHODS-----
-        isNewBlock: function()
+        isNewBlock: function ()
         {
             return this.isNew;
         },
@@ -87,24 +85,14 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
          */
         moveTo: function (surface, side)
         {
-            // switch (side.id) {
-            //     case blocks.elements.Surface.SIDE.TOP.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.BOTTOM.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.LEFT.id:
-            //
-            //         break;
-            //     case blocks.elements.Surface.SIDE.RIGHT.id:
-            //
-            //         break;
-            // }
-
             Logger.info('moving ' + this.type + ' to ' + side.name + ' of ' + surface.type);
 
-            //we're moving this block to the side of another block
+            // If we're moving this block to the side of another block,
+            // we need to distinguish between:
+            // - top/down
+            //   Just move the source element before or after the target element
+            // - left/right
+            //   We need to introduce a new row instead of the target element and split it using two new columns
             if (surface.isBlock()) {
 
                 //detach the child from its parent
@@ -112,32 +100,103 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
-                        //note: this will move the element, not duplicate is
-                        this.element.insertBefore(surface.element);
 
                         surface.parent._addChild(this, surface.index);
 
                         break;
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
-                        //note: this will move the element, not duplicate is
-                        this.element.insertAfter(surface.element);
 
                         surface.parent._addChild(this, surface.index + 1);
 
                         break;
                     case blocks.elements.Surface.SIDE.LEFT.id:
-
-                        break;
                     case blocks.elements.Surface.SIDE.RIGHT.id:
+
+                        var parentRow = surface._getParent(blocks.elements.Row);
+                        var parentCol = surface._getParent(blocks.elements.Column);
+
+                        //first, we'll create a new row at the same place of the dropped block
+                        //and remove that block from it's parent
+                        var newRow = parentCol._newChildInstance(blocks.elements.Row.createElement(parentRow._getTagName()));
+                        surface.element.replaceWith(newRow.element);
+                        surface.parent._removeChild(surface);
+
+                        //create two equal columns in the new row and fill them with the old and new block
+                        var newColLeft = newRow._newChildInstance(blocks.elements.Column.createElement(parentCol.columnSize, 6, parentCol._getTagName()));
+                        newRow._addChild(newColLeft);
+                        var newColRight = newRow._newChildInstance(blocks.elements.Column.createElement(parentCol.columnSize, 6, parentCol._getTagName()));
+                        newRow._addChild(newColRight);
+
+                        if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
+                            newColLeft._addChild(surface);
+                            newColRight._addChild(this);
+                        }
+                        else {
+                            newColLeft._addChild(this);
+                            newColRight._addChild(surface);
+                        }
 
                         break;
                 }
             }
+            else if (surface.isColumn()) {
 
+                //detach the child from its parent
+                this.parent._removeChild(this);
+
+                switch (side.id) {
+                    case blocks.elements.Surface.SIDE.TOP.id:
+
+                        //TODO
+
+                        break;
+                    case blocks.elements.Surface.SIDE.BOTTOM.id:
+
+                        //TODO
+
+                        break;
+                    case blocks.elements.Surface.SIDE.LEFT.id:
+
+                        //TODO
+
+                        break;
+                    case blocks.elements.Surface.SIDE.RIGHT.id:
+
+                        var row = surface._getParent(blocks.elements.Row);
+                        if (surface.columnWidth > 1) {
+
+                            surface.setColumnWidth(surface.columnWidth - 1);
+
+                            var newColumn = row._newChildInstance(blocks.elements.Column.createElement(surface.columnSize, 1, surface._getTagName()));
+
+                            newColumn.element.insertAfter(surface.element);
+                            row._addChild(newColumn, surface.index + 1);
+
+                            newColumn.element.append(this.element);
+                            newColumn._addChild(this, 0);
+                        }
+
+                        break;
+                }
+            }
+            else if (surface.isRow()) {
+
+            }
+            else if (surface.isContainer()) {
+
+            }
+            else if (surface.isPage()) {
+
+            }
+            else {
+                Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen');
+            }
+
+            //TODO cleanup the parent structure of this surface now we moved it to another location
             this._cleanup();
 
-            this.parent._refresh(true);
-            surface.parent._refresh(true);
+            //Once all is done, we need to force a deep refresh of the entire page
+            this._getParent(blocks.elements.Page)._refresh(true);
         },
 
         //-----TODO UNCHECKED-----
@@ -281,17 +340,23 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
 //         {
 //             return this.getContainer().getBlocks();
 //         },
+//         _isNear: function (one, two)
+//         {
+//             var THRESHOLD = 1;
+//
+//             return Math.abs(one - two) <= THRESHOLD;
+//         },
 
         //-----PRIVATE METHODS-----
-        _getType: function()
+        _getType: function ()
         {
             return 'block';
         },
-        _getName: function()
+        _getName: function ()
         {
             return BlocksMessages.surfaceBlockName;
         },
-        _newChildInstance: function(element)
+        _newChildInstance: function (element)
         {
             return new blocks.elements.Property(this, element);
         },
@@ -299,17 +364,11 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         {
             return true;
         },
-        _isAcceptableChild: function(element)
+        _isAcceptableChild: function (element)
         {
-            return DOM.isProperty(element);
+            return blocks.elements.Surface.isProperty(element);
         },
-        _isNear: function (one, two)
-        {
-            var THRESHOLD = 1;
-
-            return Math.abs(one - two) <= THRESHOLD;
-        },
-        _cleanup: function()
+        _cleanup: function ()
         {
 
         },
