@@ -880,6 +880,9 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //sync the relationship-variables
             surface.index = index;
             surface.parent = this;
+
+            //for chaining
+            return surface;
         },
         /**
          * Removed the supplied child surface from this surface
@@ -892,6 +895,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         _removeChild: function (surface)
         {
+            var retVal = null;
+
             // This should always be true
             // Note: JS object-equality checks by reference
             if (this.children[surface.index] === surface) {
@@ -911,10 +916,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 if (surface.element) {
                     surface.element.detach();
                 }
+
+                retVal = surface;
             }
             else {
                 Logger.error('Encountered a situation where a child surface is out of sync with its parent, this shouldn\'t happen');
             }
+
+            return retVal;
         },
 
 

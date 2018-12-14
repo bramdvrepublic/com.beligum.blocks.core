@@ -85,7 +85,8 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
          */
         moveTo: function (surface, side)
         {
-            Logger.info('moving ' + this.type + ' to ' + side.name + ' of ' + surface.type);
+            var description = 'moving ' + this.type + ' to ' + side.name + ' of ' + surface.type;
+            Logger.info(description);
 
             // If we're moving this block to the side of another block,
             // we need to distinguish between:
@@ -115,30 +116,60 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var parentRow = surface._getParent(blocks.elements.Row);
                         var parentCol = surface._getParent(blocks.elements.Column);
 
-                        //first, we'll create a new row at the same place of the dropped block
-                        //and remove that block from it's parent
-                        var newRow = parentCol._newChildInstance(blocks.elements.Row.createElement(parentRow._getTagName()));
-                        surface.element.replaceWith(newRow.element);
-                        surface.parent._removeChild(surface);
+                        var rowTag = parentRow._getTagName();
+                        var colTag = parentCol._getTagName();
+                        var colSize = parentCol.columnSize;
 
-                        //create two equal columns in the new row and fill them with the old and new block
-                        var newColLeft = newRow._newChildInstance(blocks.elements.Column.createElement(parentCol.columnSize, 6, parentCol._getTagName()));
-                        newRow._addChild(newColLeft);
-                        var newColRight = newRow._newChildInstance(blocks.elements.Column.createElement(parentCol.columnSize, 6, parentCol._getTagName()));
-                        newRow._addChild(newColRight);
+                        // We'll create a new row at the same place of the dropped block and remove that block from it's parent.
+                        // In that new row, we'll create two columns to put the dropped and dragged block.
+                        // But we need to wrap the other children of the column in rows too because we either
+                        // have all rows or all blocks in a column, so if we migrate one block to a row,
+                        // we need to transform all other children to rows.
+                        for (var i = 0; i < parentCol.children.length; i++) {
 
-                        if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
-                            newColLeft._addChild(surface);
-                            newColRight._addChild(this);
-                        }
-                        else {
-                            newColLeft._addChild(this);
-                            newColRight._addChild(surface);
+                            var child = parentCol.children[i];
+
+                            //Note: no need to create a row if it would already be a row (shouldn't happen though)
+                            if (child === surface || !child.isRow()) {
+
+                                //in both cases, we'll replace the child with a row
+                                parentCol._removeChild(child);
+                                //note that the index of the child is the same as it's array index 'i'
+                                var newRow = parentCol._addChild(parentCol._newChildInstance(blocks.elements.Row.createElement(rowTag)), i);
+
+                                if (child === surface) {
+
+                                    //create two equal columns in the new row and fill them with the old and new block
+                                    var newColLeft = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 6, colTag)));
+                                    var newColRight = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 6, colTag)));
+
+                                    if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
+                                        newColLeft._addChild(child);
+                                        newColRight._addChild(this);
+                                    }
+                                    else {
+                                        newColLeft._addChild(this);
+                                        newColRight._addChild(child);
+                                    }
+                                }
+                                else {
+                                    var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 12, colTag)));
+                                    newCol._addChild(child);
+                                }
+                            }
                         }
 
                         break;
                 }
             }
+            // If we're moving this block to the side of a column,
+            // we need to distinguish between:
+            // - top/down
+            //   This probably shouldn't happen because we build the dropspots in-to-out
+            //   and skip the parent spots that have the same dimension as the child spots
+            //   so the top dropspot of the first/last child in this column should get it.
+            // - left/right
+            //   Create  new column in the parent row and distribute the widths
             else if (surface.isColumn()) {
 
                 //detach the child from its parent
@@ -146,35 +177,43 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
-
-                        //TODO
-
-                        break;
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
-
-                        //TODO
-
+                        Logger.error('Encountered unimplemented drop situation, this shouldn\'t happen;' + description);
                         break;
+
                     case blocks.elements.Surface.SIDE.LEFT.id:
-
-                        //TODO
-
-                        break;
                     case blocks.elements.Surface.SIDE.RIGHT.id:
 
                         var row = surface._getParent(blocks.elements.Row);
-                        if (surface.columnWidth > 1) {
 
-                            surface.setColumnWidth(surface.columnWidth - 1);
+                        // in a variable for flexibility
+                        var newColWidth = 1;
 
-                            var newColumn = row._newChildInstance(blocks.elements.Column.createElement(surface.columnSize, 1, surface._getTagName()));
-
-                            newColumn.element.insertAfter(surface.element);
-                            row._addChild(newColumn, surface.index + 1);
-
-                            newColumn.element.append(this.element);
-                            newColumn._addChild(this, 0);
+                        //we need to find a column in the row whose width is > 1
+                        //so we can at least substract one to make room from the new
+                        //one-sized row. Ideally, it's the column we're dropping on,
+                        //but not necessarily.
+                        var colToAdjust = null;
+                        if (surface.columnWidth > newColWidth) {
+                            colToAdjust = surface;
                         }
+                        else {
+                            //we'll just take the first column we find, but ideally
+                            //it should probably be the closest to the dropspot, no?
+                            for (var i = 0; i < row.children.length && !colToAdjust; i++) {
+                                if (row.children[i].columnWidth > newColWidth) {
+                                    colToAdjust = row.children[i];
+                                }
+                            }
+                        }
+
+                        colToAdjust.setColumnWidth(colToAdjust.columnWidth - newColWidth);
+
+                        var newColumnIdx = side.id === blocks.elements.Surface.SIDE.LEFT.id ? surface.index : surface.index + 1;
+                        var newColumn = row._addChild(row._newChildInstance(blocks.elements.Column.createElement(colToAdjust.columnSize, newColWidth, colToAdjust._getTagName())), newColumnIdx);
+                        newColumn._addChild(this);
+
+                        //TODO row.updateResizers();?
 
                         break;
                 }
@@ -192,7 +231,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                 Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen');
             }
 
-            //TODO cleanup the parent structure of this surface now we moved it to another location
+            //TODO cleanup the parent structure of this and the other surface now we moved it to another location
             this._cleanup();
 
             //Once all is done, we need to force a deep refresh of the entire page
