@@ -157,9 +157,25 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Reset all dropspots (of all surfaces)
+             * Reset all surface overlay DOM elements
              */
-            resetMoveToPreview: function ()
+            clearSurfaces: function ()
+            {
+                UI.surfaceWrapper.empty();
+            },
+
+            /**
+             * Reset all resizer DOM elements
+             */
+            clearResizers: function ()
+            {
+                UI.resizerWrapper.empty();
+            },
+
+            /**
+             * Reset all dropspot DOM elements
+             */
+            clearDropspots: function ()
             {
                 UI.dropspotWrapper.empty();
             },
@@ -326,7 +342,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
                 //select the optimal dropspot
                 var idx = surface._selectDropspot(vector, this, side, dropspots);
-
                 if (idx >= 0) {
                     dropspots[idx].show();
                 }
@@ -538,18 +553,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             if (this.index === this.parent.children.length - 1) {
                 this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this.parent;
             }
-
-            // // We should only sync the bounds of the last child,
-            // // but every added child will be last, so we'll just sync now
-            // // and revert the bounds of the previous child below
-            // this.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = this.parent;
-            // if (this.index > 0) {
-            //     var previousSibling = this.parent.children[this.index - 1];
-            //     previousSibling.layoutParents[blocks.elements.Surface.SIDE.BOTTOM.id] = null;
-            //     //previousSibling._refresh();
-            // }
-            //
-            // // this._refresh();
         },
         /**
          * Adds a child to this horizontal-oriented parent surface
@@ -566,18 +569,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             }
 
             if (this.index === this.parent.children.length - 1) {
-                this.layoutParents[blocks.elements.Surface.SIDE.RIGHT] = this.parent;
+                this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
             }
-
-            // //See comments above in _layoutChildVertically()
-            // this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
-            // if (this.index > 0) {
-            //     var previousSibling = this.parent.children[this.index - 1];
-            //     previousSibling.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = null;
-            //     //previousSibling._refresh();
-            // }
-            //
-            // // this._refresh();
         },
         /**
          * Uniform superclass implementation for all overlay elements.

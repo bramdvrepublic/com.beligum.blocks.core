@@ -172,7 +172,7 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
     {
         //this clears all previous dropspot indicators (for all surfaces)
-        blocks.elements.Surface.resetMoveToPreview();
+        blocks.elements.Surface.clearDropspots();
 
         //offer the user a preview of what would happen when the active surface would be moved
         //to the surface we're currently hovering over (in the direction indicated by the vector)
@@ -196,7 +196,7 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         }
 
         //this clears all previous dropspot indicators (for all surfaces)
-        blocks.elements.Surface.resetMoveToPreview();
+        blocks.elements.Surface.clearDropspots();
     });
 
     //-----PRIVATE METHODS-----

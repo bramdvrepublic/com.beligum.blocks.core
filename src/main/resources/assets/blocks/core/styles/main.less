@@ -111,9 +111,9 @@ body.@{BODY_EDIT_MODE_CLASS} {
 }
 
 .@{BLOCK_OVERLAY_WRAPPER_CLASS},
-.@{BLOCK_SURFACE_WRAPPER_CLASS},
-.@{BLOCK_HANDLE_WRAPPER_CLASS},
-.@{BLOCK_DROPSPOT_WRAPPER_CLASS} {
+.@{SURFACE_WRAPPER_CLASS},
+.@{RESIZER_WRAPPER_CLASS},
+.@{DROPSPOT_WRAPPER_CLASS} {
 
   position: absolute;
   top: 0;
@@ -157,8 +157,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
     // By default, we'll (re-)enable events on the real surfaces.
     //Note: dropspots shouldn't receive events,
     //they're just ornamental
-    .@{BLOCK_SURFACE_WRAPPER_CLASS},
-    .@{BLOCK_HANDLE_WRAPPER_CLASS} {
+    .@{SURFACE_WRAPPER_CLASS},
+    .@{RESIZER_WRAPPER_CLASS} {
       & * {
         pointer-events: auto;
       }

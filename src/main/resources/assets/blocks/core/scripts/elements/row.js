@@ -111,11 +111,35 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         {
             blocks.elements.Row.Super.prototype._refresh.call(this, deep);
 
-            //next to refreshing this row, we also need to refresh the resizers
+            //Next to refreshing this row, we also need to refresh the resizers
+            //Note: this will be called while dragging around the resizer,
+            //so make sure we don't rebuild the resizers here, just refresh their bounds.
             for (var i = 0; i < this.resizers.length; i++) {
                 this.resizers[i]._refresh(deep);
             }
-        }
+        },
+        /**
+         * Clears and re-initialize the resizers of all columns in this row
+         *
+         * @private
+         */
+        _updateResizers: function ()
+        {
+            //we should only delete our own resizers
+            if (this.resizers) {
+                for (var i = 0; i < this.resizers.length; i++) {
+                    this.resizers[i].overlay.remove();
+                }
+            }
+
+            this.resizers = [];
+            //note: we start at index 1
+            for (var i = 1; i < this.children.length; i++) {
+                var newResizer = new blocks.elements.Resizer(this.children[i - 1], this.children[i]);
+                newResizer._refresh();
+                this.resizers.push(newResizer);
+            }
+        },
     });
 
 }]);

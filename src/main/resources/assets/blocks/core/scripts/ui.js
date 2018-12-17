@@ -27,7 +27,7 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
     this.pageContent = undefined;
     this.overlayWrapper = undefined;
     this.surfaceWrapper = undefined;
-    this.handleWrapper = undefined;
+    this.resizerWrapper = undefined;
     this.dropspotWrapper = undefined;
 
     //-----PUBLIC METHODS-----
@@ -39,7 +39,7 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
 
         //before we start building the surfaces, make sure the wrappers are empty
         UI.surfaceWrapper.empty();
-        UI.handleWrapper.empty();
+        UI.resizerWrapper.empty();
         UI.dropspotWrapper.empty();
     };
 

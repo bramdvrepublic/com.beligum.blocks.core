@@ -85,7 +85,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
          */
         moveTo: function (surface, side)
         {
-            var description = 'moving ' + this.type + ' to ' + side.name + ' of ' + surface.type;
+            var description = 'moving ' + this.type + ' "' + this.id + '" to ' + side.name + ' of ' + surface.type + ' "' + surface.id + '"';
             Logger.info(description);
 
             // If we're moving this block to the side of another block,
@@ -178,7 +178,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
-                        Logger.error('Encountered unimplemented drop situation, this shouldn\'t happen;' + description);
+                        Logger.error('Encountered unimplemented drop situation, this shouldn\'t happen; ' + description);
                         break;
 
                     case blocks.elements.Surface.SIDE.LEFT.id:
@@ -213,29 +213,104 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var newColumn = row._addChild(row._newChildInstance(blocks.elements.Column.createElement(colToAdjust.columnSize, newColWidth, colToAdjust._getTagName())), newColumnIdx);
                         newColumn._addChild(this);
 
-                        //TODO row.updateResizers();?
+                        //we added columns, so update the resizers
+                        row._updateResizers();
 
                         break;
                 }
             }
             else if (surface.isRow()) {
 
+                //detach the child from its parent
+                this.parent._removeChild(this);
+
+                switch (side.id) {
+                    case blocks.elements.Surface.SIDE.TOP.id:
+                    case blocks.elements.Surface.SIDE.BOTTOM.id:
+
+                        var row = surface;
+                        var container = row._getParent(blocks.elements.Container);
+
+                        var newRowIdx = side.id === blocks.elements.Surface.SIDE.TOP.id ? row.index : row.index + 1;
+                        var newRow = container._addChild(container._newChildInstance(blocks.elements.Row.createElement(row._getTagName())), newRowIdx);
+
+                        var refCol = row.children[0];
+                        var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(refCol.columnSize, 12, refCol._getTagName())));
+                        newCol._addChild(this);
+
+                        break;
+
+                    case blocks.elements.Surface.SIDE.LEFT.id:
+                    case blocks.elements.Surface.SIDE.RIGHT.id:
+
+                        Logger.error('Encountered unimplemented drop situation, this shouldn\'t happen; ' + description);
+
+                        break;
+                }
+
             }
             else if (surface.isContainer()) {
 
-            }
-            else if (surface.isPage()) {
+                //detach the child from its parent
+                this.parent._removeChild(this);
+
+                switch (side.id) {
+                    case blocks.elements.Surface.SIDE.TOP.id:
+                    case blocks.elements.Surface.SIDE.BOTTOM.id:
+                        Logger.error('Encountered unimplemented drop situation, this shouldn\'t happen; ' + description);
+                        break;
+
+                    case blocks.elements.Surface.SIDE.LEFT.id:
+                    case blocks.elements.Surface.SIDE.RIGHT.id:
+
+                        var container = surface;
+                        var oldRow = container.children[0];
+                        var oldCol = oldRow.children[0];
+
+                        // in a variable for flexibility
+                        var newColWidth = 1;
+
+                        var newRowIdx = 0;
+                        var newRow = container._addChild(container._newChildInstance(blocks.elements.Row.createElement(oldRow._getTagName())), newRowIdx);
+
+                        var leftColIdx = side.id === blocks.elements.Surface.SIDE.LEFT.id ? 1 : 0;
+                        var leftCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(oldCol.columnSize, 12 - newColWidth, oldCol._getTagName())), leftColIdx);
+
+                        for (var i = 0; i < container.children.length; i++) {
+                            var child = container.children[i];
+
+                            if (child !== newRow) {
+                                container._removeChild(child);
+                                i--;
+                                leftCol._addChild(child);
+                            }
+                        }
+
+                        var rightColIdx = side.id === blocks.elements.Surface.SIDE.LEFT.id ? 0 : 1;
+                        var rightCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(oldCol.columnSize, newColWidth, oldCol._getTagName())), rightColIdx);
+                        rightCol._addChild(this);
+
+                        //we added columns, so update the resizers
+                        oldRow._updateResizers();
+                        newRow._updateResizers();
+
+                        break;
+                }
 
             }
             else {
-                Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen');
+                Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen; ' + description);
             }
 
             //TODO cleanup the parent structure of this and the other surface now we moved it to another location
+            //TODO move the classes on the element we're moving?
             this._cleanup();
 
             //Once all is done, we need to force a deep refresh of the entire page
-            this._getParent(blocks.elements.Page)._refresh(true);
+            var page = this._getParent(blocks.elements.Page);
+            if (page) {
+                page._refresh(true);
+            }
         },
 
         //-----TODO UNCHECKED-----

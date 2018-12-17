@@ -99,9 +99,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             UI.body.append(UI.sidebar);
 
             UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
-            UI.surfaceWrapper = $('<div class="' + BlocksConstants.BLOCK_SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-            UI.handleWrapper = $('<div class="' + BlocksConstants.BLOCK_HANDLE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-            UI.dropspotWrapper = $('<div class="' + BlocksConstants.BLOCK_DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
 
             //set up perfect-scrollbar.js
             if (jQuery().perfectScrollbar) {
