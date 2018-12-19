@@ -74,13 +74,15 @@
  *
  *
  */
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", "blocks.core.DOM", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI, DOM)
+base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", "blocks.core.DOM", function (Commons, Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI, DOM)
 {
     var Mouse = this;
 
     //-----CONSTANTS-----
     // The minimum number of pixels we need to move before real dragging starts.
-    var DRAGGING_THRESHOLD = 3;
+    var DRAG_PX_THRESHOLD = 3;
+    // The minimum amount of time we need to be clicking before real dragging starts.
+    var DRAG_MILLIS_THRESHOLD = 1000;
 
     //show dragging direction
     var SHOW_DEBUG_LINES = true;
@@ -104,7 +106,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     //this is the maximum variance (region [0..1]) that's tolerated
     //during mouse vector updates. All updates with larger variances
     //won't result in a vector recalculation
-    var VARIANCE_THRESHOLD = 0.50;
+    var VARIANCE_THRESHOLD = 0.75;
 
     //-----VARIABLES-----
     // flag to enable/disable this entire module (both clicking and dragging)
@@ -143,8 +145,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         cosSum: 0,
         //the floating sum of the total lengths
         totalLength: 0,
+        //the absolute sum of the total lengths (disregarding the window)
+        totalLengthAbs: 0,
         //the floating sum of the timeDiffs
         totalTimeDiff: 0,
+        //the absolute sum of the timeDiffs (disregarding the window)
+        totalTimeDiffAbs: 0,
 
         //the circular variance of all the angles
         variance: 0,
@@ -347,7 +353,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //first, check if we need to activate dragging
             //note that we only start dragging after a certain pixel threshold, except for the resizers because
             //sometimes they need very fine dragging (col in row in col)
-            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLength > DRAGGING_THRESHOLD)) {
+            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLengthAbs > DRAG_PX_THRESHOLD || stats.totalTimeDiffAbs > DRAG_MILLIS_THRESHOLD)) {
 
                 draggingStatus = BaseConstantsInternal.DRAGGING.YES;
 
@@ -570,6 +576,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * */
     var updateVector = function (event)
     {
+        //we're updating the vector on every mouse move,
+        //so it makes sense to always sync the start point of the vector
+        //to the current location of the mouse
+        dragVector.x1 = event.pageX;
+        dragVector.y1 = event.pageY;
+
         // Note: it makes sense to only update the target direction of the vector if the variance of
         // the angles is below a certain threshold, because only then we are 'really moving' in a certain
         // direction. A high variance means there are too many angles pointing in different directions.
@@ -578,10 +590,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         // Note though that during initial movement (just after dragging started), after pausing for longer than
         // MAX_TIMEDIFF_MILLIS (and restarting) or while moving very slowly (typically speeds < 5 or < 10),
         // the variance will also by high, so it's a bit of a tradeoff, hence the ignore flag...
-        if (IGNORE_VARIANCE || stats.variance < VARIANCE_THRESHOLD) {
-
-            dragVector.x1 = event.pageX;
-            dragVector.y1 = event.pageY;
+        if (Commons.isUnset(dragVector.x2) || IGNORE_VARIANCE || stats.variance < VARIANCE_THRESHOLD) {
 
             // by using a large multiplier (larger than the largest possible page), we're sure the resulting
             // line will extend the page borders and thus intersecting will all possible block edges
@@ -594,8 +603,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             dragVector.y2 = dragVector.y2 ? dragVector.y2 : 0;
 
             //note: averaging out the new value eases the signal down a lot
-            dragVector.x2 = (dragVector.x2 + x2) / 2;
-            dragVector.y2 = (dragVector.y2 + y2) / 2;
+            // dragVector.x2 = (dragVector.x2 + x2) / 2;
+            // dragVector.y2 = (dragVector.y2 + y2) / 2;
+
+            dragVector.x2 = x2;
+            dragVector.y2 = y2;
         }
 
         //always show the debug line, even if the dragVector isn't recalculated
@@ -637,7 +649,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         stats.sinSum = 0;
         stats.cosSum = 0;
         stats.totalLength = 0;
+        stats.totalLengthAbs = 0;
         stats.totalTimeDiff = 0;
+        stats.totalTimeDiffAbs = 0;
         stats.variance = 0;
         stats.direction = 0;
         stats.speed = 0;
@@ -716,7 +730,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 stats.sinSum = stats.sinSum - oldestStat.sin + newStat.sin;
                 stats.cosSum = stats.cosSum - oldestStat.cos + newStat.cos;
                 stats.totalLength = stats.totalLength - oldestStat.length + newStat.length;
+                stats.totalLengthAbs = stats.totalLengthAbs + newStat.length;
                 stats.totalTimeDiff = stats.totalTimeDiff - oldestStat.timeDiff + newStat.timeDiff;
+                stats.totalTimeDiffAbs = stats.totalTimeDiffAbs + newStat.timeDiff;
             }
             else {
                 //if the cleanup for some reason resulted in a funky invalid prevStat,

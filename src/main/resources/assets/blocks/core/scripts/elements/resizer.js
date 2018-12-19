@@ -76,25 +76,27 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         {
             //the number of horizontal pixels we've dragged from the center of the resizer
             var offsetPx = vector.x1 - this.center;
-            //right is positive, left is negative
+            //right is +1, left is -1
             var side = Math.sign(offsetPx);
             //now we've stored the sign, cut it off
             offsetPx = Math.abs(offsetPx);
 
+            //Logger.info(offsetPx+', '+vector.x1+', '+this.center);
+
             var row = this.leftColumn.parent;
             //the width of one column in pixels in the parent row
-            var oneColPx = row.realWidth() / 12;
-            //the absolute number of columns we're dragging left or right
-            //Note that this 'floor' will prevent flickering between two states
-            //because it forces the amount of dragged pixels to exceed the width
-            //of one column, and when the resizer 'jumps', the next call of this method
-            //will result in zero columns because of this floor()
-            var colOffset = Math.floor(offsetPx / oneColPx);
+            var oneColPx = row.realWidth() / blocks.elements.Row.MAX_COLS;
 
-            if (colOffset > 0) {
-                var colOffsetSigned = side * colOffset;
-                var newLeftCols = this.leftColumn.columnWidth + colOffsetSigned;
-                var newRightCols = this.rightColumn.columnWidth - colOffsetSigned;
+            //The 'distance' we've dragged away from the center of the resizer,
+            //expressed in columns. This will usually be in the [0-1] range,
+            //because we move the resizer when nearing 1
+            var colOffset = offsetPx / oneColPx;
+
+            //note that using 0.75 (instead of 1.0) make the snapping feel more
+            //natural when moving the mouse faster
+            if (colOffset > 0.75) {
+                var newLeftCols = this.leftColumn.columnWidth + side;
+                var newRightCols = this.rightColumn.columnWidth - side;
 
                 //make sure we don't create zero-width columns
                 if (Math.min(newLeftCols, newRightCols) > 0) {

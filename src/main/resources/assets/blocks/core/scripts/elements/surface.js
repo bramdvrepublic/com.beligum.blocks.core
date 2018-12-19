@@ -918,7 +918,24 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             return retVal;
         },
+        /**
+         * Function to be overloaded in subclasses to simplify the page structure.
+         * This gets called when a block was moved and potentially, overly complex rows/cols structures
+         * got created. Eg. A row that holds a 12-width columns, that holds a row.
+         *
+         * @private
+         */
+        _simplify: function(deep)
+        {
+            //NOOP: by default, we don't do anything specific,
+            //except for going deeper if needed
 
+            if (deep) {
+                for (var i = 0; i < this.children.length; i++) {
+                    this.children[i]._simplify(deep);
+                }
+            }
+        },
 
         //-----TODO UNCHECKED-----
         // /**

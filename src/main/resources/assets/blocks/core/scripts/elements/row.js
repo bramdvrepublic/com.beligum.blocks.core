@@ -29,6 +29,10 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
 
         //-----STATICS-----
         STATIC: {
+
+            MIN_COLS: 1,
+            MAX_COLS: 12,
+
             createElement: function (tagName)
             {
                 return $('<' + (tagName ? tagName : blocks.elements.Surface.DEFAULT_TAG) + ' class="' + BlocksConstants.ROW_CLASS + '" />');
@@ -140,6 +144,41 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
                 this.resizers.push(newResizer);
             }
         },
+        /**
+         * Overloads the parent surface function to simplify the row-in-col12-in-row situation.
+         * @param deep
+         * @private
+         */
+        _simplify: function (deep)
+        {
+            //this row has one child and it's a column of maximum width
+            if (this.children.length === 1 && this.children[0].isColumn() && this.children[0].columnWidth === blocks.elements.Row.MAX_COLS) {
+
+                var fullWidthCol = this.children[0];
+
+                //and that column has only one child: a row
+                if (fullWidthCol.children.length === 1 && fullWidthCol.children[0].isRow()) {
+
+                    var rowToEliminate = fullWidthCol.children[0];
+                    for (var i = 0; i < rowToEliminate.children.length; i++) {
+                        var child = rowToEliminate.children[i];
+                        rowToEliminate._removeChild(child);
+                        this._addChild(child);
+                        i--;
+                    }
+
+                    this._removeChild(fullWidthCol);
+
+                    //this will remove the resizers from the old column (because it has no children now)
+                    rowToEliminate._updateResizers();
+                    //and introduce them in the new column
+                    this._updateResizers();
+                }
+            }
+
+            //now call the superclass function to iterate the children
+            blocks.elements.Row.Super.prototype._simplify.call(this, deep);
+        }
     });
 
 }]);

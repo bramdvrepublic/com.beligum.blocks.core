@@ -87,7 +87,7 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
         setColumnWidth: function (colWidth)
         {
             //make sure it's in the right range
-            colWidth = Math.max(Math.min(colWidth, 12), 1);
+            colWidth = Math.max(Math.min(colWidth, blocks.elements.Row.MAX_COLS), blocks.elements.Row.MIN_COLS);
 
             var newClass = blocks.elements.Column.CLASS_PREFIX + this.columnSize + '-' + colWidth;
 

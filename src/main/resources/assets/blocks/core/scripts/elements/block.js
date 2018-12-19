@@ -88,6 +88,10 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             var description = 'moving ' + this.type + ' "' + this.id + '" to ' + side.name + ' of ' + surface.type + ' "' + surface.id + '"';
             Logger.info(description);
 
+            //since we'll be moving this to a new parent, we need to keep a reference to the
+            //old one before we do the move
+            var oldParent = this.parent;
+
             // If we're moving this block to the side of another block,
             // we need to distinguish between:
             // - top/down
@@ -140,8 +144,10 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                                 if (child === surface) {
 
                                     //create two equal columns in the new row and fill them with the old and new block
-                                    var newColLeft = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 6, colTag)));
-                                    var newColRight = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 6, colTag)));
+                                    var leftColWidth = Math.floor(blocks.elements.Row.MAX_COLS / 2);
+                                    var rightColWidth = blocks.elements.Row.MAX_COLS - leftColWidth;
+                                    var newColLeft = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, leftColWidth, colTag)));
+                                    var newColRight = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, rightColWidth, colTag)));
 
                                     if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
                                         newColLeft._addChild(child);
@@ -153,7 +159,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                                     }
                                 }
                                 else {
-                                    var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, 12, colTag)));
+                                    var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, blocks.elements.Row.MAX_COLS, colTag)));
                                     newCol._addChild(child);
                                 }
                             }
@@ -187,7 +193,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var row = surface._getParent(blocks.elements.Row);
 
                         // in a variable for flexibility
-                        var newColWidth = 1;
+                        var newColWidth = blocks.elements.Row.MIN_COLS;
 
                         //we need to find a column in the row whose width is > 1
                         //so we can at least substract one to make room from the new
@@ -235,7 +241,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var newRow = container._addChild(container._newChildInstance(blocks.elements.Row.createElement(row._getTagName())), newRowIdx);
 
                         var refCol = row.children[0];
-                        var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(refCol.columnSize, 12, refCol._getTagName())));
+                        var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(refCol.columnSize, blocks.elements.Row.MAX_COLS, refCol._getTagName())));
                         newCol._addChild(this);
 
                         break;
@@ -268,21 +274,21 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var oldCol = oldRow.children[0];
 
                         // in a variable for flexibility
-                        var newColWidth = 1;
+                        var newColWidth = blocks.elements.Row.MIN_COLS;
 
                         var newRowIdx = 0;
                         var newRow = container._addChild(container._newChildInstance(blocks.elements.Row.createElement(oldRow._getTagName())), newRowIdx);
 
                         var leftColIdx = side.id === blocks.elements.Surface.SIDE.LEFT.id ? 1 : 0;
-                        var leftCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(oldCol.columnSize, 12 - newColWidth, oldCol._getTagName())), leftColIdx);
+                        var leftCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(oldCol.columnSize, blocks.elements.Row.MAX_COLS - newColWidth, oldCol._getTagName())), leftColIdx);
 
                         for (var i = 0; i < container.children.length; i++) {
                             var child = container.children[i];
 
                             if (child !== newRow) {
                                 container._removeChild(child);
-                                i--;
                                 leftCol._addChild(child);
+                                i--;
                             }
                         }
 
@@ -302,14 +308,26 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                 Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen; ' + description);
             }
 
-            //TODO cleanup the parent structure of this and the other surface now we moved it to another location
-            //TODO move the classes on the element we're moving?
-            this._cleanup();
+            //check if we need to cleanup the old parents because they're empty
+            var toClean = oldParent;
+            while (toClean) {
+                //keep a reference to the parent (because we'll be detaching it below)
+                var toCleanParent = toClean.parent;
+
+                //if the surface we want to clean is empty and it has a parent,
+                //we'll remove it from that parent
+                if (toClean.children.length === 0 && toCleanParent) {
+                    toCleanParent._removeChild(toClean);
+                }
+
+                toClean = toCleanParent;
+            }
 
             //Once all is done, we need to force a deep refresh of the entire page
             var page = this._getParent(blocks.elements.Page);
             if (page) {
                 page._refresh(true);
+                page._simplify(true);
             }
         },
 
@@ -481,10 +499,6 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         _isAcceptableChild: function (element)
         {
             return blocks.elements.Surface.isProperty(element);
-        },
-        _cleanup: function ()
-        {
-
         },
     });
 
