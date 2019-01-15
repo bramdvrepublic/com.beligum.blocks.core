@@ -100,18 +100,17 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             //   We need to introduce a new row instead of the target element and split it using two new columns
             if (surface.isBlock()) {
 
-                //detach the child from its parent
-                this.parent._removeChild(this);
+                //note: we can't detach the child here because we have some exceptional
+                //recursive calls below
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
-
-                        surface.parent._addChild(this, surface.index);
-
-                        break;
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
-                        surface.parent._addChild(this, surface.index + 1);
+                        //detach the child from its parent
+                        this.parent._removeChild(this);
+
+                        surface.parent._addChild(this, side.id === blocks.elements.Surface.SIDE.TOP.id ? surface.index : surface.index + 1);
 
                         break;
                     case blocks.elements.Surface.SIDE.LEFT.id:
@@ -120,47 +119,78 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         var parentRow = surface._getParent(blocks.elements.Row);
                         var parentCol = surface._getParent(blocks.elements.Column);
 
-                        var rowTag = parentRow._getTagName();
-                        var colTag = parentCol._getTagName();
-                        var colSize = parentCol.columnSize;
+                        // if we're the only block in the (parent) column,
+                        // we won't introduce a whole new row/col setup, instead,
+                        // we can just introduce a new column next to the parent instead
+                        if (parentCol.children.length === 1) {
 
-                        // We'll create a new row at the same place of the dropped block and remove that block from it's parent.
-                        // In that new row, we'll create two columns to put the dropped and dragged block.
-                        // But we need to wrap the other children of the column in rows too because we either
-                        // have all rows or all blocks in a column, so if we migrate one block to a row,
-                        // we need to transform all other children to rows.
-                        for (var i = 0; i < parentCol.children.length; i++) {
+                            //note that we don't detach here
+                            this.moveTo(parentCol, side);
 
-                            var child = parentCol.children[i];
+                            //cut short: no need to do the cleanup/simplify/... below, recurse instead
+                            return;
+                        }
+                        else {
 
-                            //Note: no need to create a row if it would already be a row (shouldn't happen though)
-                            if (child === surface || !child.isRow()) {
+                            //detach the child from its parent
+                            this.parent._removeChild(this);
 
-                                //in both cases, we'll replace the child with a row
-                                parentCol._removeChild(child);
-                                //note that the index of the child is the same as it's array index 'i'
-                                var newRow = parentCol._addChild(parentCol._newChildInstance(blocks.elements.Row.createElement(rowTag)), i);
+                            var rowTag = parentRow._getTagName();
+                            var colTag = parentCol._getTagName();
+                            var colSize = parentCol.columnSize;
 
-                                if (child === surface) {
+                            // We'll create a new row at the same place of the dropped block and remove that block from it's parent.
+                            // In that new row, we'll create two columns to put the dropped and dragged block.
+                            // But we need to wrap the other children of the column in a row too because we either
+                            // have all rows or all blocks in a column, so if we migrate one block to a row,
+                            // we also need to transform all other children to rows.
+                            var currentRow = null;
+                            for (var i = 0; i < parentCol.children.length; i++) {
 
-                                    //create two equal columns in the new row and fill them with the old and new block
-                                    var leftColWidth = Math.floor(blocks.elements.Row.MAX_COLS / 2);
-                                    var rightColWidth = blocks.elements.Row.MAX_COLS - leftColWidth;
-                                    var newColLeft = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, leftColWidth, colTag)));
-                                    var newColRight = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, rightColWidth, colTag)));
+                                var child = parentCol.children[i];
 
-                                    if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
-                                        newColLeft._addChild(child);
-                                        newColRight._addChild(this);
+                                //Note: no need to create a row if it would already be a row (shouldn't happen though)
+                                if (child === surface || !child.isRow()) {
+
+                                    //in both cases, we'll replace the child with a row
+                                    parentCol._removeChild(child);
+
+                                    //create a new row if we need to
+                                    if (currentRow === null || child === surface) {
+                                        //note that the index of the child is the same as it's array index 'i'
+                                        currentRow = parentCol._addChild(parentCol._newChildInstance(blocks.elements.Row.createElement(rowTag)), i);
+
+                                        //if we're wrapping another child of the column in a row that's not the target surface,
+                                        //let's immediately create a full-width column as well
+                                        if (child !== surface) {
+                                            currentRow._addChild(currentRow._newChildInstance(blocks.elements.Column.createElement(colSize, blocks.elements.Row.MAX_COLS, colTag)));
+                                        }
+                                    }
+
+                                    if (child === surface) {
+
+                                        //create two equal columns in the new row and fill them with the old and new block
+                                        var leftColWidth = Math.floor(blocks.elements.Row.MAX_COLS / 2);
+                                        var rightColWidth = blocks.elements.Row.MAX_COLS - leftColWidth;
+                                        var newColLeft = currentRow._addChild(currentRow._newChildInstance(blocks.elements.Column.createElement(colSize, leftColWidth, colTag)));
+                                        var newColRight = currentRow._addChild(currentRow._newChildInstance(blocks.elements.Column.createElement(colSize, rightColWidth, colTag)));
+
+                                        if (side.id == blocks.elements.Surface.SIDE.RIGHT.id) {
+                                            newColLeft._addChild(child);
+                                            newColRight._addChild(this);
+                                        }
+                                        else {
+                                            newColLeft._addChild(this);
+                                            newColRight._addChild(child);
+                                        }
+
+                                        //signal we need to create a new row in the next iteration
+                                        currentRow = null;
                                     }
                                     else {
-                                        newColLeft._addChild(this);
-                                        newColRight._addChild(child);
+                                        //add the child to the full-width column of the current row
+                                        currentRow.children[0]._addChild(child);
                                     }
-                                }
-                                else {
-                                    var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(colSize, blocks.elements.Row.MAX_COLS, colTag)));
-                                    newCol._addChild(child);
                                 }
                             }
                         }
@@ -171,15 +201,12 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             // If we're moving this block to the side of a column,
             // we need to distinguish between:
             // - top/down
-            //   This probably shouldn't happen because we build the dropspots in-to-out
+            //   This probably shouldn't happen because we build the dropspots inside-out
             //   and skip the parent spots that have the same dimension as the child spots
-            //   so the top dropspot of the first/last child in this column should get it.
+            //   so the top dropspot of the first/last child (block) in this column should get it.
             // - left/right
             //   Create  new column in the parent row and distribute the widths
             else if (surface.isColumn()) {
-
-                //detach the child from its parent
-                this.parent._removeChild(this);
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
@@ -189,6 +216,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
 
                     case blocks.elements.Surface.SIDE.LEFT.id:
                     case blocks.elements.Surface.SIDE.RIGHT.id:
+
+                        //detach the child from its parent
+                        this.parent._removeChild(this);
 
                         var row = surface._getParent(blocks.elements.Row);
 
@@ -225,20 +255,28 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         break;
                 }
             }
+            // If we're moving this block to the side of a row,
+            // we need to distinguish between:
+            // - top/down
+            //   Just create a new row above/below the target row with a new max-width column
+            // - left/right
+            //   Shouldn't happen, since the column on that side should get it since it should have the same dimensions
+            //   and since we're building the dropspots inside-out, that column should get it instead.
             else if (surface.isRow()) {
-
-                //detach the child from its parent
-                this.parent._removeChild(this);
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
+                        //detach the child from its parent
+                        this.parent._removeChild(this);
+
                         var row = surface;
-                        var container = row._getParent(blocks.elements.Container);
+                        //note: we don't specify the parent class because we don't know it's type (can be column or container because of nesting)
+                        var parent = row._getParent();
 
                         var newRowIdx = side.id === blocks.elements.Surface.SIDE.TOP.id ? row.index : row.index + 1;
-                        var newRow = container._addChild(container._newChildInstance(blocks.elements.Row.createElement(row._getTagName())), newRowIdx);
+                        var newRow = parent._addChild(parent._newChildInstance(blocks.elements.Row.createElement(row._getTagName())), newRowIdx);
 
                         var refCol = row.children[0];
                         var newCol = newRow._addChild(newRow._newChildInstance(blocks.elements.Column.createElement(refCol.columnSize, blocks.elements.Row.MAX_COLS, refCol._getTagName())));
@@ -255,10 +293,15 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                 }
 
             }
+            // If we're moving this block to the side of a container,
+            // we need to distinguish between:
+            // - top/down
+            //   Shouldn't happen, since the row on that side should get it since it should have the same dimensions
+            //   and since we're building the dropspots inside-out, that row should get it instead.
+            // - left/right
+            //   Here, we need to create a new row/col structure and wrap the existing container content in it's own, new column
+            //   and put the dragged block in it's own column next to it.
             else if (surface.isContainer()) {
-
-                //detach the child from its parent
-                this.parent._removeChild(this);
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
@@ -269,7 +312,11 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.LEFT.id:
                     case blocks.elements.Surface.SIDE.RIGHT.id:
 
+                        //detach the child from its parent
+                        this.parent._removeChild(this);
+
                         var container = surface;
+                        //we should probably add some sort of typing here since we do the same for parent()?
                         var oldRow = container.children[0];
                         var oldCol = oldRow.children[0];
 
@@ -326,8 +373,10 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             //Once all is done, we need to force a deep refresh of the entire page
             var page = this._getParent(blocks.elements.Page);
             if (page) {
-                page._refresh(true);
+                //note that we need to call refresh after the simplify,
+                //because simplify can modify the dom slightly
                 page._simplify(true);
+                page._refresh(true);
             }
         },
 

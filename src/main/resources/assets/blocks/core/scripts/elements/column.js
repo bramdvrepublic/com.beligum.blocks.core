@@ -151,6 +151,54 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
         /**
+         * Overloads the parent surface function to simplify a column where all children are rows with one full-width child column.
+         * This happens when we need to create a nested row/col because we dropped a block left or right of another block and moved
+         * it away again, resulting in a couple of nested rows with full-width columns and blocks in them. Those blocks can easily be
+         * moved to this column without much loss of layout (except possible extra - and unnecessary - padding because of the nesting)
+         *
+         * @param deep
+         * @private
+         */
+        _simplify: function (deep)
+        {
+            //this is a lot of iteration, I know, but we need to detect the situation before we can alter it
+            var allFullRows = true;
+            for (var i = 0; i < this.children.length && allFullRows; i++) {
+                var child = this.children[i];
+                allFullRows &= child.isRow() && child.children.length === 1 && child.children[0].isColumn() && child.children[0].columnWidth === blocks.elements.Row.MAX_COLS;
+            }
+
+            if (allFullRows) {
+                var blocksToAdd = [];
+                for (var i = 0; i < this.children.length; i++) {
+                    var childRow = this.children[i];
+                    //above check already detected the child row only has one child: a full width col
+                    var childCol = childRow.children[0];
+                    for (var j = 0; j < childCol.children.length; j++) {
+                        var childBlock = childCol.children[j];
+                        childCol._removeChild(childBlock);
+                        j--;
+
+                        // Instead of adding the child to the parent column directly,
+                        // we move it to a temp array and iterate it again when cleanup is done.
+                        // Stupid, but this seems to solve a lot of issues with the iteration
+                        // of the children in the parent loop
+                        blocksToAdd.push(childBlock);
+                    }
+
+                    this._removeChild(childRow);
+                    i--;
+                }
+
+                for (var i = 0; i < blocksToAdd.length; i++) {
+                    this._addChild(blocksToAdd[i]);
+                }
+            }
+
+            //now call the superclass function to iterate the children
+            blocks.elements.Row.Super.prototype._simplify.call(this, deep);
+        },
+        /**
          * Extracts the class width number from the element,
          * searching for a supplied clazz prefix eg. 'col-md-', 'col-xs-', etc
          * and extracting the size (xs, sm, md, lg) and the width ([1-12])

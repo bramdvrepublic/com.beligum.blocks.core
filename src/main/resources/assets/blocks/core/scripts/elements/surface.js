@@ -384,14 +384,20 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
         /**
          * Returns the first parent of this surface with the specified class or null if it couldn't be found.
+         * If the specified class is not supplied, the immediate parent is returned.
          * @private
          */
         _getParent: function (parentClass)
         {
             var retVal = this;
 
-            while (retVal && !(retVal instanceof parentClass)) {
-                retVal = retVal.parent;
+            if (parentClass) {
+                while (retVal && !(retVal instanceof parentClass)) {
+                    retVal = retVal.parent;
+                }
+            }
+            else {
+                retVal = this.parent;
             }
 
             return retVal;
@@ -729,6 +735,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
         /**
          * Recursively create the dropspots of this surface (and the parents) on the specified side.
+         *
          * @param surface The surface that's being dragged around
          * @param side The side of this surface to show dropspots for
          * @param prevSurface The previous surface in the recursive call on the way to the top page surface

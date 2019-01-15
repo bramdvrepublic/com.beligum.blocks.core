@@ -145,7 +145,32 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
             }
         },
         /**
+         * Overloads the parent surface function to re-distribute the columns in this row when one is removed
+         *
+         * @param surface
+         * @private
+         */
+        _removeChild: function (surface)
+        {
+            blocks.elements.Row.Super.prototype._removeChild.call(this, surface);
+
+            // re-distribute the extra space over the existing columns
+            if (this.children.length > 0) {
+
+                var extraWidth = surface.columnWidth;
+                var extraWidthPerCol = Math.floor(extraWidth / this.children.length);
+                var extraWidthRounding = extraWidth - (extraWidthPerCol * this.children.length);
+
+                for (var i = 0; i < this.children.length; i++) {
+                    this.children[i].setColumnWidth(this.children[i].columnWidth + extraWidthPerCol + (i === 0 ? extraWidthRounding : 0));
+                }
+
+                this._updateResizers();
+            }
+        },
+        /**
          * Overloads the parent surface function to simplify the row-in-col12-in-row situation.
+         *
          * @param deep
          * @private
          */
