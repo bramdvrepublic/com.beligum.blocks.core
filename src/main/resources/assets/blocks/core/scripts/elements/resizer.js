@@ -72,6 +72,13 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
         },
 
         //-----PUBLIC METHODS-----
+        /**
+         * Override the parent function to really move the columns during preview (when the mouse is still down)
+         * instead of during mouse release.
+         *
+         * @param surface The surface we're currently hovering on
+         * @param vector The dragging vector
+         */
         previewMoveTo: function (surface, vector)
         {
             //the number of horizontal pixels we've dragged from the center of the resizer

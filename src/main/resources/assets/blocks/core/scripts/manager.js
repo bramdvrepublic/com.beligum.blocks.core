@@ -189,6 +189,9 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
             return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
         });
 
+        //reset hover information that was stored during previewing
+        eventData.surface.resetPreviewMoveTo();
+
         //note that eg. resizers don't have dropspots, their preview is immediate
         var activeDropspot = blocks.elements.Surface.getActiveDropspot();
         if (activeDropspot) {

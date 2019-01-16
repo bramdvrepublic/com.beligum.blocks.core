@@ -203,6 +203,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         overlay: undefined,
         //this holds a data structure of parent-surfaces for each side
         layoutParents: undefined,
+        //holds statistics for dropspot previews
+        dropspotStats: undefined,
 
         top: 0,
         bottom: 0,
@@ -328,8 +330,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * Create a visual preview of what would happen if this surface would be moved in the direction of
          * the indicated vector, over the supplied surface
          *
-         * @param surface
-         * @param vector
+         * @param surface The surface we're currently hovering on
+         * @param vector The dragging vector
          */
         previewMoveTo: function (surface, vector)
         {
@@ -346,6 +348,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                     dropspots[idx].show();
                 }
             }
+        },
+
+        /**
+         * Reset any extra stored information after previewing possible dropspots.
+         */
+        resetPreviewMoveTo: function()
+        {
+            //reset the stats that were filled in _selectDropspot()
+            this.dropspotStats = undefined;
         },
 
         /**
@@ -782,25 +793,46 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
             if (dropspots.length > 0) {
 
+                //Every time we switch sides, we re-register the point where we started
+                //choosing dropspots. This way, the 'space' between the point where we started
+                //and the edge, will be divided into pieces, instead of the full width. This solves
+                //the problem of 'disappearing dropspots' that occurs when we drag quite a long way to the edge,
+                //switch to another side and go back, finding we're 'past' a dropspot threshold and skip it immediately.
+                //Note that we store the stats in the surface that's being dragged around instead of this surface,
+                //so we have a single point of information to clear and don't clutter all the other surfaces while dragging.
+                if (!surface.dropspotStats || surface.dropspotStats.surface !== this || surface.dropspotStats.side.id !== side.id) {
+                    surface.dropspotStats = {
+                        surface: this,
+                        side: side,
+                        start: {
+                            x: vector.x1,
+                            y: vector.y1,
+                        },
+                    };
+                }
+
                 // The idea is to calculate the fraction of the dragging position
                 // relative to the full width/height in the same direction and to
                 // use that fraction to calculate the relative index in the array
                 // of dropspots
-                var width = this.right - this.left;
-                var height = this.bottom - this.top;
+                //Update: instead of using the full width/height, we adjusted this
+                // so it works with the dropspotStats implementation above, see below
+                //var width = this.right - this.left;
+                //var height = this.bottom - this.top;
+
                 var fraction = 0;
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:
-                        fraction = (vector.y1 - this.top) / height;
+                        fraction = (vector.y1 - this.top) / (surface.dropspotStats.start.y - this.top);
                         break;
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
-                        fraction = (this.bottom - vector.y1) / height;
+                        fraction = (this.bottom - vector.y1) / (this.bottom - surface.dropspotStats.start.y);
                         break;
                     case blocks.elements.Surface.SIDE.LEFT.id:
-                        fraction = (vector.x1 - this.left) / width;
+                        fraction = (vector.x1 - this.left) / (surface.dropspotStats.start.x - this.left);
                         break;
                     case blocks.elements.Surface.SIDE.RIGHT.id:
-                        fraction = (this.right - vector.x1) / width;
+                        fraction = (this.right - vector.x1) / (this.right - surface.dropspotStats.start.x);
                         break;
                 }
 
@@ -811,8 +843,9 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 //eg. when dragging right, the full left half of the block
                 //will return index 0 (the innermost dropspot) since this one
                 //is most likely to be wanted by the user. The surface of the
-                //right half will be divided by the number of dropspots available
-                fraction = Math.max(fraction - 0.5, 0) * 2.0;
+                //right half will be divided by the number of remaining dropspots
+                //Update: disabled this because it works better with the dropspotStats implementation above
+                //fraction = Math.max(fraction - 0.5, 0) * 2.0;
 
                 //convert the fraction to an index in the array
                 retVal = Math.floor(dropspots.length * fraction);
