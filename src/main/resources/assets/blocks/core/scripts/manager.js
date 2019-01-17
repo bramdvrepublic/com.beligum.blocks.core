@@ -26,7 +26,7 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
+base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI, Notification)
 {
     var Manager = this;
 
@@ -112,9 +112,6 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
      */
     $(document).on(Broadcaster.EVENTS.MOUSE.CLICK, function (event, eventData)
     {
-        // Logger.info(eventData.surface);
-        // Logger.info(eventData.element[0].outerHTML.split('>')[0]);
-
         var switchToPage = true;
 
         //we clicked on a surface
@@ -168,6 +165,11 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         //add a general and a typed dragging class to the overlay wrapper
         UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
         UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS + '-' + eventData.surface.type);
+
+        //also add a class to the block we're dragging around (except when creating a new block)
+        if (eventData.surface.overlay) {
+            eventData.surface.overlay.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+        }
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
     {
@@ -189,13 +191,36 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
             return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
         });
 
-        //reset hover information that was stored during previewing
-        eventData.surface.resetPreviewMoveTo();
+        var draggedBlock = eventData.surface;
 
-        //note that eg. resizers don't have dropspots, their preview is immediate
+        //reset hover information that was stored during previewing
+        draggedBlock.resetPreviewMoveTo();
+
+        //reset the drag class on the dragged surface (except when creating a new block)
+        if (draggedBlock.overlay) {
+            draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+        }
+
         var activeDropspot = blocks.elements.Surface.getActiveDropspot();
+        //note that eg. resizers don't have dropspots, their preview is immediate
         if (activeDropspot) {
-            eventData.surface.moveTo(activeDropspot.anchor, activeDropspot.side);
+            if (!draggedBlock.isNewBlock()) {
+                draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+            }
+            else {
+                createNewBlock(function callback(newBlockEl, onComplete)
+                {
+                    var parentSurface = activeDropspot.anchor;
+                    //Create a new block with an element, but without a parent
+                    //and immediately move it to the final location
+                    var newBlock = new blocks.elements.Block(null, newBlockEl);
+                    newBlock.moveTo(parentSurface, activeDropspot.side);
+
+                    if (onComplete) {
+                        onComplete();
+                    }
+                });
+            }
         }
 
         //this clears all previous dropspot indicators (for all surfaces)
@@ -251,6 +276,193 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
             Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
             enableFocusBlurDetection(block, selectedElement);
+        }
+    };
+
+    var createNewBlock = function (callback)
+    {
+        // show select box with all blocks
+        var boxDialog;
+        //Note: the inner div will be replaced when the new load() content comes in
+        var box = $('<div><div style="padding: 20px;">' + BlocksMessages.newBlockLoading + '</div></div>');
+
+        var endpointUrlParams = '';
+        var currentTypeof = UI.html.attr('typeof');
+        if (currentTypeof) {
+            endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
+            endpointUrlParams += BlocksConstants.GET_BLOCKS_TYPEOF_PARAM + '=' + encodeURIComponent(currentTypeof);
+        }
+        var pageTemplate = UI.html.attr(BlocksConstants.HTML_ROOT_TEMPLATE_ATTR);
+        if (pageTemplate) {
+            endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
+            endpointUrlParams += BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM + '=' + encodeURIComponent(pageTemplate);
+        }
+        box.load(BlocksConstants.GET_BLOCKS_ENDPOINT + endpointUrlParams, function (response, status, xhr)
+        {
+            if (status == "error") {
+                Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);
+            }
+            else {
+                box.find("a").click(function (event)
+                {
+                    var name = $(this).attr("data-value");
+
+                    //not always very fast, so show the wait dialog
+                    //var waitingDialog;
+                    var waitingDialog = new BootstrapDialog({
+                        message: BlocksMessages.newBlockLoadingResources
+                    });
+
+                    boxDialog.close();
+                    if (waitingDialog) {
+                        waitingDialog.open();
+                    }
+
+                    $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT + name)
+                        .done(function (data)
+                        {
+                            if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] !== "") {
+
+                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES);
+                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES);
+
+                                // Whow, this is weird stuff!
+                                // Originally just $(data.html), but docs say the current version is safer.
+                                // Problem was it failed with certains custom elements:
+                                // th-search didn't work, where div-search did work.
+                                // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
+                                // Fixed with a patched version (see pom.xml)
+                                // Note: fixed in JQuery 1.12.0 & 2.2.0 & 3.0 so we should probably get rid of the patched JQuery
+                                var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
+
+                                //resetDragDrop();
+                                //cancelled = false;
+                                // Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
+                                // {
+                                //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
+                                //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
+                                // });
+
+                                callback(block, function onComplete()
+                                {
+                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
+                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
+                                });
+                            }
+                            else {
+                                Notification.error(BlocksMessages.newBlockError, data);
+                            }
+                        })
+                        .fail(function (xhr, textStatus, exception)
+                        {
+                            Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+                        })
+                        .always(function ()
+                        {
+                            if (waitingDialog) {
+                                waitingDialog.close();
+                            }
+                        });
+                });
+            }
+        });
+
+        //var cancelled = true;
+        boxDialog = BootstrapDialog.show({
+            title: BlocksMessages.selectFromTheListBelow,
+            cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
+            message: function ()
+            {
+                return box
+            },
+            buttons: [],
+            // onhidden: function ()
+            // {
+            //     if (cancelled) {
+            //         DragDrop.dragAborted();
+            //         Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, blockEvent);
+            //     }
+            // }
+        });
+    };
+
+    var addHeadResources = function (resourceArray, className, resourceType, isScript)
+    {
+        if (resourceArray != null && resourceArray.length > 0) {
+            loadRecursiveHeadResources(resourceArray, 0, className, resourceType, isScript);
+        }
+    };
+    var loadRecursiveHeadResources = function (resourceArray, idx, className, resourceType, isScript)
+    {
+        if (idx < resourceArray.length) {
+
+            //parse the raw html to a jquery object
+            var resourceEl = $(resourceArray[idx]);
+
+            //Note: we don't so this anymore because we implemented the 'is present' check, see below
+            //start off by removing existing ones
+            //$("head ." + className).remove();
+            //resourceEl.addClass(className);
+
+            var srcAttr = resourceEl.attr("src");
+            if (isScript && srcAttr) {
+
+                //Note 1: this also adds the script to the head of the page (in case of a crossdomain URL, not in case of a local one, is that ok?),
+                //        so we don't execute a $("head").append(resourceEl); here, hope that's ok
+                //Note 2: we can't just append the script to the head element, cause we need to catch the callback and wire-in the plugin...
+                //Note 3: By default, $.getScript() sets the cache setting to false by appending a timestamp to the script, so it's re-requested every time.
+                //        Since we won't want that, we replace $.getScript by it's $.ajax counterpart and set the cache to true
+                $.ajax({
+                    type: "GET",
+                    url: srcAttr,
+                    dataType: "script",
+                    cache: true
+                })
+                //$.getScript(srcAttr)
+                    .done(function (data, textStatus, jqxhr)
+                    {
+                        //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
+                        base.run();
+
+                        //recursive call to make sure the resources are loaded synchronously
+                        loadRecursiveHeadResources(resourceArray, idx + 1, className, resourceType, isScript);
+                    })
+                    .fail(function (xhr, textStatus, exception)
+                    {
+                        Notification.error(BlocksMessages.loadResourcesError + (exception ? "; " + exception : ""), xhr, textStatus, exception);
+                    });
+            }
+            else {
+
+                var head = $('head');
+                var resourceElRaw = resourceEl[0];
+                var resourceElInnerHtml = resourceElRaw.innerHTML;
+
+                //since scripts will probably be in the footer, make sure we search the entire DOM,
+                //then sub-filter on full html string
+                var isPresent = $('html').find(resourceElRaw.tagName).filter(function ()
+                {
+
+                    if (resourceType == BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES) {
+                        return $(this).attr('href') === resourceEl.attr('href');
+                    }
+                    else if (resourceType == BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS) {
+                        return $(this).attr('src') === resourceEl.attr('src');
+                    }
+                    else {
+                        return this.innerHTML === resourceElInnerHtml;
+                    }
+                });
+
+                if (isPresent.length == 0) {
+                    head.append(resourceEl);
+                }
+                else {
+                    //Logger.info('Skipped resource append for ' + resourceElRaw.outerHTML);
+                }
+
+                loadRecursiveHeadResources(resourceArray, idx + 1, className, resourceType, isScript);
+            }
         }
     };
 

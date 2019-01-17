@@ -85,7 +85,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     var DRAG_MILLIS_THRESHOLD = 1000;
 
     //show dragging direction
-    var SHOW_DEBUG_LINES = true;
+    var SHOW_DEBUG_LINES = false;
 
     //the size of the history window to keep during dragging
     var WINDOW_SIZE = 20;

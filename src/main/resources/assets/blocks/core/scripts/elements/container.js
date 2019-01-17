@@ -80,6 +80,19 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         {
             return blocks.elements.Surface.ORIENTATION.VERTICAL;
         },
+        /**
+         * Overloaded parent method to disable dropspots on containers
+         *
+         * @param surface
+         * @param side
+         * @param prevSurface
+         * @returns {Array}
+         * @private
+         */
+        _createDropspots: function (surface, side, prevSurface)
+        {
+            return [];
+        },
     });
 
 }]);

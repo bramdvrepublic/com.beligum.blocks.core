@@ -819,7 +819,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 // so it works with the dropspotStats implementation above, see below
                 //var width = this.right - this.left;
                 //var height = this.bottom - this.top;
-
                 var fraction = 0;
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:

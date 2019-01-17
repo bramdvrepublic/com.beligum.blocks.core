@@ -436,7 +436,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         DOM.enableContextMenu(true);
 
         //create a new node out of the full page html
-        var savePage = $("html").clone();
+        var savePage = UI.html.clone();
 
         //this extracts the real body (without the sidebar code) we need to save
         //see toggle close for more or less the same code

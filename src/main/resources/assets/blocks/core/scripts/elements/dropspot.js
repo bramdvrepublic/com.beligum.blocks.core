@@ -57,36 +57,9 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
             this.anchor = anchor;
             this.side = side;
 
-            this.overlay = this._createOverlay(UI.dropspotWrapper);
-            this.overlay.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS);
-            this.overlay.addClass(side.cssClass);
-
-            switch (side.id) {
-                case blocks.elements.Surface.SIDE.TOP.id:
-                    this.overlay.css('top', anchor.top);
-                    this.overlay.css('left', anchor.left);
-                    this.overlay.css('width', anchor.right - anchor.left);
-                    break;
-                case blocks.elements.Surface.SIDE.RIGHT.id:
-                    this.overlay.css('top', anchor.top);
-                    this.overlay.css('left', anchor.right - BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH);
-                    this.overlay.css('height', anchor.bottom - anchor.top);
-                    break;
-                case blocks.elements.Surface.SIDE.BOTTOM.id:
-                    this.overlay.css('top', anchor.bottom - BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH);
-                    this.overlay.css('left', anchor.left);
-                    this.overlay.css('width', anchor.right - anchor.left);
-                    break;
-                case blocks.elements.Surface.SIDE.LEFT.id:
-                    this.overlay.css('top', anchor.top);
-                    this.overlay.css('left', anchor.left);
-                    this.overlay.css('height', anchor.bottom - anchor.top);
-                    break;
-            }
-
-            //start out hidden
-            this.hide();
-
+            //instead of constructing the element and hiding it until it's needed,
+            //we decided to create/destroy the element during show()/hide() instead
+            this.overlay = undefined;
         },
         // constructor: function (side, anchor, index)
         // {
@@ -106,11 +79,40 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.base
         //-----PUBLIC METHODS-----
         show: function()
         {
-            this.overlay.show();
+            this.overlay = this._createOverlay(UI.dropspotWrapper);
+            this.overlay.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS);
+            this.overlay.addClass(this.side.cssClass);
+
+            switch (this.side.id) {
+                case blocks.elements.Surface.SIDE.TOP.id:
+                    this.overlay.css('top', this.anchor.top);
+                    this.overlay.css('left', this.anchor.left);
+                    this.overlay.css('width', this.anchor.right - this.anchor.left);
+                    break;
+                case blocks.elements.Surface.SIDE.RIGHT.id:
+                    this.overlay.css('top', this.anchor.top);
+                    this.overlay.css('left', this.anchor.right - BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH);
+                    this.overlay.css('height', this.anchor.bottom - this.anchor.top);
+                    break;
+                case blocks.elements.Surface.SIDE.BOTTOM.id:
+                    this.overlay.css('top', this.anchor.bottom - BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH);
+                    this.overlay.css('left', this.anchor.left);
+                    this.overlay.css('width', this.anchor.right - this.anchor.left);
+                    break;
+                case blocks.elements.Surface.SIDE.LEFT.id:
+                    this.overlay.css('top', this.anchor.top);
+                    this.overlay.css('left', this.anchor.left);
+                    this.overlay.css('height', this.anchor.bottom - this.anchor.top);
+                    break;
+            }
         },
         hide: function()
         {
-            this.overlay.hide();
+            if (this.overlay) {
+                this.overlay.remove();
+            }
+
+            this.overlay = undefined;
         },
 
         //-----TODO UNCHECKED-----

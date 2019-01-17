@@ -21,6 +21,7 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    this.html = $("html");
     this.body = $("body");
     this.startButton = undefined;
     this.sidebar = undefined;

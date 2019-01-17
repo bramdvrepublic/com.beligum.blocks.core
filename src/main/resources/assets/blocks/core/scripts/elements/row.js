@@ -155,7 +155,9 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
             blocks.elements.Row.Super.prototype._removeChild.call(this, surface);
 
             // re-distribute the extra space over the existing columns
-            if (this.children.length > 0) {
+            //note that the isColumn() is needed because when dropping new blocks, they sometimes
+            //end up in a row first before they are moved to their final destination.
+            if (this.children.length > 0 && surface.isColumn()) {
 
                 var extraWidth = surface.columnWidth;
                 var extraWidthPerCol = Math.floor(extraWidth / this.children.length);
@@ -164,9 +166,9 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
                 for (var i = 0; i < this.children.length; i++) {
                     this.children[i].setColumnWidth(this.children[i].columnWidth + extraWidthPerCol + (i === 0 ? extraWidthRounding : 0));
                 }
-
-                this._updateResizers();
             }
+
+            this._updateResizers();
         },
         /**
          * Overloads the parent surface function to simplify the row-in-col12-in-row situation.

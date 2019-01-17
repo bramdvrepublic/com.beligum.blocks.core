@@ -108,7 +108,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
                         //detach the child from its parent
-                        this.parent._removeChild(this);
+                        if (!this.isNewBlock()) {
+                            this.parent._removeChild(this);
+                        }
 
                         surface.parent._addChild(this, side.id === blocks.elements.Surface.SIDE.TOP.id ? surface.index : surface.index + 1);
 
@@ -133,7 +135,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         else {
 
                             //detach the child from its parent
-                            this.parent._removeChild(this);
+                            if (!this.isNewBlock()) {
+                                this.parent._removeChild(this);
+                            }
 
                             var rowTag = parentRow._getTagName();
                             var colTag = parentCol._getTagName();
@@ -205,7 +209,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             //   and skip the parent spots that have the same dimension as the child spots
             //   so the top dropspot of the first/last child (block) in this column should get it.
             // - left/right
-            //   Create  new column in the parent row and distribute the widths
+            //   Create a new column in the parent row and distribute the widths
             else if (surface.isColumn()) {
 
                 switch (side.id) {
@@ -218,7 +222,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.RIGHT.id:
 
                         //detach the child from its parent
-                        this.parent._removeChild(this);
+                        if (!this.isNewBlock()) {
+                            this.parent._removeChild(this);
+                        }
 
                         var row = surface._getParent(blocks.elements.Row);
 
@@ -269,7 +275,9 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
                         //detach the child from its parent
-                        this.parent._removeChild(this);
+                        if (!this.isNewBlock()) {
+                            this.parent._removeChild(this);
+                        }
 
                         var row = surface;
                         //note: we don't specify the parent class because we don't know it's type (can be column or container because of nesting)
@@ -312,8 +320,13 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.LEFT.id:
                     case blocks.elements.Surface.SIDE.RIGHT.id:
 
+                        //NOTE: this is currently disabled by overloading the _createDropspots() method in container,
+                        // but it works. It probably needs more thought regarding simplification before really enabling it, though.
+
                         //detach the child from its parent
-                        this.parent._removeChild(this);
+                        if (!this.isNewBlock()) {
+                            this.parent._removeChild(this);
+                        }
 
                         var container = surface;
                         //we should probably add some sort of typing here since we do the same for parent()?
