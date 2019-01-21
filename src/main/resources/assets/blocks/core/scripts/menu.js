@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DOM", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", "blocks.core.UI", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages, UI)
+base.plugin("blocks.core.Menu", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DOM", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", "blocks.core.UI", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages, UI)
 {
-    var Frame = this;
+    var Menu = this;
 
     var SIDEBAR_STATE_NULL = "";
     var SIDEBAR_STATE_SHOW = BlocksConstants.PAGE_SIDEBAR_COOKIE_SHOW;
@@ -31,6 +31,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var CONTAINERS_SELECTOR = ".container, blocks-layout";
 
     this.KEY_CODE_SHIFT = 16;
+
+    this.PIERCE_THROUGH_DATA = 'pierce-through';
 
     //-----VARIABLES-----
     var keysPressed = [];
@@ -137,11 +139,14 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     pierceThrough = control.is('[contenteditable=true]') || control.parents('[contenteditable=true]').length > 0;
                 }
 
-                if (!pierceThrough) {
-                    //controls in the sidebar are enabled by default
-                    if (UI.sidebar) {
-                        pierceThrough = UI.sidebar.find(control).length > 0;
-                    }
+                //controls in the sidebar are enabled by default
+                if (!pierceThrough && UI.sidebar) {
+                    pierceThrough = UI.sidebar.find(control).length > 0;
+                }
+
+                //allow the dev to set a specific flag in the event to pierce through, both in the direct event and in the originalEvent
+                if (!pierceThrough && ((e.data && e.data[Menu.PIERCE_THROUGH_DATA] === true) || (e.originalEvent.data && e.originalEvent.data[Menu.PIERCE_THROUGH_DATA] === true))) {
+                    pierceThrough = true;
                 }
 
                 //TODO unchecked
@@ -158,7 +163,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 //if shift is pressed, allow parse through (allow for easy navigation when you know what you're doing)
                 if (!pierceThrough) {
-                    pierceThrough = Frame.isKeyPressed(Frame.KEY_CODE_SHIFT);
+                    pierceThrough = Menu.isKeyPressed(Menu.KEY_CODE_SHIFT);
                     if (pierceThrough) {
                         var tag = control.prop("tagName").toLowerCase();
                         //for now, we only support regular links, because buttons are harder to implement...

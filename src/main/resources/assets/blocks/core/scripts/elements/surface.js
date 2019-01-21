@@ -181,6 +181,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
+             * Reset all extra overlay elements
+             */
+            clearAllOverlays: function ()
+            {
+                blocks.elements.Surface.clearSurfaces();
+                blocks.elements.Surface.clearResizers();
+                blocks.elements.Surface.clearDropspots();
+            },
+
+            /**
              * Returns the currently selected dropspot
              */
             getActiveDropspot: function ()
@@ -930,6 +940,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             var retVal = null;
 
             // This should always be true
+            // Update: no, when creating a new block, this will happen
             // Note: JS object-equality checks by reference
             if (this.children[surface.index] === surface) {
 
@@ -952,7 +963,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 retVal = surface;
             }
             else {
-                Logger.error('Encountered a situation where a child surface is out of sync with its parent, this shouldn\'t happen');
+                //don't log, it's a valid situation when creating a new block
+                //Logger.error('Encountered a situation where a child surface is out of sync with its parent, this shouldn\'t happen');
             }
 
             return retVal;

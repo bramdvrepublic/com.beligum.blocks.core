@@ -26,11 +26,12 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI, Notification)
+base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", "blocks.core.Menu", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI, Notification, Menu)
 {
     var Manager = this;
 
     //-----CONSTANTS-----
+    var AUTO_REFRESH_TIMEOUT = 500;
 
     //-----VARIABLES-----
     // flag to enable/disable layout functionality (create, resize, move and delete)
@@ -44,6 +45,10 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
 
     //the currently focused surface
     var focusedSurface = null;
+
+    //timer that
+    var dimensionTimer = null;
+    var dimension;
 
     //-----EVENT LISTENERS-----
     /**
@@ -65,6 +70,26 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
 
         //start listening for clicks
         Mouse.activate();
+
+        dimension = {
+            width: UI.body.width(),
+            height: UI.body.height(),
+        };
+        dimensionTimer = setInterval(function ()
+        {
+            var width = UI.body.width();
+            var height = UI.body.height();
+
+            if (dimension.width !== width || dimension.height !== height) {
+
+                pageSurface._refresh(true);
+
+                dimension.width = width;
+                dimension.height = height;
+            }
+
+        }, AUTO_REFRESH_TIMEOUT);
+
     });
 
     /**
@@ -126,7 +151,7 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
                 //make sure the block we received is a valid block
                 && eventData.surface.isBlock()
                 //if we click on (instead of dragging) the new block button, do nothing and let the popover do it's thing
-                && !eventData.surface.isNewBlock()) {
+                && !eventData.surface.isNew()) {
 
                 switchFocus(eventData.surface, eventData.element, eventData.originalEvent);
 
@@ -204,16 +229,22 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         var activeDropspot = blocks.elements.Surface.getActiveDropspot();
         //note that eg. resizers don't have dropspots, their preview is immediate
         if (activeDropspot) {
-            if (!draggedBlock.isNewBlock()) {
+
+            //save a reference to the parent before it's removed
+            var oldParent = draggedBlock.parent;
+
+            if (!draggedBlock.isNew()) {
                 draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
             }
             else {
                 createNewBlock(function callback(newBlockEl, onComplete)
                 {
                     var parentSurface = activeDropspot.anchor;
-                    //Create a new block with an element, but without a parent
-                    //and immediately move it to the final location
-                    var newBlock = new blocks.elements.Block(null, newBlockEl);
+                    // Create a new block and immediately move it to the final location.
+                    // Note that the block will not be added to the parent until moveTo()
+                    // is called, but the parent is needed for the constructor to create
+                    // the overlay.
+                    var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
                     newBlock.moveTo(parentSurface, activeDropspot.side);
 
                     if (onComplete) {
@@ -221,11 +252,68 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
                     }
                 });
             }
+
+            //check if we need to cleanup the old parents because they're empty
+            var toClean = oldParent;
+            while (toClean) {
+                //keep a reference to the parent (because we'll be detaching it below)
+                var toCleanParent = toClean.parent;
+
+                //if the surface we want to clean is empty and it has a parent,
+                //we'll remove it from that parent
+                if (toClean.children.length === 0 && toCleanParent) {
+                    toCleanParent._removeChild(toClean);
+                }
+
+                toClean = toCleanParent;
+            }
+
+            //Once all is done, we need to force a deep refresh of the entire page
+            //note that we need to call refresh after the simplify,
+            //because simplify can modify the dom slightly
+            pageSurface._simplify(true);
+            pageSurface._refresh(true);
         }
 
         //this clears all previous dropspot indicators (for all surfaces)
         blocks.elements.Surface.clearDropspots();
     });
+
+    //-----PUBLIC METHODS-----
+    this.remove = function(event, surface)
+    {
+        //save a reference to the parent before it's removed
+        var oldParent = surface.parent;
+
+        surface.parent._removeChild(surface);
+
+        //check if we need to cleanup the old parents because they're empty
+        var toClean = oldParent;
+        while (toClean) {
+            //keep a reference to the parent (because we'll be detaching it below)
+            var toCleanParent = toClean.parent;
+
+            //if the surface we want to clean is empty and it has a parent,
+            //we'll remove it from that parent
+            if (toClean.children.length === 0 && toCleanParent) {
+                toCleanParent._removeChild(toClean);
+            }
+
+            toClean = toCleanParent;
+        }
+
+        //Once all is done, we need to force a deep refresh of the entire page
+        //note that we need to call refresh after the simplify,
+        //because simplify can modify the dom slightly
+        pageSurface._simplify(true);
+        pageSurface._refresh(true);
+
+        //avoid the pierce through popup because the sidebar button is already gone
+        //Note: we need to set it in the originalEvent or it won't end up in the Menu's generic document.on() listener
+        event.originalEvent.data = event.originalEvent.data || {};
+        event.originalEvent.data[Menu.PIERCE_THROUGH_DATA] = true;
+        switchFocus(pageSurface, pageSurface.element, event);
+    };
 
     //-----PRIVATE METHODS-----
     var switchFocus = function (surface, clickedElement, clickEvent)
@@ -385,7 +473,6 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
             // }
         });
     };
-
     var addHeadResources = function (resourceArray, className, resourceType, isScript)
     {
         if (resourceArray != null && resourceArray.length > 0) {

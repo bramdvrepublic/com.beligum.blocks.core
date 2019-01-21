@@ -35,7 +35,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
         //-----VARIABLES-----
         // this will allow to create new blocks in the same way as moving
         // existing blocks
-        isNew: false,
+        _isNew: false,
 
         //-----CONSTRUCTORS-----
         constructor: function (parentSurface, element)
@@ -67,14 +67,14 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             }
             //if we call the constructor without arguments, we're creating a new block
             else {
-                this.isNew = true;
+                this._isNew = true;
             }
         },
 
         //-----PUBLIC METHODS-----
-        isNewBlock: function ()
+        isNew: function ()
         {
-            return this.isNew;
+            return this._isNew;
         },
 
         /**
@@ -108,7 +108,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
                         //detach the child from its parent
-                        if (!this.isNewBlock()) {
+                        if (!this.isNew()) {
                             this.parent._removeChild(this);
                         }
 
@@ -135,7 +135,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         else {
 
                             //detach the child from its parent
-                            if (!this.isNewBlock()) {
+                            if (!this.isNew()) {
                                 this.parent._removeChild(this);
                             }
 
@@ -222,7 +222,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.RIGHT.id:
 
                         //detach the child from its parent
-                        if (!this.isNewBlock()) {
+                        if (!this.isNew()) {
                             this.parent._removeChild(this);
                         }
 
@@ -275,7 +275,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                     case blocks.elements.Surface.SIDE.BOTTOM.id:
 
                         //detach the child from its parent
-                        if (!this.isNewBlock()) {
+                        if (!this.isNew()) {
                             this.parent._removeChild(this);
                         }
 
@@ -324,7 +324,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
                         // but it works. It probably needs more thought regarding simplification before really enabling it, though.
 
                         //detach the child from its parent
-                        if (!this.isNewBlock()) {
+                        if (!this.isNew()) {
                             this.parent._removeChild(this);
                         }
 
@@ -366,30 +366,6 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.base.co
             }
             else {
                 Logger.error('Encountered unimplemented drop-surface type (' + surface.type + '); this shouldn\'t happen; ' + description);
-            }
-
-            //check if we need to cleanup the old parents because they're empty
-            var toClean = oldParent;
-            while (toClean) {
-                //keep a reference to the parent (because we'll be detaching it below)
-                var toCleanParent = toClean.parent;
-
-                //if the surface we want to clean is empty and it has a parent,
-                //we'll remove it from that parent
-                if (toClean.children.length === 0 && toCleanParent) {
-                    toCleanParent._removeChild(toClean);
-                }
-
-                toClean = toCleanParent;
-            }
-
-            //Once all is done, we need to force a deep refresh of the entire page
-            var page = this._getParent(blocks.elements.Page);
-            if (page) {
-                //note that we need to call refresh after the simplify,
-                //because simplify can modify the dom slightly
-                page._simplify(true);
-                page._refresh(true);
             }
         },
 

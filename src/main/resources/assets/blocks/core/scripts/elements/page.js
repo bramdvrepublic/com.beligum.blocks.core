@@ -37,6 +37,9 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
+            //before we build a new page, make sure all old dom elements are cleared
+            blocks.elements.Surface.clearAllOverlays();
+
             blocks.elements.Page.Super.call(this, null, $("." + BlocksConstants.PAGE_CONTENT_CLASS));
 
             //Note: it makes sense to reset the ID lookup table before booting up the submodel

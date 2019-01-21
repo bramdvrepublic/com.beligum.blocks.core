@@ -20,7 +20,7 @@
  *
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Layouter", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Layouter, Commons, All)
+base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Manager", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Manager, Commons, All)
 {
     var Block = this;
     this.TAGS = All.IMPORTS;
@@ -57,14 +57,14 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
 
             var removeAction = $("<li><label>"+BlocksMessages.deleteBlockLabel+"</label></li>").appendTo(blockActions);
             var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
-            removeButton.click(function ()
+            removeButton.click(function (event)
             {
                 //TODO let's not ask for a confirmation but implement an undo-function later on...
                 //confirm.removeClass("hidden");
                 //text.addClass("hidden");
 
-                $("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
-                Layouter.removeBlock(block);
+                //$("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
+                Manager.remove(event, block);
             });
 
             retVal.push(blockActions);
