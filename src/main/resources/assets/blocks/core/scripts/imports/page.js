@@ -17,7 +17,7 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.imports.Page.core", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Class, Widget, BlocksConstants, BlocksMessages)
+base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.imports.Widget", function (Class, BlocksConstants, BlocksMessages, Broadcaster, Widget)
 {
     var Page = this;
     this.TAGS = ['.' + BlocksConstants.PAGE_CONTENT_CLASS];
@@ -50,12 +50,28 @@ base.plugin("blocks.imports.Page.core", ["base.core.Class", "blocks.imports.Widg
             var retVal = [];
 
             var pageActions = $('<ul class="' + BlocksConstants.BLOCK_ACTIONS_CLASS + '"/>');
-            var savePage = $('<li><label>' + BlocksMessages.savePageLabel + '</label></li>').append($('<a class="' + BlocksConstants.SAVE_PAGE_BUTTON + ' btn btn-primary btn-sm pull-right"><i class="fa fa-fw fa-floppy-o"></i></a>')).appendTo(pageActions);
-            var deletePage = $('<li><label>' + BlocksMessages.deletePageLabel + '</label></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
-            var newBlock = $('<li><label>' + BlocksMessages.newBlockLabel + '</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="' + BlocksMessages.newBlockTooltip + '"><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 
-            //activation is done in menu.js (we need one element)
-            pageActions = pageActions.wrap('<div/>');
+            var saveAction = $('<li><label>' + BlocksMessages.savePageLabel + '</label></li>').appendTo(pageActions);
+            var saveBtn = $('<a class="' + BlocksConstants.SAVE_PAGE_BUTTON + ' btn btn-primary btn-sm pull-right"><i class="fa fa-fw fa-floppy-o"></i></a>').appendTo(saveAction);
+            saveBtn.click(function (event)
+            {
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.SAVE, event);
+
+                // Note: this makes sure this event pierces through
+                return false;
+            });
+
+            var deleteAction = $('<li><label>' + BlocksMessages.deletePageLabel + '</label></li>').appendTo(pageActions);
+            var deleteBtn = $('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>').appendTo(deleteAction);
+            deleteBtn.click(function (event)
+            {
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.DELETE, event);
+
+                // Note: this makes sure this event pierces through
+                return false;
+            });
+
+            var newBlock = $('<li><label>' + BlocksMessages.newBlockLabel + '</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="' + BlocksMessages.newBlockTooltip + '"><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 
             //initialize the newBlock popover
             //Note that the popover might not be added to the DOM yet if things load fast (hence the timeout)

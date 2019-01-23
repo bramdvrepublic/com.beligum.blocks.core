@@ -18,7 +18,7 @@
  * Region where templates can be dragged
  * Created by wouter on 5/03/15.
  */
-base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.base.core.internal", "messages.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksMessages, DOM)
+base.plugin("blocks.core.elements.Container", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -40,24 +40,6 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         },
 
         //-----PUBLIC METHODS-----
-
-        //-----TODO UNCHECKED-----
-        // getElementAtSide: function (side)
-        // {
-        //     return null;
-        // },
-        // calculateDropspots: function (side, dropspots)
-        // {
-        //     if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
-        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-        //     }
-        //
-        //     return dropspots;
-        // },
-        // getContainer: function ()
-        // {
-        //     return this;
-        // },
 
         //-----PRIVATE METHODS-----
         _getType: function()
@@ -82,12 +64,6 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "constants.bas
         },
         /**
          * Overloaded parent method to disable dropspots on containers
-         *
-         * @param surface
-         * @param side
-         * @param prevSurface
-         * @returns {Array}
-         * @private
          */
         _createDropspots: function (surface, side, prevSurface)
         {

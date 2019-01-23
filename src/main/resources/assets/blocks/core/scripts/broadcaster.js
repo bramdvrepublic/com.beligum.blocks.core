@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-/*plugin to broadcast messages
+/**
  *
- * register to receive a message for an event by name, and the callback to be called when a message is received.
+ * Plugin to broadcast messages
+ *
+ * Register to receive a message for an event by name, and the callback to be called when a message is received.
  * Different callbacks can be coupled to the same event. So when you register twice for the same event,
  * both callbacks will be called when a message is send.
  * e.g.: Broadcaster.on("doLookup", lookup)
@@ -32,98 +34,95 @@
  * otherwise, only the callbacks for that namespace and event will be removed.
  * e.g.: Broadcaster.off("doLookup", lookup)
  *
- *You can send an event. If needed you can add 1 parameter:
+ * You can send an event. If needed you can add 1 parameter:
  * Broadcaster.send("lookup", parameter);
  *
  * When using a namespace when sending an event, only events for that namespace will be called.
  * If needed you can add a timeout value when sending an event. Then all events will be called
  * with that timeout value. Default is 0, so all registered callbacks will be called without waiting
  * for each other (async). When you give a timeout value < 0 then the next registered callback will
- * be called when the previous callback finished. (synnchronous).
- * Using Broadcaster.send("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
+ * be called when the previous callback finished synchronously.
  *
- * */
-
-base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", function (Constants)
+ * Using Broadcaster.send("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
+ */
+base.plugin("blocks.core.Broadcaster", [function ()
 {
     var Broadcaster = this;
 
-    this.active = false;
-
-    /*
-     * This function sends an event and automatically creates a blockevent with all current parameters
-     * Gives us the location on the page for the mouse, the smallest block we hover over (and the previous one),
-     * the property we hover over (and the previous one)
-     * custom is the paramter used with the send function. The event is triggered on the document
-     */
-    this.send = function (eventName, originalEvent, data)
-    {
-        if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
-            Broadcaster.active = true;
-        }
-
-        if (Broadcaster.active) {
-            var e;
-            // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
-            // but we'll manually re-set the type so it's a new event
-            if (originalEvent) {
-                e = $.Event(originalEvent, {
-                    type: eventName
-                });
-            }
-            else {
-                e = $.Event(eventName);
-            }
-
-            // send the event with jquery
-            $(document).triggerHandler(e, data);
-        }
-
-        if (eventName == Broadcaster.EVENTS.STOP_BLOCKS) {
-            Broadcaster.active = false;
-        }
-    };
-
+    //-----CONSTANTS-----
     this.EVENTS = {
 
-        //sent out when the edit page button was clicked and the sidebar has completed opening
-        START_BLOCKS: "START_BLOCKS",
-        //sent out when the sidebar was closed and has completed shutdown
-        STOP_BLOCKS: "STOP_BLOCKS",
-        //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
-        PAUSE_BLOCKS: "PAUSE_BLOCKS",
-        //sent out when the blocks editor system needs to be un-pauzed
-        RESUME_BLOCKS: "RESUME_BLOCKS",
+        BLOCKS: {
+            //sent out when the edit page button was clicked and the sidebar has completed opening
+            START: "BLOCKS_START",
+            //sent out when the sidebar was closed and has completed shutdown
+            STOP: "BLOCKS_STOP",
+            //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
+            PAUSE: "BLOCKS_PAUSE",
+            //sent out when the blocks editor system needs to be un-pauzed
+            RESUME: "BLOCKS_RESUME",
+        },
 
         MOUSE: {
+            // custom general click event that happens when the user clicked,
+            // but may have slipped the mouse a few pixels between mouse down and up
             CLICK: "MOUSE_CLICK",
+            // the user exceeded the minimum threshold and started dragging the mouse
             DRAG_START: "MOUSE_DRAG_START",
+            // the user moved the mouse inside a dragging session
             DRAG_MOVE: "MOUSE_DRAG_MOVE",
+            // the user released the mouse after a dragging session
             DRAG_STOP: "MOUSE_DRAG_STOP",
         },
 
-        // Events with blockEvent as argument
-        START_DRAG: "START_DRAG",
-        END_DRAG: "END_DRAG",
-        ABORT_DRAG: "ABORT_DRAG",
-        DRAG_OVER_BLOCK: "DRAG_OVER_BLOCK",
-        FOCUS_BLOCK: "FOCUS_BLOCK",
+        UNDO: {
+            // Sent out when an undo stack frame is recorded
+            RECORDED: "UNDO_RECORDED",
+            // Sent out when an undo action has been executed
+            PERFORMED: "UNDO_PERFORMED",
+            // Sent out when an redo action has been executed
+            REDO: "UNDO_REDO",
+        },
 
-        // Events send when the the templates DOM tree in memory will/is/did rebuild
-        DO_REFRESH_LAYOUT: "DO_REFRESH_LAYOUT",
-        WILL_REFRESH_LAYOUT: "WILL_REFRESH_LAYOUT",
-        DID_REFRESH_LAYOUT: "DID_REFRESH_LAYOUT",
+        PAGE: {
+            //the current page needs to be saved
+            SAVE: "PAGE_SAVE",
+            //the current page needs to be deleted
+            DELETE: "PAGE_DELETE",
+        },
 
-        // Announce that we changed someting to the dom (add/remove/resize elements)
-        // this will automatically trigger DO_REFRESH_LAYOUT
-        DOM_CHANGED: "DOM_CHANGED",
+        BLOCK: {
+            //a block needs to be deleted
+            DELETE: "BLOCK_DELETE",
+        },
+    };
 
-        // Sent out when an undo stack frame is recorded
-        UNDO_RECORDED: "UNDO_RECORDED",
-        // Sent out when an undo action has been executed
-        UNDO_PERFORMED: "UNDO_PERFORMED",
-        // Sent out when an redo action has been executed
-        REDO_PERFORMED: "REDO_PERFORMED",
+    //-----VARIABLES-----
+
+    //-----PUBLIC METHODS-----
+    /*
+     * This function sends an event and automatically creates a custom event with parameters.
+     * It allows us to solve the cyclic-dependency problem between the modules.
+     * The events are triggered on the document
+     */
+    this.send = function (eventName, originalEvent, data)
+    {
+        var e;
+
+        // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
+        // but we'll manually re-set the type so it's a new event
+        if (originalEvent) {
+
+            e = $.Event(originalEvent, {
+                type: eventName
+            });
+        }
+        else {
+            e = $.Event(eventName);
+        }
+
+        // send the event with jquery
+        $(document).triggerHandler(e, data);
     };
 
 }]);

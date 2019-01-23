@@ -19,7 +19,7 @@
  *
  * Created by wouter on 10/06/15.
  */
-base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.DOM", function (Class, BlocksConstants, BlocksMessages, DOM)
+base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", function (Class, BlocksConstants, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -47,25 +47,9 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
 
             //We manually call this for the top-level structure (the page) to bootstrap the subtree-generation
             this._buildSubmodel();
-
-            //this._refresh(true);
         },
 
         //-----PUBLIC METHODS-----
-
-        //-----TODO UNCHECKED-----
-        // getLayoutContainer: function ()
-        // {
-        //     var retVal = null;
-        //     for (var i = 0; i < this.children.length; i++) {
-        //         var child = this.children[i];
-        //         if (child.isContainer()) {
-        //             retVal = child;
-        //             break;
-        //         }
-        //     }
-        //     return retVal;
-        // },
 
         //-----PRIVATE METHODS-----
         _getType: function()

@@ -20,7 +20,7 @@
  *
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Manager", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Manager, Commons, All)
+base.plugin("blocks.imports.Block", ["base.core.Class", "base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.UI", "blocks.imports.Widget", "blocks.imports.All", function (Class, Commons, BlocksConstants, BlocksMessages, Broadcaster, UI, Widget, All)
 {
     var Block = this;
     this.TAGS = All.IMPORTS;
@@ -55,16 +55,17 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
 
             var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
 
-            var removeAction = $("<li><label>"+BlocksMessages.deleteBlockLabel+"</label></li>").appendTo(blockActions);
+            var removeAction = $("<li><label>" + BlocksMessages.deleteBlockLabel + "</label></li>").appendTo(blockActions);
             var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
             removeButton.click(function (event)
             {
-                //TODO let's not ask for a confirmation but implement an undo-function later on...
-                //confirm.removeClass("hidden");
-                //text.addClass("hidden");
+                Broadcaster.send(Broadcaster.EVENTS.BLOCK.DELETE, event, {
+                        surface: block
+                    }
+                );
 
-                //$("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
-                Manager.remove(event, block);
+                // Note: this makes sure this event pierces through
+                return false;
             });
 
             retVal.push(blockActions);

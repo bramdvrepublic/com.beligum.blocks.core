@@ -26,7 +26,7 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DOM", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", "blocks.core.Menu", function (Constants, BlocksConstants, BlocksMessages, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI, Notification, Menu)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification)
 {
     var Manager = this;
 
@@ -40,65 +40,54 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
     // flag to enable/disable editing of existing blocks (giving them focus to start editing)
     var allowEdit = true;
 
-    //the surface of the page
-    var pageSurface = null;
-
-    //the currently focused surface
-    var focusedSurface = null;
-
-    //timer that
+    // timer that checks the body dimension at regular intervals
+    // and refreshes the page model when needed
     var dimensionTimer = null;
     var dimension;
 
+    //-----MAIN ENTRY POINT: THIS BOOTSTRAPS THE BLOCKS SYSTEM-----
+    Sidebar.create();
+
     //-----EVENT LISTENERS-----
     /**
-     * Sent out by menu.js when the sidebar was opened and the editor needs to boot up
+     * Sent out when the sidebar was opened and the editor needs to boot up
      */
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
+    $(document).on(Broadcaster.EVENTS.BLOCKS.START, function (event)
     {
-        //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
-        // Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
-
-        //start off by showing the layouter
-        // Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
-
         //create the page model
-        pageSurface = new blocks.elements.Page();
+        UI.pageSurface = new blocks.elements.Page();
 
         //use the generalized method to put focus on the newly created page
-        switchFocus(pageSurface, pageSurface.element, event);
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
-        //start listening for clicks
+        //disable navigating away without saving the page
+        disableNavigation(true);
+
+        //display a notification when the user navigates away (possibly without saving)
+        if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG === 'true') {
+            enableLeaveConfirmation(true);
+        }
+
+        //start listening for custom click events
         Mouse.activate();
 
-        dimension = {
-            width: UI.body.width(),
-            height: UI.body.height(),
-        };
-        dimensionTimer = setInterval(function ()
-        {
-            var width = UI.body.width();
-            var height = UI.body.height();
-
-            if (dimension.width !== width || dimension.height !== height) {
-
-                pageSurface._refresh(true);
-
-                dimension.width = width;
-                dimension.height = height;
-            }
-
-        }, AUTO_REFRESH_TIMEOUT);
+        //start watching the DOM dimensions independently of any events
+        //and refresh the page model when a change is detected
+        enableResizeDetector(true);
 
     });
 
     /**
-     * Sent out by menu.js when the sidebar was closed and the editor needs to shut down
+     * Sent out when the sidebar was closed and the editor needs to shut down
      */
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
+    $(document).on(Broadcaster.EVENTS.BLOCKS.STOP, function (event)
     {
         //some cleanup: helps bugs when closing the bar during focus
-        focusSwitch(Hover.getPageBlock());
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+
+        disableNavigation(false);
+        enableLeaveConfirmation(false);
+        enableResizeDetector(false);
 
         //TODO revise this (needs to be pause?)
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
@@ -147,7 +136,7 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
                 //clicking on a surface is the first event to edit it, so block it if we don't have permission
                 allowEdit
                 //we don't allow to switch focus from one block to the next, let's always go back to the page first
-                && (!focusedSurface || focusedSurface === pageSurface)
+                && (!UI.focusedSurface || UI.focusedSurface === UI.pageSurface)
                 //make sure the block we received is a valid block
                 && eventData.surface.isBlock()
                 //if we click on (instead of dragging) the new block button, do nothing and let the popover do it's thing
@@ -158,18 +147,18 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
                 switchToPage = false;
             }
             //option 2) we re-clicked on the focused surface (this should be impossible because pointer-events are disabled on focus)
-            else if (focusedSurface && eventData.surface === focusedSurface) {
+            else if (UI.focusedSurface && eventData.surface === UI.focusedSurface) {
                 switchToPage = false;
             }
         }
         //we didn't click on a surface
         else if (!eventData.surface) {
             // there's currently focus on a block
-            if (focusedSurface.isBlock()) {
+            if (UI.focusedSurface.isBlock()) {
                 //option 3) since we disable pointer-events for the focused surface, additional clicks inside that surface will be tied to regular DOM elements inside the block;
                 //          make sure we don't switch back to the page so the user can interact with the content of the block
                 //          Note: $.closest() begins with the current element, so the block itself is also included.
-                if (eventData.element.closest(focusedSurface.element).length > 0) {
+                if (eventData.element.closest(UI.focusedSurface.element).length > 0) {
                     switchToPage = false;
                 }
                 //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
@@ -180,8 +169,8 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         }
 
         // in all other cases, we switch back to the page
-        if (switchToPage && !focusedSurface.isPage()) {
-            switchFocus(pageSurface, pageSurface.element, eventData.originalEvent);
+        if (switchToPage && !UI.focusedSurface.isPage()) {
+            switchFocus(UI.pageSurface, UI.pageSurface.element, eventData.originalEvent);
         }
     });
 
@@ -253,40 +242,244 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
                 });
             }
 
-            //check if we need to cleanup the old parents because they're empty
-            var toClean = oldParent;
-            while (toClean) {
-                //keep a reference to the parent (because we'll be detaching it below)
-                var toCleanParent = toClean.parent;
-
-                //if the surface we want to clean is empty and it has a parent,
-                //we'll remove it from that parent
-                if (toClean.children.length === 0 && toCleanParent) {
-                    toCleanParent._removeChild(toClean);
-                }
-
-                toClean = toCleanParent;
-            }
-
-            //Once all is done, we need to force a deep refresh of the entire page
-            //note that we need to call refresh after the simplify,
-            //because simplify can modify the dom slightly
-            pageSurface._simplify(true);
-            pageSurface._refresh(true);
+            postChangeBlock(oldParent);
         }
 
         //this clears all previous dropspot indicators (for all surfaces)
         blocks.elements.Surface.clearDropspots();
     });
 
-    //-----PUBLIC METHODS-----
-    this.remove = function(event, surface)
+    $(document).on(Broadcaster.EVENTS.PAGE.SAVE, function (event, eventData)
     {
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
+        //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
+        // remove the widths from the containers
+        $(CONTAINERS_SELECTOR).removeAttr("style");
+
+        //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
+        // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
+        // a virtual html page by combining the content of the wrapper with the <head> in the html
+
+        //clear the manual container width (we'll re-set it back later)
+        clearContainerWidth();
+
+        //create a new node out of the full page html
+        var savePage = UI.html.clone();
+
+        //this extracts the real body (without the sidebar code) we need to save
+        //see toggle close for more or less the same code
+        //TODO ideally, we should make this uniform (virtually close the sidebar?)
+        var container = savePage.find("." + BlocksConstants.PAGE_CONTENT_CLASS);
+        //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
+        container.css("width", "");
+        var content = container.html();
+        var bodyCopy = savePage.find("body");
+        bodyCopy.empty();
+        bodyCopy.append(content);
+        bodyCopy.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+        //convert from jQuery to html string
+        savePage = savePage[0].outerHTML;
+
+        //reset what we cleared above
+        updateContainerWidth();
+
+        var dialog = new BootstrapDialog({
+            type: BootstrapDialog.TYPE_PRIMARY,
+            title: BlocksMessages.savePageDialogTitle,
+            message: BlocksMessages.savePageDialogMessage,
+            buttons: []
+        });
+
+        dialog.open();
+
+        $.ajax({
+            type: 'POST',
+            url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
+            data: savePage,
+            contentType: 'application/json; charset=UTF-8',
+        })
+            .done(function (data, textStatus, response)
+            {
+            })
+            .fail(function (xhr, textStatus, exception)
+            {
+                Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+            })
+            .always(function ()
+            {
+                dialog.close();
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
+            });
+    });
+
+    $(document).on(Broadcaster.EVENTS.PAGE.DELETE, function (event, eventData)
+    {
+        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        var onConfirm = function (deleteAllTranslations)
+        {
+            var dialog = new BootstrapDialog({
+                type: BootstrapDialog.TYPE_DANGER,
+                title: BlocksMessages.deletingPageDialogTitle,
+                message: BlocksMessages.deletingPageDialogMessage,
+                buttons: []
+            });
+
+            dialog.open();
+
+            $.ajax({
+                type: 'DELETE',
+                url: deleteAllTranslations ? BlocksConstants.DELETE_PAGE_ALL_ENDPOINT : BlocksConstants.DELETE_PAGE_ENDPOINT,
+                data: document.URL,
+                contentType: 'application/json; charset=UTF-8',
+            })
+                .done(function (url, textStatus, response)
+                {
+                    if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
+                        window.onbeforeunload = undefined;
+                    }
+
+                    if (url) {
+                        window.location = url;
+                    }
+                    else {
+                        location.reload();
+                    }
+                })
+                .fail(function (xhr, textStatus, exception)
+                {
+                    dialog.close();
+                    Notification.error(BlocksMessages.deletingPageErrorMessage + (exception ? "; " + exception : ""), xhr);
+                })
+                .always(function ()
+                {
+                    //Note: we don't close it here, but in the fail() instead,
+                    // because the done() does a redirect and thus displays the message all
+                    // the way to the end
+                    //dialog.close();
+                });
+        };
+
+        BootstrapDialog.show({
+            title: BlocksMessages.deletePageDialogTitle,
+            type: BootstrapDialog.TYPE_DANGER,
+            message: BlocksMessages.deletePageDialogMessage,
+            buttons: [
+                {
+                    id: 'btn-ok-single',
+                    label: BlocksMessages.deletePageDialogConfirmSingle,
+                    cssClass: 'btn-danger',
+                    action: function (dialogRef)
+                    {
+                        onConfirm(false);
+                        dialogRef.close();
+                    }
+
+                },
+                {
+                    id: 'btn-ok-all',
+                    label: BlocksMessages.deletePageDialogConfirmAll,
+                    cssClass: 'btn-danger',
+                    action: function (dialogRef)
+                    {
+                        onConfirm(true);
+                        dialogRef.close();
+                    }
+
+                },
+                {
+                    id: 'btn-close',
+                    label: BlocksMessages.cancel,
+                    action: function (dialogRef)
+                    {
+                        dialogRef.close();
+                    }
+                },
+            ],
+            onhide: function ()
+            {
+                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
+            }
+        });
+    });
+
+    $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
+    {
+        var surface = eventData.surface;
+
         //save a reference to the parent before it's removed
         var oldParent = surface.parent;
 
         surface.parent._removeChild(surface);
 
+        postChangeBlock(oldParent);
+
+        //avoid the pierce through popup because the sidebar button is already gone
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+    });
+
+    $(document).on("keyup keydown", function (e)
+    {
+        switch (e.type) {
+            case "keydown" :
+                UI.keysPressed[e.keyCode] = true;
+                break;
+            case "keyup" :
+                //Logger.info("key up: "+e.keyCode);
+                UI.keysPressed[e.keyCode] = false;
+                break;
+        }
+
+        var btn;
+        //disabled for now
+        // if (UI.isKeyPressed(KEYCODE_CTRL) && UI.isKeyPressed(KEYCODE_S)) {
+        //     btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
+        // }
+
+        if (btn) {
+            if (btn.is(":visible")) {
+                btn.click();
+                e.preventDefault();
+            }
+        }
+    });
+
+    //-----PRIVATE METHODS-----
+    /**
+     * Do a context switch to the clicked block
+     *
+     * @param surface
+     * @param clickedElement
+     * @param clickEvent
+     */
+    var switchFocus = function (surface, clickedElement, clickEvent)
+    {
+        //since the css below is animated, the sidebar will be filled by the time
+        //the animation is finished, so boot it first
+        Sidebar.init(surface, clickedElement, clickEvent);
+
+        if (surface.isBlock()) {
+            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            surface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            Mouse.enableDragging(false);
+        }
+        else {
+            UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+            Mouse.enableDragging(true);
+        }
+
+        UI.focusedSurface = surface;
+    };
+
+    /**
+     * These are the common actions to be done when we added/moved/removed a block.
+     *
+     * @param oldParent
+     */
+    var postChangeBlock = function (oldParent)
+    {
         //check if we need to cleanup the old parents because they're empty
         var toClean = oldParent;
         while (toClean) {
@@ -305,66 +498,8 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         //Once all is done, we need to force a deep refresh of the entire page
         //note that we need to call refresh after the simplify,
         //because simplify can modify the dom slightly
-        pageSurface._simplify(true);
-        pageSurface._refresh(true);
-
-        //avoid the pierce through popup because the sidebar button is already gone
-        //Note: we need to set it in the originalEvent or it won't end up in the Menu's generic document.on() listener
-        event.originalEvent.data = event.originalEvent.data || {};
-        event.originalEvent.data[Menu.PIERCE_THROUGH_DATA] = true;
-        switchFocus(pageSurface, pageSurface.element, event);
-    };
-
-    //-----PRIVATE METHODS-----
-    var switchFocus = function (surface, clickedElement, clickEvent)
-    {
-        //since the css below is animated, the sidebar will be filled by the time
-        //the animation is finished, so boot it first
-        Sidebar.init(surface, clickedElement, clickEvent);
-
-        if (surface.isBlock()) {
-            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            surface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            Mouse.enableDragging(false);
-        }
-        else {
-            UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            Mouse.enableDragging(true);
-        }
-
-        focusedSurface = surface;
-    };
-    /**
-     * @param block the block that should get focus (not null)
-     * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
-     * @param propertyElement the first property element or template element on the way up from element (may be null)
-     * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
-     */
-    var focusSwitch = function (block, element, propertyElement, hotspot, event)
-    {
-        //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
-        // except when we click on an element that's inside the currently focused block
-        var previousFocusedBlock = Hover.getFocusedBlock();
-
-        if (previousFocusedBlock == null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
-            Sidebar.init(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
-            Hover.removeFocusOverlays();
-            Hover.setFocusedBlock(Hover.getPageBlock());
-            Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, event);
-        }
-        else {
-            //if we got a property, use it, otherwise focus the entire block
-            var selectedElement = propertyElement == null ? block.element : propertyElement;
-
-            Sidebar.init(block, selectedElement, hotspot, event);
-            Hover.showFocusOverlays(block.element);
-            Hover.setFocusedBlock(block);
-            //TODO revise
-            Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
-
-            enableFocusBlurDetection(block, selectedElement);
-        }
+        UI.pageSurface._simplify(true);
+        UI.pageSurface._refresh(true);
     };
 
     var createNewBlock = function (callback)
@@ -553,6 +688,171 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         }
     };
 
+    /**
+     * Prevent clicking on links while in editing mode
+     * Note: after trying mousedown or mouseup to prevent vanishing links from triggering the modal,
+     * it's quite important this is effectively the click event, because it overloads a lot of necessary other clicks
+     * Use the pierce trough class to work around it
+     *
+     * @param enable
+     */
+    var disableNavigation = function (enable)
+    {
+        var NAMESPACE = 'prevent_click';
+
+        if (enable) {
+            // This will capture all clicks on <a> or <button> elements,
+            // regardless of their location and/or if they're moved, added, deleted, ...
+            $(document).on("click." + NAMESPACE, "a, button", function (e)
+            {
+                //this is needed (instead of $(this)) to detect the [contenteditable]
+                var control = $(e.target);
+
+                //this attribute allows us to let some components pass through after all
+                var pierceThrough = false;
+
+                //also check all the parents for that attribute to allow for easy management and grouping
+                if (!pierceThrough) {
+                    pierceThrough = control.is('[' + BlocksConstants.FORCE_CLICK_ATTR + ']') || control.parents('[' + BlocksConstants.FORCE_CLICK_ATTR + ']').length > 0;
+                }
+
+                //allow all the buttons in modal dialogs to work as usual
+                if (!pierceThrough) {
+                    pierceThrough = control.parents('.modal-dialog').length > 0;
+                }
+
+                //disable the popup when we're editing text
+                if (!pierceThrough) {
+                    pierceThrough = control.is('[contenteditable=true]') || control.parents('[contenteditable=true]').length > 0;
+                }
+
+                //controls in the sidebar are enabled by default
+                if (!pierceThrough && UI.sidebar) {
+                    pierceThrough = UI.sidebar.find(control).length > 0;
+                }
+
+                //allow the dev to set a specific flag in the event to pierce through, both in the direct event and in the originalEvent
+                //However, since all pierce-through should be set using UI.setPierceThrough(), it should always be set on the originalEvent object
+                if (!pierceThrough && ((e.data && e.data[UI.PIERCE_THROUGH_DATA] === true) || (e.originalEvent.data && e.originalEvent.data[UI.PIERCE_THROUGH_DATA] === true))) {
+                    pierceThrough = true;
+                }
+
+                //TODO unchecked
+                //check if we clicked on the link, or on something inside a link
+                //and pass through if we didn't click on a link itself
+                // if (!pierceThrough) {
+                //     if (!control.is($(this))) {
+                //         pierceThrough = true;
+                //     }
+                // }
+
+                //since the selector of this handler only manages <a> and <button>, we only have two options
+                var newLocation = null;
+
+                //if shift is pressed, allow parse through (allow for easy navigation when you know what you're doing)
+                if (!pierceThrough) {
+                    pierceThrough = UI.isKeyPressed(UI.KEYCODE.SHIFT);
+                    if (pierceThrough) {
+                        var tag = control.prop("tagName").toLowerCase();
+                        //for now, we only support regular links, because buttons are harder to implement...
+                        if (tag == "a") {
+                            newLocation = control.attr("href");
+                        }
+                        else {
+                            pierceThrough = false;
+                            Logger.warn("Unsupported tag name encountered while handling a force-click; " + tag);
+                        }
+                    }
+                }
+
+                if (pierceThrough) {
+                    //cut developers some slack, can't count the times I had to debug a
+                    //link and ended up here...
+                    Logger.info("Clicked on a link that had pierce-through set", e);
+
+                    if (newLocation) {
+                        window.location = newLocation;
+                    }
+                }
+                else {
+                    Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
+                }
+
+                //See http://api.jquery.com/on/
+                //Returning false from an event handler will automatically call
+                // event.stopPropagation() and event.preventDefault().
+                return pierceThrough;
+            });
+        }
+        else {
+            //removes all events in this namespace
+            $(document).off("." + NAMESPACE);
+        }
+    };
+
+    /**
+     * Enable functionality where we warn the user if she navigates away (possibly without saving)?
+     *
+     * @param enable
+     */
+    var enableLeaveConfirmation = function (enable)
+    {
+        if (enable) {
+            window.onbeforeunload = function (e)
+            {
+                // Cancel the event as stated by the standard.
+                e.preventDefault();
+                // Chrome requires returnValue to be set.
+                e.returnValue = '';
+                //most browsers will ignore this message
+                return BlocksMessages.leavePageConfirmation;
+            };
+        }
+        else {
+            window.onbeforeunload = undefined;
+        }
+    };
+
+    /**
+     * This is unelegant, but needed: when adding a new block,
+     * (eg. a blocks-image), external resources (styles/scripts/images/...)
+     * sometimes change that block's dimensions long after it was created
+     * (eg. an image over a slow link). Because of this (and other reasons),
+     * we can't really only refresh the page model (+ surface dimensions) in a
+     * controlled manner. So we decided to create this loop that does that from time to time.
+     *
+     * @param enable
+     */
+    var enableResizeDetector = function(enable)
+    {
+        if (enable) {
+            dimension = {
+                width: UI.body.width(),
+                height: UI.body.height(),
+            };
+            dimensionTimer = setInterval(function ()
+            {
+                var width = UI.body.width();
+                var height = UI.body.height();
+
+                if (dimension.width !== width || dimension.height !== height) {
+                    dimension.width = width;
+                    dimension.height = height;
+
+                    UI.pageSurface._refresh(true);
+                }
+
+            }, AUTO_REFRESH_TIMEOUT);
+        }
+        else {
+            if (dimensionTimer) {
+                clearInterval(dimensionTimer);
+            }
+
+            dimensionTimer = undefined;
+        }
+    };
+
     //-----TODO UNCHECKED-----
     //TODO revise (RESUME_BLOCKS)
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
@@ -560,7 +860,8 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
         //start listening for mousedown, mouseup, mouseleave
         Mouse.activate();
         //collapse selection, prevent text selection, disable ondragstart
-        DOM.enableTextSelection(false);
+        //TODO revise
+        //DOM.enableTextSelection(false);
         //show surfaces
         //Hover.showHoverOverlays();
         //enable dragging
@@ -717,13 +1018,15 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
      */
     var enableLayout = function (enable)
     {
+        var newBlockBtn = $('.' + BlocksConstants.CREATE_BLOCK_CLASS);
+
         if (enable) {
             //Mouse.enableLayout(true);
             DragDrop.setActive(true);
             Resizer.activate(true);
 
-            if (UI.newBlockBtn) {
-                UI.newBlockBtn.removeAttr("disabled");
+            if (newBlockBtn) {
+                newBlockBtn.removeAttr("disabled");
             }
         }
         else {
@@ -731,9 +1034,9 @@ base.plugin("blocks.core.Manager", ["constants.base.core.internal", "constants.b
             DragDrop.setActive(false);
             Resizer.activate(false);
 
-            if (UI.newBlockBtn) {
-                UI.newBlockBtn.attr("disabled", "");
-                UI.newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
+            if (newBlockBtn) {
+                newBlockBtn.attr("disabled", "");
+                newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
             }
         }
     };

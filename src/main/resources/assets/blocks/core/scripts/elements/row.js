@@ -18,7 +18,7 @@
  * A row inside a column or a container
  * Can only contain columns
  */
-base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core.internal", "blocks.core.DOM", "constants.blocks.core", "messages.blocks.core", function (Class, Constants, DOM, BlocksConstants, BlocksMessages)
+base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", function (Class, BlocksConstants, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -54,34 +54,6 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.base.core
         },
 
         //-----PUBLIC METHODS-----
-
-        //-----TODO UNCHECKED-----
-        // // Override
-        // getElementAtSide: function (side)
-        // {
-        //     if (side == Constants.SIDE.TOP) {
-        //         return this.getPrevious();
-        //     }
-        //     else if (side == Constants.SIDE.BOTTOM) {
-        //         return this.getNext();
-        //     }
-        //     else {
-        //         return null;
-        //     }
-        // },
-        //
-        // // find all dropspots for an element
-        // // is called for a block and returns all dropspots for this block and his parents.
-        // calculateDropspots: function (side, dropspots)
-        // {
-        //     var isOuter = this.isOuter(side);
-        //     if ((side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) && this.children.length > 1) {
-        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-        //     }
-        //
-        //     if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
-        //     return dropspots;
-        // },
 
         //-----PRIVATE METHODS-----
         _getType: function ()

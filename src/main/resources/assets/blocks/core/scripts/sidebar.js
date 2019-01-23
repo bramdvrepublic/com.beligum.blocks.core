@@ -17,11 +17,18 @@
 /**
  * Created by wouter on 15/06/15.
  */
-base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", function (Layouter, Finder, Notification, Commons, Widget, BlocksConstants, BlocksMessages)
+base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.UI", "blocks.imports.Widget", "blocks.media.Finder", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Notification, UI, Widget, Finder)
 {
     var Sidebar = this;
 
     //-----CONSTANTS-----
+    var SIDEBAR_STATE_NULL = "";
+    var SIDEBAR_STATE_SHOW = BlocksConstants.PAGE_SIDEBAR_COOKIE_SHOW;
+    var SIDEBAR_STATE_HIDE = BlocksConstants.PAGE_SIDEBAR_COOKIE_HIDE;
+    //Note: an empty paths means: take the path of the current page
+    var DEFAULT_COOKIE_OPTIONS = BlocksConstants.PAGE_SIDEBAR_COOKIE_OPTIONS;
+
+    var MIN_SIDEBAR_WIDTH = 200;
 
     //-----VARIABLES-----
     //this will map IDs to config panels
@@ -32,7 +39,177 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
 
     //-----PUBLIC METHODS-----
     /**
+     * Create the sidebar element (but don't add it to the DOM yet)
+     */
+    this.create = function ()
+    {
+        UI.sidebar = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
+        UI.sidebar.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
+        {
+            if (status == 'success') {
+
+                // When everything is preloaded correctly,
+                // notify the user we're here by creating a start button,
+                // Note: the icon is set in blocks.less
+                UI.startButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>')
+                    .attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE)
+                    // Hide/show sidebar when menu button is clicked
+                    .on("click", function (event)
+                    {
+                        //since we reuse this button as the close button, we need to detect the state
+                        Sidebar.toggle(UI.body.find("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
+                    })
+                    .appendTo(UI.body);
+
+                //check for a cookie and auto-open when the sidebar was active
+                if (Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE) === SIDEBAR_STATE_SHOW) {
+                    $(document).ready(function ()
+                    {
+                        Sidebar.toggle(true);
+                    });
+                }
+            }
+            else {
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+            }
+        });
+    };
+
+    /**
+     * Open or close the sidebar panel, (un)loading all required code to boot it's content.
+     *
+     * @param show
+     */
+    this.toggle = function (show)
+    {
+        var cookieState = SIDEBAR_STATE_NULL;
+
+        if (show) {
+
+            // Remove the menu button while animating sidebar
+            // Note that we remove it because we'll call body.empty() below
+            UI.startButton.detach();
+
+            // Needs some explaining:
+            // If we wrap the body with our blocks-page-content element,
+            // the scripts at the bottom of the page seem to cause errors.
+            // So we will pull them out of the body and insert them as siblings of the body.
+            // Note that this is designed to wrap scripts that don't render anything out, so watch out
+            // if you use it for other purposes; it will break the design/behaviour of the sidebar.
+            var ignoredBody = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
+            // We'll create a placeholder for the ignored body, just after it (while keeping the reference to the original in the variable)
+            // (note that we're re-using the same class for the placeholder) so we can look it up in the body and put it back
+            // in the same spot when the sidebar is closed
+            ignoredBody.after('<div class="' + BlocksConstants.PAGE_IGNORE_CLASS + '" />');
+            //detach is like remove() but without the releasing of memory structures
+            ignoredBody.detach();
+
+            // wrap the contents of the body in a separate wrapper element,
+            // so we can add the surfaces and sidebar too
+            UI.pageContent = $('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />');
+            UI.pageContent.append(UI.body.children().detach());
+            UI.body.append(UI.pageContent);
+            UI.body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+            //temporarily put them here
+            UI.body.append(ignoredBody);
+            UI.body.append(UI.sidebar);
+
+            // create the overlay containers
+            UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
+            UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+            UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+
+            //set up perfect-scrollbar.js
+            if ($.perfectScrollbar) {
+                //only scroll from the tab content so the header doesn't scroll away
+                UI.sidebar.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
+            }
+
+            // Get old sidebar width from cookie
+            var cookieSidebarWidth = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+            //make sure the value is OK and cleanup if not
+            if (Commons.isUnset(cookieSidebarWidth) || !$.isNumeric(cookieSidebarWidth)) {
+                cookieSidebarWidth = null;
+                Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH, DEFAULT_COOKIE_OPTIONS);
+            }
+            else {
+                cookieSidebarWidth = parseInt(cookieSidebarWidth);
+            }
+
+            var windowWidth = $(window).width();
+            var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
+            if (cookieSidebarWidth != null && cookieSidebarWidth > 0) {
+                INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
+            }
+            //control the bounds, even if the cookie says otherwise
+            if (INIT_SIDEBAR_WIDTH < MIN_SIDEBAR_WIDTH) {
+                INIT_SIDEBAR_WIDTH = MIN_SIDEBAR_WIDTH;
+            }
+
+            cookieState = SIDEBAR_STATE_SHOW;
+            //transform the button to a closing cross
+            //slide open the sidebar and activate the callback when finished
+            Sidebar.setWidth(INIT_SIDEBAR_WIDTH, function (event)
+            {
+                //re-add the button (but with a changed icon)
+                UI.startButton.addClass("open").appendTo(UI.body);
+
+                //allow this sidebar to be resized
+                enableResizing(true);
+
+                //when all sidebar and DOM initialization is done, we can start the blocks system
+                Broadcaster.send(Broadcaster.EVENTS.BLOCKS.START, event);
+            });
+
+        }
+        //hide the sidebar
+        else {
+
+            //make sure all focused blocks are blurred in a clean manner
+            Sidebar.reset();
+
+            cookieState = SIDEBAR_STATE_HIDE;
+            var CLOSE_SIDEBAR_WIDTH = 0.0;
+            //hide the button while animating
+            UI.startButton.removeClass("open").detach();
+            Sidebar.setWidth(CLOSE_SIDEBAR_WIDTH, function (event)
+            {
+                //don't allow the sidebar to be resized
+                enableResizing(false);
+
+                var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
+
+                //this will select all (original) ignored content tags, excluding the placeholders
+                var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
+                ignoredContent.detach();
+
+                var content = content.html();
+                UI.body.empty();
+                UI.body.append(content);
+
+                //this will loop the ignored content and put them back in the placeholders in-order
+                UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
+                {
+                    $(this).replaceWith(ignoredContent[idx]);
+                });
+
+                UI.body.append(UI.startButton);
+                UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+                clearContainerWidth();
+
+                Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS, event);
+            });
+        }
+
+        //Note: by default, the cookie is deleted when the browser is closed:
+        Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState, DEFAULT_COOKIE_OPTIONS);
+    };
+
+    /**
      * Reset and initialize the sidebar's config panels for the supplied (focused) surface.
+     *
      * @param focusedSurface The currently focused surface
      * @param clickedElement The specific element (inside the surface) we clicked on
      * @param mousedownEvent The original mousedown event that cause the focus switch
@@ -56,6 +233,15 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         var currElement = clickedElement;
         var firstColumn = null;
 
+        // if we click on a block, but we actually clicked on the free room around that block
+        // (the 'stretched' space of a block to make it align with it's parent row), we'll click
+        // on the column-element instead of the block-element and we need to fix this because the
+        // clicked element will be a level 'too high' and out of sync with the surface we want to focus
+        if (currElement.closest(focusedSurface.element).length === 0) {
+            currElement = focusedSurface.element;
+        }
+
+        var runawayCounter = 0;
         while (currSurface != null) {
 
             //note that we don't let properties be surfaces for config widgets; we start at block-level
@@ -118,6 +304,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
                 //otherwise, we leave the surface be and iterate the elements first
                 //(this should only happen at the block-level)
                 currElement = currElement.parent();
+            }
+
+            if (++runawayCounter > 1000) {
+                Logger.error('Infinite loop detected, breaking forcefully. This shouldn\'t happen.');
+                break;
             }
         }
     };
@@ -403,5 +594,53 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Layouter", "blocks.media.Finder
         }
     };
 
+    var enableResizing = function (enable)
+    {
+        var NAMESPACE = 'sidebar_resize';
+
+        if (enable) {
+            $(document).on("mousedown." + NAMESPACE, "." + BlocksConstants.PAGE_SIDEBAR_RESIZE_CLASS, function (event)
+            {
+                //needed because sometimes we hover out of the dragger while moving the sidebar (because of some lag)
+                UI.body.addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
+
+                var windowWidth = $(window).width();
+                var pageContent = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
+                $(document).on("mousemove." + NAMESPACE, function (event)
+                {
+                    var x = event.pageX;
+                    var sideWidth = windowWidth - x;
+                    var pageWidth = windowWidth - sideWidth;
+                    if (sideWidth > MIN_SIDEBAR_WIDTH && pageWidth > MIN_SIDEBAR_WIDTH) {
+                        UI.sidebar.css("width", sideWidth + "px");
+                        pageContent.css("width", pageWidth + "px");
+
+                        //tried to alter the viewport dynamically, but it didn't work (yet?) as expected...
+                        //var viewportSuffix = ', initial-scale=1.0, maximum-scale=1.0, user-scalable=0';
+                        //$('head meta[name=viewport]').attr('content', 'width='+pageWidth+viewportSuffix);
+                        ////Logger.debug($('meta[name=viewport]').attr('content'));
+
+                        //to be caught by eg. the finder layouter
+                        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
+                    }
+                });
+
+                $(document).on("mouseup." + NAMESPACE, function (event)
+                {
+                    $(document).off("mousemove." + NAMESPACE);
+                    $(document).off("mouseup." + NAMESPACE);
+
+                    UI.body.removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
+
+                    //Note: by default, the cookie is deleted when the browser is closed:
+                    Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, UI.sidebar.width(), DEFAULT_COOKIE_OPTIONS);
+                });
+            });
+        }
+        else {
+            //removes all events in this namespace
+            $(document).off("." + NAMESPACE);
+        }
+    };
 }
 ]);

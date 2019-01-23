@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks.core", function (BaseConstantsInternal, BlocksConstants)
+base.plugin("blocks.core.UI", ["constants.blocks.core", function (BlocksConstants)
 {
     var UI = this;
 
     //-----CONSTANTS-----
+    this.KEYCODE = {
+        SHIFT: 16,
+        CTRL: 17,
+        TAB: 9,
+        DELETE: 46,
+        ALT: 18,
+        SPACE: 32,
+        BACKSPACE: 8,
+        ESC: 27,
+        LEFT: 37,
+        UP: 38,
+        RIGHT: 39,
+        DOWN: 40,
+
+        S: 83,
+    };
+    this.PIERCE_THROUGH_DATA = 'pierce-through';
 
     //-----VARIABLES-----
     this.html = $("html");
@@ -31,29 +48,36 @@ base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks
     this.resizerWrapper = undefined;
     this.dropspotWrapper = undefined;
 
-    //-----PUBLIC METHODS-----
-    //this is called just before BLOCKS_START is fired
-    this.init = function ()
-    {
-        //this is created in page.js
-        UI.newBlockBtn = $('.' + BlocksConstants.CREATE_BLOCK_CLASS);
+    this.pageSurface = undefined;
+    this.focusedSurface = undefined;
 
-        //before we start building the surfaces, make sure the wrappers are empty
-        UI.surfaceWrapper.empty();
-        UI.resizerWrapper.empty();
-        UI.dropspotWrapper.empty();
+    this.keysPressed = [];
+
+    //-----PUBLIC METHODS-----
+    /**
+     * Returns true if the keyboard key with the supplied code is currently pressed.
+     *
+     * @param code
+     * @returns {boolean}
+     */
+    this.isKeyPressed = function (code)
+    {
+        return this.keysPressed[code] === true;
     };
 
-    this.showOverlays = function(show)
+    /**
+     * Enables pierce-through mode on the event (see manager for details)
+     *
+     * @param event
+     */
+    this.setPierceThrough = function(event)
     {
-        if (this.overlayWrapper) {
-            if (show) {
-                this.overlayWrapper.show();
-            }
-            else {
-                this.overlayWrapper.hide();
-            }
-        }
+        //Note: we need to set it in the originalEvent or it won't end up in the Menu's generic document.on() listener
+        event.originalEvent.data = event.originalEvent.data || {};
+        event.originalEvent.data[this.PIERCE_THROUGH_DATA] = true;
+
+        //for chaining
+        return event;
     };
 
     //-----PRIVATE METHODS-----

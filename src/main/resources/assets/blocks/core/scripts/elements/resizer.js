@@ -19,7 +19,7 @@
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
-base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.blocks.core", "blocks.core.Resizer", "blocks.core.UI", "messages.blocks.core", function (Class, BlocksConstants, Resizer, UI, BlocksMessages)
+base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -55,20 +55,6 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
 
             this.overlay = this._createOverlay(UI.resizerWrapper);
             this.overlay.addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
-
-            // var _this = this;
-            // this.overlay.on("mousedown.resizer", function (event)
-            // {
-            //     // only start drag on left click
-            //     if (event.which == 1) {
-            //         Resizer.startDrag(_this);
-            //         $(document).on("mouseup.resizer", function (event)
-            //         {
-            //             $(document).off("mouseup.resizer");
-            //             Resizer.endDrag(null);
-            //         });
-            //     }
-            // });
         },
 
         //-----PUBLIC METHODS-----
@@ -120,23 +106,6 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
                 }
             }
         },
-
-        //-----TODO UNCHECKED-----
-        // update: function ()
-        // {
-        //     var left = Math.floor((this._calculateLeft(this.rightColumn.element) + this._calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.Resizer.WIDTH / 2);
-        //     this.overlay.css("left", left);
-        //     var siblings = this.leftColumn.parent.resizers;
-        //     var height = this._calculateBottom(this.leftColumn.parent.element) - this._calculateTop(this.leftColumn.parent.element);
-        //     for (var i = 0; i < siblings.length; i++) {
-        //         siblings[i].overlay.css("height", height);
-        //     }
-        // },
-        // updateHeight: function ()
-        // {
-        //     var height = this.leftColumn.parent.element.height();
-        //     this.overlay.css("height", height);
-        // },
 
         //-----PRIVATE METHODS-----
         _getType: function ()

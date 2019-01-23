@@ -14,71 +14,17 @@
  * limitations under the License.
  */
 
-/**
- * The Mouse plugin converts jQuery events to blocks Events
- *
- * A block Event has the following parameters
- *      event: jQuery event
- *      block: the current BLOCK (See Elements) where the event happenend
- *      direction: the direction the mouse pointer is moving (based on the last 10 mouseevents).
- *          Options are:
- *          - Constants.DIRECTION.UP
- *          - Constants.DIRECTION.DOWN
- *          - Constants.DIRECTION.LEFT
- *          - Constants.DIRECTION.RIGHT
- *      draggingStatus: current dragging status:
- *          Constants.DRAGGING.NOT_ALLOWED: dragging is not allowed and can and will not happen
- *                             CAN_START_DRAG: dragging could be started, an item that can be
- *                                             dragged is 'selected'
- *                             CAN_NOT_START_DRAG: dragging can not be started because
- *                                                 there is no draggable item 'selected'
- *                             WAITING: dragging is started for an element but the threshold, set
- *                                      to really start the drag is not yet reached
- *                             YES: currently dragging an object
- *
- *      draggingOptions: only available when draggingStatus == YES
- *          surface: the current surface that is dragged (See Elements)
- *          startEvent: the jquery event on the start of the drag
- *
- *  the mouse plugin sends the following EVENTS. They all send blockEvents as parameter:
- *
- *  HOVER_ENTER_BLOCK: Mouse hovers over a block (not dragging)
- *  HOVER_LEAVE_BLOCK: Mouse leaves a block (not dragging)
- *  HOVER_OVER_BLOCK: Mouse hovers ovr a block (not dragging)
- *
- *  START_DRAG: dragging started
- *  END_DRAG: dragging ended
- *  ABORT_DRAG: dragging aborts (e.g. mouse is outside window)
- *  DRAG_ENTER_BLOCK: a new block was entered while dragging
- *  DRAG_LEAVE_BLOCK: a block was left while dragging
- *  DRAG_OVER_BLOCK: dragging over a block
- *
- *  The mouse plugin listens for the following events:
- *  CAN_START_DRAG: a surface is selected so user could start dragging
- *                  takes options object parameter:
- *                      options.surface: the selected surface
- *                      options.priority: priority of the surface. If an other unknown surface is
- *                                        already selected, then this selected surface will be replaced
- *                                        with the new surface if the new priority is lower then the
- *                                        current priority or if the new surface is of the same kind
- *  CAN_NOT_START_DRAG: a surface is no longer selected so the user can no longer start drag
- *                  takes options object parameter:
- *                      options.surface: the surface that was selected. If this event is received with a different surface
- *                                       then the selected surface, this event will be ignored
- *                      if options == null, then the selected surface will be removed.
- *
- *  ACTIVATE_MOUSE: activate this module
- *  DEACTIVATE_MOUSE: deactivate this module, no events will be send
- *  ALLOW_DRAG: allow dragging
- *  DISABLE_DND: do not allow dragging, even if a surface is selected
- *
- *
- */
-base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", "blocks.core.DOM", function (Commons, Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI, DOM)
+base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.UI", function (Commons, Broadcaster, BlocksConstants, SideBar, UI)
 {
     var Mouse = this;
 
     //-----CONSTANTS-----
+    this.DRAGGING = {
+        NO: 0,
+        YES: 1,
+        DISABLED: 2,
+    };
+
     // The minimum number of pixels we need to move before real dragging starts.
     var DRAG_PX_THRESHOLD = 3;
     // The minimum amount of time we need to be clicking before real dragging starts.
@@ -113,7 +59,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     var active = false;
 
     // true if we really started dragging, past the threshold
-    var draggingStatus = BaseConstantsInternal.DRAGGING.NO;
+    var draggingStatus = Mouse.DRAGGING.NO;
 
     //the current general (mean) direction vector we're dragging in
     var dragVector = {};
@@ -161,6 +107,25 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     };
 
     var debugCanvas = null;
+
+    //-----GENERAL JQUERY FUNCTIONS-----
+    /**
+     * JQuery event listener for more performant window resizing.
+     * Use like this: $(window).smartresize(function (event) {});
+     */
+    $.fn["smartresize"] = function (fn)
+    {
+        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
+    };
+
+    /**
+     * JQuery event listener for more performant window resizing.
+     * Use like this: $(document).on("smartmousemove", function (event) {});
+     */
+    $.fn["smartmousemove"] = function (fn)
+    {
+        return fn ? this.bind('mousemove', debounce(fn)) : this.trigger("smartmousemove");
+    };
 
     //-----PUBLIC METHODS-----
     /**
@@ -231,7 +196,53 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
     this.enableDragging = function (enable)
     {
-        draggingStatus = enable ? BaseConstantsInternal.DRAGGING.NO : BaseConstantsInternal.DRAGGING.DISABLED;
+        draggingStatus = enable ? Mouse.DRAGGING.NO : Mouse.DRAGGING.DISABLED;
+    };
+
+    /**
+     * Enables/disables the selection of text in the page
+     * See http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+     */
+    this.enableTextSelection = function (enable)
+    {
+        if (enable) {
+            $("html").removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+
+            window.ondragstart = function ()
+            {
+                return true;
+            };
+        }
+        else {
+            //de-select existing selection
+            var sel = window.getSelection().removeAllRanges();
+
+            //add user-select: none; to the root html
+            $("html").addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+
+            //disable dragging
+            window.ondragstart = function ()
+            {
+                return false;
+            };
+        }
+    };
+
+    /**
+     * Enables/disables the context menu
+     */
+    this.enableContextMenu = function (enable)
+    {
+        if (enable) {
+            $("html").removeAttr("oncontextmenu", "");
+            // IE < 10
+            $("html").removeAttr("onselectstart");
+        }
+        else {
+            $("html").attr("oncontextmenu", "return false;");
+            // IE < 10
+            $("html").attr("onselectstart", "return false;");
+        }
     };
 
     //-----PRIVATE METHODS-----
@@ -340,7 +351,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
         //if dnd was actually disabled, we'll unregister ourself immediately,
         //only using this to fill the clickedElement above
-        if (draggingStatus === BaseConstantsInternal.DRAGGING.DISABLED) {
+        if (draggingStatus === Mouse.DRAGGING.DISABLED) {
             $(document).off("mousemove.blocks_core");
         }
         //if not, do our normal dnd tracking
@@ -353,11 +364,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             //first, check if we need to activate dragging
             //note that we only start dragging after a certain pixel threshold, except for the resizers because
             //sometimes they need very fine dragging (col in row in col)
-            if (draggingStatus === BaseConstantsInternal.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLengthAbs > DRAG_PX_THRESHOLD || stats.totalTimeDiffAbs > DRAG_MILLIS_THRESHOLD)) {
+            if (draggingStatus === Mouse.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLengthAbs > DRAG_PX_THRESHOLD || stats.totalTimeDiffAbs > DRAG_MILLIS_THRESHOLD)) {
 
-                draggingStatus = BaseConstantsInternal.DRAGGING.YES;
+                draggingStatus = Mouse.DRAGGING.YES;
 
-                DOM.enableTextSelection(false);
+                Mouse.enableTextSelection(false);
 
                 //this will re-activate the overlays because if we're dragging, we need them to
                 //figure out which surface we're hovering on
@@ -372,25 +383,10 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                     //this is the original mousedown event that started the drag
                     event: mousedownEvent,
                 });
-
-                //var overlays = $('.' + BlocksConstants.OVERLAY_CLASS);
-                //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-                //overlays.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
-
-                //don't show the hover effects while dragging; it blocks the visibility of the lines in between
-                //overlays.addClass(BlocksConstants.OVERLAY_BLOCK_HOVER);
-
-                //UI.showOverlays(false);
-
-                // //pass this along with the custom event data object
-                // Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {
-                //     //we'll pass the block we initially had our cursor over (even before the wait threshold)
-                //     block: startBlock
-                // });
             }
 
             //we're past the threshold and are dragging a block around
-            if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
+            if (draggingStatus === Mouse.DRAGGING.YES) {
 
                 //keep track of the surfaces we're hovering on
                 var prevHoveredSurface = hoveredSurface;
@@ -422,12 +418,6 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                         dragStats: stats,
                     });
                 }
-
-                // var block = Hover.getHoveredBlock();
-                //
-                // Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {
-                //     block: block
-                // });
             }
         }
     };
@@ -454,7 +444,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         }
 
         //if we didn't drag (or we weren't allowed to), we clicked
-        if (draggingStatus === BaseConstantsInternal.DRAGGING.NO || draggingStatus === BaseConstantsInternal.DRAGGING.DISABLED) {
+        if (draggingStatus === Mouse.DRAGGING.NO || draggingStatus === Mouse.DRAGGING.DISABLED) {
             //note that we use the mousedown event as the parent event,
             // it're more intuitive when sending out a 'click' event
             Broadcaster.send(Broadcaster.EVENTS.MOUSE.CLICK, event, {
@@ -466,7 +456,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 originalEvent: mousedownEvent,
             });
         }
-        else if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
+        else if (draggingStatus === Mouse.DRAGGING.YES) {
             Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_STOP, event, {
                 //this is the surface we dragged around
                 surface: mousedownSurface,
@@ -481,37 +471,6 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
         //we always reset the mouse when done
         _resetMouse();
-
-        //var hoverObj = Hover.createHoverClickObject(draggingSurface, element, event);
-        // if (hoverObj) {
-        //     //this will mainly end up in sidebar.js
-        //     Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
-        //
-        //     //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
-        //     Hover.setHoveredBlock(null);
-        // }
-        // else {
-        //     Logger.error("Got null object while creating a hover object; this shouldn't happen");
-        // }
-
-        // // this means the mousedown happened outside of any block or other kind of hotspot
-        // // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
-        // else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
-        //     if (Hover.getFocusedBlock() != null) {
-        //         //this will mainly end up in sidebar.js
-        //         Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-        //             //this is an alternative for launching a blur
-        //             block: Hover.getPageBlock(),
-        //             //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
-        //             element: element,
-        //             //there is no property element for the pageBlock
-        //             propertyElement: null
-        //         });
-        //     }
-        // }
-        // else {
-        //     // do nothing
-        // }
     };
 
     /**
@@ -521,7 +480,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseCancel = function (event)
     {
-        if (draggingStatus === BaseConstantsInternal.DRAGGING.YES) {
+        if (draggingStatus === Mouse.DRAGGING.YES) {
             Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
         }
 
@@ -536,8 +495,8 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     var _resetMouse = function ()
     {
         //don't reset the status of dnd is disabled, we need to do that explicitly
-        if (draggingStatus !== BaseConstantsInternal.DRAGGING.DISABLED) {
-            draggingStatus = BaseConstantsInternal.DRAGGING.NO;
+        if (draggingStatus !== Mouse.DRAGGING.DISABLED) {
+            draggingStatus = Mouse.DRAGGING.NO;
         }
         mousedownSurface = null;
         clickedElement = null;
@@ -553,22 +512,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
         //re-enable the text selection that was disabled during drag
-        DOM.enableTextSelection(true);
-
-        // windowFrame = {
-        //     width: document.innerWidth,
-        //     height: document.innerHeight
-        // };
-        // draggingStartEvent = null;
-        //
-        // startBlock = null;
-        // draggingStatus = BaseConstantsInternal.DRAGGING.NO;
-        //
-        // //re-enable (or reset) the events of the overlays to work
-        // var overlays = $('.' + BlocksConstants.OVERLAY_CLASS);
-        // overlays.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
-        //
-        // overlays.removeClass("invisible");
+        Mouse.enableTextSelection(true);
     };
 
     /*
@@ -656,6 +600,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         stats.direction = 0;
         stats.speed = 0;
     };
+
     var updateStats = function (event)
     {
         var newStat = {
@@ -753,6 +698,41 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         stats.variance = 1.0 - Math.sqrt(stats.sinSum * stats.sinSum + stats.cosSum * stats.cosSum) / stats.events.length;
         //note: the resulting speed will be expressed as pixels per second (avoiding division by zero)
         stats.speed = stats.totalTimeDiff === 0 ? 0 : stats.totalLength / (stats.totalTimeDiff / 1000);
+    };
+
+    /**
+     * Debouncing function to make eventing more performant
+     * by amortizing quick successions together.
+     * See http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
+     * @param func
+     * @param threshold
+     * @param execAsap
+     * @returns {debounced}
+     */
+    var debounce = function (func, threshold, execAsap)
+    {
+        var timeout;
+
+        return function debounced()
+        {
+            var obj = this, args = arguments;
+
+            function delayed()
+            {
+                if (!execAsap)
+                    func.apply(obj, args);
+                timeout = null;
+            }
+
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+            else if (execAsap) {
+                func.apply(obj, args);
+            }
+
+            timeout = setTimeout(delayed, threshold || 50);
+        };
     };
 
 }]);

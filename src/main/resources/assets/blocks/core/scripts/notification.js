@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Broadcaster)
+base.plugin("blocks.core.Notification", [function ()
 {
     this.info = function (message, object)
     {

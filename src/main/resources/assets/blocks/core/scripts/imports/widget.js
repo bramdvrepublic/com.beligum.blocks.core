@@ -2006,7 +2006,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 Sortable.create(listGroup.get(0), opts);
             }
 
-            if (jQuery().perfectScrollbar) {
+            if ($.perfectScrollbar) {
                 listGroup.perfectScrollbar();
             }
 

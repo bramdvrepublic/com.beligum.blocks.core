@@ -189,6 +189,11 @@ body.@{BODY_EDIT_MODE_CLASS} {
         // For now, let's start with the second and see what happens
         //display: none;
         pointer-events: none;
+
+        // the floating point absolute positioning of the overlays
+        // don't always play nice with the borders of adjoining overlays,
+        // this will make sure the border of the focused overlay looks best
+        z-index: @overlayZ + 1;
       }
     }
 

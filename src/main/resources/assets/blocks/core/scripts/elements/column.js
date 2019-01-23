@@ -19,7 +19,7 @@
  *
  * Created by wouter on 9/03/15.
  */
-base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.core.internal", "messages.blocks.core", "blocks.core.DOM", function (Class, Constants, BlocksMessages, DOM)
+base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -98,36 +98,6 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "constants.base.c
             this.columnClass = newClass;
             this.columnWidth = colWidth;
         },
-
-        //-----TODO UNCHECKED-----
-        // // Override
-        // getElementAtSide: function (side)
-        // {
-        //     if (side == Constants.SIDE.LEFT) {
-        //         return this.getPrevious();
-        //     }
-        //     else if (side == Constants.SIDE.RIGHT) {
-        //         return this.getNext();
-        //     }
-        //     else {
-        //         return null;
-        //     }
-        // },
-        //
-        // // find all dropspots for an element
-        // // is called for a block and returns all dropspots for this block and his parents.
-        // calculateDropspots: function (side, dropspots)
-        // {
-        //     if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT)) {
-        //         dropspots.push(new blocks.elements.Dropspot(side, this, dropspots.length));
-        //     }
-        //
-        //     if (this.isOuter(side) && this.parent != null) {
-        //         dropspots = this.parent.calculateDropspots(side, dropspots);
-        //     }
-        //
-        //     return dropspots;
-        // },
 
         //-----PRIVATE METHODS-----
         _getType: function ()

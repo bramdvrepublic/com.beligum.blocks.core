@@ -19,7 +19,7 @@
  *
  * Created by bram on 19/10/18.
  */
-base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", "blocks.core.UI", function (Class, Constants, Broadcaster, Hover, UI)
+base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.UI", function (Class, Constants, Broadcaster, UI)
 {
     var Undo = this;
 
@@ -50,7 +50,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
             this.commands.push(command);
             this.stackPosition++;
             this.changed();
-            Broadcaster.send(Broadcaster.EVENTS.UNDO_RECORDED);
+            Broadcaster.send(Broadcaster.EVENTS.UNDO.RECORDED);
 
             //the calc seems to be quite heavy, so we put it somewhere in the future
             //to improve the user experience
@@ -247,10 +247,10 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
             }
 
             if (action == 'undo') {
-                Broadcaster.send(Broadcaster.EVENTS.UNDO_PERFORMED);
+                Broadcaster.send(Broadcaster.EVENTS.UNDO.PERFORMED);
             }
             else {
-                Broadcaster.send(Broadcaster.EVENTS.REDO_PERFORMED);
+                Broadcaster.send(Broadcaster.EVENTS.UNDO.REDO);
             }
         },
         _getElement: function()
@@ -430,7 +430,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     {
         _executeDelayedCommand(Undo.UpdateHtmlCommand.NAME, element, oldValue, function (oldVal)
         {
-            return new Undo.UpdateHtmlCommand(Hover.getFocusedBlock().element[0], element, oldVal, configElement, configOldValue, configNewValue, listener);
+            return new Undo.UpdateHtmlCommand(UI.focusedSurface.element[0], element, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
     /**
@@ -448,7 +448,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     {
         _executeDelayedCommand(Undo.UpdateAttributeCommand.NAME, element, oldValue, function (oldVal)
         {
-            return new Undo.UpdateAttributeCommand(Hover.getFocusedBlock().element[0], element, attribute, oldVal, configElement, configOldValue, configNewValue, listener);
+            return new Undo.UpdateAttributeCommand(UI.focusedSurface.element[0], element, attribute, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
 
@@ -469,7 +469,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     });
     //note: if another block executes a change, we need to make sure
     //the old html is updated or we'll bypass that change and jump further back in time
-    $(document).on(Broadcaster.EVENTS.UNDO_RECORDED, function (event)
+    $(document).on(Broadcaster.EVENTS.UNDO.RECORDED, function (event)
     {
         oldPageHtml = UI.pageContent.html();
     });
@@ -504,7 +504,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                     case 90: //z
                         e.preventDefault();
 
-                        if (Undo.stack.canUndo(Hover.getFocusedBlock().element[0], Hover.getPageBlock().element[0])) {
+                        if (Undo.stack.canUndo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
                             Undo.stack.undo();
                         }
                         else {
@@ -515,7 +515,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                     case 89: //y
                         e.preventDefault();
 
-                        if (Undo.stack.canRedo(Hover.getFocusedBlock().element[0], Hover.getPageBlock().element[0])) {
+                        if (Undo.stack.canRedo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
                             Undo.stack.redo();
                         }
                         else {

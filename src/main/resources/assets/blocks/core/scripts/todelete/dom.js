@@ -44,70 +44,6 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
 
     //-----PUBLIC METHODS-----
     /**
-     * JQuery event listener for more performant window resizing.
-     * Use like this: $(window).smartresize(function (event) {});
-     */
-    $.fn["smartresize"] = function (fn)
-    {
-        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
-    };
-
-    /**
-     * JQuery event listener for more performant window resizing.
-     * Use like this: $(document).on("smartmousemove", function (event) {});
-     */
-    $.fn["smartmousemove"] = function (fn)
-    {
-        return fn ? this.bind('mousemove', debounce(fn)) : this.trigger("smartmousemove");
-    };
-
-    /**
-     * Enables/disables the selection of text in the page
-     * See http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-     */
-    this.enableTextSelection = function (enable)
-    {
-        if (enable) {
-            $("html").removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
-
-            window.ondragstart = function ()
-            {
-                return true;
-            };
-        }
-        else {
-            //de-select existing selection
-            var sel = window.getSelection().removeAllRanges();
-
-            //add user-select: none; to the root html
-            $("html").addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
-
-            //disable dragging
-            window.ondragstart = function ()
-            {
-                return false;
-            };
-        }
-    };
-
-    /**
-     * Enables/disables the context menu
-     */
-    this.enableContextMenu = function (enable)
-    {
-        if (enable) {
-            $("html").removeAttr("oncontextmenu", "");
-            // IE < 10
-            $("html").removeAttr("onselectstart");
-        }
-        else {
-            $("html").attr("oncontextmenu", "return false;");
-            // IE < 10
-            $("html").attr("onselectstart", "return false;");
-        }
-    };
-
-    /**
      * Returns true of the element is a bootstrap container
      */
     this.isContainer = function (element)
@@ -423,40 +359,6 @@ base.plugin("blocks.core.DOM", ["constants.base.core.internal", "constants.block
     };
 
     //-----PRIVATE METHODS-----
-    /**
-     * Debouncing function to make eventing more performant
-     * by amortizing quick successions together.
-     * See http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
-     * @param func
-     * @param threshold
-     * @param execAsap
-     * @returns {debounced}
-     */
-    var debounce = function (func, threshold, execAsap)
-    {
-        var timeout;
-
-        return function debounced()
-        {
-            var obj = this, args = arguments;
-
-            function delayed()
-            {
-                if (!execAsap)
-                    func.apply(obj, args);
-                timeout = null;
-            }
-
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-            else if (execAsap) {
-                func.apply(obj, args);
-            }
-
-            timeout = setTimeout(delayed, threshold || 50);
-        };
-    };
     /**
      * Returns the current column class prefix
      */
