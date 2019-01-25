@@ -38,6 +38,7 @@ base.plugin("blocks.core.UI", ["constants.blocks.core", function (BlocksConstant
     this.PIERCE_THROUGH_DATA = 'pierce-through';
 
     //-----VARIABLES-----
+    this.window = $(window);
     this.html = $("html");
     this.body = $("body");
     this.startButton = undefined;

@@ -131,66 +131,64 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     /**
      * Activate this module and start listening for mouse click events (and DnD)
      */
-    this.activate = function ()
+    this.enable = function (enable)
     {
-        if (!active) {
+        if (enable) {
+            if (!active) {
 
-            //put this as fast as possible to eliminate double event registering
-            active = true;
+                //put this as fast as possible to eliminate double event registering
+                active = true;
 
-            //make sure we start with a clean slate
-            _resetMouse();
+                //make sure we start with a clean slate
+                _resetMouse();
 
-            $(document).on("mousedown.blocks_core", function (event)
-            {
-                if (active) {
-                    if (event.which == 1) {
-                        _mouseDown(event);
+                $(document).on("mousedown.blocks_core", function (event)
+                {
+                    if (active) {
+                        if (event.which == 1) {
+                            _mouseDown(event);
+                        }
+                        else {
+                            _mouseCancel(event);
+                        }
                     }
-                    else {
-                        _mouseCancel(event);
-                    }
-                }
-            });
+                });
 
-            $(document).on("mouseup.blocks_core", function (event)
-            {
-                if (active) {
-                    if (event.which == 1) {
-                        _mouseUp(event);
+                $(document).on("mouseup.blocks_core", function (event)
+                {
+                    if (active) {
+                        if (event.which == 1) {
+                            _mouseUp(event);
+                        }
+                        else {
+                            _mouseCancel(event);
+                        }
                     }
-                    else {
-                        _mouseCancel(event);
-                    }
-                }
-            });
+                });
 
-            //this is important:
-            // - if we're dragging, we need a way to cancel and moving outside the window feels like a good escape-gesture
-            // - if we're dragging and we're switching context to another window (alt-tab), we should probably abort
-            $(document).on("mouseleave.blocks_core", function (event)
-            {
-                _mouseCancel(event);
-            });
+                //this is important:
+                // - if we're dragging, we need a way to cancel and moving outside the window feels like a good escape-gesture
+                // - if we're dragging and we're switching context to another window (alt-tab), we should probably abort
+                $(document).on("mouseleave.blocks_core", function (event)
+                {
+                    _mouseCancel(event);
+                });
+            }
         }
-    };
+        //disable
+        else {
+            if (active) {
+                active = false;
 
-    /**
-     * Deactivate this module and stop listening for mouse click events (and DnD)
-     */
-    this.deactivate = function ()
-    {
-        if (active) {
-            active = false;
+                //reset all tracking variables
+                _resetMouse();
 
-            //reset all tracking variables
-            _resetMouse();
-
-            //remove all event listeners
-            $(document).off("mousedown.blocks_core");
-            $(document).off("mouseup.blocks_core");
-            $(document).off("mousemove.blocks_core");
-            $(document).off("mouseleave.blocks_core");
+                //remove all event listeners
+                $(document).off("mousedown.blocks_core");
+                $(document).off("mouseup.blocks_core");
+                $(document).off("mousemove.blocks_core");
+                $(document).off("mouseleave.blocks_core");
+            }
         }
     };
 

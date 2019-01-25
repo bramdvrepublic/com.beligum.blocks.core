@@ -39,9 +39,9 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
     //-----PUBLIC METHODS-----
     /**
-     * Create the sidebar element (but don't add it to the DOM yet)
+     * Load the server html and create the sidebar element (but don't add it to the DOM yet)
      */
-    this.create = function ()
+    this.load = function ()
     {
         UI.sidebar = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
         UI.sidebar.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
@@ -49,15 +49,22 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             if (status == 'success') {
 
                 // When everything is preloaded correctly,
-                // notify the user we're here by creating a start button,
+                // notify the user we're ready by creating a start button,
                 // Note: the icon is set in blocks.less
                 UI.startButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>')
                     .attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE)
                     // Hide/show sidebar when menu button is clicked
                     .on("click", function (event)
                     {
-                        //since we reuse this button as the close button, we need to detect the state
-                        Sidebar.toggle(UI.body.find("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
+                        // Since we reuse this button as the close button, we need to detect the state,
+                        // that way we can leave the event handler attached.
+                        // No page wrapper means we need to boot the system, otherwise stop it
+                        if (Commons.isUnset(UI.pageContent)) {
+                            Broadcaster.send(Broadcaster.EVENTS.BLOCKS.START, event);
+                        }
+                        else {
+                            Broadcaster.send(Broadcaster.EVENTS.BLOCKS.STOP, event);
+                        }
                     })
                     .appendTo(UI.body);
 
@@ -65,7 +72,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 if (Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE) === SIDEBAR_STATE_SHOW) {
                     $(document).ready(function ()
                     {
-                        Sidebar.toggle(true);
+                        //when all sidebar and DOM initialization is done, we can start the blocks system
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCKS.START, event);
                     });
                 }
             }
@@ -80,45 +88,15 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      *
      * @param show
      */
-    this.toggle = function (show)
+    this.toggle = function (show, callback)
     {
-        var cookieState = SIDEBAR_STATE_NULL;
-
         if (show) {
+
+            // TODO --> moved to Manager.startEditLayout()
 
             // Remove the menu button while animating sidebar
             // Note that we remove it because we'll call body.empty() below
             UI.startButton.detach();
-
-            // Needs some explaining:
-            // If we wrap the body with our blocks-page-content element,
-            // the scripts at the bottom of the page seem to cause errors.
-            // So we will pull them out of the body and insert them as siblings of the body.
-            // Note that this is designed to wrap scripts that don't render anything out, so watch out
-            // if you use it for other purposes; it will break the design/behaviour of the sidebar.
-            var ignoredBody = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
-            // We'll create a placeholder for the ignored body, just after it (while keeping the reference to the original in the variable)
-            // (note that we're re-using the same class for the placeholder) so we can look it up in the body and put it back
-            // in the same spot when the sidebar is closed
-            ignoredBody.after('<div class="' + BlocksConstants.PAGE_IGNORE_CLASS + '" />');
-            //detach is like remove() but without the releasing of memory structures
-            ignoredBody.detach();
-
-            // wrap the contents of the body in a separate wrapper element,
-            // so we can add the surfaces and sidebar too
-            UI.pageContent = $('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />');
-            UI.pageContent.append(UI.body.children().detach());
-            UI.body.append(UI.pageContent);
-            UI.body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
-            //temporarily put them here
-            UI.body.append(ignoredBody);
-            UI.body.append(UI.sidebar);
-
-            // create the overlay containers
-            UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
-            UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-            UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-            UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
 
             //set up perfect-scrollbar.js
             if ($.perfectScrollbar) {
@@ -126,40 +104,22 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 UI.sidebar.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
             }
 
-            // Get old sidebar width from cookie
-            var cookieSidebarWidth = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
-            //make sure the value is OK and cleanup if not
-            if (Commons.isUnset(cookieSidebarWidth) || !$.isNumeric(cookieSidebarWidth)) {
-                cookieSidebarWidth = null;
-                Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH, DEFAULT_COOKIE_OPTIONS);
-            }
-            else {
-                cookieSidebarWidth = parseInt(cookieSidebarWidth);
-            }
-
-            var windowWidth = $(window).width();
-            var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
-            if (cookieSidebarWidth != null && cookieSidebarWidth > 0) {
-                INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
-            }
-            //control the bounds, even if the cookie says otherwise
-            if (INIT_SIDEBAR_WIDTH < MIN_SIDEBAR_WIDTH) {
-                INIT_SIDEBAR_WIDTH = MIN_SIDEBAR_WIDTH;
-            }
-
-            cookieState = SIDEBAR_STATE_SHOW;
             //transform the button to a closing cross
             //slide open the sidebar and activate the callback when finished
-            Sidebar.setWidth(INIT_SIDEBAR_WIDTH, function (event)
+            Sidebar.setWidth(getInitialWidth(), function (event)
             {
                 //re-add the button (but with a changed icon)
                 UI.startButton.addClass("open").appendTo(UI.body);
 
+                //Note: by default, the cookie is deleted when the browser is closed, override that.
+                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, SIDEBAR_STATE_SHOW, DEFAULT_COOKIE_OPTIONS);
+
                 //allow this sidebar to be resized
                 enableResizing(true);
 
-                //when all sidebar and DOM initialization is done, we can start the blocks system
-                Broadcaster.send(Broadcaster.EVENTS.BLOCKS.START, event);
+                if (callback) {
+                    callback();
+                }
             });
 
         }
@@ -167,44 +127,28 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         else {
 
             //make sure all focused blocks are blurred in a clean manner
-            Sidebar.reset();
+            this.reset();
 
-            cookieState = SIDEBAR_STATE_HIDE;
-            var CLOSE_SIDEBAR_WIDTH = 0.0;
             //hide the button while animating
             UI.startButton.removeClass("open").detach();
-            Sidebar.setWidth(CLOSE_SIDEBAR_WIDTH, function (event)
+
+            Sidebar.setWidth(0.0, function (event)
             {
+                //Note: by default, the cookie is deleted when the browser is closed, override that.
+                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, SIDEBAR_STATE_HIDE, DEFAULT_COOKIE_OPTIONS);
+
                 //don't allow the sidebar to be resized
                 enableResizing(false);
 
-                var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
-
-                //this will select all (original) ignored content tags, excluding the placeholders
-                var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
-                ignoredContent.detach();
-
-                var content = content.html();
-                UI.body.empty();
-                UI.body.append(content);
-
-                //this will loop the ignored content and put them back in the placeholders in-order
-                UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
-                {
-                    $(this).replaceWith(ignoredContent[idx]);
-                });
-
-                UI.body.append(UI.startButton);
-                UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+                // TODO --> moved to Manager.stopEditLayout()
 
                 clearContainerWidth();
 
-                Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS, event);
+                if (callback) {
+                    callback();
+                }
             });
         }
-
-        //Note: by default, the cookie is deleted when the browser is closed:
-        Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState, DEFAULT_COOKIE_OPTIONS);
     };
 
     /**
@@ -320,7 +264,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     {
         this.unloadFinder();
 
-        // clean shutdown: call blur on all active surfaces
+        // clean shutdown: call blur on all active widgets
         for (var i = 0; i < activePanels.length; i++) {
             var e = activePanels[i];
             if (e.widget) {
@@ -396,6 +340,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      */
     this.unloadFinder = function ()
     {
+        //general test if we have the media plugin available
         var MediaConstants = base.getPlugin("constants.blocks.media.core");
         if (MediaConstants) {
             //'switch' back to the context tab
@@ -641,6 +586,33 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             //removes all events in this namespace
             $(document).off("." + NAMESPACE);
         }
+    };
+
+    var getInitialWidth = function()
+    {
+        // default width of sidebar is 20% of window
+        var retVal = $(window).width() * 0.2;
+
+        // Get old sidebar width from cookie
+        var cookieSidebarWidth = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+        //make sure the value is OK and cleanup if not
+        if (!Commons.isUnset(cookieSidebarWidth) && $.isNumeric(cookieSidebarWidth)) {
+            cookieSidebarWidth = parseInt(cookieSidebarWidth);
+        }
+        else {
+            cookieSidebarWidth = null;
+            Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH, DEFAULT_COOKIE_OPTIONS);
+        }
+
+        if (cookieSidebarWidth != null && cookieSidebarWidth > 0) {
+            retVal = cookieSidebarWidth;
+        }
+        //control the bounds, even if the cookie says otherwise
+        if (retVal < MIN_SIDEBAR_WIDTH) {
+            retVal = MIN_SIDEBAR_WIDTH;
+        }
+
+        return retVal;
     };
 }
 ]);

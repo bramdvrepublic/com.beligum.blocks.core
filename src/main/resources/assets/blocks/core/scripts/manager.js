@@ -26,12 +26,18 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification)
+base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification)
 {
     var Manager = this;
 
     //-----CONSTANTS-----
-    var AUTO_REFRESH_TIMEOUT = 500;
+    // Checks DOM dimension changes every x millis
+    var DEFAULT_DIMENSION_TIMEOUT = 500;
+
+    // Because we set a container width on the blocks-layout in some styles
+    // (eg. sticky footers and full background-colors),
+    // we need to scale it along with the container inside it
+    var CONTAINERS_SELECTOR = ".container, blocks-layout";
 
     //-----VARIABLES-----
     // flag to enable/disable layout functionality (create, resize, move and delete)
@@ -43,10 +49,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     // timer that checks the body dimension at regular intervals
     // and refreshes the page model when needed
     var dimensionTimer = null;
-    var dimension;
+    var dimensionTimeout = DEFAULT_DIMENSION_TIMEOUT;
+    var dimensions;
 
-    //-----MAIN ENTRY POINT: THIS BOOTSTRAPS THE BLOCKS SYSTEM-----
-    Sidebar.create();
+    //-----MAIN ENTRY POINT: LOAD THE SIDEBAR HTML AND BOOTSTRAP THE BLOCKS SYSTEM-----
+    Sidebar.load();
 
     //-----EVENT LISTENERS-----
     /**
@@ -54,26 +61,34 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
      */
     $(document).on(Broadcaster.EVENTS.BLOCKS.START, function (event)
     {
-        //create the page model
-        UI.pageSurface = new blocks.elements.Page();
+        // This needs to come before the sidebar toggle,
+        // otherwise the sidebar isn't attached to the DOM yet
+        startEditLayout();
 
-        //use the generalized method to put focus on the newly created page
-        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+        //open (animated) the sidebar
+        Sidebar.toggle(true, function ()
+        {
+            //create the page model
+            UI.pageSurface = new blocks.elements.Page();
 
-        //disable navigating away without saving the page
-        disableNavigation(true);
+            //use the generalized method to put focus on the newly created page
+            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
-        //display a notification when the user navigates away (possibly without saving)
-        if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG === 'true') {
-            enableLeaveConfirmation(true);
-        }
+            //disable navigating away without saving the page
+            disableNavigation(true);
 
-        //start listening for custom click events
-        Mouse.activate();
+            //display a notification when the user navigates away (possibly without saving)
+            if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG === 'true') {
+                enableLeaveConfirmation(true);
+            }
 
-        //start watching the DOM dimensions independently of any events
-        //and refresh the page model when a change is detected
-        enableResizeDetector(true);
+            //start watching the DOM dimensions independently of any events
+            //and refresh the page model when a change is detected
+            enableResizeDetector(true);
+
+            //start listening for custom click events
+            Mouse.enable(true);
+        });
 
     });
 
@@ -82,15 +97,23 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
      */
     $(document).on(Broadcaster.EVENTS.BLOCKS.STOP, function (event)
     {
-        //some cleanup: helps bugs when closing the bar during focus
-        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+        //toggle the sidebar before removing it from the DOM
+        Sidebar.toggle(false, function ()
+        {
+            //some cleanup: helps bugs when closing the bar during focus
+            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
-        disableNavigation(false);
-        enableLeaveConfirmation(false);
-        enableResizeDetector(false);
+            //unset these to signal we're down
+            UI.pageSurface = undefined;
+            UI.focusedSurface = undefined;
 
-        //TODO revise this (needs to be pause?)
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+            Mouse.enable(false);
+            enableLeaveConfirmation(false);
+            disableNavigation(false);
+            enableResizeDetector(false);
+
+            stopEditLayout();
+        });
     });
 
     /**
@@ -196,6 +219,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     });
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)
     {
+        //TODO
+        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
         //Remove the classes that were set during DRAG_START
         //removeClass() with function allows for a prefix-remove;
         // eg. it will remove both the 'drag' and typed 'drag-block' classes
@@ -251,39 +277,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
 
     $(document).on(Broadcaster.EVENTS.PAGE.SAVE, function (event, eventData)
     {
-        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
-
-        //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
-        // remove the widths from the containers
-        $(CONTAINERS_SELECTOR).removeAttr("style");
-
-        //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
-        // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
-        // a virtual html page by combining the content of the wrapper with the <head> in the html
-
-        //clear the manual container width (we'll re-set it back later)
-        clearContainerWidth();
-
-        //create a new node out of the full page html
-        var savePage = UI.html.clone();
-
-        //this extracts the real body (without the sidebar code) we need to save
-        //see toggle close for more or less the same code
-        //TODO ideally, we should make this uniform (virtually close the sidebar?)
-        var container = savePage.find("." + BlocksConstants.PAGE_CONTENT_CLASS);
-        //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
-        container.css("width", "");
-        var content = container.html();
-        var bodyCopy = savePage.find("body");
-        bodyCopy.empty();
-        bodyCopy.append(content);
-        bodyCopy.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
-
-        //convert from jQuery to html string
-        savePage = savePage[0].outerHTML;
-
-        //reset what we cleared above
-        updateContainerWidth();
+        //TODO
+        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,
@@ -297,7 +292,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
         $.ajax({
             type: 'POST',
             url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
-            data: savePage,
+            data: getBodyHtml(),
             contentType: 'application/json; charset=UTF-8',
         })
             .done(function (data, textStatus, response)
@@ -316,7 +311,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
 
     $(document).on(Broadcaster.EVENTS.PAGE.DELETE, function (event, eventData)
     {
-        Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO
+        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
         var onConfirm = function (deleteAllTranslations)
         {
             var dialog = new BootstrapDialog({
@@ -406,16 +403,16 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
 
     $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
     {
+        //TODO
+        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
         var surface = eventData.surface;
 
         //save a reference to the parent before it's removed
         var oldParent = surface.parent;
-
         surface.parent._removeChild(surface);
-
         postChangeBlock(oldParent);
 
-        //avoid the pierce through popup because the sidebar button is already gone
         switchFocus(UI.pageSurface, UI.pageSurface.element, event);
     });
 
@@ -446,6 +443,104 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     });
 
     //-----PRIVATE METHODS-----
+    var startEditLayout = function ()
+    {
+        // Needs some explaining:
+        // If we wrap the body with our blocks-page-content element,
+        // the scripts at the bottom of the page seem to cause errors.
+        // So we will pull them out of the body and insert them as siblings of the body.
+        // Note that this is designed to wrap scripts that don't render anything out, so watch out
+        // if you use it for other purposes; it will break the design/behaviour of the sidebar.
+        var ignoredBody = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
+        // We'll create a placeholder for the ignored body, just after it (while keeping the reference to the original in the variable)
+        // (note that we're re-using the same class for the placeholder) so we can look it up in the body and put it back
+        // in the same spot when the sidebar is closed
+        ignoredBody.after('<div class="' + BlocksConstants.PAGE_IGNORE_CLASS + '" />');
+        //detach is like remove() but without the releasing of memory structures
+        ignoredBody.detach();
+
+        // wrap the contents of the body in a separate wrapper element,
+        // so we can add the surfaces and sidebar too
+        UI.pageContent = $('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />');
+        UI.pageContent.append(UI.body.children().detach());
+        UI.body.append(UI.pageContent);
+        UI.body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+        //temporarily put them here
+        UI.body.append(ignoredBody);
+        UI.body.append(UI.sidebar);
+
+        // create the overlay containers
+        UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
+        UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+        UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+        UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+    };
+
+    var stopEditLayout = function ()
+    {
+        //this will select all (original) ignored content tags, excluding the placeholders
+        var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
+        ignoredContent.detach();
+
+        var content = UI.pageContent.html();
+        UI.body.empty();
+        UI.body.append(content);
+
+        //this will loop the ignored content and put them back in the placeholders in-order
+        UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
+        {
+            $(this).replaceWith(ignoredContent[idx]);
+        });
+
+        UI.body.append(UI.startButton);
+        UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+        //reset the UI variables to signal the system is down
+        UI.overlayWrapper = undefined;
+        UI.surfaceWrapper = undefined;
+        UI.resizerWrapper = undefined;
+        UI.dropspotWrapper = undefined;
+        UI.pageContent = undefined;
+    };
+
+    var getBodyHtml = function ()
+    {
+        // the idea is to send the entire page to the server and let it
+        // only save the correct tags (eg. with property and data-property attributes)
+        // remove the widths from the containers
+        $(CONTAINERS_SELECTOR).removeAttr("style");
+
+        //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
+        // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
+        // a virtual html page by combining the content of the wrapper with the <head> in the html
+
+        //clear the manual container width (we'll re-set it back later)
+        clearContainerWidth();
+
+        //create a new node out of the full page html
+        var savePage = UI.html.clone();
+
+        //this extracts the real body (without the sidebar code) we need to save
+        //see toggle close for more or less the same code
+        //TODO ideally, we should make this uniform (virtually close the sidebar?)
+        var container = savePage.find("." + BlocksConstants.PAGE_CONTENT_CLASS);
+        //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
+        container.css("width", "");
+        var content = container.html();
+        var bodyCopy = savePage.find("body");
+        bodyCopy.empty();
+        bodyCopy.append(content);
+        bodyCopy.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+        //convert from jQuery to html string
+        savePage = savePage[0].outerHTML;
+
+        //reset what we cleared above
+        updateContainerWidth();
+
+        return savePage;
+    };
+
     /**
      * Do a context switch to the clicked block
      *
@@ -504,6 +599,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
 
     var createNewBlock = function (callback)
     {
+        //TODO
+        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+
         // show select box with all blocks
         var boxDialog;
         //Note: the inner div will be replaced when the new load() content comes in
@@ -814,6 +912,44 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
     };
 
     /**
+     * The callback function that will be called by the dimension timer, see below.
+     */
+    var dimensionCallback = function ()
+    {
+        //no need to do any refreshes if we have nothing to refresh
+        if (!Commons.isUnset(UI.pageSurface)) {
+
+            var windowWidth = UI.window.width();
+            var windowHeight = UI.window.height();
+            var bodyWidth = UI.body.width();
+            var bodyHeight = UI.body.height();
+            var pageContentWidth = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.width();
+            var pageContentHeight = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.height();
+
+            if (!dimensions
+                || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight
+                || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight
+                || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight) {
+
+                dimensions = dimensions || {
+                    window: {},
+                    body: {},
+                    pageContent: {},
+                };
+
+                dimensions.window.width = windowWidth;
+                dimensions.window.height = windowHeight;
+                dimensions.body.width = bodyWidth;
+                dimensions.body.height = bodyHeight;
+                dimensions.pageContent.width = pageContentWidth;
+                dimensions.pageContent.height = pageContentHeight;
+
+                UI.pageSurface._refresh(true);
+            }
+        }
+    };
+
+    /**
      * This is unelegant, but needed: when adding a new block,
      * (eg. a blocks-image), external resources (styles/scripts/images/...)
      * sometimes change that block's dimensions long after it was created
@@ -823,33 +959,28 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "messages.blocks.co
      *
      * @param enable
      */
-    var enableResizeDetector = function(enable)
+    var enableResizeDetector = function (enable)
     {
         if (enable) {
-            dimension = {
-                width: UI.body.width(),
-                height: UI.body.height(),
-            };
-            dimensionTimer = setInterval(function ()
-            {
-                var width = UI.body.width();
-                var height = UI.body.height();
-
-                if (dimension.width !== width || dimension.height !== height) {
-                    dimension.width = width;
-                    dimension.height = height;
-
-                    UI.pageSurface._refresh(true);
-                }
-
-            }, AUTO_REFRESH_TIMEOUT);
+            dimensionTimer = setInterval(dimensionCallback, dimensionTimeout);
         }
         else {
             if (dimensionTimer) {
                 clearInterval(dimensionTimer);
             }
-
             dimensionTimer = undefined;
+        }
+    };
+
+    var setDimensionTimeout = function(newTimeout)
+    {
+        dimensionTimeout = newTimeout;
+
+        //stop/restart the timeout if it's running,
+        //otherwise, do nothing (start hasn't been called yet)
+        if (dimensionTimer) {
+            clearInterval(dimensionTimer);
+            dimensionTimer = setInterval(dimensionCallback, newTimeout);
         }
     };
 

@@ -20,13 +20,7 @@ base.plugin("blocks.core.Menu", ["constants.blocks.core", "messages.blocks.core"
 
     //-----CONSTANTS-----
 
-    // note that because we set a container width on the blocks-layout in some styles
-    // (eg. sticky footers and full background-colors),
-    // we need to scale it along with the container inside it
-    var CONTAINERS_SELECTOR = ".container, blocks-layout";
-
     //-----VARIABLES-----
-
     /*
      * In bootstrap the container width is fixed. to prevent the container from bleeding
      * into our sidebar, we set the width fixed with a new width, smaller than our page content wrapper.
