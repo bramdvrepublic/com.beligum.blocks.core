@@ -201,10 +201,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      * Enables/disables the selection of text in the page
      * See http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
      */
-    this.enableTextSelection = function (enable)
+    this.enableNativeDnd = function (enable)
     {
         if (enable) {
-            $("html").removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+
+            UI.html.removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
 
             window.ondragstart = function ()
             {
@@ -216,7 +217,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             var sel = window.getSelection().removeAllRanges();
 
             //add user-select: none; to the root html
-            $("html").addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
+            UI.html.addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
 
             //disable dragging
             window.ondragstart = function ()
@@ -366,7 +367,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
                 draggingStatus = Mouse.DRAGGING.YES;
 
-                Mouse.enableTextSelection(false);
+                Mouse.enableNativeDnd(false);
 
                 //this will re-activate the overlays because if we're dragging, we need them to
                 //figure out which surface we're hovering on
@@ -510,7 +511,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
         //re-enable the text selection that was disabled during drag
-        Mouse.enableTextSelection(true);
+        Mouse.enableNativeDnd(true);
     };
 
     /*

@@ -355,7 +355,16 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 //select the optimal dropspot
                 var idx = surface._selectDropspot(vector, this, side, dropspots);
                 if (idx >= 0) {
-                    dropspots[idx].createOverlay();
+                    // This check will disable the visual dropspot if we're dragging
+                    // back to the original blocks that's being dragged around
+                    // (as a means to cancel the current DnD session)
+                    if (dropspots[idx].anchor !== this) {
+                        dropspots[idx].createOverlay();
+                    }
+                    else {
+                        // Note that we might want to make this situation more visible
+                        // by implementing eg. a cross-like-overlay here
+                    }
                 }
             }
         },
@@ -772,8 +781,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //(the most inward one) and not show it's parents with the same dimension
             var show = !(prevSurface && this._getDimension(side) === prevSurface._getDimension(side));
 
-            //we don't show dropspots on the sides of the block that is being dragged around
-            show &= surface !== this;
+            // We don't show dropspots on the sides of the block that is being dragged around
+            // Update: we re-enabled this as a means to reset the dragging of the current block;
+            // it feels natural to drag back to the block we're moving around as a means to cancel the drag.
+            //show &= surface !== this;
 
             if (show) {
                 retval.push(new blocks.elements.Dropspot(this, side));

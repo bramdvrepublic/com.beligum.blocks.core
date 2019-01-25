@@ -40,6 +40,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     var CONTAINERS_SELECTOR = ".container, blocks-layout";
 
     //-----VARIABLES-----
+    //TODO
     // flag to enable/disable layout functionality (create, resize, move and delete)
     var allowLayout = true;
 
@@ -63,13 +64,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     {
         // This needs to come before the sidebar toggle,
         // otherwise the sidebar isn't attached to the DOM yet
-        startEditLayout();
+        createEditLayout();
 
         //open (animated) the sidebar
         Sidebar.toggle(true, function ()
         {
             //create the page model
-            UI.pageSurface = new blocks.elements.Page();
+            UI.pageSurface = new blocks.elements.Page(UI.pageContent);
 
             //use the generalized method to put focus on the newly created page
             switchFocus(UI.pageSurface, UI.pageSurface.element, event);
@@ -112,7 +113,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             disableNavigation(false);
             enableResizeDetector(false);
 
-            stopEditLayout();
+            destroyEditLayout();
         });
     });
 
@@ -416,34 +417,32 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         switchFocus(UI.pageSurface, UI.pageSurface.element, event);
     });
 
-    $(document).on("keyup keydown", function (e)
+    /**
+     * Monitor all keystrokes and save the currently pressed ones to UI.keysPressed.
+     * To be checked with eg. UI.isKeyPressed(KEYCODE_CTRL)
+     */
+    $(window).on("keyup keydown", function (e)
     {
         switch (e.type) {
             case "keydown" :
                 UI.keysPressed[e.keyCode] = true;
+
+                //it makes more sense to fire actions on key down, not key up
+                UI.fireKeystrokeSelectors(e);
+
                 break;
             case "keyup" :
-                //Logger.info("key up: "+e.keyCode);
-                UI.keysPressed[e.keyCode] = false;
+                delete UI.keysPressed[e.keyCode];
                 break;
         }
 
-        var btn;
-        //disabled for now
-        // if (UI.isKeyPressed(KEYCODE_CTRL) && UI.isKeyPressed(KEYCODE_S)) {
-        //     btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
-        // }
-
-        if (btn) {
-            if (btn.is(":visible")) {
-                btn.click();
-                e.preventDefault();
-            }
-        }
     });
 
     //-----PRIVATE METHODS-----
-    var startEditLayout = function ()
+    /**
+     * Reorder the DOM so the current html is prepared to add a sidebar element and whatnot.
+     */
+    var createEditLayout = function ()
     {
         // Needs some explaining:
         // If we wrap the body with our blocks-page-content element,
@@ -469,20 +468,26 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         UI.body.append(ignoredBody);
         UI.body.append(UI.sidebar);
 
-        // create the overlay containers
+        // also create the overlay containers
         UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
         UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
         UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
         UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
     };
 
-    var stopEditLayout = function ()
+    /**
+     * The inverse method of createEditLayout()
+     */
+    var destroyEditLayout = function ()
     {
         //this will select all (original) ignored content tags, excluding the placeholders
         var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
+        //find the ignored content outside the wrapper and detach them, to re-add them later on
         ignoredContent.detach();
 
+        //take the inner html of the content wrapper
         var content = UI.pageContent.html();
+        //note that this clears the sidebar and overlay containers too
         UI.body.empty();
         UI.body.append(content);
 
@@ -492,8 +497,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             $(this).replaceWith(ignoredContent[idx]);
         });
 
-        UI.body.append(UI.startButton);
         UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+        //we cleared everything above, so make sure te re-add the button again
+        UI.startButton.appendTo(UI.body);
 
         //reset the UI variables to signal the system is down
         UI.overlayWrapper = undefined;
@@ -912,7 +919,30 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     };
 
     /**
-     * The callback function that will be called by the dimension timer, see below.
+     * This is unelegant, but needed: when adding a new block,
+     * (eg. a blocks-image), external resources (styles/scripts/images/...)
+     * sometimes change that block's dimensions long after it was created
+     * (eg. an image over a slow link). Because of this (and other reasons),
+     * we can't really only refresh the page model (+ surface dimensions) in a
+     * controlled manner. So we decided to create this loop that does that from time to time.
+     *
+     * @param enable
+     */
+    var enableResizeDetector = function (enable)
+    {
+        if (enable) {
+            dimensionTimer = setInterval(dimensionCallback, dimensionTimeout);
+        }
+        else {
+            if (dimensionTimer) {
+                clearInterval(dimensionTimer);
+            }
+            dimensionTimer = undefined;
+        }
+    };
+
+    /**
+     * The callback function that will be called by the dimension timer, see above.
      */
     var dimensionCallback = function ()
     {
@@ -937,6 +967,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     pageContent: {},
                 };
 
+                //update the stored dimensions
                 dimensions.window.width = windowWidth;
                 dimensions.window.height = windowHeight;
                 dimensions.body.width = bodyWidth;
@@ -944,34 +975,31 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 dimensions.pageContent.width = pageContentWidth;
                 dimensions.pageContent.height = pageContentHeight;
 
+                //TODO deactivate the system when page is too small
+                // if (newBlockBtn) {
+                //     newBlockBtn.removeAttr("disabled");
+                // }
+                // else {
+                //     if (newBlockBtn) {
+                //         newBlockBtn.attr("disabled", "");
+                //         newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
+                //     }
+                // }
+
+                //TODO make sure the page content wrapper block is at least the height of the body (to support good, natural blur, see comments below)
+                //updatePageContentHeight();
+
+                //update the model and it's dimensions
                 UI.pageSurface._refresh(true);
             }
         }
     };
 
     /**
-     * This is unelegant, but needed: when adding a new block,
-     * (eg. a blocks-image), external resources (styles/scripts/images/...)
-     * sometimes change that block's dimensions long after it was created
-     * (eg. an image over a slow link). Because of this (and other reasons),
-     * we can't really only refresh the page model (+ surface dimensions) in a
-     * controlled manner. So we decided to create this loop that does that from time to time.
+     * If you want to change the check-rate of the dimension timer
      *
-     * @param enable
+     * @param newTimeout
      */
-    var enableResizeDetector = function (enable)
-    {
-        if (enable) {
-            dimensionTimer = setInterval(dimensionCallback, dimensionTimeout);
-        }
-        else {
-            if (dimensionTimer) {
-                clearInterval(dimensionTimer);
-            }
-            dimensionTimer = undefined;
-        }
-    };
-
     var setDimensionTimeout = function(newTimeout)
     {
         dimensionTimeout = newTimeout;
@@ -984,191 +1012,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    //-----TODO UNCHECKED-----
-    //TODO revise (RESUME_BLOCKS)
-    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
-    {
-        //start listening for mousedown, mouseup, mouseleave
-        Mouse.activate();
-        //collapse selection, prevent text selection, disable ondragstart
-        //TODO revise
-        //DOM.enableTextSelection(false);
-        //show surfaces
-        //Hover.showHoverOverlays();
-        //enable dragging
-        DragDrop.setActive(true);
-
-        //TODO move this to DO_REFRESH_LAYOUT?
-        //fire up drag-and-drop subsystem if we have enough room
-        var windowWidth = $(window).width();
-        //TODO make constant
-        var MIN_SCREEN_DND_THRESHOLD = 1030;
-        if (windowWidth >= MIN_SCREEN_DND_THRESHOLD) {
-            enableLayout(true);
-        }
-        else {
-            Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " (" + windowWidth + "), disabling drag-and-drop.");
-            enableLayout(false);
-        }
-    });
-
-    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
-    {
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function (event)
-    {
-        //this will end up in menu.js triggering updateContainerWidth()
-        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, event);
-
-        //hide the overlays while redrawing
-        //Hover.removeHoverOverlays();
-
-        //make sure the page content wrapper block is at least the height of the body (to support good, natural blur, see comments below)
-        updatePageContentHeight();
-
-        //we always start off with a focused page
-        var pageBlock = Hover.createPageBlock();
-        //note: we can't fill in the last argument because it's not a property or a template tag
-        focusSwitch(pageBlock, pageBlock.element, null);
-
-        //redrawing done
-        //Hover.showHoverOverlays();
-
-        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, event);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function (event)
-    {
-        Mouse.resetMouse();
-    });
-
-    //-----EVENTS FOR DRAGGING-----
-    /**
-     * Called when a user starts dragging a block (fired after a minimum threshold is exceeded)
-     */
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, eventData)
-    {
-        //Broadcaster.zoom();
-        DOM.enableContextMenu(false);
-        DragDrop.dragStarted(event, eventData);
-    });
-
-    /**
-     * Called when a user aborted dragging a block
-     */
-    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
-    {
-        //Broadcaster.unzoom();
-        DOM.enableContextMenu(true);
-        DragDrop.dragAborted(event);
-    });
-
-    /**
-     * Called when a user ended dragging a block
-     */
-    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event)
-    {
-        //Broadcaster.unzoom();
-
-        DOM.enableContextMenu(true);
-        DragDrop.dragEnded(event);
-    });
-
-    /**
-     * Called all the time when a user is dragging one block over another block
-     */
-    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event, eventData)
-    {
-        if (DragDrop.isDragging()) {
-            DragDrop.dragOverBlock(event, eventData);
-        }
-    });
-
-    //-----EVENTS FOR DRAGGING-----
     var updatePageContentHeight = function ()
     {
-        var body = $('html');
-        var bodyBottom = body.position().top + body.outerHeight(true);
+        if (UI.pageContent) {
+            var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);
+            var pageBottom = UI.pageContent.position().top + UI.pageContent.outerHeight(true);
 
-        var page = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
-        var pageBottom = page.position().top + page.outerHeight(true);
-        //Note: we must always set the out height to the body height (that's why it's commented out)
-        // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
-        //if (pageBottom<bodyBottom) {
-        page.outerHeight(bodyBottom - page.position().top);
-        //}
-    };
-
-    var enableFocusBlurDetection = function (block, focusedElement)
-    {
-        // this basically comes down to this:
-        // we'll make the entire block a hotspot, not just the focusedElement
-        // and all clicks inside that block will get a new focus (if it's not again the same element we clicked on)
-        // as soon as we click outside of the block, it is blurred and focus goes to the page (always first the page)
-        block.element.on("mousedown.manager_focus_end", function (event)
-        {
-            var element = $(event.target);
-            if (element.length) {
-                var hoverObj = Hover.createHoverClickObject(block, element, event);
-                if (hoverObj && !hoverObj.propertyElement.is(focusedElement)) {
-                    //unregister first, because the next run will add it again
-                    block.element.off("mousedown.manager_focus_end");
-                    //this will mainly end up in sidebar.js
-                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
-                }
-            }
-
-            //don't prevent default or the text editor won't function
-            //e.preventDefault();
-            event.stopPropagation();
-        });
-
-        //Note: everything focus/blur related is more or less depending on clicking on the  PAGE_CONTENT_CLASS block,
-        // so make sure it at least occupies the entire page (left of the sidebar) to create the illusion we can click
-        // outside any block (even when we're not clicking on another block) to have a block lose focus.
-        // Because setting the height of the PAGE_CONTENT_CLASS element using css was too error prone, we decided to set it using scripting,
-        // see above in updatePageContentHeight()
-        //Note 2: we can't eg; make this $(document), because it would blur too fast (eg. when clicking on the sidebar or alert dialogs)
-        var page = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
-        page.on("mousedown.manager_focus_end", function (event)
-        {
-            event.preventDefault();
-            event.stopPropagation();
-
-            block.element.off("mousedown.manager_focus_end");
-            page.off("mousedown.manager_focus_end");
-
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
-        });
-    };
-    /**
-     * Called when we want to enable/disable the layouting of the page
-     * (eg. the whole drag-and-drop system to create, move and/or resize surfaces)
-     */
-    var enableLayout = function (enable)
-    {
-        var newBlockBtn = $('.' + BlocksConstants.CREATE_BLOCK_CLASS);
-
-        if (enable) {
-            //Mouse.enableLayout(true);
-            DragDrop.setActive(true);
-            Resizer.activate(true);
-
-            if (newBlockBtn) {
-                newBlockBtn.removeAttr("disabled");
-            }
-        }
-        else {
-            //Mouse.enableLayout(false);
-            DragDrop.setActive(false);
-            Resizer.activate(false);
-
-            if (newBlockBtn) {
-                newBlockBtn.attr("disabled", "");
-                newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
-            }
+            //Note: we must always set the out height to the body height (that's why it's commented out)
+            // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
+            //if (pageBottom < bodyBottom) {
+            UI.pageContent.outerHeight(bodyBottom - UI.pageContent.position().top);
+            //}
         }
     };
 

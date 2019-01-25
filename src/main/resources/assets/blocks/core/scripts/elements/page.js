@@ -19,7 +19,7 @@
  *
  * Created by wouter on 10/06/15.
  */
-base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", function (Class, BlocksConstants, BlocksMessages)
+base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {
     //----PACKAGES-----
     blocks = window['blocks'] || {};
@@ -35,12 +35,12 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
-        constructor: function ()
+        constructor: function (element)
         {
             //before we build a new page, make sure all old dom elements are cleared
             blocks.elements.Surface.clearAllOverlays();
 
-            blocks.elements.Page.Super.call(this, null, $("." + BlocksConstants.PAGE_CONTENT_CLASS));
+            blocks.elements.Page.Super.call(this, null, element);
 
             //Note: it makes sense to reset the ID lookup table before booting up the submodel
             blocks.elements.Surface.INDEX = {};

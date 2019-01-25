@@ -17,7 +17,7 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.imports.Widget", function (Class, BlocksConstants, BlocksMessages, Broadcaster, Widget)
+base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.UI", "blocks.imports.Widget", function (Class, BlocksConstants, BlocksMessages, Broadcaster, UI, Widget)
 {
     var Page = this;
     this.TAGS = ['.' + BlocksConstants.PAGE_CONTENT_CLASS];
@@ -60,6 +60,7 @@ base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.co
                 // Note: this makes sure this event pierces through
                 return false;
             });
+            UI.registerKeystrokeSelector(UI.KEYCODE.S, UI.KEYCODE.MODIFIER.CTRL, '.' + BlocksConstants.SAVE_PAGE_BUTTON);
 
             var deleteAction = $('<li><label>' + BlocksMessages.deletePageLabel + '</label></li>').appendTo(pageActions);
             var deleteBtn = $('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>').appendTo(deleteAction);
@@ -70,6 +71,7 @@ base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.co
                 // Note: this makes sure this event pierces through
                 return false;
             });
+            UI.registerKeystrokeSelector(UI.KEYCODE.DELETE, UI.KEYCODE.MODIFIER.NONE, '.' + BlocksConstants.DELETE_PAGE_BUTTON);
 
             var newBlock = $('<li><label>' + BlocksMessages.newBlockLabel + '</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="' + BlocksMessages.newBlockTooltip + '"><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 

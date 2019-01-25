@@ -56,7 +56,7 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "base.core.Commons", "co
             var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
 
             var removeAction = $("<li><label>" + BlocksMessages.deleteBlockLabel + "</label></li>").appendTo(blockActions);
-            var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
+            var removeButton = $("<a class='" + BlocksConstants.DELETE_BLOCK_BUTTON + " btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
             removeButton.click(function (event)
             {
                 Broadcaster.send(Broadcaster.EVENTS.BLOCK.DELETE, event, {
@@ -67,6 +67,7 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "base.core.Commons", "co
                 // Note: this makes sure this event pierces through
                 return false;
             });
+            UI.registerKeystrokeSelector(UI.KEYCODE.DELETE, UI.KEYCODE.MODIFIER.NONE, '.' + BlocksConstants.DELETE_BLOCK_BUTTON);
 
             retVal.push(blockActions);
 

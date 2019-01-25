@@ -72,7 +72,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         if (!blockResizing) {
             Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS);
             activeResizer = handle;
-            DOM.enableTextSelection(false);
+            DOM.enableNativeDnd(false);
             DOM.enableContextMenu(false);
             $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 

@@ -92,8 +92,6 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     {
         if (show) {
 
-            // TODO --> moved to Manager.startEditLayout()
-
             // Remove the menu button while animating sidebar
             // Note that we remove it because we'll call body.empty() below
             UI.startButton.detach();
@@ -130,7 +128,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             this.reset();
 
             //hide the button while animating
-            UI.startButton.removeClass("open").detach();
+            UI.startButton.detach();
 
             Sidebar.setWidth(0.0, function (event)
             {
@@ -140,9 +138,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 //don't allow the sidebar to be resized
                 enableResizing(false);
 
-                // TODO --> moved to Manager.stopEditLayout()
-
-                clearContainerWidth();
+                //re-add the button (but with a changed icon)
+                UI.startButton.removeClass("open").appendTo(UI.body);
 
                 if (callback) {
                     callback();
@@ -277,9 +274,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         activePanels = [];
 
         //reset the sidebar and prepare for adding
-        var sidebar = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
-        sidebar.removeClass(BlocksConstants.OPACITY_CLASS);
-        sidebar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
+        UI.sidebar.removeClass(BlocksConstants.OPACITY_CLASS);
+        UI.sidebar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
 
         var sidebarContext = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
         sidebarContext.empty();
@@ -361,15 +357,14 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      */
     this.setWidth = function (width, callback)
     {
-        var sidebarElement = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS);
-        sidebarElement.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
-        sidebarElement.css("width", (width) + "px");
+        UI.sidebar.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
+        UI.sidebar.css("width", (width) + "px");
         //one() = on() but only once
-        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
+        UI.sidebar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
         {
-            if ($(event.target).hasClass(BlocksConstants.PAGE_SIDEBAR_CLASS)) {
-                sidebarElement.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
-                $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", ($(window).width() - width) + "px");
+            if ($(event.target).is(UI.sidebar)) {
+                UI.sidebar.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
+                UI.pageContent.css("width", ($(window).width() - width) + "px");
 
                 if (callback) {
                     callback(event);
@@ -550,7 +545,6 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 UI.body.addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
                 var windowWidth = $(window).width();
-                var pageContent = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
                 $(document).on("mousemove." + NAMESPACE, function (event)
                 {
                     var x = event.pageX;
@@ -558,7 +552,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                     var pageWidth = windowWidth - sideWidth;
                     if (sideWidth > MIN_SIDEBAR_WIDTH && pageWidth > MIN_SIDEBAR_WIDTH) {
                         UI.sidebar.css("width", sideWidth + "px");
-                        pageContent.css("width", pageWidth + "px");
+                        UI.pageContent.css("width", pageWidth + "px");
 
                         //tried to alter the viewport dynamically, but it didn't work (yet?) as expected...
                         //var viewportSuffix = ', initial-scale=1.0, maximum-scale=1.0, user-scalable=0';

@@ -88,9 +88,13 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.blocks.
             var description = 'moving ' + this.type + ' "' + this.id + '" to ' + side.name + ' of ' + surface.type + ' "' + surface.id + '"';
             Logger.info(description);
 
-            //since we'll be moving this to a new parent, we need to keep a reference to the
-            //old one before we do the move
-            var oldParent = this.parent;
+            //because we allow dropspots on the side of the blocks that's being dragged around
+            //as a means to cancel the dragging session, we need to detect this situation and
+            //cut it short
+            if (this === surface) {
+                Logger.info('Cancelling moveTo because the target block is the same as the source block.');
+                return;
+            }
 
             // If we're moving this block to the side of another block,
             // we need to distinguish between:
