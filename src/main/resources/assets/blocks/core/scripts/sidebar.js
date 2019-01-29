@@ -28,6 +28,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     //Note: an empty paths means: take the path of the current page
     var DEFAULT_COOKIE_OPTIONS = BlocksConstants.PAGE_SIDEBAR_COOKIE_OPTIONS;
 
+    //the sidebar can't grow smaller than this
     var MIN_SIDEBAR_WIDTH = 200;
 
     //-----VARIABLES-----
@@ -43,7 +44,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      */
     this.load = function ()
     {
-        UI.sidebar = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
+        UI.sidebar = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + "'></div>");
         UI.sidebar.load(BlocksConstants.SIDEBAR_ENDPOINT, function (response, status, xhr)
         {
             if (status == 'success') {
@@ -273,10 +274,6 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         configPanelMap = {};
         activePanels = [];
 
-        //reset the sidebar and prepare for adding
-        UI.sidebar.removeClass(BlocksConstants.OPACITY_CLASS);
-        UI.sidebar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
-
         var sidebarContext = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
         sidebarContext.empty();
     };
@@ -355,22 +352,56 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     /**
      * Sets the width of the sidebar to the specified value is pixels, animated.
      */
-    this.setWidth = function (width, callback)
+    this.setWidth = function (width, callback, skipAnimation)
     {
-        UI.sidebar.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
-        UI.sidebar.css("width", (width) + "px");
-        //one() = on() but only once
-        UI.sidebar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
-        {
-            if ($(event.target).is(UI.sidebar)) {
-                UI.sidebar.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
-                UI.pageContent.css("width", ($(window).width() - width) + "px");
+        //note: closing the sidebar is setting the width to zero, so allow it too
+        if (width === 0 || width > MIN_SIDEBAR_WIDTH) {
+
+            if (!skipAnimation) {
+
+                // there is no such thing as a transition callback, we need to simulate it
+                // by augmenting the speed at which we refresh the page
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH_SPEED, null, {speed: 40});
+
+                UI.sidebar.addClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
+            }
+
+            //this will trigger the animation if the class above is set
+            UI.sidebar.css("width", width + "px");
+
+            if (!skipAnimation) {
+
+                //one() = on() but only once
+                UI.sidebar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
+                {
+                    //set the refresh rate back to normal
+                    Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH_SPEED, null, {speed: -1});
+
+                    //don't really remember why this was needed
+                    if ($(event.target).is(UI.sidebar)) {
+
+                        UI.sidebar.removeClass(BlocksConstants.SIDEBAR_ANIMATED_CLASS);
+
+                        // the refreshing of the overlays happens in the dimension monitor,
+                        // but calling it explicitly improves the user experience while dragging
+                        Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH, event);
+
+                        if (callback) {
+                            callback(event);
+                        }
+                    }
+                });
+            }
+            else {
+                // the refreshing of the overlays happens in the dimension monitor,
+                // but calling it explicitly improves the user experience while dragging
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
 
                 if (callback) {
-                    callback(event);
+                    callback();
                 }
             }
-        });
+        }
     };
 
     //-----PRIVATE METHODS-----
@@ -534,6 +565,11 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
+    /**
+     * Enable or disable the events that handle the resizing of the sidebar
+     *
+     * @param enable
+     */
     var enableResizing = function (enable)
     {
         var NAMESPACE = 'sidebar_resize';
@@ -544,24 +580,9 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 //needed because sometimes we hover out of the dragger while moving the sidebar (because of some lag)
                 UI.body.addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
-                var windowWidth = $(window).width();
                 $(document).on("mousemove." + NAMESPACE, function (event)
                 {
-                    var x = event.pageX;
-                    var sideWidth = windowWidth - x;
-                    var pageWidth = windowWidth - sideWidth;
-                    if (sideWidth > MIN_SIDEBAR_WIDTH && pageWidth > MIN_SIDEBAR_WIDTH) {
-                        UI.sidebar.css("width", sideWidth + "px");
-                        UI.pageContent.css("width", pageWidth + "px");
-
-                        //tried to alter the viewport dynamically, but it didn't work (yet?) as expected...
-                        //var viewportSuffix = ', initial-scale=1.0, maximum-scale=1.0, user-scalable=0';
-                        //$('head meta[name=viewport]').attr('content', 'width='+pageWidth+viewportSuffix);
-                        ////Logger.debug($('meta[name=viewport]').attr('content'));
-
-                        //to be caught by eg. the finder layouter
-                        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
-                    }
+                    Sidebar.setWidth(UI.window.width() - event.pageX, null, true);
                 });
 
                 $(document).on("mouseup." + NAMESPACE, function (event)
@@ -582,6 +603,11 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
+    /**
+     * Query the cookie state and return a good/valid initial width for the sidebar.
+     *
+     * @returns {number}
+     */
     var getInitialWidth = function()
     {
         // default width of sidebar is 20% of window

@@ -58,6 +58,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     this.startButton = undefined;
     this.sidebar = undefined;
     this.pageContent = undefined;
+    this.containers = undefined;
     this.overlayWrapper = undefined;
     this.surfaceWrapper = undefined;
     this.resizerWrapper = undefined;
@@ -182,12 +183,13 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
                         keyEvent.stopPropagation();
 
                         //'click' the action element
-                        el.click();
+                        el.trigger('click');
 
                         //signal the caller something was actually fired
                         retVal = true;
                     }
 
+                    //it makes sense to stop processing after the first hit
                     if (retVal) {
                         break;
                     }

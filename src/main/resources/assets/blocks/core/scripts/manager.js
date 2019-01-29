@@ -34,11 +34,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     // Checks DOM dimension changes every x millis
     var DEFAULT_DIMENSION_TIMEOUT = 500;
 
-    // Because we set a container width on the blocks-layout in some styles
-    // (eg. sticky footers and full background-colors),
-    // we need to scale it along with the container inside it
-    var CONTAINERS_SELECTOR = ".container, blocks-layout";
-
     //-----VARIABLES-----
     //TODO
     // flag to enable/disable layout functionality (create, resize, move and delete)
@@ -66,12 +61,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         // otherwise the sidebar isn't attached to the DOM yet
         createEditLayout();
 
+        // This needs to be outside the toggle callback too, so we can
+        // animate the width of the body while opening the sidebar
+        UI.pageSurface = new blocks.elements.Page(UI.pageContent);
+
         //open (animated) the sidebar
         Sidebar.toggle(true, function ()
         {
-            //create the page model
-            UI.pageSurface = new blocks.elements.Page(UI.pageContent);
-
             //use the generalized method to put focus on the newly created page
             switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
@@ -276,6 +272,23 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         blocks.elements.Surface.clearDropspots();
     });
 
+    $(document).on(Broadcaster.EVENTS.PAGE.REFRESH, function (event, eventData)
+    {
+        //manually call the refresh method
+        refreshDimensions();
+    });
+
+    $(document).on(Broadcaster.EVENTS.PAGE.REFRESH_SPEED, function (event, eventData)
+    {
+        if (eventData.speed && eventData.speed > 0) {
+            setDimensionTimeout(eventData.speed);
+        }
+        //if nothing is supplied, we assume a reset is requested
+        else {
+            setDimensionTimeout(DEFAULT_DIMENSION_TIMEOUT);
+        }
+    });
+
     $(document).on(Broadcaster.EVENTS.PAGE.SAVE, function (event, eventData)
     {
         //TODO
@@ -421,7 +434,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      * Monitor all keystrokes and save the currently pressed ones to UI.keysPressed.
      * To be checked with eg. UI.isKeyPressed(KEYCODE_CTRL)
      */
-    $(window).on("keyup keydown", function (e)
+    $(document).on("keyup keydown", function (e)
     {
         switch (e.type) {
             case "keydown" :
@@ -468,6 +481,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         UI.body.append(ignoredBody);
         UI.body.append(UI.sidebar);
 
+        // Because we set a container width on the <blocks-layout> element in some styles
+        // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
+        UI.containers = $('.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout');
+
         // also create the overlay containers
         UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
         UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
@@ -487,6 +504,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         //take the inner html of the content wrapper
         var content = UI.pageContent.html();
+
+        //we need to properly detach the start button before clearing everything in the dom
+        UI.startButton.detach();
+
         //note that this clears the sidebar and overlay containers too
         UI.body.empty();
         UI.body.append(content);
@@ -508,21 +529,26 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         UI.resizerWrapper = undefined;
         UI.dropspotWrapper = undefined;
         UI.pageContent = undefined;
+        UI.containers = undefined;
     };
 
+    /**
+     * Extract and return the body html when we're in edit mode.
+     * The idea is to send the entire page html to the server and let it
+     * decide what to save server-side.
+     *
+     * @returns {*|string}
+     */
     var getBodyHtml = function ()
     {
-        // the idea is to send the entire page to the server and let it
-        // only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
-        $(CONTAINERS_SELECTOR).removeAttr("style");
+        UI.containers.removeAttr("style");
 
-        //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
-        // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
+        // The sidebar is open now. So let's just take the html in the wrapper and create
         // a virtual html page by combining the content of the wrapper with the <head> in the html
 
         //clear the manual container width (we'll re-set it back later)
-        clearContainerWidth();
+        UI.containers.css("width", "");
 
         //create a new node out of the full page html
         var savePage = UI.html.clone();
@@ -931,7 +957,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     var enableResizeDetector = function (enable)
     {
         if (enable) {
-            dimensionTimer = setInterval(dimensionCallback, dimensionTimeout);
+            if (!dimensionTimer) {
+                dimensionTimer = setInterval(refreshDimensions, dimensionTimeout);
+            }
         }
         else {
             if (dimensionTimer) {
@@ -942,9 +970,21 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     };
 
     /**
+     * If you want to change the check-rate of the dimension timer
+     *
+     * @param newTimeout
+     */
+    var setDimensionTimeout = function (newTimeout)
+    {
+        enableResizeDetector(false);
+        dimensionTimeout = newTimeout;
+        enableResizeDetector(true);
+    };
+
+    /**
      * The callback function that will be called by the dimension timer, see above.
      */
-    var dimensionCallback = function ()
+    var refreshDimensions = function ()
     {
         //no need to do any refreshes if we have nothing to refresh
         if (!Commons.isUnset(UI.pageSurface)) {
@@ -953,18 +993,24 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             var windowHeight = UI.window.height();
             var bodyWidth = UI.body.width();
             var bodyHeight = UI.body.height();
+
             var pageContentWidth = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.width();
             var pageContentHeight = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.height();
 
-            if (!dimensions
-                || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight
-                || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight
-                || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight) {
+            var sidebarWidth = Commons.isUnset(UI.sidebar) ? -1 : UI.sidebar.width();
+
+            var windowChanged = !dimensions || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight;
+            var bodyChanged = !dimensions || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight;
+            var contentChanged = !dimensions || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight;
+            var sidebarChanged = !dimensions || !dimensions.sidebar || dimensions.sidebar.width !== sidebarWidth;
+
+            if (windowChanged || bodyChanged || contentChanged || sidebarChanged) {
 
                 dimensions = dimensions || {
                     window: {},
                     body: {},
                     pageContent: {},
+                    sidebar: {},
                 };
 
                 //update the stored dimensions
@@ -974,6 +1020,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 dimensions.body.height = bodyHeight;
                 dimensions.pageContent.width = pageContentWidth;
                 dimensions.pageContent.height = pageContentHeight;
+                dimensions.sidebar.width = sidebarWidth;
+
+                // If we have a sidebar, we need to sync the width of the content to the width of the sidebar
+                // because when resizing the sidebar, only its width is set and a refresh is called
+                if (sidebarChanged && UI.sidebar) {
+                    updateBodyWidth(windowWidth - sidebarWidth);
+                }
 
                 //TODO deactivate the system when page is too small
                 // if (newBlockBtn) {
@@ -986,7 +1039,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //     }
                 // }
 
-                //TODO make sure the page content wrapper block is at least the height of the body (to support good, natural blur, see comments below)
+                //TODO make sure the page content wrapper block is at least the height of the body
+                // (to support good, natural blur, see comments below)
                 //updatePageContentHeight();
 
                 //update the model and it's dimensions
@@ -995,23 +1049,79 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    /**
-     * If you want to change the check-rate of the dimension timer
-     *
-     * @param newTimeout
-     */
-    var setDimensionTimeout = function(newTimeout)
+    var clearManualDimensions = function ()
     {
-        dimensionTimeout = newTimeout;
-
-        //stop/restart the timeout if it's running,
-        //otherwise, do nothing (start hasn't been called yet)
-        if (dimensionTimer) {
-            clearInterval(dimensionTimer);
-            dimensionTimer = setInterval(dimensionCallback, newTimeout);
+        if (UI.pageContent) {
+            UI.pageContent.css("width", "");
         }
     };
 
+    var updateBodyWidth = function (newWidth)
+    {
+        // This resizing needs some explaining. We can basically resize three parent elements:
+        //
+        // 1) the window/viewport
+        //    Altering the viewport dynamically would be our best bet, because all media-queries in the stylesheets would
+        //    be activated and the page would scale natively, just like when the window is resized. However, it doesn't work as expected.
+        //    Turns out that overriding the viewport is possible on mobile to emulate a desktop page,
+        //    but not the other way around (shrinking a desktop page to it's mobile variant).
+        //    We could simulate this behaviour by adding virtual classes to the body and setting them in the css media queries
+        //    as well, but that would mean every developer needs to do this: unacceptable.
+        //
+        // 2) the 'virtual body' element: our pageContent wrapper element that holds the main html elements
+        //    By scaling the wrapper together with the sidebar, the body scales nicely up until the new width of the wrapper
+        //    'hits' the width of the container, because in Bootstrap, the containers have explicit widths set:
+        //
+        //    @media (min-width: 768px) {
+        //      .container {
+        //        width: 750px;
+        //      }
+        //    }
+        //    @media (min-width: 992px) {
+        //      .container {
+        //        width: 970px;
+        //      }
+        //    }
+        //    @media (min-width: 1200px) {
+        //      .container {
+        //        width: 1170px;
+        //      }
+        //    }
+        //
+        //    When the wrapper gets smaller than this container width (eg. especially on small screens), the sidebar starts floating over the body
+        //    and parts of the content get hidden by the sidebar. We could argue this is not that bad (keeping the WYSIWYG paradigm in mind),
+        //    but on small screens, this happens fairly quickly and it's pretty annoying.
+        //
+        // 3) the Bootstrap .container element (because it's supposed to be the single containing element that holds all layout elements)
+        //    Since this container has an explicit width set in css, it makes sense to change it, by overriding it in the style attribute.
+        //    Note that this means the container is squeezed together, without the media queries of the css being activated. Eg. the container
+        //    will be layout just like in regular desktop mode (assuming we're on a desktop), but only in a smaller width. Meaning, no columns
+        //    will jump underneath other columns like on mobile.
+        //    This is actually a good thing, because it means we can keep layouting the page in desktop mode, without having the sidebar obfuscating
+        //    the content, even on smaller screens.
+        //
+
+        // Option 1, disabled, doesn't work
+        //$('head meta[name=viewport]').attr('content', 'width=' + pageWidth + ',initial-scale=1.0,maximum-scale=1.0,user-scalable=0');
+
+        // Option 2, disabled, see comments above
+        //UI.pageContent.css("width", pageContentWidth + "px");
+
+        // Option 3, our best bet
+        // // Note: since there might be multiple container elements selected, we need to find the maximum width
+        // var maxContainerWidth = Math.max.apply(Math, UI.containers.map(function ()
+        // {
+        //     return $(this).outerWidth();
+        // }).get());
+
+        // Let's keep a small margin between the website and our sidebar
+        // Note that this value is currently set to zero...
+        UI.containers.css("width", (newWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX) + "px");
+    };
+
+    /**
+     * old code, review
+     */
     var updatePageContentHeight = function ()
     {
         if (UI.pageContent) {

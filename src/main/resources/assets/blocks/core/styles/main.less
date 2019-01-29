@@ -395,24 +395,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
-.@{OPACITY_CLASS} {
-  opacity: 0.2;
-  -webkit-filter: blur(5px) grayscale(20%);
-  -moz-filter: blur(5px) grayscale(20%);
-  -o-filter: blur(5px) grayscale(20%);
-  -ms-filter: blur(5px) grayscale(20%);
-  filter: blur(5px) grayscale(1);
-}
-
-.@{PREVENT_BLUR_CLASS} {
-  opacity: 1.0 !important;
-  -webkit-filter: blur(0) !important;
-  -moz-filter: blur(0) !important;
-  -o-filter: blur(0) !important;
-  -ms-filter: blur(0) !important;
-  filter: blur(0) !important;
-}
-
 .@{UNLINK_CLASS} {
   text-decoration: none;
   color: @text-color;
@@ -504,6 +486,10 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 //this is taken from a real world example, hope it won't change
 @sidebarTabHeight: 41px;
 .@{PAGE_SIDEBAR_CLASS} {
+
+  //when resizing the sidebar, some stuff gets selected; this prevents that
+  &:extend(.@{PREVENT_SELECTION_CLASS});
+
   //Sync this with the bgColor of the finder
   @controlBgColor: #e8e8e8;
   @bgColor: #fafafa;
@@ -537,10 +523,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     background: darken(@controlBgColor, 10%) url('/assets/blocks/core/images/splitter_ver_padded.png') center center repeat-y;
     border-left: 1px solid darken(@controlBgColor, 40%);
     border-right: 1px solid darken(@controlBgColor, 15%);
-  }
-
-  .popover {
-    &:extend(.@{PREVENT_BLUR_CLASS});
   }
 
   .nav-tabs {
@@ -953,7 +935,12 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           }
 
           .slider.slider-horizontal {
-            width: 100%;
+            //override the bootstrap-slider defaults so the handle
+            //doesn't touch the sides of the sidebar container
+            display: block;
+            width: auto;
+            margin-left: 5px;
+            margin-right: 5px;
 
             .slider-handle {
               //disable the gradient and override the color of the handle with a plain primary button color
@@ -1018,8 +1005,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   cursor: pointer;
   z-index: 10000;
   color: #000000;
-
-  &:extend(.@{PREVENT_BLUR_CLASS});
 
   .opacity(0.4) !important;
   &:hover {

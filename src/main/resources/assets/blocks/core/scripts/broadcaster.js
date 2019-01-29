@@ -85,6 +85,10 @@ base.plugin("blocks.core.Broadcaster", [function ()
         },
 
         PAGE: {
+            //the current page model needs to be refreshed
+            REFRESH: "PAGE_REFRESH",
+            //the speed at which to refresh the page continuously
+            REFRESH_SPEED: "PAGE_REFRESH_SPEED",
             //the current page needs to be saved
             SAVE: "PAGE_SAVE",
             //the current page needs to be deleted

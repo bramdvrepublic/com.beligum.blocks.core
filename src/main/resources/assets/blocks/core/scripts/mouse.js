@@ -142,7 +142,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 //make sure we start with a clean slate
                 _resetMouse();
 
-                $(document).on("mousedown.blocks_core", function (event)
+                // instead of checking every element that's clicked and filter out the ones we're interested in,
+                // we set a filter on the parent dom containers for which to process events
+                var domFilter = "." + BlocksConstants.PAGE_CONTENT_CLASS + ", ." + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS;
+
+                $(document).on("mousedown.blocks_core", domFilter, function (event)
                 {
                     if (active) {
                         if (event.which == 1) {
@@ -154,7 +158,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                     }
                 });
 
-                $(document).on("mouseup.blocks_core", function (event)
+                $(document).on("mouseup.blocks_core", domFilter, function (event)
                 {
                     if (active) {
                         if (event.which == 1) {
@@ -718,8 +722,9 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
             function delayed()
             {
-                if (!execAsap)
+                if (!execAsap) {
                     func.apply(obj, args);
+                }
                 timeout = null;
             }
 
