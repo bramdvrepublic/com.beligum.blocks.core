@@ -957,6 +957,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     var enableResizeDetector = function (enable)
     {
         if (enable) {
+            //only fire one up if none is running
             if (!dimensionTimer) {
                 dimensionTimer = setInterval(refreshDimensions, dimensionTimeout);
             }
@@ -965,7 +966,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             if (dimensionTimer) {
                 clearInterval(dimensionTimer);
             }
-            dimensionTimer = undefined;
+            dimensionTimer = null;
         }
     };
 
@@ -976,9 +977,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     var setDimensionTimeout = function (newTimeout)
     {
-        enableResizeDetector(false);
         dimensionTimeout = newTimeout;
-        enableResizeDetector(true);
+
+        //only reboot if it's currently running
+        if (dimensionTimer) {
+            enableResizeDetector(false);
+            enableResizeDetector(true);
+        }
     };
 
     /**
@@ -999,10 +1004,12 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
             var sidebarWidth = Commons.isUnset(UI.sidebar) ? -1 : UI.sidebar.width();
 
-            var windowChanged = !dimensions || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight;
-            var bodyChanged = !dimensions || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight;
-            var contentChanged = !dimensions || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight;
-            var sidebarChanged = !dimensions || !dimensions.sidebar || dimensions.sidebar.width !== sidebarWidth;
+            //note how these cascade as one depends on the other from outer structure to inner
+            var uninitialized = !dimensions;
+            var windowChanged = uninitialized || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight;
+            var bodyChanged = windowChanged || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight;
+            var contentChanged = bodyChanged || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight;
+            var sidebarChanged = contentChanged || !dimensions.sidebar || dimensions.sidebar.width !== sidebarWidth;
 
             if (windowChanged || bodyChanged || contentChanged || sidebarChanged) {
 
@@ -1025,7 +1032,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 // If we have a sidebar, we need to sync the width of the content to the width of the sidebar
                 // because when resizing the sidebar, only its width is set and a refresh is called
                 if (sidebarChanged && UI.sidebar) {
-                    updateBodyWidth(windowWidth - sidebarWidth);
+                    // Let's keep a small margin between the website and our sidebar
+                    updateBodyDimensions(windowWidth - sidebarWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX);
                 }
 
                 //TODO deactivate the system when page is too small
@@ -1038,10 +1046,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //         newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
                 //     }
                 // }
-
-                //TODO make sure the page content wrapper block is at least the height of the body
-                // (to support good, natural blur, see comments below)
-                //updatePageContentHeight();
 
                 //update the model and it's dimensions
                 UI.pageSurface._refresh(true);
@@ -1056,7 +1060,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    var updateBodyWidth = function (newWidth)
+    var updateBodyDimensions = function (newWidth)
     {
         // This resizing needs some explaining. We can basically resize three parent elements:
         //
@@ -1100,23 +1104,41 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //    This is actually a good thing, because it means we can keep layouting the page in desktop mode, without having the sidebar obfuscating
         //    the content, even on smaller screens.
         //
+        // 4) a combination of 2 & 3
+        //    Actually, we don't want to set the width on the Bootstrap container explicitly, only if it's width is larger
+        //    than the remaining space next to the sidebar. However, checking if the container 'fits' into that space is hard.
+        //    Therefore, we use a little trick and set the width of the wrapper first, then clear the explicit widths on the containers
+        //    only to re-add them if the largest container dimension would be larger than the width of the wrapper.
+        //
 
         // Option 1, disabled, doesn't work
         //$('head meta[name=viewport]').attr('content', 'width=' + pageWidth + ',initial-scale=1.0,maximum-scale=1.0,user-scalable=0');
 
-        // Option 2, disabled, see comments above
-        //UI.pageContent.css("width", pageContentWidth + "px");
+        // Option 2, actually disabled, see comments above, but we use option 4, so re-enabled
+        UI.pageContent.css("width", newWidth + "px");
 
-        // Option 3, our best bet
-        // // Note: since there might be multiple container elements selected, we need to find the maximum width
-        // var maxContainerWidth = Math.max.apply(Math, UI.containers.map(function ()
-        // {
-        //     return $(this).outerWidth();
-        // }).get());
+        // Option 3, disabled
+        //UI.containers.css("width", newWidth + "px");
 
-        // Let's keep a small margin between the website and our sidebar
-        // Note that this value is currently set to zero...
-        UI.containers.css("width", (newWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX) + "px");
+        // Option 4, the one we use
+        // 4a) clear the explicit widths
+        UI.containers.css("width", "");
+
+        // 4b) find the largest container
+        var maxContainerWidth = Math.max.apply(Math, UI.containers.map(function ()
+        {
+            return $(this).outerWidth();
+        }).get());
+
+        // 4c) alter the container only if it's too large
+        if (maxContainerWidth > newWidth) {
+            UI.containers.css("width", newWidth + "px");
+        }
+
+        //TODO make sure the page content wrapper block is at least the height of the body
+        // (to support good, natural blur, see comments below)
+        // Update: do we still need this?
+        //updatePageContentHeight();
     };
 
     /**
