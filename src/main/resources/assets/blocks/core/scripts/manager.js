@@ -34,6 +34,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     // Checks DOM dimension changes every x millis
     var DEFAULT_DIMENSION_TIMEOUT = 500;
 
+    // Because we set a container width on the <blocks-layout> element in some styles
+    // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
+    var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout';
+
     //-----VARIABLES-----
     //TODO
     // flag to enable/disable layout functionality (create, resize, move and delete)
@@ -61,8 +65,16 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         // otherwise the sidebar isn't attached to the DOM yet
         createEditLayout();
 
-        // This needs to be outside the toggle callback too, so we can
+        // Create the overlay containers
+        // Note: these need to exist before the page model is created
+        UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
+        UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+        UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+        UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
+
+        // These needs to be outside the toggle callback too, so we can
         // animate the width of the body while opening the sidebar
+        UI.containers = $(CONTAINERS_SELECTOR);
         UI.pageSurface = new blocks.elements.Page(UI.pageContent);
 
         //open (animated) the sidebar
@@ -94,11 +106,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     $(document).on(Broadcaster.EVENTS.BLOCKS.STOP, function (event)
     {
+        //some cleanup: helps bugs when closing the bar during focus
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+
         //toggle the sidebar before removing it from the DOM
         Sidebar.toggle(false, function ()
         {
-            //some cleanup: helps bugs when closing the bar during focus
-            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+            //remove any remaining manual dimension attributes
+            clearBodyDimensions();
 
             //unset these to signal we're down
             UI.pageSurface = undefined;
@@ -109,7 +124,19 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             disableNavigation(false);
             enableResizeDetector(false);
 
+            //we need to properly detach the start button before clearing the layout
+            //or the attached events will be gone
+            UI.startButton.detach();
             destroyEditLayout();
+            UI.startButton.appendTo(UI.body);
+
+            //reset the variables to signal the system is down
+            UI.pageContent = undefined;
+            UI.containers = undefined;
+            UI.overlayWrapper = undefined;
+            UI.surfaceWrapper = undefined;
+            UI.resizerWrapper = undefined;
+            UI.dropspotWrapper = undefined;
         });
     });
 
@@ -294,6 +321,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //TODO
         //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
+        //note: get the page html before we open the modal dialog
+        // or it will end up in there
+        var pageHtml = getBodyHtml();
+
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,
             title: BlocksMessages.savePageDialogTitle,
@@ -306,7 +337,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         $.ajax({
             type: 'POST',
             url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
-            data: getBodyHtml(),
+            data: pageHtml,
             contentType: 'application/json; charset=UTF-8',
         })
             .done(function (data, textStatus, response)
@@ -480,56 +511,46 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //temporarily put them here
         UI.body.append(ignoredBody);
         UI.body.append(UI.sidebar);
-
-        // Because we set a container width on the <blocks-layout> element in some styles
-        // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
-        UI.containers = $('.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout');
-
-        // also create the overlay containers
-        UI.overlayWrapper = $('<div class="' + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + '"/>').appendTo(UI.body);
-        UI.surfaceWrapper = $('<div class="' + BlocksConstants.SURFACE_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-        UI.resizerWrapper = $('<div class="' + BlocksConstants.RESIZER_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
-        UI.dropspotWrapper = $('<div class="' + BlocksConstants.DROPSPOT_WRAPPER_CLASS + '"/>').appendTo(UI.overlayWrapper);
     };
 
     /**
      * The inverse method of createEditLayout()
+     * If a html element is specified, we'll destroy the layout on that element instead of the live page
      */
-    var destroyEditLayout = function ()
+    var destroyEditLayout = function (htmlEl)
     {
+        var html = htmlEl ? htmlEl : UI.html;
+        var body = htmlEl ? htmlEl.find('body') : UI.body;
+        var pageContent = htmlEl ? htmlEl.find('.' + BlocksConstants.PAGE_CONTENT_CLASS) : UI.pageContent;
+
+        // clear the manual container widths
+        clearBodyDimensions(html);
+
+        // This is used by a number of import modules to detect edit mode,
+        // make sure it's cleared
+        body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+        // While creating the layout, we add/set a lot of styling and classes
+        // to help the layout. When these are cleared, an empty attribute is
+        // left most of the time, so it makes sense to clean up after ourself
+        Commons.removeEmptyAttr(html, 'style', true);
+        Commons.removeEmptyAttr(html, 'class', true);
+
         //this will select all (original) ignored content tags, excluding the placeholders
-        var ignoredContent = UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')');
         //find the ignored content outside the wrapper and detach them, to re-add them later on
-        ignoredContent.detach();
+        var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')').detach();
 
-        //take the inner html of the content wrapper
-        var content = UI.pageContent.html();
-
-        //we need to properly detach the start button before clearing everything in the dom
-        UI.startButton.detach();
-
+        //save the inner html of the content wrapper before clearing the body
+        var pageContentHtml = pageContent.html();
         //note that this clears the sidebar and overlay containers too
-        UI.body.empty();
-        UI.body.append(content);
+        body.empty();
+        body.append(pageContentHtml);
 
         //this will loop the ignored content and put them back in the placeholders in-order
-        UI.body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
+        body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
         {
             $(this).replaceWith(ignoredContent[idx]);
         });
-
-        UI.body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
-
-        //we cleared everything above, so make sure te re-add the button again
-        UI.startButton.appendTo(UI.body);
-
-        //reset the UI variables to signal the system is down
-        UI.overlayWrapper = undefined;
-        UI.surfaceWrapper = undefined;
-        UI.resizerWrapper = undefined;
-        UI.dropspotWrapper = undefined;
-        UI.pageContent = undefined;
-        UI.containers = undefined;
     };
 
     /**
@@ -541,37 +562,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     var getBodyHtml = function ()
     {
-        // remove the widths from the containers
-        UI.containers.removeAttr("style");
-
         // The sidebar is open now. So let's just take the html in the wrapper and create
         // a virtual html page by combining the content of the wrapper with the <head> in the html
 
-        //clear the manual container width (we'll re-set it back later)
-        UI.containers.css("width", "");
-
         //create a new node out of the full page html
-        var savePage = UI.html.clone();
+        var html = UI.html.clone();
 
-        //this extracts the real body (without the sidebar code) we need to save
-        //see toggle close for more or less the same code
-        //TODO ideally, we should make this uniform (virtually close the sidebar?)
-        var container = savePage.find("." + BlocksConstants.PAGE_CONTENT_CLASS);
-        //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
-        container.css("width", "");
-        var content = container.html();
-        var bodyCopy = savePage.find("body");
-        bodyCopy.empty();
-        bodyCopy.append(content);
-        bodyCopy.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+        //clear the wrappers that were created by the blocks system
+        destroyEditLayout(html);
 
         //convert from jQuery to html string
-        savePage = savePage[0].outerHTML;
-
-        //reset what we cleared above
-        updateContainerWidth();
-
-        return savePage;
+        return html[0].outerHTML;
     };
 
     /**
@@ -1053,13 +1054,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    var clearManualDimensions = function ()
-    {
-        if (UI.pageContent) {
-            UI.pageContent.css("width", "");
-        }
-    };
-
     var updateBodyDimensions = function (newWidth)
     {
         // This resizing needs some explaining. We can basically resize three parent elements:
@@ -1109,52 +1103,64 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //    than the remaining space next to the sidebar. However, checking if the container 'fits' into that space is hard.
         //    Therefore, we use a little trick and set the width of the wrapper first, then clear the explicit widths on the containers
         //    only to re-add them if the largest container dimension would be larger than the width of the wrapper.
+        //    Note that setting the width of the wrapper to the remaining space is always a good idea (to preserve container alignment, etc)
         //
+        // ----> Don't forget to sync the chosen implementation with the clearBodyDimensions() method!
 
         // Option 1, disabled, doesn't work
         //$('head meta[name=viewport]').attr('content', 'width=' + pageWidth + ',initial-scale=1.0,maximum-scale=1.0,user-scalable=0');
 
-        // Option 2, actually disabled, see comments above, but we use option 4, so re-enabled
-        UI.pageContent.css("width", newWidth + "px");
+        // Option 2, disabled
+        // UI.pageContent.css("width", newWidth + "px");
 
         // Option 3, disabled
-        //UI.containers.css("width", newWidth + "px");
+        // UI.containers.css("width", newWidth + "px");
 
-        // Option 4, the one we use
-        // 4a) clear the explicit widths
+        // Option 4
+        // 4a) set the width on the wrapper
+        UI.pageContent.css("width", newWidth + "px");
+        // 4b) clear the explicit widths
         UI.containers.css("width", "");
-
-        // 4b) find the largest container
+        // 4c) find the largest container
         var maxContainerWidth = Math.max.apply(Math, UI.containers.map(function ()
         {
             return $(this).outerWidth();
         }).get());
-
-        // 4c) alter the container only if it's too large
+        // 4d) alter the container only if it's too large
         if (maxContainerWidth > newWidth) {
             UI.containers.css("width", newWidth + "px");
         }
 
-        //TODO make sure the page content wrapper block is at least the height of the body
-        // (to support good, natural blur, see comments below)
-        // Update: do we still need this?
-        //updatePageContentHeight();
+        //TODO also sync the page _height_ to the body
+        // make sure the page content wrapper block is at least the height of the body
+        // (used to be to support good, natural blur, but don't know if we still need this?)
+        // var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);
+        // var pageBottom = UI.pageContent.position().top + UI.pageContent.outerHeight(true);
+        // //Note: we must always set the out height to the body height (that's why it's commented out)
+        // // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
+        // //if (pageBottom < bodyBottom) {
+        // UI.pageContent.outerHeight(bodyBottom - UI.pageContent.position().top);
+        // //}
     };
 
     /**
-     * old code, review
+     * This is more or less the inverse of updateBodyDimensions() and clears all manual attributes
+     * as a result of setting them explicitly when resizing the sidebar.
+     * If a html element is specified, we'll clear the dimensions on that element instead of the live page
      */
-    var updatePageContentHeight = function ()
+    var clearBodyDimensions = function (htmlEl)
     {
-        if (UI.pageContent) {
-            var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);
-            var pageBottom = UI.pageContent.position().top + UI.pageContent.outerHeight(true);
+        var pageContent = htmlEl ? htmlEl.find('.' + BlocksConstants.PAGE_CONTENT_CLASS) : UI.pageContent;
+        var containers = htmlEl ? htmlEl.find(CONTAINERS_SELECTOR) : UI.containers;
 
-            //Note: we must always set the out height to the body height (that's why it's commented out)
-            // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
-            //if (pageBottom < bodyBottom) {
-            UI.pageContent.outerHeight(bodyBottom - UI.pageContent.position().top);
-            //}
+        if (pageContent) {
+            pageContent.css("width", "");
+            Commons.removeEmptyStyle(pageContent);
+        }
+
+        if (containers) {
+            containers.css("width", "");
+            Commons.removeEmptyStyle(containers);
         }
     };
 

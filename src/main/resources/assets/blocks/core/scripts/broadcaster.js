@@ -111,22 +111,27 @@ base.plugin("blocks.core.Broadcaster", [function ()
      */
     this.send = function (eventName, originalEvent, data)
     {
-        var e;
+        if (eventName) {
+            var e;
 
-        // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
-        // but we'll manually re-set the type so it's a new event
-        if (originalEvent) {
+            // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
+            // but we'll manually re-set the type so it's a new event
+            if (originalEvent) {
 
-            e = $.Event(originalEvent, {
-                type: eventName
-            });
+                e = $.Event(originalEvent, {
+                    type: eventName
+                });
+            }
+            else {
+                e = $.Event(eventName);
+            }
+
+            // send the event with jquery
+            $(document).triggerHandler(e, data);
         }
         else {
-            e = $.Event(eventName);
+            Logger.error('Trying to broadcast unknown event, ignoring');
         }
-
-        // send the event with jquery
-        $(document).triggerHandler(e, data);
     };
 
 }]);
