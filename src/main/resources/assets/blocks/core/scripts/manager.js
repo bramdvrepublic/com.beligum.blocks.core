@@ -26,7 +26,7 @@
  *
  * Created by wouter on 19/01/15.
  */
-base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification)
+base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", "blocks.core.Undo", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification, Undo)
 {
     var Manager = this;
 
@@ -97,6 +97,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
             //start listening for custom click events
             Mouse.enable(true);
+
+            //Note: it makes sense to disable undo when the sidebar is closed;
+            //otherwise, a ctrl-z keystroke on any page would try to do an undo,
+            //but the user doesn't have any visual indication she's editing that page.
+            Undo.enable(true);
+
+            //notify others we're done booting
+            Broadcaster.send(Broadcaster.EVENTS.BLOCKS.STARTED);
         });
 
     });
@@ -119,6 +127,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.pageSurface = undefined;
             UI.focusedSurface = undefined;
 
+            Undo.enable(false);
             Mouse.enable(false);
             enableLeaveConfirmation(false);
             disableNavigation(false);
@@ -137,31 +146,34 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.surfaceWrapper = undefined;
             UI.resizerWrapper = undefined;
             UI.dropspotWrapper = undefined;
+
+            //notify others we've finished shutting down
+            Broadcaster.send(Broadcaster.EVENTS.BLOCKS.STOPPED);
         });
     });
 
-    /**
-     * Sent out by numerous modules when the editing of the page needs to be
-     * temporarily halted, eg. during saving, dialogs, resizing, etc.
-     * so the page is frozen while we wait for something to complete.
-     */
-    $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
-    {
-        Mouse.deactivate();
-
-        //TODO revise
-        //Hover.removeHoverOverlays();
-        // DragDrop.setActive(false);
-        // DOM.enableTextSelection(true);
-    });
-
-    /**
-     * Un-pause the editor
-     */
-    $(document).on(Broadcaster.EVENTS.RESUME_BLOCKS, function (event)
-    {
-        Mouse.activate();
-    });
+    // /**
+    //  * Sent out by numerous modules when the editing of the page needs to be
+    //  * temporarily halted, eg. during saving, dialogs, resizing, etc.
+    //  * so the page is frozen while we wait for something to complete.
+    //  */
+    // $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
+    // {
+    //     Mouse.deactivate();
+    //
+    //     //TODO revise
+    //     //Hover.removeHoverOverlays();
+    //     // DragDrop.setActive(false);
+    //     // DOM.enableTextSelection(true);
+    // });
+    //
+    // /**
+    //  * Un-pause the editor
+    //  */
+    // $(document).on(Broadcaster.EVENTS.RESUME_BLOCKS, function (event)
+    // {
+    //     Mouse.activate();
+    // });
 
     /**
      * Sent out by mouse.js when a click is registered.
@@ -221,7 +233,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     });
 
-    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_START, function (event, eventData)
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.START, function (event, eventData)
     {
         //add a general and a typed dragging class to the overlay wrapper
         UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
@@ -232,7 +244,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             eventData.surface.overlay.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
         }
     });
-    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, function (event, eventData)
+
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.MOVE, function (event, eventData)
     {
         //this clears all previous dropspot indicators (for all surfaces)
         blocks.elements.Surface.clearDropspots();
@@ -241,10 +254,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //to the surface we're currently hovering over (in the direction indicated by the vector)
         eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
     });
-    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG_STOP, function (event, eventData)
+
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.STOP, function (event, eventData)
     {
-        //TODO
-        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         //Remove the classes that were set during DRAG_START
         //removeClass() with function allows for a prefix-remove;
@@ -257,54 +270,84 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         var draggedBlock = eventData.surface;
 
-        //reset hover information that was stored during previewing
-        draggedBlock.resetPreviewMoveTo();
+        // we call this method from the abort handler as well...
+        if (draggedBlock) {
+            //reset hover information that was stored during previewing
+            draggedBlock.resetPreviewMoveTo();
 
-        //reset the drag class on the dragged surface (except when creating a new block)
-        if (draggedBlock.overlay) {
-            draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
-        }
+            //reset the drag class on the dragged surface (except when creating a new block)
+            if (draggedBlock.overlay) {
+                draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+            }
 
-        var activeDropspot = blocks.elements.Surface.getActiveDropspot();
-        //note that eg. resizers don't have dropspots, their preview is immediate
-        if (activeDropspot) {
+            var activeDropspot = blocks.elements.Surface.getActiveDropspot();
+            // note that eg. resizers don't have dropspots, their preview is immediate
+            // also, this is called on drag abort, with explicitly no active dropspot
+            if (activeDropspot) {
 
-            //save a reference to the parent before it's removed
-            var oldParent = draggedBlock.parent;
+                //save a reference to the parent before it's removed
+                var oldParent = draggedBlock.parent;
 
-            if (!draggedBlock.isNew()) {
-                draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+                if (!draggedBlock.isNew()) {
+                    draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+                }
+                else {
+                    createNewBlock(function callback(newBlockEl, onComplete)
+                    {
+                        var parentSurface = activeDropspot.anchor;
+                        // Create a new block and immediately move it to the final location.
+                        // Note that the block will not be added to the parent until moveTo()
+                        // is called, but the parent is needed for the constructor to create
+                        // the overlay.
+                        var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
+                        newBlock.moveTo(parentSurface, activeDropspot.side);
+
+                        if (onComplete) {
+                            onComplete();
+                        }
+                    });
+                }
+
+                postChangeBlock(oldParent);
             }
             else {
-                createNewBlock(function callback(newBlockEl, onComplete)
-                {
-                    var parentSurface = activeDropspot.anchor;
-                    // Create a new block and immediately move it to the final location.
-                    // Note that the block will not be added to the parent until moveTo()
-                    // is called, but the parent is needed for the constructor to create
-                    // the overlay.
-                    var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
-                    newBlock.moveTo(parentSurface, activeDropspot.side);
-
-                    if (onComplete) {
-                        onComplete();
-                    }
-                });
+                //note that resizers don't have dropspots, but they do change the page,
+                //so make sure this is sent out (eg. needed by Undo)
+                if (draggedBlock.isResizer()) {
+                    Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
+                }
             }
-
-            postChangeBlock(oldParent);
         }
 
         //this clears all previous dropspot indicators (for all surfaces)
         blocks.elements.Surface.clearDropspots();
     });
 
+    $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, function (event, eventData)
+    {
+        Logger.warn("Aborting active dragging session");
+
+        //make sure we don't have an active dropspot (so we can re-use the stop handler)
+        blocks.elements.Surface.clearDropspots();
+
+        // after clearing the dropspot, we'll re-use the stop handler above
+        Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.STOP, event, eventData);
+    });
+
+    /**
+     * Update the page model and it's dimensions, once, right now
+     * (instead of waiting for the refresh loop to fire it)
+     */
     $(document).on(Broadcaster.EVENTS.PAGE.REFRESH, function (event, eventData)
     {
         //manually call the refresh method
-        refreshDimensions();
+        refreshPage();
     });
 
+    /**
+     * Change the speed at which the page is updated in the refresh-loop.
+     * If speed is unset (or negative) in the eventData, it's reset to the default speed.
+     */
     $(document).on(Broadcaster.EVENTS.PAGE.REFRESH_SPEED, function (event, eventData)
     {
         if (eventData.speed && eventData.speed > 0) {
@@ -316,10 +359,31 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     });
 
+    /**
+     * Completely rebuild the page model and it's overlays
+     */
+    $(document).on(Broadcaster.EVENTS.PAGE.RELOAD, function (event, eventData)
+    {
+        //make sure we are in a reset state before we actually clear stuff
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+
+        //note: this will also signal the refresh method to ignore refresh events while rebuilding
+        UI.pageSurface = null;
+
+        blocks.elements.Surface.clearAllOverlays();
+
+        UI.pageSurface = new blocks.elements.Page(UI.pageContent);
+
+        //the pointer changed, so make sure to call this
+        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+    });
+
+    /**
+     * Send the current page html to the server for saving
+     */
     $(document).on(Broadcaster.EVENTS.PAGE.SAVE, function (event, eventData)
     {
-        //TODO
-        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         //note: get the page html before we open the modal dialog
         // or it will end up in there
@@ -350,14 +414,16 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             .always(function ()
             {
                 dialog.close();
-                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
+                //TODO Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             });
     });
 
+    /**
+     * Delete the current page
+     */
     $(document).on(Broadcaster.EVENTS.PAGE.DELETE, function (event, eventData)
     {
-        //TODO
-        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         var onConfirm = function (deleteAllTranslations)
         {
@@ -441,15 +507,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             ],
             onhide: function ()
             {
-                Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
+                //TODO Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             }
         });
     });
 
     $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
     {
-        //TODO
-        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         var surface = eventData.surface;
 
@@ -472,7 +537,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 UI.keysPressed[e.keyCode] = true;
 
                 //it makes more sense to fire actions on key down, not key up
-                UI.fireKeystrokeSelectors(e);
+                UI.fireKeystroke(e);
 
                 break;
             case "keyup" :
@@ -562,13 +627,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     var getBodyHtml = function ()
     {
-        // The sidebar is open now. So let's just take the html in the wrapper and create
-        // a virtual html page by combining the content of the wrapper with the <head> in the html
-
         //create a new node out of the full page html
         var html = UI.html.clone();
 
-        //clear the wrappers that were created by the blocks system
+        //clear the wrappers that were created by the blocks system on the clone
         destroyEditLayout(html);
 
         //convert from jQuery to html string
@@ -629,12 +691,15 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //because simplify can modify the dom slightly
         UI.pageSurface._simplify(true);
         UI.pageSurface._refresh(true);
+
+        // notify others the page has changed
+        // Note that we might need to split this up in block added/moved/removed in the future
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
     };
 
     var createNewBlock = function (callback)
     {
-        //TODO
-        //Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
         // show select box with all blocks
         var boxDialog;
@@ -722,7 +787,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             }
         });
 
-        //var cancelled = true;
         boxDialog = BootstrapDialog.show({
             title: BlocksMessages.selectFromTheListBelow,
             cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
@@ -731,13 +795,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 return box
             },
             buttons: [],
-            // onhidden: function ()
-            // {
-            //     if (cancelled) {
-            //         DragDrop.dragAborted();
-            //         Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS, blockEvent);
-            //     }
-            // }
         });
     };
     var addHeadResources = function (resourceArray, className, resourceType, isScript)
@@ -960,7 +1017,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         if (enable) {
             //only fire one up if none is running
             if (!dimensionTimer) {
-                dimensionTimer = setInterval(refreshDimensions, dimensionTimeout);
+                dimensionTimer = setInterval(refreshPage, dimensionTimeout);
             }
         }
         else {
@@ -990,7 +1047,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     /**
      * The callback function that will be called by the dimension timer, see above.
      */
-    var refreshDimensions = function ()
+    var refreshPage = function ()
     {
         //no need to do any refreshes if we have nothing to refresh
         if (!Commons.isUnset(UI.pageSurface)) {

@@ -253,7 +253,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                 Broadcaster.send(Broadcaster.EVENTS.UNDO.REDO);
             }
         },
-        _getElement: function()
+        _getElement: function ()
         {
             // Note that we get in trouble if we store a reference to an elemnt
             // and later modify the html (eg. of it's container element).
@@ -402,8 +402,42 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     //but they're generated on-the-fly, so we explicitly removed them from the option list below.
     this.cssSelectorGenerator = new CssSelectorGenerator({selectors: ['class', 'tag', 'nthchild']});
     this.enabled = false;
+    this.oldPageHtml = '';
+
+    UI.registerKeystrokeAction(UI.KEYCODE.Z, UI.KEYCODE.MODIFIER.CTRL, function ()
+    {
+        if (Undo.stack.canUndo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
+            Undo.stack.undo();
+        }
+        else {
+            Logger.info("Can't undo anymore");
+        }
+    });
+
+    UI.registerKeystrokeAction(UI.KEYCODE.Y, UI.KEYCODE.MODIFIER.CTRL, function ()
+    {
+        if (Undo.stack.canRedo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
+            Undo.stack.redo();
+        }
+        else {
+            Logger.info("Can't redo anymore");
+        }
+    });
 
     //-----PUBLIC METHODS-----
+    this.enable = function (enable)
+    {
+        if (enable) {
+            this.enabled = true;
+            //initialize the html of the page now it's inside it's wrapper element
+            this.oldPageHtml = UI.pageContent.html();
+        }
+        else {
+            this.enabled = false;
+            //note: it makes sense to 'forget' this when the sidebar is closed
+            this.oldPageHtml = '';
+        }
+    };
     this.isInsideUndoRedo = function (element)
     {
         return this.isInsideUndo(element) || this.isInsideRedo(element);
@@ -453,78 +487,26 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     };
 
     //-----EVENTS-----
-    //Note: it makes sense to disable undo when the sidebar is closed;
-    //otherwise, a ctrl-z keystroke on any page would try to do an undo,
-    //but the user doesn't have any visual indication she's editing that page.
-    var oldPageHtml = '';
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
-    {
-        Undo.enabled = true;
-        //initialize the html of the page now it's inside it's wrapper element
-        oldPageHtml = UI.pageContent.html();
-    });
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
-    {
-        Undo.enabled = false;
-    });
     //note: if another block executes a change, we need to make sure
     //the old html is updated or we'll bypass that change and jump further back in time
     $(document).on(Broadcaster.EVENTS.UNDO.RECORDED, function (event)
     {
-        oldPageHtml = UI.pageContent.html();
+        Undo.oldPageHtml = UI.pageContent.html();
     });
-    // This handles the undo/redo of the general page layout (adding/removing blocks, relayout).
-    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event, extraData)
+    // This handles the undo/redo of the general page layout (adding/moving/deleting blocks & resizing of columns).
+    $(document).on(Broadcaster.EVENTS.PAGE.CHANGED, function (event, extraData)
     {
         //Note: blocks-layout is moved around when the sidebar opens,
         //so we need to re-fetch it every time the DOM changes to avoid stale references
-        var newPageHtml = UI.pageContent.html();
-        if (newPageHtml !== oldPageHtml) {
-            if (!extraData || !extraData.inSideUndoRedo) {
-                //note: executing this will trigger the update of oldBlocksHtml, see listener above
-                Undo.recordHtmlChange(UI.pageContent, oldPageHtml, null, null, null, function ()
-                {
-                    //note that we signal ourself to not store this event as an undo event too
-                    //but we can't use isInsideUndoRedo() because the events are sent async
-                    Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, null, {inSideUndoRedo: true});
-                });
-            }
-        }
-    });
+        if (UI.pageContent.html() !== Undo.oldPageHtml) {
+            //note: executing this will trigger the update of oldBlocksHtml, see listener above
+            Undo.recordHtmlChange(UI.pageContent, Undo.oldPageHtml, null, null, null, function ()
+            {
+                //Rebuild the page model when an undo/redo was executed so everything is in sync.
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD, null);
 
-    //-----KEY BINDING-----
-    //note that we need to use keydown in order to override the builtin shortcut (eg. contenteditable)
-    $(document).bind("keydown", function KeyPress(e)
-    {
-        if (Undo.enabled) {
-            var evtobj = window.event ? event : e;
-
-            if (evtobj.ctrlKey || evtobj.metaKey) {
-                switch (evtobj.keyCode) {
-                    case 90: //z
-                        e.preventDefault();
-
-                        if (Undo.stack.canUndo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
-                            Undo.stack.undo();
-                        }
-                        else {
-                            Logger.info("Can't undo anymore");
-                        }
-
-                        break;
-                    case 89: //y
-                        e.preventDefault();
-
-                        if (Undo.stack.canRedo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
-                            Undo.stack.redo();
-                        }
-                        else {
-                            Logger.info("Can't redo anymore");
-                        }
-
-                        break;
-                }
-            }
+                Undo.oldPageHtml = UI.pageContent.html();
+            });
         }
     });
 
@@ -579,7 +561,8 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                 bytes += _calcBytesize(key, objectList);
                 try {
                     bytes += _calcBytesize(object[key], objectList);
-                } catch (ex) {
+                }
+                catch (ex) {
                     if (ex instanceof RangeError) {
                         // circular reference detected, final result might be incorrect
                         // let's be nice and not throw an exception

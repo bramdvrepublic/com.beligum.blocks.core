@@ -53,10 +53,14 @@ base.plugin("blocks.core.Broadcaster", [function ()
     this.EVENTS = {
 
         BLOCKS: {
-            //sent out when the edit page button was clicked and the sidebar has completed opening
+            //sent out when the blocks system needs to boot
             START: "BLOCKS_START",
-            //sent out when the sidebar was closed and has completed shutdown
+            //sent out when the blocks system has finished booting
+            STARTED: "BLOCKS_STARTED",
+            //sent out when the blocks system needs to be shut down
             STOP: "BLOCKS_STOP",
+            //sent out when the blocks system has finished shutting down
+            STOPPED: "BLOCKS_STOPPED",
             //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
             PAUSE: "BLOCKS_PAUSE",
             //sent out when the blocks editor system needs to be un-pauzed
@@ -67,12 +71,16 @@ base.plugin("blocks.core.Broadcaster", [function ()
             // custom general click event that happens when the user clicked,
             // but may have slipped the mouse a few pixels between mouse down and up
             CLICK: "MOUSE_CLICK",
-            // the user exceeded the minimum threshold and started dragging the mouse
-            DRAG_START: "MOUSE_DRAG_START",
-            // the user moved the mouse inside a dragging session
-            DRAG_MOVE: "MOUSE_DRAG_MOVE",
-            // the user released the mouse after a dragging session
-            DRAG_STOP: "MOUSE_DRAG_STOP",
+            DRAG: {
+                // the user exceeded the minimum threshold and started dragging the mouse
+                START: "MOUSE_DRAG_START",
+                // the user moved the mouse inside a dragging session
+                MOVE: "MOUSE_DRAG_MOVE",
+                // the user released the mouse after a dragging session
+                STOP: "MOUSE_DRAG_STOP",
+                // an active dragging session needs to be cancelled
+                ABORT: "MOUSE_DRAG_ABORT",
+            }
         },
 
         UNDO: {
@@ -89,6 +97,15 @@ base.plugin("blocks.core.Broadcaster", [function ()
             REFRESH: "PAGE_REFRESH",
             //the speed at which to refresh the page continuously
             REFRESH_SPEED: "PAGE_REFRESH_SPEED",
+            //the current page model and overlays needs to be rebuilt entirely
+            RELOAD: "PAGE_RELOAD",
+            //sent out by the manager when the layout of the page was changed
+            // because of a:
+            // - block was added
+            // - block was moved
+            // - blocks was removed
+            // - column was resized
+            CHANGED: "PAGE_CHANGED",
             //the current page needs to be saved
             SAVE: "PAGE_SAVE",
             //the current page needs to be deleted

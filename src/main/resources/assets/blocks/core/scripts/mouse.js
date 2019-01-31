@@ -144,7 +144,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
                 // instead of checking every element that's clicked and filter out the ones we're interested in,
                 // we set a filter on the parent dom containers for which to process events
-                var domFilter = "." + BlocksConstants.PAGE_CONTENT_CLASS + ", ." + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS;
+                var domFilter = "." + BlocksConstants.PAGE_CONTENT_CLASS + ", ." + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + ", ." + BlocksConstants.CREATE_BLOCK_CLASS;
 
                 $(document).on("mousedown.blocks_core", domFilter, function (event)
                 {
@@ -378,7 +378,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
 
                 //note: we'll also directly trigger a move, see below
-                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_START, event, {
+                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.START, event, {
                     //this is the surface we're dragging around
                     surface: mousedownSurface,
                     //this is the DOM element we started our drag on
@@ -402,7 +402,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 hoveredSurface = blocks.elements.Surface.lookup(targetElement);
 
                 if (hoveredSurface) {
-                    Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_MOVE, event, {
+                    Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.MOVE, event, {
                         //this is the surface we started the drag on
                         surface: mousedownSurface,
                         //this is the DOM element we started our drag on
@@ -460,7 +460,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             });
         }
         else if (draggingStatus === Mouse.DRAGGING.YES) {
-            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG_STOP, event, {
+            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.STOP, event, {
                 //this is the surface we dragged around
                 surface: mousedownSurface,
                 //the low-level DOM element we ended our drag on
@@ -484,7 +484,18 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     var _mouseCancel = function (event)
     {
         if (draggingStatus === Mouse.DRAGGING.YES) {
-            Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
+            // Note that the eventData object is basically the same as the drag.stop one
+            // because they'll end up in the same handler in the manager
+            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, event, {
+                //this is the surface we dragged around (possibly undefined)
+                surface: mousedownSurface,
+                //the low-level DOM element we ended our drag on
+                element: clickedElement,
+                //the original mouse down event
+                originalEvent: mousedownEvent,
+                //the last surface we were hovering on
+                hoveredSurface: hoveredSurface,
+            });
         }
 
         _resetMouse();

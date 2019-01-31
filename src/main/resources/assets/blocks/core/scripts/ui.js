@@ -45,6 +45,8 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
 
         //normal keys
         S: 83,
+        Y: 89,
+        Z: 90,
     };
 
     //data key to set on events to let them pierce through (see manager for details)
@@ -84,7 +86,8 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
         var activeModifier = UI.KEYCODE.MODIFIER.NONE;
 
         //iterate all known modifiers
-        $.each(UI.KEYCODE.MODIFIER, function(key, value) {
+        $.each(UI.KEYCODE.MODIFIER, function (key, value)
+        {
             var retVal = true;
 
             if (UI.isKeyPressed(value)) {
@@ -99,11 +102,12 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
         return activeModifier;
     };
 
-    this.isValidModifier = function(keycode)
+    this.isValidModifier = function (keycode)
     {
         var valid = false;
 
-        $.each(UI.KEYCODE.MODIFIER, function(key, value) {
+        $.each(UI.KEYCODE.MODIFIER, function (key, value)
+        {
             var retVal = true;
 
             if (keycode === value) {
@@ -129,71 +133,55 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     };
 
     /**
-     * Register a new btn/link/... selector that will trigger() when the specified keycode is pressed,
-     * but only of that element is visible
-     * @param keycode
-     * @param modifier
-     * @param actionSelector
+     * Register a callback that will be executed when the specified keycode is pressed
      */
-    this.registerKeystrokeSelector = function(keycode, modifier, actionSelector)
+    this.registerKeystrokeAction = function (keycode, modifier, action)
     {
-        if (Commons.isUnset(modifier)) {
-            //this way we can uniformly handle modifiers and no modifiers
-            modifier = UI.KEYCODE.MODIFIER.NONE;
-        }
-
-        //check if the modifier is supported by our mapping
-        if (this.isValidModifier(modifier)) {
-            this.registeredKeystrokes[modifier] = this.registeredKeystrokes[modifier] || {};
-            this.registeredKeystrokes[modifier][keycode] = this.registeredKeystrokes[modifier][keycode] || [];
-            //note: this (currently) means we don't support multiple modifiers!
-            this.registeredKeystrokes[modifier][keycode].push(actionSelector);
-        }
-        else {
-            Logger.error("Unable to register keystroke selector because the modifier isn't supported; "+modifier);
-        }
+        _registerKeystroke(keycode, modifier, function (data)
+        {
+            data.actions = data.actions || [];
+            data.actions.push(action);
+        });
     };
 
     /**
-     * Fire the registered keystroke selectors for the keys pressed in the current event
-     * @param keyEvent
-     * @returns {boolean}
+     * Register a new btn/link/... selector that will trigger() when the specified keycode is pressed,
+     * but only of that element is visible
      */
-    this.fireKeystrokeSelectors = function(keyEvent)
+    this.registerKeystrokeSelector = function (keycode, modifier, selector)
+    {
+        _registerKeystroke(keycode, modifier, function (data)
+        {
+            data.selectors = data.selectors || [];
+
+            // make sure we don't register the same selector twice
+            if (data.selectors.indexOf(selector) < 0) {
+                data.selectors.push(selector);
+            }
+        });
+    };
+
+    /**
+     * Fire up all things attached to this pressed key, taking the currently
+     * pressed-down modifiers into account too.
+     */
+    this.fireKeystroke = function (keyEvent)
     {
         var retVal = false;
 
         var modifierMap = this.registeredKeystrokes[this.getActiveModifierKey()];
         if (modifierMap) {
-            var selectors = modifierMap[keyEvent.keyCode];
-            if (selectors) {
-                for (var i=0;i<selectors.length;i++) {
+            var data = modifierMap[keyEvent.keyCode];
 
-                    var selector = selectors[i];
-                    var el = $(selector);
+            if (data) {
+                retVal |= _fireKeystrokeActions(data.actions);
+                retVal |= _fireKeystrokeSelectors(data.selectors);
+            }
 
-                    //note: this is a special filter
-                    // the element must:
-                    // 1) exist
-                    // 2) be unique
-                    // 3) be visible
-                    if (el && el.length === 1 && el.is(":visible")) {
-                        //override the default event handler
-                        keyEvent.preventDefault();
-                        keyEvent.stopPropagation();
-
-                        //'click' the action element
-                        el.trigger('click');
-
-                        //signal the caller something was actually fired
-                        retVal = true;
-                    }
-
-                    //it makes sense to stop processing after the first hit
-                    if (retVal) {
-                        break;
-                    }
-                }
+            if (retVal) {
+                //override the default event handler if something happened
+                keyEvent.preventDefault();
+                keyEvent.stopPropagation();
             }
         }
 
@@ -216,5 +204,75 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     };
 
     //-----PRIVATE METHODS-----
+    /**
+     * Fire the registered keystroke actions for the keys pressed in the current event
+     */
+    var _fireKeystrokeActions = function (actions)
+    {
+        var retVal = false;
+
+        if (actions) {
+            for (var i = 0; i < actions.length; i++) {
+
+                var action = actions[i];
+                if (action) {
+                    action();
+                    retVal = true;
+                }
+            }
+        }
+
+        return retVal;
+    };
+    /**
+     * Fire the registered keystroke selectors for the keys pressed in the current event
+     */
+    var _fireKeystrokeSelectors = function (selectors)
+    {
+        var retVal = false;
+
+        if (selectors) {
+            for (var i = 0; i < selectors.length; i++) {
+
+                var selector = selectors[i];
+                var el = $(selector);
+
+                //note: this is a special filter
+                // the element must:
+                // 1) exist
+                // 2) be unique
+                // 3) be visible
+                if (el && el.length === 1 && el.is(":visible")) {
+                    //'click' the action element
+                    el.trigger('click');
+
+                    //signal the caller something was actually fired
+                    retVal = true;
+                }
+            }
+        }
+
+        return retVal;
+    };
+    var _registerKeystroke = function (keycode, modifier, callback)
+    {
+        if (Commons.isUnset(modifier)) {
+            //this way we can uniformly handle modifiers and no modifiers
+            modifier = UI.KEYCODE.MODIFIER.NONE;
+        }
+
+        //check if the modifier is supported by our mapping
+        if (UI.isValidModifier(modifier)) {
+            //init structure if needed
+            UI.registeredKeystrokes[modifier] = UI.registeredKeystrokes[modifier] || {};
+            UI.registeredKeystrokes[modifier][keycode] = UI.registeredKeystrokes[modifier][keycode] || {};
+
+            //note: this (currently) means we don't support multiple modifiers!
+            callback(UI.registeredKeystrokes[modifier][keycode]);
+        }
+        else {
+            Logger.error("Unable to register keystroke selector because the modifier isn't supported; " + modifier);
+        }
+    };
 
 }]);

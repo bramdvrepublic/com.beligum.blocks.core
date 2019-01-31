@@ -718,7 +718,6 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * The order that is checked is top, bottom, left, right.
          *
          * @param vector The vector (having x1, y1, x2, y2 properties)
-         * @returns BaseConstantsInternal.DIRECTION
          */
         _findIntersectingSide: function (vector)
         {
