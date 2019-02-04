@@ -155,11 +155,10 @@ body.@{BODY_EDIT_MODE_CLASS} {
   // visible. See mouse.js
   &:not(.@{OVERLAY_NO_EVENTS_CLASS}) {
     // By default, we'll (re-)enable events on the real surfaces.
-    //Note: dropspots shouldn't receive events,
-    //they're just ornamental
+    // Note: dropspots shouldn't receive events, they're just ornamental
     .@{SURFACE_WRAPPER_CLASS},
     .@{RESIZER_WRAPPER_CLASS} {
-      & * {
+      & > * {
         pointer-events: auto;
       }
     }
@@ -167,16 +166,17 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
   //Note that below, the BLOCK_FOCUSED_CLASS will be used both on the wrapper
   //and the overlay to indicate:
-  // - we have an overlay focused inside the overlay wrapper (hide the resizers if we do)
+  // - we have an overlay focused inside the overlay wrapper (eg. to hide the resizers)
   // - which overlay is currently focused (disable events on that overlay)
   &.@{BLOCK_FOCUSED_CLASS} {
 
-    .@{OVERLAY_CLASS} {
+    .@{SURFACE_WRAPPER_CLASS} > * {
 
       background-color: rgba(255, 255, 255, 0.9);
       border-color: transparent;
       .transition(background-color 100ms ease-in-out);
 
+      //this is the focus class on the inner div, not the wrapper
       &.@{BLOCK_FOCUSED_CLASS} {
         .defaultBorder(false);
         background-color: transparent;
@@ -197,8 +197,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
       }
     }
 
-    //hide the resizers when a block is focused
-    .@{COLUMN_RESIZER_CLASS} {
+    //hide all the resizers when a block is focused
+    .@{RESIZER_WRAPPER_CLASS} {
       display: none;
     }
   }
@@ -208,14 +208,14 @@ body.@{BODY_EDIT_MODE_CLASS} {
   // - we're not dragging any overlay around
   &:not(.@{BLOCK_FOCUSED_CLASS}):not(.@{OVERLAY_DRAG_CLASS}) {
 
-    .@{OVERLAY_CLASS}:hover {
+    .@{SURFACE_WRAPPER_CLASS} > *:hover {
       .box-shadow(0px 0px 10px @brand-primary);
       border: 1px solid fadeout(@brand-primary, 50%);
       background-color: fadeout(@brand-primary, 80%);
     }
   }
 
-  .@{OVERLAY_CLASS} {
+  .@{SURFACE_WRAPPER_CLASS} > * {
 
     position: absolute;
     top: 0px;
@@ -229,18 +229,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     //this is probably a good general choice
     cursor: pointer;
 
-    //&.@{OVERLAY_HOVER_CLASS},
-    //&:hover {
-    //  .box-shadow(0px 0px 10px @brand-primary);
-    //  border: 1px solid fadeout(@brand-primary, 50%);
-    //  background-color: fadeout(@brand-primary, 80%);
-    //
-    //  //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
-    //  &.@{OVERLAY_BLOCK_HOVER} {
-    //    .box-shadow(none);
-    //    .defaultBorder();
-    //  }
-    //}
     &.@{OVERLAY_DRAG_CLASS} {
       background-color: rgba(00, 102, 204, 0.5);
     }
@@ -257,34 +245,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
     &.left- {
       border-left: 1px solid red !important;
-    }
-  }
-
-  .@{PROPERTY_OVERLAY_CLASS} {
-    position: absolute;
-    border: 1px dotted rgba(100, 100, 100, 0.8);
-    cursor: text;
-    z-index: @overlayZ + 1;
-
-    &.left {
-      border-left: none;
-    }
-
-    &.top {
-      border-top: none;
-    }
-
-    &.right {
-      border-right: none;
-    }
-
-    &.bottom {
-      border-bottom: none;
-    }
-
-    &.@{OVERLAY_HOVER_CLASS},
-    &:hover {
-      border: 1px solid rgba(0, 0, 0, 1);
     }
   }
 
@@ -374,7 +334,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
   }
 
-  .@{COLUMN_RESIZER_CLASS} {
+  .@{RESIZER_WRAPPER_CLASS} > * {
     @controlBgColor: #e8e8e8;
 
     position: absolute;
@@ -389,7 +349,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
   //hide the resizers when we're dragging, except if we're dragging a resizer
   &.@{OVERLAY_DRAG_CLASS}:not(.@{OVERLAY_DRAG_CLASS}-resizer) {
-    .@{COLUMN_RESIZER_CLASS} {
+    .@{RESIZER_WRAPPER_CLASS} > * {
       display: none;
     }
   }

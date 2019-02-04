@@ -174,8 +174,8 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
             var data = modifierMap[keyEvent.keyCode];
 
             if (data) {
-                retVal |= _fireKeystrokeActions(data.actions);
-                retVal |= _fireKeystrokeSelectors(data.selectors);
+                retVal |= _fireKeystrokeActions(keyEvent, data.actions);
+                retVal |= _fireKeystrokeSelectors(keyEvent, data.selectors);
             }
 
             if (retVal) {
@@ -186,6 +186,12 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
         }
 
         return retVal;
+    };
+
+    this.resetKeystrokes = function ()
+    {
+        this.keysPressed = {};
+        this.registeredKeystrokes = {};
     };
 
     /**
@@ -207,7 +213,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     /**
      * Fire the registered keystroke actions for the keys pressed in the current event
      */
-    var _fireKeystrokeActions = function (actions)
+    var _fireKeystrokeActions = function (keyEvent, actions)
     {
         var retVal = false;
 
@@ -216,7 +222,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
 
                 var action = actions[i];
                 if (action) {
-                    action();
+                    action(keyEvent);
                     retVal = true;
                 }
             }
@@ -227,7 +233,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     /**
      * Fire the registered keystroke selectors for the keys pressed in the current event
      */
-    var _fireKeystrokeSelectors = function (selectors)
+    var _fireKeystrokeSelectors = function (keyEvent, selectors)
     {
         var retVal = false;
 

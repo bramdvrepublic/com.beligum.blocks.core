@@ -505,6 +505,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
                 //Rebuild the page model when an undo/redo was executed so everything is in sync.
                 Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD, null);
 
+                // every time the page is undone/redone, we need to make sure the stored html is updated
                 Undo.oldPageHtml = UI.pageContent.html();
             });
         }

@@ -33,6 +33,7 @@
     <url>http://www.beligum.com</url>
 
     <properties>
+
         <github.url.repo.name>${github.url.repo.prefix}blocks.core</github.url.repo.name>
 
         <hadoop.hdfs.version>2.7.1</hadoop.hdfs.version>

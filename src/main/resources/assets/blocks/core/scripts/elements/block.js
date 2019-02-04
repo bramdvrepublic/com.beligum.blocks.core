@@ -44,7 +44,6 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.blocks.
 
             if (parentSurface && element) {
                 this.overlay = this._createOverlay(UI.surfaceWrapper);
-                this.overlay.addClass(BlocksConstants.OVERLAY_CLASS);
 
                 //these two classes will remove the borders left and top so we don't
                 //have double borders when two blocks are next to each other

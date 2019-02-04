@@ -616,7 +616,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         _createOverlay: function (containerElement)
         {
-            var retVal = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
+            var retVal = $("<div />");
 
             //this will allow us to do a reverse lookup starting from the element
             retVal.attr(blocks.elements.Surface.INDEX_ATTR, this.id);
@@ -705,10 +705,19 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                     this.overlay.css("left", this.left + "px");
                     this.overlay.css("width", width + "px");
                     this.overlay.css("height", height + "px");
-                    this.overlay.show();
+
+                    //show
+                    // note that instead of using the jQuery show(),
+                    // (which sets 'display: block') we clear the 'display'
+                    // that is set below, so it doesn't interfere with other
+                    // css rules.
+                    this.overlay.css("display", "");
                 }
                 else {
-                    this.overlay.hide();
+                    //hide
+                    // note that instead of using the jQuery hide(),
+                    // we set the css display property manually to have more control
+                    this.overlay.css("display", "none");
                 }
             }
         },

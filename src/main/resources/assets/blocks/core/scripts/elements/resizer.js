@@ -54,7 +54,6 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
             this.rightColumn = rightColumn;
 
             this.overlay = this._createOverlay(UI.resizerWrapper);
-            this.overlay.addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
         },
 
         //-----PUBLIC METHODS-----

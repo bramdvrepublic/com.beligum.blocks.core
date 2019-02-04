@@ -364,32 +364,38 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             updateStats(event);
             updateVector(event);
 
-            //first, check if we need to activate dragging
-            //note that we only start dragging after a certain pixel threshold, except for the resizers because
-            //sometimes they need very fine dragging (col in row in col)
-            if (draggingStatus === Mouse.DRAGGING.NO && (mousedownSurface.isResizer() || stats.totalLengthAbs > DRAG_PX_THRESHOLD || stats.totalTimeDiffAbs > DRAG_MILLIS_THRESHOLD)) {
+            if (draggingStatus === Mouse.DRAGGING.NO) {
 
-                draggingStatus = Mouse.DRAGGING.YES;
-
+                //this is something we always do
+                // (actually, this only needs to be disabled once, on first move, but hey)
+                // to disable the dragging of images and selection of text when we're
+                // operating below the dragging threshold
                 Mouse.enableNativeDnd(false);
 
-                //this will re-activate the overlays because if we're dragging, we need them to
-                //figure out which surface we're hovering on
-                UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
+                //first, check if we need to activate dragging
+                //note that we only start dragging after a certain pixel threshold, except for the resizers because
+                //sometimes they need very fine dragging (col in row in col)
+                if (mousedownSurface.isResizer() || stats.totalLengthAbs > DRAG_PX_THRESHOLD || stats.totalTimeDiffAbs > DRAG_MILLIS_THRESHOLD) {
 
-                //note: we'll also directly trigger a move, see below
-                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.START, event, {
-                    //this is the surface we're dragging around
-                    surface: mousedownSurface,
-                    //this is the DOM element we started our drag on
-                    element: clickedElement,
-                    //this is the original mousedown event that started the drag
-                    event: mousedownEvent,
-                });
+                    draggingStatus = Mouse.DRAGGING.YES;
+
+                    //this will re-activate the overlays because if we're dragging, we need them to
+                    //figure out which surface we're hovering on
+                    UI.overlayWrapper.removeClass(BlocksConstants.OVERLAY_NO_EVENTS_CLASS);
+
+                    //note: we'll also directly trigger a move, see below
+                    Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.START, event, {
+                        //this is the surface we're dragging around
+                        surface: mousedownSurface,
+                        //this is the DOM element we started our drag on
+                        element: clickedElement,
+                        //this is the original mousedown event that started the drag
+                        event: mousedownEvent,
+                    });
+                }
             }
-
             //we're past the threshold and are dragging a block around
-            if (draggingStatus === Mouse.DRAGGING.YES) {
+            else if (draggingStatus === Mouse.DRAGGING.YES) {
 
                 //keep track of the surfaces we're hovering on
                 var prevHoveredSurface = hoveredSurface;

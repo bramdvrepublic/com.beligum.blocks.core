@@ -77,6 +77,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         UI.containers = $(CONTAINERS_SELECTOR);
         UI.pageSurface = new blocks.elements.Page(UI.pageContent);
 
+        //blur the focused block when we hit ESC
+        UI.registerKeystrokeAction(UI.KEYCODE.ESC, UI.KEYCODE.MODIFIER.NONE, function (event)
+        {
+            if (UI.focusedSurface && UI.focusedSurface !== UI.pageSurface) {
+                switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+            }
+        });
+
         //open (animated) the sidebar
         Sidebar.toggle(true, function ()
         {
@@ -129,6 +137,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
             Undo.enable(false);
             Mouse.enable(false);
+            UI.resetKeystrokes();
             enableLeaveConfirmation(false);
             disableNavigation(false);
             enableResizeDetector(false);
