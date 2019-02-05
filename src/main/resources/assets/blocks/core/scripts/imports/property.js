@@ -34,17 +34,6 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
         },
 
         //-----IMPLEMENTED METHODS-----
-        init: function ()
-        {
-        },
-        focus: function (block, element, hotspot, event)
-        {
-            Property.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
-        },
-        blur: function (block, element)
-        {
-            Property.Class.Super.prototype.blur.call(this, block, element);
-        },
         getConfigs: function (block, element)
         {
             var retVal = [];

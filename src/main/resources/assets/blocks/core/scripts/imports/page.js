@@ -33,18 +33,6 @@ base.plugin("blocks.imports.Page.core", ["base.core.Class", "constants.blocks.co
         },
 
         //-----IMPLEMENTED METHODS-----
-        init: function ()
-        {
-
-        },
-        focus: function (block, element, hotspot, event)
-        {
-            Page.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
-        },
-        blur: function (block, element)
-        {
-            Page.Class.Super.prototype.blur.call(this, block, element);
-        },
         getConfigs: function (block, element)
         {
             var retVal = [];

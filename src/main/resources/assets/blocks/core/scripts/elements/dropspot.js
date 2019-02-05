@@ -66,7 +66,6 @@ base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.bloc
         createOverlay: function()
         {
             this.overlay = this._createOverlay(UI.dropspotWrapper);
-            this.overlay.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS);
             this.overlay.addClass(this.side.cssClass);
 
             switch (this.side.id) {

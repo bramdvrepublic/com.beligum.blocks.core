@@ -118,19 +118,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
         //-----'ABSTRACT' METHODS-----
         /**
-         * This class gets called only once for each subclass: when the first object of this subclass is instantiated
+         * This method gets called only once for each subclass: when the first object of this subclass is instantiated
          */
         init: function ()
         {
         },
 
         /**
-         * @param block the block that should get focus (not null)
-         * @param element one of these:
-         *                - the first property element on the way up of the element that got clicked (inside the block)
-         *                - the template element (then element==block.element) that got clicked
-         *                - the page element
-         * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
+         * @param block the surface that should get focus (not null)
+         * @param element the DOM element (with a registered tag for this widget) inside the element of the block (eg. if we registered 'blocks-text div') or the element of the block itself
+         * @param hotspot the most low-level DOM element we clicked on, regardless of what we registered in this widget
          * @param event the original event that triggered this all
          */
         focus: function (block, element, hotspot, event)
@@ -138,14 +135,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         },
 
         /**
-         * @param same parameters as in focus()
+         * Parameters as in focus()
          */
         blur: function (block, element)
         {
         },
 
         /**
-         * @param first two parameters as in focus()
+         * Parameters as in focus()
+         *
          * @return an array containing config UI, created with the factory methods below (eg. addValueAttribute())
          */
         getConfigs: function (block, element)
@@ -154,7 +152,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         },
 
         /**
-         * @return the name of the sidebar window for this widget if it's a block
+         * @return the name of the sidebar window for this widget
          */
         getWindowName: function ()
         {

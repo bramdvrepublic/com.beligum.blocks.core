@@ -248,7 +248,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     }
   }
 
-  .@{BLOCKS_DROPSPOT_CLASS} {
+  .@{DROPSPOT_WRAPPER_CLASS} > * {
 
     @startColor: @brand-primary;
     @startColorHex: argb(@startColor);
@@ -269,25 +269,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     z-index: @overlayZ + 2;
 
     border: none;
-    //old styling
-    //&.@{BLOCKS_DROPSPOT_CLASS}-top,
-    //&.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-    //  background: -moz-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-    //  background: -webkit-gradient(linear, left top, right top, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
-    //  background: -webkit-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-    //  background: -o-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-    //  background: -ms-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-    //  background: linear-gradient(to right, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
-    //}
-    //&.@{BLOCKS_DROPSPOT_CLASS}-right,
-    //&.@{BLOCKS_DROPSPOT_CLASS}-left {
-    //  background: -moz-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-    //  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
-    //  background: -webkit-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-    //  background: -o-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-    //  background: -ms-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-    //  background: linear-gradient(to bottom, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
-    //}
 
     @border: 3px solid @startColor;
     @arrowColor: fade(@startColor, 50%);
@@ -295,7 +276,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     @imgWidthHalf: @imgWidth / 2;
     @halfWidth: @imgWidthHalf * 1px;
 
-    //&.@{BLOCKS_DROPSPOT_CLASS}-top {
     &.top {
       height: @width;
       //margin-top: @halfWidth;
@@ -305,7 +285,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
       background-position: center top;
       background-repeat: repeat-x;
     }
-    //&.@{BLOCKS_DROPSPOT_CLASS}-bottom {
     &.bottom {
       height: @width;
       //margin-top: -@halfWidth;
@@ -314,7 +293,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
       background-position: center bottom;
       background-repeat: repeat-x;
     }
-    //&.@{BLOCKS_DROPSPOT_CLASS}-right {
     &.right {
       width: @width;
       //margin-left: -@halfWidth;
@@ -323,7 +301,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
       background-position: right center;
       background-repeat: repeat-y;
     }
-    //&.@{BLOCKS_DROPSPOT_CLASS}-left {
     &.left {
       width: @width;
       //margin-left: @halfWidth;

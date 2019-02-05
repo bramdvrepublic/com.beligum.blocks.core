@@ -25,6 +25,10 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         DISABLED: 2,
     };
 
+    // instead of checking every element that's clicked and filter out the ones we're interested in,
+    // we set a filter on the parent dom containers for which to process events
+    var DOM_FILTER = "." + BlocksConstants.PAGE_CONTENT_CLASS + ", ." + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + ", ." + BlocksConstants.CREATE_BLOCK_CLASS;
+
     // The minimum number of pixels we need to move before real dragging starts.
     var DRAG_PX_THRESHOLD = 3;
     // The minimum amount of time we need to be clicking before real dragging starts.
@@ -57,6 +61,9 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     //-----VARIABLES-----
     // flag to enable/disable this entire module (both clicking and dragging)
     var active = false;
+
+    // flag to enable/disable click events (otherwise they are simulated by tracking mouse down/up)
+    var enableClickEvents = true;
 
     // true if we really started dragging, past the threshold
     var draggingStatus = Mouse.DRAGGING.NO;
@@ -142,11 +149,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 //make sure we start with a clean slate
                 _resetMouse();
 
-                // instead of checking every element that's clicked and filter out the ones we're interested in,
-                // we set a filter on the parent dom containers for which to process events
-                var domFilter = "." + BlocksConstants.PAGE_CONTENT_CLASS + ", ." + BlocksConstants.BLOCK_OVERLAY_WRAPPER_CLASS + ", ." + BlocksConstants.CREATE_BLOCK_CLASS;
-
-                $(document).on("mousedown.blocks_core", domFilter, function (event)
+                $(document).on("mousedown.blocks_core", DOM_FILTER, function (event)
                 {
                     if (active) {
                         if (event.which == 1) {
@@ -158,7 +161,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                     }
                 });
 
-                $(document).on("mouseup.blocks_core", domFilter, function (event)
+                $(document).on("mouseup.blocks_core", DOM_FILTER, function (event)
                 {
                     if (active) {
                         if (event.which == 1) {
@@ -194,6 +197,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                 $(document).off("mouseleave.blocks_core");
             }
         }
+    };
+
+    this.enableClickEvents = function(enable)
+    {
+        enableClickEvents = enable;
     };
 
     this.enableDragging = function (enable)
@@ -260,8 +268,8 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     var _mouseDown = function (event)
     {
         //TODO can't decide if we need this
-        //event.preventDefault();
-        //event.stopPropagation();
+        // event.preventDefault();
+        // event.stopPropagation();
 
         //before setting the tracking variables, we make sure we start with a clean slate because mousedown starts everything
         _resetMouse();
@@ -352,8 +360,8 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             clickedElement = targetElement;
         }
 
-        //if dnd was actually disabled, we'll unregister ourself immediately,
-        //only using this to fill the clickedElement above
+        // if dnd was actually disabled, we'll unregister ourself immediately,
+        // only using this to fill the clickedElement above
         if (draggingStatus === Mouse.DRAGGING.DISABLED) {
             $(document).off("mousemove.blocks_core");
         }
@@ -439,6 +447,10 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseUp = function (event)
     {
+        //TODO can't decide if we need this
+        // event.preventDefault();
+        // event.stopPropagation();
+
         if (SHOW_DEBUG_LINES && debugCanvas) {
             debugCanvas.remove();
             debugCanvas = null;
@@ -454,6 +466,27 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
         //if we didn't drag (or we weren't allowed to), we clicked
         if (draggingStatus === Mouse.DRAGGING.NO || draggingStatus === Mouse.DRAGGING.DISABLED) {
+
+            // This will prevent a 'click' event from happening when
+            // we have the blocks system in place and we do a mousedown/mouseup
+            // on the same element.
+            // This blocking is needed to prevent click listeners from firing automatically
+            // when we focus a block (eg. medium editor in blocks-text)
+            // Note the last 'useCapture' argument means we want to use 'event capturing' instead of
+            // standard jquery event bubbling.
+            // See https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
+            if (!enableClickEvents) {
+                // we don't want to leave this on permanently, because it blocks
+                // literally everthing (eg. all sidebar controls too). So let's fire it
+                // and reset it after a short amount of time, when we're sure the click
+                // event should have happened.
+                window.addEventListener('click', _blockClick, true);
+                setTimeout(function ()
+                {
+                    window.removeEventListener('click', _blockClick, true);
+                }, 100);
+            }
+
             //note that we use the mousedown event as the parent event,
             // it're more intuitive when sending out a 'click' event
             Broadcaster.send(Broadcaster.EVENTS.MOUSE.CLICK, event, {
@@ -533,6 +566,15 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
         //re-enable the text selection that was disabled during drag
         Mouse.enableNativeDnd(true);
+    };
+
+    /**
+     * Blocks all click events on everything
+     */
+    var _blockClick = function(event)
+    {
+        event.stopImmediatePropagation();
+        event.stopPropagation();
     };
 
     /*

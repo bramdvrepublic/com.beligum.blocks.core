@@ -256,9 +256,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.MOVE, function (event, eventData)
     {
-        //this clears all previous dropspot indicators (for all surfaces)
-        blocks.elements.Surface.clearDropspots();
-
         //offer the user a preview of what would happen when the active surface would be moved
         //to the surface we're currently hovering over (in the direction indicated by the vector)
         eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
@@ -521,6 +518,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         });
     });
 
+    $(document).on(Broadcaster.EVENTS.BLOCK.FOCUS, function (event, eventData)
+    {
+        //if the block in the data is empty, we'll assume the page should be focused
+        if (eventData && eventData.block && eventData.element) {
+            switchFocus(eventData.block, eventData.element, event);
+        }
+        else if (UI.pageSurface) {
+            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+        }
+    });
+
     $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
     {
         //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
@@ -669,6 +677,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
             Mouse.enableDragging(true);
         }
+
+        // we need to enable/disable the click events after a little timeout
+        // because enabling them right away will let them slip through
+        setTimeout(function ()
+        {
+            Mouse.enableClickEvents(surface.isBlock());
+        }, 100);
 
         UI.focusedSurface = surface;
     };

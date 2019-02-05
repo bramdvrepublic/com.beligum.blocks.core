@@ -113,6 +113,8 @@ base.plugin("blocks.core.Broadcaster", [function ()
         },
 
         BLOCK: {
+            //a block needs to receive focus
+            FOCUS: "BLOCK_FOCUS",
             //a block needs to be deleted
             DELETE: "BLOCK_DELETE",
         },

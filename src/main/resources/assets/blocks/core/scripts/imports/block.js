@@ -38,17 +38,6 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "base.core.Commons", "co
         },
 
         //-----IMPLEMENTED METHODS-----
-        init: function ()
-        {
-        },
-        focus: function (block, element, hotspot, event)
-        {
-            Block.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
-        },
-        blur: function (block, element)
-        {
-            Block.Class.Super.prototype.blur.call(this, block, element);
-        },
         getConfigs: function (block, element, addCreateLink)
         {
             var retVal = [];

@@ -345,6 +345,9 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         previewMoveTo: function (surface, vector)
         {
+            //this clears all previous dropspot indicators (for all surfaces)
+            blocks.elements.Surface.clearDropspots();
+
             //find out on which side the vector intersects with the hovered surface
             var side = surface._findIntersectingSide(vector);
 

@@ -204,6 +204,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                         widget: widget,
                         surface: currSurface,
                         element: currElement,
+                        hotspot: clickedElement,
                     });
 
                     //we'll iterate the array in reverse order, but when focusing a block,
@@ -219,7 +220,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
                     var panelID = createConfigPanel(panelTitle, collapsed, disabled);
 
-                    widget.focus(currSurface, currElement, null, mousedownEvent);
+                    widget.focus(currSurface, currElement, clickedElement, mousedownEvent);
+
                     var optionsToAdd = widget.getConfigs(currSurface, currElement);
                     if (optionsToAdd && optionsToAdd.length > 0) {
 
@@ -266,7 +268,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         for (var i = 0; i < activePanels.length; i++) {
             var e = activePanels[i];
             if (e.widget) {
-                e.widget.blur(e.surface, e.element);
+                e.widget.blur(e.surface, e.element, e.hotspot);
             }
         }
 
