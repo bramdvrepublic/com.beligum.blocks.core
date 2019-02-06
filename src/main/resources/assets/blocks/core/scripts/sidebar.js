@@ -15,9 +15,9 @@
  */
 
 /**
- * Created by wouter on 15/06/15.
+ * Plugin that centralizes all functionality of the folding page sidebar.
  */
-base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.UI", "blocks.imports.Widget", "blocks.media.Finder", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Notification, UI, Widget, Finder)
+base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.UI", "blocks.imports.Widget", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Notification, UI, Widget)
 {
     var Sidebar = this;
 
@@ -170,18 +170,28 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         // because it's what we naturally expect in the GUI.
         // Similarly, we select the row furthest from the focused block; the last row before we switch to the page.
 
-        //keep track of the current surface and element (inside the surface.element)
-        var currSurface = focusedSurface;
-        var currElement = clickedElement;
-        var firstColumn = null;
-
         // if we click on a block, but we actually clicked on the free room around that block
         // (the 'stretched' space of a block to make it align with it's parent row), we'll click
         // on the column-element instead of the block-element and we need to fix this because the
         // clicked element will be a level 'too high' and out of sync with the surface we want to focus
-        if (currElement.closest(focusedSurface.element).length === 0) {
-            currElement = focusedSurface.element;
+        if (clickedElement.closest(focusedSurface.element).length === 0) {
+            // Additional tweaking:
+            // when we click in the margin of a block and that block
+            // has only one property, we'll simulate the click on that property
+            // instead. This is needed eg. for blocks-text that registers itself
+            // on the first property inside the block, not on the block itself.
+            if (focusedSurface.children.length === 1) {
+                clickedElement = focusedSurface.children[0].element;
+            }
+            else {
+                clickedElement = focusedSurface.element;
+            }
         }
+
+        //keep track of the current surface and element (inside the surface.element)
+        var currSurface = focusedSurface;
+        var currElement = clickedElement;
+        var firstColumn = null;
 
         var runawayCounter = 0;
         while (currSurface != null) {
@@ -283,51 +293,50 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     /**
      * Loads the finder into the sidebar, passing the options to the finder init method
      */
-    //TODO factor this away because the finder is no dependency of this project
     this.loadFinder = function (options)
     {
-        //general test if we have the media plugin available
-        var MediaConstants = base.getPlugin("constants.blocks.media.core");
-        if (MediaConstants) {
-            var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
-            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
-            contextTab.addClass(BlocksConstants.LOADING_CLASS);
-            finderTab.removeClass(BlocksConstants.LOADING_CLASS);
-            //we'll start off with an empty container and let createConfigPanel() fill it
-            finderTab.empty();
+        var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+        contextTab.addClass(BlocksConstants.LOADING_CLASS);
+        finderTab.removeClass(BlocksConstants.LOADING_CLASS);
+        //we'll start off with an empty container and let createConfigPanel() fill it
+        finderTab.empty();
 
-            //'switch' to the finder tab
-            $("#" + BlocksConstants.SIDEBAR_FILES_TAB_ID).tab('show');
+        //'switch' to the finder tab
+        $("#" + BlocksConstants.SIDEBAR_FILES_TAB_ID).tab('show');
 
-            //now create and add a new frame
-            var panelId = createConfigPanel(BlocksMessages.finderTabTitle);
-            appendConfigPanelToSidebar(panelId, BlocksConstants.SIDEBAR_FILES_ID);
-            //let's us do perform some css tweaks
-            var frame = getConfigPanelForId(panelId);
-            if (frame) {
-                frame.addClass(BlocksConstants.SIDEBAR_FINDER_PANEL_CLASS);
-            }
-            else {
-                Logger.error('Couldn\'t find a config panel with this id', panelId);
-            }
+        //now create and add a new frame
+        var panelId = createConfigPanel(BlocksMessages.finderTabTitle);
+        appendConfigPanelToSidebar(panelId, BlocksConstants.SIDEBAR_FILES_ID);
+        //let's us do perform some css tweaks
+        var frame = getConfigPanelForId(panelId);
+        if (frame) {
+            frame.addClass(BlocksConstants.SIDEBAR_FINDER_PANEL_CLASS);
+        }
+        else {
+            Logger.error('Couldn\'t find a config panel with this id', panelId);
+        }
 
-            //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
-            var finder = frame.find(".panel-body");
-            finder.load(MediaConstants.FINDER_INLINE_ENDPOINT, function (response, status, xhr)
+        // Using a broadcast event, we cut the ties with the blocks.media project
+        //Note: maybe it's not necessary to reload this every time,
+        // but it allows us to always present a fresh up-to-date view of the server content
+        var container = frame.find(".panel-body");
+        Broadcaster.send(Broadcaster.EVENTS.FINDER.LOAD, null, {
+            container: container,
+            options: options,
+            callback: function (success)
             {
-                if (status == "error") {
-                    var msg = "Error while loading the finder; ";
-                    Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
-                    finder.removeClass(BlocksConstants.LOADING_CLASS);
+                if (success) {
+                    //don't show the warning when clicking something in the finder
+                    container.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+                    container.removeClass(BlocksConstants.LOADING_CLASS);
                 }
                 else {
-                    Finder.init(options);
-                    //don't show the warning when clicking something in the finder
-                    finder.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
-                    finder.removeClass(BlocksConstants.LOADING_CLASS);
+                    Notification.error('Error while loading the finder; ' + xhr.status + " " + xhr.statusText, xhr);
+                    container.removeClass(BlocksConstants.LOADING_CLASS);
                 }
-            });
-        }
+            }
+        });
     };
 
     /**
@@ -335,19 +344,15 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      */
     this.unloadFinder = function ()
     {
-        //general test if we have the media plugin available
-        var MediaConstants = base.getPlugin("constants.blocks.media.core");
-        if (MediaConstants) {
-            //'switch' back to the context tab
-            $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
+        //'switch' back to the context tab
+        $("#" + BlocksConstants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
 
-            var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
-            if (!finderTab.is(':empty')) {
-                var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
-                contextTab.removeClass(BlocksConstants.LOADING_CLASS);
-                finderTab.addClass(BlocksConstants.LOADING_CLASS);
-                finderTab.html('');
-            }
+        var finderTab = $("#" + BlocksConstants.SIDEBAR_FILES_ID);
+        if (!finderTab.is(':empty')) {
+            var contextTab = $("#" + BlocksConstants.SIDEBAR_CONTEXT_ID);
+            contextTab.removeClass(BlocksConstants.LOADING_CLASS);
+            finderTab.addClass(BlocksConstants.LOADING_CLASS);
+            finderTab.html('');
         }
     };
 
@@ -610,7 +615,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
      *
      * @returns {number}
      */
-    var getInitialWidth = function()
+    var getInitialWidth = function ()
     {
         // default width of sidebar is 20% of window
         var retVal = $(window).width() * 0.2;

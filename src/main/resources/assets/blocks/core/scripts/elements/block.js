@@ -15,8 +15,8 @@
  */
 
 /**
- * Special kind of row that can contains a template
- * Draggable templates are the elements inside a column
+ * An element with a (registered) html template tag (eg. <blocks-text>).
+ * All operations are more or less performed on this block-level (eg. dragging, moving, editing, ...)
  */
 base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {

@@ -15,7 +15,7 @@
  */
 
 /**
- * Created by bram on 12/8/16.
+ * General script to load when a new page is to be created.
  */
 base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "base.core.Commons", "blocks.core.Notification", function (Class, BlocksConstants, BlocksMessages, Commons, Notification)
 {

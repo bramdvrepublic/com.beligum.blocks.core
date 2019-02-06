@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.UI", function (Commons, Broadcaster, BlocksConstants, SideBar, UI)
+/**
+ * Plugin that centralizes all mouse event handling to replace mousedown/mouseup/mousemove/click
+ * by custom blocks events using the Broadcaster.
+ * It also keeps a statistics model about the general direction the mouse is moving during drag,
+ * so we can calculate the crossings with block borders as a means to detect possible dropspots.
+ */
+base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.UI", function (Commons, Broadcaster, BlocksConstants, UI)
 {
     var Mouse = this;
 
@@ -199,6 +205,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         }
     };
 
+    this.isEnabled = function()
+    {
+        return active;
+    };
+
     this.enableClickEvents = function(enable)
     {
         enableClickEvents = enable;
@@ -267,7 +278,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseDown = function (event)
     {
-        //TODO can't decide if we need this
+        //TODO can't decide if we need this or not
         // event.preventDefault();
         // event.stopPropagation();
 
@@ -447,7 +458,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseUp = function (event)
     {
-        //TODO can't decide if we need this
+        //TODO can't decide if we need this or not
         // event.preventDefault();
         // event.stopPropagation();
 
@@ -469,11 +480,12 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
             // This will prevent a 'click' event from happening when
             // we have the blocks system in place and we do a mousedown/mouseup
-            // on the same element.
+            // on the same element (which is the definition of a click according to the browser).
             // This blocking is needed to prevent click listeners from firing automatically
-            // when we focus a block (eg. medium editor in blocks-text)
+            // when we focus a block (eg. medium editor in blocks-text receiving a 'click',
+            // originating from the body, immediately blurring the editor again after focus).
             // Note the last 'useCapture' argument means we want to use 'event capturing' instead of
-            // standard jquery event bubbling.
+            // standard event bubbling.
             // See https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
             if (!enableClickEvents) {
                 // we don't want to leave this on permanently, because it blocks

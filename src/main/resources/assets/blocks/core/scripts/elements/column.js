@@ -15,9 +15,7 @@
  */
 
 /**
- * A column (inside a row) -> Can contain rows or templates
- *
- * Created by wouter on 9/03/15.
+ * A bootstrap column element
  */
 base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {

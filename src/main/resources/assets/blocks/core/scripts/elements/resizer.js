@@ -15,9 +15,8 @@
  */
 
 /*
- * defines a resizer. The surface of the resizer is the are that triggers when you hover over it
- * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
- * left and rightcolumn are the columns that this handle will resize when dragged
+ * A resizer that sits between two columns and can be dragged left and right to resize those columns.
+ * It is created and lives inside row objects.
  */
 base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {

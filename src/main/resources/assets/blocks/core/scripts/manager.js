@@ -23,8 +23,6 @@
  * Rule of thumb: this manager will probably inject all submodules (to fire up their methods as a reaction
  * on events), but this manager will never be injected as a dependency of a submodule, only be letting
  * them send out events that are listened to in the manager.
- *
- * Created by wouter on 19/01/15.
  */
 base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Sidebar", "blocks.core.UI", "blocks.core.Notification", "blocks.core.Undo", function (Commons, BlocksConstants, BlocksMessages, Broadcaster, Mouse, Sidebar, UI, Notification, Undo)
 {
@@ -38,19 +36,19 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
     var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout';
 
+    // The minimum width we need to enable the blocks editor
+    // Note: this value is the bootstrap threshold for large devices (normal desktops and up)
+    var MIN_WINDOW_WIDTH = 992;
+
     //-----VARIABLES-----
-    //TODO
-    // flag to enable/disable layout functionality (create, resize, move and delete)
-    var allowLayout = true;
-
-    // flag to enable/disable editing of existing blocks (giving them focus to start editing)
-    var allowEdit = true;
-
     // timer that checks the body dimension at regular intervals
     // and refreshes the page model when needed
     var dimensionTimer = null;
     var dimensionTimeout = DEFAULT_DIMENSION_TIMEOUT;
     var dimensions;
+
+    //general flag to keep track when the system is booted or not
+    var booted = false;
 
     //-----MAIN ENTRY POINT: LOAD THE SIDEBAR HTML AND BOOTSTRAP THE BLOCKS SYSTEM-----
     Sidebar.load();
@@ -111,6 +109,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             //but the user doesn't have any visual indication she's editing that page.
             Undo.enable(true);
 
+            booted = true;
+
             //notify others we're done booting
             Broadcaster.send(Broadcaster.EVENTS.BLOCKS.STARTED);
         });
@@ -122,6 +122,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     $(document).on(Broadcaster.EVENTS.BLOCKS.STOP, function (event)
     {
+        booted = false;
+
         //some cleanup: helps bugs when closing the bar during focus
         switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
@@ -161,28 +163,23 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         });
     });
 
-    // /**
-    //  * Sent out by numerous modules when the editing of the page needs to be
-    //  * temporarily halted, eg. during saving, dialogs, resizing, etc.
-    //  * so the page is frozen while we wait for something to complete.
-    //  */
-    // $(document).on(Broadcaster.EVENTS.PAUSE_BLOCKS, function (event)
-    // {
-    //     Mouse.deactivate();
-    //
-    //     //TODO revise
-    //     //Hover.removeHoverOverlays();
-    //     // DragDrop.setActive(false);
-    //     // DOM.enableTextSelection(true);
-    // });
-    //
-    // /**
-    //  * Un-pause the editor
-    //  */
-    // $(document).on(Broadcaster.EVENTS.RESUME_BLOCKS, function (event)
-    // {
-    //     Mouse.activate();
-    // });
+    /**
+     * Sent out by numerous modules when the editing of the page needs to be
+     * temporarily halted, eg. during saving, dialogs, resizing, etc.
+     * so the page is frozen while we wait for something to complete.
+     */
+    $(document).on(Broadcaster.EVENTS.BLOCKS.PAUSE, function (event)
+    {
+        pauseSystem(true);
+    });
+
+    /**
+     * Un-pause the blocks system
+     */
+    $(document).on(Broadcaster.EVENTS.BLOCKS.RESUME, function (event)
+    {
+        pauseSystem(false);
+    });
 
     /**
      * Sent out by mouse.js when a click is registered.
@@ -202,7 +199,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             //option 1) check if we need to switch focus to a block
             if (
                 //clicking on a surface is the first event to edit it, so block it if we don't have permission
-                allowEdit
+                UI.allowEdit
                 //we don't allow to switch focus from one block to the next, let's always go back to the page first
                 && (!UI.focusedSurface || UI.focusedSurface === UI.pageSurface)
                 //make sure the block we received is a valid block
@@ -244,89 +241,100 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.START, function (event, eventData)
     {
-        //add a general and a typed dragging class to the overlay wrapper
-        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
-        UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS + '-' + eventData.surface.type);
+        if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
 
-        //also add a class to the block we're dragging around (except when creating a new block)
-        if (eventData.surface.overlay) {
-            eventData.surface.overlay.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+            //add a general and a typed dragging class to the overlay wrapper
+            UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+            UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS + '-' + eventData.surface.type);
+
+            //also add a class to the block we're dragging around (except when creating a new block)
+            if (eventData.surface.overlay) {
+                eventData.surface.overlay.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+            }
         }
     });
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.MOVE, function (event, eventData)
     {
-        //offer the user a preview of what would happen when the active surface would be moved
-        //to the surface we're currently hovering over (in the direction indicated by the vector)
-        eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
+        if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
+
+            //offer the user a preview of what would happen when the active surface would be moved
+            //to the surface we're currently hovering over (in the direction indicated by the vector)
+            eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
+        }
     });
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.STOP, function (event, eventData)
     {
-        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
 
-        //Remove the classes that were set during DRAG_START
-        //removeClass() with function allows for a prefix-remove;
-        // eg. it will remove both the 'drag' and typed 'drag-block' classes
-        UI.overlayWrapper.removeClass(function (index, className)
-        {
-            //note: \s matches whitespace (spaces, tabs and new lines). \S is negated \s
-            return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
-        });
+            //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
-        var draggedBlock = eventData.surface;
+            //Remove the classes that were set during DRAG_START
+            //removeClass() with function allows for a prefix-remove;
+            // eg. it will remove both the 'drag' and typed 'drag-block' classes
+            UI.overlayWrapper.removeClass(function (index, className)
+            {
+                //note: \s matches whitespace (spaces, tabs and new lines). \S is negated \s
+                return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
+            });
 
-        // we call this method from the abort handler as well...
-        if (draggedBlock) {
-            //reset hover information that was stored during previewing
-            draggedBlock.resetPreviewMoveTo();
+            var draggedBlock = eventData.surface;
 
-            //reset the drag class on the dragged surface (except when creating a new block)
-            if (draggedBlock.overlay) {
-                draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
-            }
+            // we call this method from the abort handler as well...
+            if (draggedBlock) {
+                //reset hover information that was stored during previewing
+                draggedBlock.resetPreviewMoveTo();
 
-            var activeDropspot = blocks.elements.Surface.getActiveDropspot();
-            // note that eg. resizers don't have dropspots, their preview is immediate
-            // also, this is called on drag abort, with explicitly no active dropspot
-            if (activeDropspot) {
+                //reset the drag class on the dragged surface (except when creating a new block)
+                if (draggedBlock.overlay) {
+                    draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+                }
 
-                //save a reference to the parent before it's removed
-                var oldParent = draggedBlock.parent;
+                var activeDropspot = blocks.elements.Surface.getActiveDropspot();
+                // note that eg. resizers don't have dropspots, their preview is immediate
+                // also, this is called on drag abort, with explicitly no active dropspot
+                if (activeDropspot) {
 
-                if (!draggedBlock.isNew()) {
-                    draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+                    //save a reference to the parent before it's removed
+                    var oldParent = draggedBlock.parent;
+
+                    if (!draggedBlock.isNew()) {
+                        draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+                    }
+                    else {
+                        if (UI.allowCreate) {
+                            createNewBlock(function callback(newBlockEl, onComplete)
+                            {
+                                var parentSurface = activeDropspot.anchor;
+                                // Create a new block and immediately move it to the final location.
+                                // Note that the block will not be added to the parent until moveTo()
+                                // is called, but the parent is needed for the constructor to create
+                                // the overlay.
+                                var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
+                                newBlock.moveTo(parentSurface, activeDropspot.side);
+
+                                if (onComplete) {
+                                    onComplete();
+                                }
+                            });
+                        }
+                    }
+
+                    postChangeBlock(oldParent);
                 }
                 else {
-                    createNewBlock(function callback(newBlockEl, onComplete)
-                    {
-                        var parentSurface = activeDropspot.anchor;
-                        // Create a new block and immediately move it to the final location.
-                        // Note that the block will not be added to the parent until moveTo()
-                        // is called, but the parent is needed for the constructor to create
-                        // the overlay.
-                        var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
-                        newBlock.moveTo(parentSurface, activeDropspot.side);
-
-                        if (onComplete) {
-                            onComplete();
-                        }
-                    });
-                }
-
-                postChangeBlock(oldParent);
-            }
-            else {
-                //note that resizers don't have dropspots, but they do change the page,
-                //so make sure this is sent out (eg. needed by Undo)
-                if (draggedBlock.isResizer()) {
-                    Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
+                    //note that resizers don't have dropspots, but they do change the page,
+                    //so make sure this is sent out (eg. needed by Undo)
+                    if (draggedBlock.isResizer()) {
+                        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
+                    }
                 }
             }
+
+            //this clears all previous dropspot indicators (for all surfaces)
+            blocks.elements.Surface.clearDropspots();
         }
-
-        //this clears all previous dropspot indicators (for all surfaces)
-        blocks.elements.Surface.clearDropspots();
     });
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, function (event, eventData)
@@ -347,7 +355,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     $(document).on(Broadcaster.EVENTS.PAGE.REFRESH, function (event, eventData)
     {
         //manually call the refresh method
-        refreshPage();
+        //by default, we force a refresh, but that can be overridden
+        refreshPage(!(eventData && eventData.force === false));
     });
 
     /**
@@ -521,26 +530,29 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     $(document).on(Broadcaster.EVENTS.BLOCK.FOCUS, function (event, eventData)
     {
         //if the block in the data is empty, we'll assume the page should be focused
+        //note: it doesn't make sense to pass the EVENTS.BLOCK.FOCUS event, pass the original one instead
         if (eventData && eventData.block && eventData.element) {
-            switchFocus(eventData.block, eventData.element, event);
+            switchFocus(eventData.block, eventData.element, event.originalEvent);
         }
         else if (UI.pageSurface) {
-            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+            switchFocus(UI.pageSurface, UI.pageSurface.element, event.originalEvent);
         }
     });
 
     $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
     {
-        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        if (UI.allowDelete) {
+            //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
-        var surface = eventData.surface;
+            var surface = eventData.surface;
 
-        //save a reference to the parent before it's removed
-        var oldParent = surface.parent;
-        surface.parent._removeChild(surface);
-        postChangeBlock(oldParent);
+            //save a reference to the parent before it's removed
+            var oldParent = surface.parent;
+            surface.parent._removeChild(surface);
+            postChangeBlock(oldParent);
 
-        switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+            switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+        }
     });
 
     /**
@@ -821,6 +833,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             buttons: [],
         });
     };
+
     var addHeadResources = function (resourceArray, className, resourceType, isScript)
     {
         if (resourceArray != null && resourceArray.length > 0) {
@@ -897,6 +910,44 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 }
 
                 loadRecursiveHeadResources(resourceArray, idx + 1, className, resourceType, isScript);
+            }
+        }
+    };
+
+    var pauseSystem = function(pause)
+    {
+        //we can only pause/resume a booted system
+        if (booted) {
+            if (pause) {
+                //don't pause an already paused system
+                if (Mouse.isEnabled()) {
+
+                    Logger.info('Pausing blocks system');
+
+                    Mouse.enable(false);
+
+                    //make sure we are in a reset state before we actually clear stuff
+                    switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+
+                    //note: this will also signal the refresh method to ignore refresh events while rebuilding
+                    UI.pageSurface = null;
+
+                    blocks.elements.Surface.clearAllOverlays();
+                }
+            }
+            else {
+                //only resume a paused system
+                if (!Mouse.isEnabled()) {
+
+                    Logger.info('Resuming blocks system');
+
+                    UI.pageSurface = new blocks.elements.Page(UI.pageContent);
+
+                    //the pointer changed, so make sure to call this
+                    switchFocus(UI.pageSurface, UI.pageSurface.element, event);
+
+                    Mouse.enable(true);
+                }
             }
         }
     };
@@ -1070,14 +1121,16 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     /**
      * The callback function that will be called by the dimension timer, see above.
+     * If force is true, an update is forced, even though the surrounding dimensions didn't change.
      */
-    var refreshPage = function ()
+    var refreshPage = function (force)
     {
+        var windowWidth = UI.window.width();
+        var windowHeight = UI.window.height();
+
         //no need to do any refreshes if we have nothing to refresh
         if (!Commons.isUnset(UI.pageSurface)) {
 
-            var windowWidth = UI.window.width();
-            var windowHeight = UI.window.height();
             var bodyWidth = UI.body.width();
             var bodyHeight = UI.body.height();
 
@@ -1093,7 +1146,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             var contentChanged = bodyChanged || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight;
             var sidebarChanged = contentChanged || !dimensions.sidebar || dimensions.sidebar.width !== sidebarWidth;
 
-            if (windowChanged || bodyChanged || contentChanged || sidebarChanged) {
+            if (force === true || windowChanged || bodyChanged || contentChanged || sidebarChanged) {
 
                 dimensions = dimensions || {
                     window: {},
@@ -1118,21 +1171,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     updateBodyDimensions(windowWidth - sidebarWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX);
                 }
 
-                //TODO deactivate the system when page is too small
-                // if (newBlockBtn) {
-                //     newBlockBtn.removeAttr("disabled");
-                // }
-                // else {
-                //     if (newBlockBtn) {
-                //         newBlockBtn.attr("disabled", "");
-                //         newBlockBtn.attr("title", BlocksMessages.pageTooSmallToLayout);
-                //     }
-                // }
-
                 //update the model and it's dimensions
+                //note: it must come before the pause call because that can possibly
+                // make the pageSurface null
                 UI.pageSurface._refresh(true);
             }
         }
+
+        // deactivate the system when page is too small
+        // note: this won't do anything if it's already in the right state
+        // note: keep this outside the pageSurface check or resume won't work
+        pauseSystem(windowWidth < MIN_WINDOW_WIDTH);
     };
 
     var updateBodyDimensions = function (newWidth)
@@ -1212,7 +1261,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.containers.css("width", newWidth + "px");
         }
 
-        //TODO also sync the page _height_ to the body
+        // This code also syncs the page _height_ to the body
         // make sure the page content wrapper block is at least the height of the body
         // (used to be to support good, natural blur, but don't know if we still need this?)
         // var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);

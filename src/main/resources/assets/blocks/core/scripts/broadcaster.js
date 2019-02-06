@@ -15,35 +15,8 @@
  */
 
 /**
- *
- * Plugin to broadcast messages
- *
- * Register to receive a message for an event by name, and the callback to be called when a message is received.
- * Different callbacks can be coupled to the same event. So when you register twice for the same event,
- * both callbacks will be called when a message is send.
- * e.g.: Broadcaster.on("doLookup", lookup)
- *
- * You can use namespaces by writing eventname.namespace.
- * Namespaces can be used to only unregister some registered
- * events with the same name, or to only send messages to events in the same namespace
- *
- * e.g.: Broadcaster.on("doLookup.mynamespace", lookup)
- *
- * Unregister with off. Once unregistered you will no longer receive messages.
- * When unregistering without a namespace, all registered callbacks for an event will be removed.
- * otherwise, only the callbacks for that namespace and event will be removed.
- * e.g.: Broadcaster.off("doLookup", lookup)
- *
- * You can send an event. If needed you can add 1 parameter:
- * Broadcaster.send("lookup", parameter);
- *
- * When using a namespace when sending an event, only events for that namespace will be called.
- * If needed you can add a timeout value when sending an event. Then all events will be called
- * with that timeout value. Default is 0, so all registered callbacks will be called without waiting
- * for each other (async). When you give a timeout value < 0 then the next registered callback will
- * be called when the previous callback finished synchronously.
- *
- * Using Broadcaster.send("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
+ * Plugin to broadcast messages across the system, built using jQuery's trigger() method
+ * and created to solve the cyclic dependency problem.
  */
 base.plugin("blocks.core.Broadcaster", [function ()
 {
@@ -118,6 +91,13 @@ base.plugin("blocks.core.Broadcaster", [function ()
             //a block needs to be deleted
             DELETE: "BLOCK_DELETE",
         },
+
+        FINDER: {
+            // sent out when we want to load the finder in a container-element,
+            // passed to the event using the 'container' option.
+            // When done, the 'callback' option is called (if specified)
+            LOAD: "FINDER_LOAD",
+        },
     };
 
     //-----VARIABLES-----
@@ -131,22 +111,23 @@ base.plugin("blocks.core.Broadcaster", [function ()
     this.send = function (eventName, originalEvent, data)
     {
         if (eventName) {
-            var e;
+
+            var newEvent;
 
             // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
             // but we'll manually re-set the type so it's a new event
             if (originalEvent) {
 
-                e = $.Event(originalEvent, {
+                newEvent = $.Event(originalEvent, {
                     type: eventName
                 });
             }
             else {
-                e = $.Event(eventName);
+                newEvent = $.Event(eventName);
             }
 
             // send the event with jquery
-            $(document).triggerHandler(e, data);
+            $(document).triggerHandler(newEvent, data);
         }
         else {
             Logger.error('Trying to broadcast unknown event, ignoring');

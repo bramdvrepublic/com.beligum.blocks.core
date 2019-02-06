@@ -71,15 +71,9 @@ $!CONTEXT.dynamicScripts
 <script src="/assets/webjars/lz-string/libs/lz-string.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/webjars/css-selector-generator/1.1.0/build/css-selector-generator.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/blocks/core/scripts/undo.js" type="application/javascript" data-scope-action="update"></script>
-##<script src="/assets/blocks/core/scripts/menu.js" type="application/javascript" data-scope-action="update"></script>
-
-## these are the widgets we need to include manually
 <script src="/assets/blocks/core/scripts/imports/widget.js" type="application/javascript" data-scope-action="update"></script>
-<script src="/assets/blocks/core/scripts/imports/block.js" type="application/javascript" data-scope-action="update"></script>
-<script src="/assets/blocks/core/scripts/imports/property.js" type="application/javascript" data-scope-action="update"></script>
-<script src="/assets/blocks/core/scripts/imports/page.js" type="application/javascript" data-scope-action="update"></script>
 
-## TODO: refactor this away cause we're not in pom.xml
+## TODO: we should make this dynamically dependent on the blocks-media-core project, cause it's not in pom.xml
 <script src="/assets/blocks/media/core/scripts/finder-jobs.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/blocks/media/core/scripts/finder.js" type="application/javascript" data-scope-action="update"></script>
 <script src="/assets/blocks/media/core/scripts/finder-ui.js" type="application/javascript" data-scope-action="update"></script>

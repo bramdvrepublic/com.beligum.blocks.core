@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Wrapper around the BootstrapDialog plugin to centralize a number of frequently-used notifications modal dialogs.
+ */
 base.plugin("blocks.core.Notification", [function ()
 {
     this.info = function (message, object)

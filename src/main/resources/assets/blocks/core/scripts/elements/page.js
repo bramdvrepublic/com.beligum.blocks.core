@@ -15,9 +15,8 @@
  */
 
 /**
- * Region where templates can be dragged
- *
- * Created by wouter on 10/06/15.
+ * All content in a page is wrapped in a <div> marked with the BlocksConstants.PAGE_CONTENT_CLASS.
+ * This div basically contains all elements that can be edited and layouted by the user.
  */
 base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {

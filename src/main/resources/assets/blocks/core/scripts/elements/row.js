@@ -15,8 +15,7 @@
  */
 
 /**
- * A row inside a column or a container
- * Can only contain columns
+ * A bootstrap row element
  */
 base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", function (Class, BlocksConstants, BlocksMessages)
 {

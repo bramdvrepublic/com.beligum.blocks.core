@@ -134,10 +134,12 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
 .@{BLOCK_OVERLAY_WRAPPER_CLASS} {
 
+  @focusedBlockBorderWidth: unit(@FOCUSED_BLOCK_BORDER_PX, px);
+
   //MIXINS FOR OVERLAYS
   .defaultBorder(@blankEdges: true) {
 
-    border: 1px dashed fadeout(@brand-primary, 50%);
+    border: @focusedBlockBorderWidth dashed fadeout(@brand-primary, 50%);
 
     &.left when (@blankEdges) {
       border-left: none;
@@ -210,7 +212,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
 
     .@{SURFACE_WRAPPER_CLASS} > *:hover {
       .box-shadow(0px 0px 10px @brand-primary);
-      border: 1px solid fadeout(@brand-primary, 50%);
+      border: @focusedBlockBorderWidth solid fadeout(@brand-primary, 50%);
       background-color: fadeout(@brand-primary, 80%);
     }
   }
@@ -348,12 +350,6 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
   cursor: col-resize !important;
 }
 
-// Class put when a property is content-editable and active
-// so when can set the outline we want for this property
-.@{PROPERTY_EDIT_CLASS} {
-  outline: 3px dashed fadeout(@brand-primary, 50%);
-}
-
 [property]:focus,
 [data-property]:focus {
   //disabling this (for now) because the outline above already seems to do the trick
@@ -475,10 +471,13 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     //something special: only active tabs or explicitly 'show'-ing tabs are shown (this way, we have control over the 'hidden' tabs)
     & > li {
       display: none;
-      &.show,
-      &.active {
-        display: block;
-      }
+
+      //note that we've disabled this because we don't use tabs at the moment;
+      // the finder is auto-loaded from the API, not from the UI
+      //&.show,
+      //&.active {
+      //  display: block;
+      //}
     }
 
     & > li:first-child > a {
@@ -973,31 +972,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   .setupLoader();
 }
 
-//This was too annoying
-//.@{HIGHLIGHT_CLASS},
-//.@{HIGHLIGHT_CLASS}:focus {
-//  .animated(0.3s);
-//  .pulse;
-//}
-
-.@{REMOVE_BLOCK_CLASS} {
-  margin-bottom: 0px;
-  .panel-body {
-    padding-top: 3px;
-    padding-bottom: 3px;
-  }
-  .text {
-    line-height: 32px;
-  }
-
-  .confirm-text {
-    padding-bottom: 5px;
-  }
-
-  .btn {
-    margin-right: 10px;
-  }
-}
 
 .@{NEW_BLOCK_MODAL_CLASS},
 .@{NEW_PAGE_CLASS} {

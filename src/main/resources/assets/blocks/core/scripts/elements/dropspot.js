@@ -16,12 +16,8 @@
 
 /**
  * Special element that indicates a trigger where a block could be dropped
- * on an other block. the dropspot is located on a SIDE of the block and the
- * MIN and MAX value that defines the area on that side
- * e.g. side=TOP and min=0 and max=10 then this dropspot will be triggered with an
- * y coordinate of 6
- *
- * Created by wouter on 9/03/15.
+ * on the side of another surface. It's independent of other surfaces so it can be placed
+ * absolutely and over the overlays of other surfaces.
  */
 base.plugin("blocks.core.elements.Dropspot", ["base.core.Class", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, BlocksConstants, BlocksMessages, UI)
 {

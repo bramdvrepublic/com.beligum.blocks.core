@@ -16,8 +16,6 @@
 
 /**
  * The undo manager.
- *
- * Created by bram on 19/10/18.
  */
 base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.UI", function (Class, Constants, Broadcaster, UI)
 {

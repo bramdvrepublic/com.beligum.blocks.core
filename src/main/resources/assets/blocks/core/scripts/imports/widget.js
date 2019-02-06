@@ -15,9 +15,14 @@
  */
 
 /*
- * This is the abstract superclass that all widgets need to extend
- *
- * Created by bram on 8/13/15.
+ * This is the abstract superclass that all widgets need to extend.
+ * A 'widget' is a configuration container in the sidebar, that holds the controls
+ * to adjust and edit the contents of a surface-element (block/row/col/...)
+ * The glue between such an element and the widget is a central registry
+ * where the subclasses need to register themself with a jquery selector.
+ * After clicking on an element in edit mode, that registry will be queried
+ * to search for matching widgets, all the way up to the page and all config boxes
+ * of those widgets will be added to the sidebar, in correct order.
  */
 base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification, Undo)
 {

@@ -15,8 +15,7 @@
  */
 
 /**
- * Region where templates can be dragged
- * Created by wouter on 5/03/15.
+ * A bootstrap container element
  */
 base.plugin("blocks.core.elements.Container", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {

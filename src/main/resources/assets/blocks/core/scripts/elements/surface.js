@@ -16,6 +16,7 @@
 
 /**
  * Base class for all sub-layout-structures like row/col/block/...
+ * A surface can have an overlay, dropspots, etc.
  */
 base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commons", "constants.blocks.core", "messages.blocks.core", "blocks.core.UI", function (Class, Commons, BlocksConstants, BlocksMessages, UI)
 {

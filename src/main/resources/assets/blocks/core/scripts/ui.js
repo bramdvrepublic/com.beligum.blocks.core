@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+/**
+ * Central plugin that holds references to a number of elements and centralizes keyboard actions.
+ */
 base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", function (Commons, BlocksConstants)
 {
     var UI = this;
@@ -53,6 +56,15 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     this.PIERCE_THROUGH_DATA = 'pierce-through';
 
     //-----VARIABLES-----
+    // flag to enable/disable creation of new blocks
+    this.allowCreate = true;
+    // flag to enable/disable layout functionality (resize columns and move blocks around)
+    this.allowLayout = true;
+    // flag to enable/disable editing of existing blocks (giving them focus to start editing)
+    this.allowEdit = true;
+    // flag to enable/disable deleting of blocks
+    this.allowDelete = true;
+
     this.window = $(window);
     this.html = $("html");
     this.body = $("body");

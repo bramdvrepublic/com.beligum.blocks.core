@@ -15,10 +15,8 @@
  */
 
 /**
- * A container contains properties
- * A property can contain a new container itself to go up the tree
- *
- * Created by wouter on 5/03/15.
+ * An element with a 'property' or 'data-property' attribute inside a block element.
+ * This used to be more important than now, because we now moved all functionality to the block level.
  */
 base.plugin("blocks.core.elements.Property", ["base.core.Class", "messages.blocks.core", function (Class, BlocksMessages)
 {
