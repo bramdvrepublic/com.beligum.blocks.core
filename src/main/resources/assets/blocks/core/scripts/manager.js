@@ -997,7 +997,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
                 //allow the dev to set a specific flag in the event to pierce through, both in the direct event and in the originalEvent
                 //However, since all pierce-through should be set using UI.setPierceThrough(), it should always be set on the originalEvent object
-                if (!pierceThrough && ((e.data && e.data[UI.PIERCE_THROUGH_DATA] === true) || (e.originalEvent.data && e.originalEvent.data[UI.PIERCE_THROUGH_DATA] === true))) {
+                if (!pierceThrough && ((e.data && e.data[UI.FORCE_CLICK_DATA] === true) || (e.originalEvent.data && e.originalEvent.data[UI.FORCE_CLICK_DATA] === true))) {
                     pierceThrough = true;
                 }
 

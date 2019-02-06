@@ -383,6 +383,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         },
 
         /**
+         * This is overridden in block and will return true when a new block is dragged.
+         */
+        isNew: function ()
+        {
+            return false;
+        },
+
+        /**
          * Effectively move this surface to the indicated side of the supplied surface.
          * Overload to implement for a specific type.
          *

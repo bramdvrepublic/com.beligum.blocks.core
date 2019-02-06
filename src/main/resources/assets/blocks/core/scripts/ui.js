@@ -53,7 +53,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     };
 
     //data key to set on events to let them pierce through (see manager for details)
-    this.PIERCE_THROUGH_DATA = 'pierce-through';
+    this.FORCE_CLICK_DATA = 'force';
 
     //-----VARIABLES-----
     // flag to enable/disable creation of new blocks
@@ -215,7 +215,7 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
     {
         //Note: we need to set it in the originalEvent or it won't end up in the Menu's generic document.on() listener
         event.originalEvent.data = event.originalEvent.data || {};
-        event.originalEvent.data[this.PIERCE_THROUGH_DATA] = true;
+        event.originalEvent.data[this.FORCE_CLICK_DATA] = true;
 
         //for chaining
         return event;
