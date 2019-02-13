@@ -46,6 +46,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     var dimensionTimer = null;
     var dimensionTimeout = DEFAULT_DIMENSION_TIMEOUT;
     var dimensions = undefined;
+    var contentObserver = null;
 
     //general flag to keep track when the system is booted or not
     var booted = false;
@@ -1092,27 +1093,50 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     var enableChangeDetector = function (enable)
     {
-        var NAMESPACE = 'enable_detector';
-
         if (enable) {
             //only fire one up if none is running
             if (!dimensionTimer) {
                 dimensionTimer = setInterval(refreshPage, dimensionTimeout);
-                //we not only poll for dimension changes, but also wait for html
-                //content changes to happen on the main content tag.
-                //note how we debounce this because it's triggered quite often on changes
-                UI.pageContent.on('DOMSubtreeModified.' + NAMESPACE, UI.debounce(function ()
-                {
-                    refreshPage(true);
-                }));
+            }
+
+            //we not only poll for dimension changes, but also wait for html
+            //content changes to happen on the main content tag.
+            //note how we debounce this because it's triggered quite often on changes
+            if (!contentObserver) {
+                var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+                if (MutationObserver) {
+                    contentObserver = new MutationObserver(function (mutationsList)
+                    {
+                        //see discussions here for why we need to fire this after a little timeout:
+                        //https://stackoverflow.com/questions/14564617/when-are-mutationobserver-callbacks-fired
+                        //note that we also fire it asap to make very quick changes (eg. attributes) feel more
+                        //direct when eg. sliding a bar in the sidebar
+                        refreshPage(true);
+                        setTimeout(function ()
+                        {
+                            refreshPage(true);
+                        }, 500);
+                    });
+                    //for details, see https://dom.spec.whatwg.org/#mutationobserver
+                    contentObserver.observe(UI.pageContent[0], {
+                        childList: true, //Set to true if mutations to target’s children are to be observed.
+                        attributes: true, //Set to true if mutations to target’s attributes are to be observed.
+                        characterData: true, //Set to true if mutations to target’s data are to be observed.
+                        subtree: true, //Set to true if mutations to not just target, but also target’s descendants are to be observed.
+                    });
+                }
             }
         }
         else {
             if (dimensionTimer) {
                 clearInterval(dimensionTimer);
-                UI.pageContent.off('.' + NAMESPACE);
             }
             dimensionTimer = null;
+
+            if (contentObserver) {
+                contentObserver.disconnect();
+            }
+            contentObserver = null;
         }
     };
 
@@ -1152,6 +1176,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             refreshNeeded = refreshNeeded || !dimensions.sidebar || dimensions.sidebar.width !== UI.sidebar.width();
 
             if (refreshNeeded) {
+
+                Logger.info('Refreshing page');
 
                 dimensions = dimensions || {
                     window: {},
