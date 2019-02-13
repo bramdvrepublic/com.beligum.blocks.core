@@ -199,7 +199,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         setAdvancedSetting: function (configElement, weight)
         {
-
             this.setSetting(configElement, BlocksConstants.SIDEBAR_CONFIG_ADVANCED_KEY, true);
 
             if (typeof weight != 'undefined') {

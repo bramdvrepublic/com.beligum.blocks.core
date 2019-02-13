@@ -73,7 +73,10 @@ public class UsersEndpoint extends AbstractUsersEndpoint
     @Override
     public ReverseRoute getUserRedirect(long userId)
     {
-        return UsersEndpointRoutes.getUser(userId);
+        //TODO this isn't right (a reverse route of this class?) and doesn't compile (at least sometimes it doesn't)
+        // We should implement the possibility for endpoints to have superclasses and adjust the reverse routes generator.
+        //return UsersEndpointRoutes.getUser(userId);
+        return null;
     }
 
     //-----PROTECTED METHODS-----

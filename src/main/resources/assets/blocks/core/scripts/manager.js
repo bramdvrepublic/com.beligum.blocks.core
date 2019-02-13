@@ -635,10 +635,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS + ')').detach();
 
         //save the inner html of the content wrapper before clearing the body
-        var pageContentHtml = pageContent.html();
         //note that this clears the sidebar and overlay containers too
-        body.empty();
-        body.append(pageContentHtml);
+        pageContent = pageContent.children().detach();
+        body.empty().append(pageContent);
 
         //this will loop the ignored content and put them back in the placeholders in-order
         body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function (idx)
@@ -933,6 +932,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     UI.pageSurface = null;
 
                     blocks.elements.Surface.clearAllOverlays();
+
+                    Broadcaster.send(Broadcaster.EVENTS.BLOCKS.PAUSED);
                 }
             }
             else {
@@ -947,6 +948,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     switchFocus(UI.pageSurface, UI.pageSurface.element, event);
 
                     Mouse.enable(true);
+
+                    Broadcaster.send(Broadcaster.EVENTS.BLOCKS.RESUMED);
                 }
             }
         }
@@ -1261,16 +1264,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.containers.css("width", newWidth + "px");
         }
 
-        // This code also syncs the page _height_ to the body
-        // make sure the page content wrapper block is at least the height of the body
-        // (used to be to support good, natural blur, but don't know if we still need this?)
-        // var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);
-        // var pageBottom = UI.pageContent.position().top + UI.pageContent.outerHeight(true);
-        // //Note: we must always set the out height to the body height (that's why it's commented out)
+        //Update: now solved in css, but if needed, make sure to clear the height in clearBodyDimensions()
+        // // Also sync the page _height_ to the body to make sure the page content wrapper
+        // // is at least (not any more, see note below) the height of the body,
+        // // so eg. sticky footers also work the same way when the sidebar is open.
+        // // Note: we must always set the height to the body height (not only if the content is larger)
         // // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
-        // //if (pageBottom < bodyBottom) {
+        // var bodyBottom = UI.html.position().top + UI.html.outerHeight(true);
         // UI.pageContent.outerHeight(bodyBottom - UI.pageContent.position().top);
-        // //}
     };
 
     /**

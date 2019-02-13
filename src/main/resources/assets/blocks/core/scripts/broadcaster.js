@@ -36,8 +36,12 @@ base.plugin("blocks.core.Broadcaster", [function ()
             STOPPED: "BLOCKS_STOPPED",
             //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
             PAUSE: "BLOCKS_PAUSE",
+            //sent out when the blocks editor system was paused
+            PAUSED: "BLOCKS_PAUSED",
             //sent out when the blocks editor system needs to be un-pauzed
             RESUME: "BLOCKS_RESUME",
+            //sent out when the blocks editor system was resumed
+            RESUMED: "BLOCKS_RESUMED",
         },
 
         MOUSE: {
