@@ -221,6 +221,61 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
         return event;
     };
 
+    /**
+     * Debouncing function to make eventing more performant
+     * by amortizing quick successions together.
+     * See http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
+     * @param func
+     * @param threshold
+     * @param execAsap
+     * @returns {debounced}
+     */
+    this.debounce = function (func, threshold, execAsap)
+    {
+        var timeout;
+
+        return function debounced()
+        {
+            var obj = this, args = arguments;
+
+            function delayed()
+            {
+                if (!execAsap) {
+                    func.apply(obj, args);
+                }
+                timeout = null;
+            }
+
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+            else if (execAsap) {
+                func.apply(obj, args);
+            }
+
+            timeout = setTimeout(delayed, threshold || 50);
+        };
+    };
+
+    //-----GENERAL JQUERY FUNCTIONS-----
+    /**
+     * JQuery event listener for more performant window resizing.
+     * Use like this: $(window).smartresize(function (event) {});
+     */
+    $.fn["smartresize"] = function (fn)
+    {
+        return fn ? this.on('resize', UI.debounce(fn)) : this.trigger("smartresize");
+    };
+
+    /**
+     * JQuery event listener for more performant mouse move.
+     * Use like this: $(document).on("smartmousemove", function (event) {});
+     */
+    $.fn["smartmousemove"] = function (fn)
+    {
+        return fn ? this.on('mousemove', UI.debounce(fn)) : this.trigger("smartmousemove");
+    };
+
     //-----PRIVATE METHODS-----
     /**
      * Fire the registered keystroke actions for the keys pressed in the current event

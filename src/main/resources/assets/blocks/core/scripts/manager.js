@@ -30,7 +30,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     //-----CONSTANTS-----
     // Checks DOM dimension changes every x millis
-    var DEFAULT_DIMENSION_TIMEOUT = 500;
+    var DEFAULT_DIMENSION_TIMEOUT = 1000;
 
     // Because we set a container width on the <blocks-layout> element in some styles
     // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
@@ -45,7 +45,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     // and refreshes the page model when needed
     var dimensionTimer = null;
     var dimensionTimeout = DEFAULT_DIMENSION_TIMEOUT;
-    var dimensions;
+    var dimensions = undefined;
 
     //general flag to keep track when the system is booted or not
     var booted = false;
@@ -99,7 +99,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
             //start watching the DOM dimensions independently of any events
             //and refresh the page model when a change is detected
-            enableResizeDetector(true);
+            enableChangeDetector(true);
 
             //start listening for custom click events
             Mouse.enable(true);
@@ -142,7 +142,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             UI.resetKeystrokes();
             enableLeaveConfirmation(false);
             disableNavigation(false);
-            enableResizeDetector(false);
+            enableChangeDetector(false);
 
             //we need to properly detach the start button before clearing the layout
             //or the attached events will be gone
@@ -913,7 +913,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    var pauseSystem = function(pause)
+    var pauseSystem = function (pause)
     {
         //we can only pause/resume a booted system
         if (booted) {
@@ -1090,17 +1090,27 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      *
      * @param enable
      */
-    var enableResizeDetector = function (enable)
+    var enableChangeDetector = function (enable)
     {
+        var NAMESPACE = 'enable_detector';
+
         if (enable) {
             //only fire one up if none is running
             if (!dimensionTimer) {
                 dimensionTimer = setInterval(refreshPage, dimensionTimeout);
+                //we not only poll for dimension changes, but also wait for html
+                //content changes to happen on the main content tag.
+                //note how we debounce this because it's triggered quite often on changes
+                UI.pageContent.on('DOMSubtreeModified.' + NAMESPACE, UI.debounce(function ()
+                {
+                    refreshPage(true);
+                }));
             }
         }
         else {
             if (dimensionTimer) {
                 clearInterval(dimensionTimer);
+                UI.pageContent.off('.' + NAMESPACE);
             }
             dimensionTimer = null;
         }
@@ -1117,8 +1127,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         //only reboot if it's currently running
         if (dimensionTimer) {
-            enableResizeDetector(false);
-            enableResizeDetector(true);
+            enableChangeDetector(false);
+            enableChangeDetector(true);
         }
     };
 
@@ -1134,22 +1144,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //no need to do any refreshes if we have nothing to refresh
         if (!Commons.isUnset(UI.pageSurface)) {
 
-            var bodyWidth = UI.body.width();
-            var bodyHeight = UI.body.height();
-
-            var pageContentWidth = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.width();
-            var pageContentHeight = Commons.isUnset(UI.pageContent) ? -1 : UI.pageContent.height();
-
-            var sidebarWidth = Commons.isUnset(UI.sidebar) ? -1 : UI.sidebar.width();
-
             //note how these cascade as one depends on the other from outer structure to inner
-            var uninitialized = !dimensions;
-            var windowChanged = uninitialized || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight;
-            var bodyChanged = windowChanged || !dimensions.body || dimensions.body.width !== bodyWidth || dimensions.body.height !== bodyHeight;
-            var contentChanged = bodyChanged || !dimensions.pageContent || dimensions.pageContent.width !== pageContentWidth || dimensions.pageContent.height !== pageContentHeight;
-            var sidebarChanged = contentChanged || !dimensions.sidebar || dimensions.sidebar.width !== sidebarWidth;
+            var refreshNeeded = !dimensions || force === true;
+            refreshNeeded = refreshNeeded || !dimensions.window || dimensions.window.width !== windowWidth || dimensions.window.height !== windowHeight;
+            refreshNeeded = refreshNeeded || !dimensions.body || dimensions.body.width !== UI.body.width() || dimensions.body.height !== UI.body.height();
+            refreshNeeded = refreshNeeded || !dimensions.pageContent || dimensions.pageContent.width !== UI.pageContent.width() || dimensions.pageContent.height !== UI.pageContent.height();
+            refreshNeeded = refreshNeeded || !dimensions.sidebar || dimensions.sidebar.width !== UI.sidebar.width();
 
-            if (force === true || windowChanged || bodyChanged || contentChanged || sidebarChanged) {
+            if (refreshNeeded) {
 
                 dimensions = dimensions || {
                     window: {},
@@ -1158,20 +1160,23 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     sidebar: {},
                 };
 
+                //sync this with the buildup of refreshNeeded above
+                var sidebarChanged = !dimensions.sidebar || dimensions.sidebar.width !== UI.sidebar.width();
+
                 //update the stored dimensions
                 dimensions.window.width = windowWidth;
                 dimensions.window.height = windowHeight;
-                dimensions.body.width = bodyWidth;
-                dimensions.body.height = bodyHeight;
-                dimensions.pageContent.width = pageContentWidth;
-                dimensions.pageContent.height = pageContentHeight;
-                dimensions.sidebar.width = sidebarWidth;
+                dimensions.body.width = UI.body.width();
+                dimensions.body.height = UI.body.height();
+                dimensions.pageContent.width = UI.pageContent.width();
+                dimensions.pageContent.height = UI.pageContent.height();
+                dimensions.sidebar.width = UI.sidebar.width();
 
                 // If we have a sidebar, we need to sync the width of the content to the width of the sidebar
                 // because when resizing the sidebar, only its width is set and a refresh is called
                 if (sidebarChanged && UI.sidebar) {
                     // Let's keep a small margin between the website and our sidebar
-                    updateBodyDimensions(windowWidth - sidebarWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX);
+                    updateBodyDimensions(windowWidth - dimensions.sidebar.width - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX);
                 }
 
                 //update the model and it's dimensions

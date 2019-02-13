@@ -121,25 +121,6 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
     var debugCanvas = null;
 
-    //-----GENERAL JQUERY FUNCTIONS-----
-    /**
-     * JQuery event listener for more performant window resizing.
-     * Use like this: $(window).smartresize(function (event) {});
-     */
-    $.fn["smartresize"] = function (fn)
-    {
-        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize");
-    };
-
-    /**
-     * JQuery event listener for more performant window resizing.
-     * Use like this: $(document).on("smartmousemove", function (event) {});
-     */
-    $.fn["smartmousemove"] = function (fn)
-    {
-        return fn ? this.bind('mousemove', debounce(fn)) : this.trigger("smartmousemove");
-    };
-
     //-----PUBLIC METHODS-----
     /**
      * Activate this module and start listening for mouse click events (and DnD)
@@ -772,42 +753,6 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         stats.variance = 1.0 - Math.sqrt(stats.sinSum * stats.sinSum + stats.cosSum * stats.cosSum) / stats.events.length;
         //note: the resulting speed will be expressed as pixels per second (avoiding division by zero)
         stats.speed = stats.totalTimeDiff === 0 ? 0 : stats.totalLength / (stats.totalTimeDiff / 1000);
-    };
-
-    /**
-     * Debouncing function to make eventing more performant
-     * by amortizing quick successions together.
-     * See http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
-     * @param func
-     * @param threshold
-     * @param execAsap
-     * @returns {debounced}
-     */
-    var debounce = function (func, threshold, execAsap)
-    {
-        var timeout;
-
-        return function debounced()
-        {
-            var obj = this, args = arguments;
-
-            function delayed()
-            {
-                if (!execAsap) {
-                    func.apply(obj, args);
-                }
-                timeout = null;
-            }
-
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-            else if (execAsap) {
-                func.apply(obj, args);
-            }
-
-            timeout = setTimeout(delayed, threshold || 50);
-        };
     };
 
 }]);
