@@ -24,7 +24,7 @@
  * to search for matching widgets, all the way up to the page and all config boxes
  * of those widgets will be added to the sidebar, in correct order.
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Broadcaster, Notification, Undo)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Broadcaster", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Broadcaster, Notification)
 {
     var Widget = this;
 
@@ -226,6 +226,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         addUniqueClass: function (Sidebar, element, labelText, values, changeListener)
         {
             var classFound = false;
+            var _this = this;
 
             //small dryrun so we know if the (possible) empty value needs to be selected
             var hasNonEmptyClass = false;
@@ -277,7 +278,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     var initialChange = !oldValue && newValue == initValue;
                     if (!initialChange) {
-                        Undo.recordAttributeChange(element, undoAttr, oldUndoVal, retVal.find('button.dropdown-toggle'), oldValue, newValue);
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: undoAttr,
+                            oldValue: oldUndoVal,
+                            configElement: retVal.find('button.dropdown-toggle'),
+                            configOldValue: oldValue,
+                            configNewValue: newValue,
+                        });
                     }
 
                     //propagate up if we have a someone listening
@@ -300,6 +309,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * */
         addOptionalClass: function (Sidebar, element, labelText, value, changeListener, attribute)
         {
+            var _this = this;
+
             var retVal = this.createToggleButton(labelText,
                 function initStateCallback()
                 {
@@ -337,7 +348,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
 
                     //Note: the callback doesn't seem to be called on init, so it's safe to just log all changes
-                    Undo.recordAttributeChange(element, undoAttr, oldUndoVal, retVal.find('input[type="checkbox"]'), oldValue, newValue);
+                    Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                        surface: _this.focusedSurface,
+                        element: element,
+                        attribute: undoAttr,
+                        oldValue: oldUndoVal,
+                        configElement: retVal.find('input[type="checkbox"]'),
+                        configOldValue: oldValue,
+                        configNewValue: newValue,
+                    });
 
                     //propagate up if we have a someone listening
                     if (changeListener) {
@@ -364,6 +383,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         addSliderClass: function (Sidebar, element, labelText, values, showTooltip, changeListener, attribute)
         {
             var id = Commons.generateId();
+            var _this = this;
 
             var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
@@ -455,7 +475,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var oldIdx = event.value.oldValue;
                 var newIdx = event.value.newValue;
 
-                Undo.recordAttributeChange(element, undoAttr, oldUndoVal, formGroup.find('input[type="range"]'), oldIdx, newIdx);
+                Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                    surface: _this.focusedSurface,
+                    element: element,
+                    attribute: undoAttr,
+                    oldValue: oldUndoVal,
+                    configElement: formGroup.find('input[type="range"]'),
+                    configOldValue: oldIdx,
+                    configNewValue: newIdx,
+                });
 
                 //propagate up if we have a someone listening
                 if (changeListener) {
@@ -483,6 +511,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * */
         addUniqueAttributeValue: function (Sidebar, element, labelText, attribute, values, changeListener)
         {
+            var _this = this;
             var hasAttr = element.hasAttribute(attribute);
             //get the value of the attribute on the element
             var attr = hasAttr ? element.attr(attribute) : null;
@@ -526,7 +555,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     var initialChange = !oldValue && newValue == initValue;
                     if (!initialChange) {
-                        Undo.recordAttributeChange(element, attribute, oldVal, retVal.find('button.dropdown-toggle'));
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: attribute,
+                            oldValue: oldVal,
+                            configElement: retVal.find('button.dropdown-toggle'),
+                        });
                     }
 
                     //propagate up if we have a someone listening
@@ -644,7 +679,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             //an undo event, because the real initial state is after this value has been set.
                             var initialChange = !oldValue && newValue == initValue;
                             if (!initialChange) {
-                                Undo.recordAttributeChange(element, attribute, oldVal, retVal.find('button.dropdown-toggle'));
+                                Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                                    surface: _this.focusedSurface,
+                                    element: element,
+                                    attribute: attribute,
+                                    oldValue: oldVal,
+                                    configElement: retVal.find('button.dropdown-toggle'),
+                                });
                             }
                         }
                     );
@@ -714,6 +755,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         addValueAttribute: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
         {
+            var _this = this;
             var selectedFilePath = element.attr(attribute);
 
             if (Commons.isUriAttribute(attribute)) {
@@ -740,7 +782,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     var retVal = element.attr(attribute, newVal);
 
                     if (oldVal != newVal) {
-                        Undo.recordAttributeChange(element, attribute, oldVal, content.find('input'));
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: attribute,
+                            oldValue: oldVal,
+                            configElement: content.find('input'),
+                        });
                     }
 
                     return retVal;
@@ -763,6 +811,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         addValueAttributeSelection: function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
         {
+            var _this = this;
             var selectedFilePath = element.attr(attribute);
 
             if (Commons.isUriAttribute(attribute)) {
@@ -797,7 +846,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     if (oldVal != newVal) {
                         //note: this input selector will find the hidden input field (with a change listener)
-                        Undo.recordAttributeChange(element, attribute, oldVal, content.find('input'));
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: attribute,
+                            oldValue: oldVal,
+                            configElement: content.find('input'),
+                        });
                     }
 
                     return retVal;
@@ -1004,7 +1059,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     //Note: untested code
                     if (oldValue != newValue) {
-                        Undo.recordAttributeChange(element, 'style', oldStyle, content.find('button.dropdown-toggle'), oldValue, newValue);
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: 'style',
+                            oldValue: oldStyle,
+                            configElement: content.find('button.dropdown-toggle'),
+                            configOldValue: oldValue,
+                            configNewValue: newValue,
+                        });
                     }
 
                     //propagate up if we have a someone listening
@@ -1058,7 +1121,15 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
 
                     if (oldVal != val) {
-                        Undo.recordAttributeChange(element, 'style', oldStyle, content.find('input'), oldVal, val);
+                        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, null, {
+                            surface: _this.focusedSurface,
+                            element: element,
+                            attribute: 'style',
+                            oldValue: oldStyle,
+                            configElement: content.find('input'),
+                            configOldValue: oldVal,
+                            configNewValue: val,
+                        });
                     }
                 },
                 labelText, placeholderText, confirm,

@@ -580,12 +580,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     $(document).on(Broadcaster.EVENTS.PAGE.CHANGED.HTML, function (event, eventData)
     {
-        //note: executing this will trigger the update of oldBlocksHtml, see listener above
-        Undo.recordHtmlChange(eventData.surface.element, eventData.oldValue, null, null, null, function ()
-        {
-            //Rebuild the page model when an undo/redo was executed so everything is in sync.
-            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
-        });
+        //don't record changes that happen _inside_ the undo event
+        if (!Undo.isInsideUndoRedo(eventData.surface.element)) {
+            //note: executing this will trigger the update of oldBlocksHtml, see listener above
+            Undo.recordHtmlChange(eventData.surface.element, eventData.oldValue, null, null, null, function ()
+            {
+                //Rebuild the page model when an undo/redo was executed so everything is in sync.
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
+            });
+        }
+
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     });
 
     $(document).on(Broadcaster.EVENTS.BLOCK.FOCUS, function (event, eventData)
@@ -629,30 +634,38 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     $(document).on(Broadcaster.EVENTS.BLOCK.CHANGED.HTML, function (event, eventData)
     {
-        //note: executing this will trigger the update of oldBlocksHtml, see listener above
-        Undo.recordHtmlChange(eventData.element, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
-        {
-            //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
-            if (eventData.listener) {
-                eventData.listener(value, action, cmd);
-            }
+        //don't record changes that happen _inside_ the undo event
+        if (!eventData.element || !Undo.isInsideUndoRedo(eventData.element)) {
+            Undo.recordHtmlChange(eventData.element, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
+            {
+                //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
+                if (eventData.listener) {
+                    eventData.listener(value, action, cmd);
+                }
 
-            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
-        });
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
+            });
+        }
+
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     });
 
     $(document).on(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, function (event, eventData)
     {
-        //note: executing this will trigger the update of oldBlocksHtml, see listener above
-        Undo.recordHtmlChange(eventData.element, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
-        {
-            //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
-            if (eventData.listener) {
-                eventData.listener(value, action, cmd);
-            }
+        //don't record changes that happen _inside_ the undo event
+        if (!eventData.element || !Undo.isInsideUndoRedo(eventData.element)) {
+            Undo.recordAttributeChange(eventData.element, eventData.attribute, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
+            {
+                //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
+                if (eventData.listener) {
+                    eventData.listener(value, action, cmd);
+                }
 
-            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
-        });
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
+            });
+        }
+
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     });
 
     /**

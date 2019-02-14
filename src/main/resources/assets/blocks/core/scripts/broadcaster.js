@@ -279,7 +279,14 @@ base.plugin("blocks.core.Broadcaster", [function ()
                 /**
                  * an attribute of this block changed
                  * data: {
-                 *     TODO
+                 *     surface: the block-surface that was changed
+                 *     element: the jQuery element on which the attribute was changed
+                 *     attribute: the name of the attribute
+                 *     oldValue: the old value of the attribute or null if it didn't exist before this call
+                 *     configElement: the jQuery sidebar widget to call .val().change() on if we undo/redo this action
+                 *     configOldValue: a value, a callback function or null (to use the oldValue) that will be supplied to the config's .val() callback on undo
+                 *     configNewValue: a value, a callback function or null (to use the newValue) that will be supplied to the config's .val() callback on redo
+                 *     listener: the listener callback that is called on each undo and redo
                  * }
                  */
                 ATTRIBUTE: "BLOCK_CHANGED_ATTRIBUTE",
