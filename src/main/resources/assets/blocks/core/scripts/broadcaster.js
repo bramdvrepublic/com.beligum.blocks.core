@@ -26,80 +26,277 @@ base.plugin("blocks.core.Broadcaster", [function ()
     this.EVENTS = {
 
         BLOCKS: {
-            //sent out when the blocks system needs to boot
+
+            /**
+             * sent out when the blocks system needs to boot
+             * data: {}
+             */
             START: "BLOCKS_START",
-            //sent out when the blocks system has finished booting
+
+            /**
+             * sent out when the blocks system has finished booting
+             * data: {}
+             */
             STARTED: "BLOCKS_STARTED",
-            //sent out when the blocks system needs to be shut down
+
+            /**
+             * sent out when the blocks system needs to be shut down
+             * data: {}
+             */
             STOP: "BLOCKS_STOP",
-            //sent out when the blocks system has finished shutting down
+
+            /**
+             * sent out when the blocks system has finished shutting down
+             * data: {}
+             */
             STOPPED: "BLOCKS_STOPPED",
-            //sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
+
+            /**
+             * sent out when the blocks editor system needs to be paused temporarily (used during saving, dialogs, resizing, etc)
+             * data: {}
+             */
             PAUSE: "BLOCKS_PAUSE",
-            //sent out when the blocks editor system was paused
+
+            /**
+             * sent out when the blocks editor system was paused
+             * data: {}
+             */
             PAUSED: "BLOCKS_PAUSED",
-            //sent out when the blocks editor system needs to be un-pauzed
+
+            /**
+             * sent out when the blocks editor system needs to be un-pauzed
+             * data: {}
+             */
             RESUME: "BLOCKS_RESUME",
-            //sent out when the blocks editor system was resumed
+
+            /**
+             * sent out when the blocks editor system was resumed
+             * data: {}
+             */
             RESUMED: "BLOCKS_RESUMED",
+
         },
 
         MOUSE: {
-            // custom general click event that happens when the user clicked,
-            // but may have slipped the mouse a few pixels between mouse down and up
+
+            /**
+             * custom general click event that happens when the user clicked,
+             * but may have slipped the mouse a few pixels between mouse down and up
+             * data: {
+             *     surface: the surface we clicked on
+             *     element: the low-level DOM element we clicked on
+             *     originalEvent: the original mouse down event
+             * }
+             */
             CLICK: "MOUSE_CLICK",
+
             DRAG: {
-                // the user exceeded the minimum threshold and started dragging the mouse
+
+                /**
+                 * the user exceeded the minimum threshold and started dragging the mouse
+                 * data: {
+                 *     surface: this is the surface we're dragging around
+                 *     element: this is the DOM element we started our drag on
+                 *     event: this is the original mousedown event that started the drag
+                 * }
+                 */
                 START: "MOUSE_DRAG_START",
-                // the user moved the mouse inside a dragging session
+
+                /**
+                 * the user moved the mouse inside a dragging session
+                 * data: {
+                 *     surface: this is the surface we started the drag on
+                 *     element: this is the DOM element we started our drag on
+                 *     originalEvent: this is the original mousedown event that started the drag
+                 *     prevHoveredSurface: this is the surface we previously hovered on
+                 *     hoveredSurface: this is the surface we're currently hovering on
+                 *     dragVector: the current dragvector (x1,y1,x2,y2)
+                 *     dragStats: the statistics of the dragvector (variance, direction, speed)
+                 * }
+                 */
                 MOVE: "MOUSE_DRAG_MOVE",
-                // the user released the mouse after a dragging session
+
+                /**
+                 * the user released the mouse after a dragging session
+                 * data: {
+                 *     surface: this is the surface we dragged around
+                 *     element: the low-level DOM element we ended our drag on
+                 *     originalEvent: the original mouse down event
+                 *     hoveredSurface: the last surface we were hovering on
+                 * }
+                 */
                 STOP: "MOUSE_DRAG_STOP",
-                // an active dragging session needs to be cancelled
+
+                /**
+                 * an active dragging session needs to be cancelled
+                 * data: {
+                 *     surface: this is the surface we dragged around (possibly undefined)
+                 *     element: the low-level DOM element we ended our drag on
+                 *     originalEvent: the original mouse down event
+                 *     hoveredSurface: the last surface we were hovering on
+                 * }
+                 */
                 ABORT: "MOUSE_DRAG_ABORT",
             }
         },
 
         UNDO: {
-            // Sent out when an undo stack frame is recorded
+
+            /**
+             * Sent out when an undo stack frame is recorded
+             * data: {}
+             */
             RECORDED: "UNDO_RECORDED",
-            // Sent out when an undo action has been executed
+
+            /**
+             * Sent out when an undo action has been executed
+             * data: {}
+             */
             PERFORMED: "UNDO_PERFORMED",
-            // Sent out when an redo action has been executed
+
+            /**
+             * Sent out when an redo action has been executed
+             * data: {}
+             */
             REDO: "UNDO_REDO",
         },
 
         PAGE: {
-            //the current page model needs to be refreshed
+
+            /**
+             * the current page model needs to be refreshed
+             * data: {
+             *     force: defaults to true, but can be set to false
+             * }
+             */
             REFRESH: "PAGE_REFRESH",
-            //the speed at which to refresh the page continuously
+
+            /**
+             * change the speed at which to refresh the page continuously
+             * data: {
+             *     speed: new value in millis for the timeout
+             * }
+             */
             REFRESH_SPEED: "PAGE_REFRESH_SPEED",
-            //the current page model and overlays needs to be rebuilt entirely
+
+            /**
+             * the current page model and overlays needs to be torn down and rebuilt entirely
+             * data: {}
+             */
             RELOAD: "PAGE_RELOAD",
-            //sent out by the manager when the layout of the page was changed
-            // because of a:
-            // - block was added
-            // - block was moved
-            // - blocks was removed
-            // - column was resized
-            CHANGED: "PAGE_CHANGED",
-            //the current page needs to be saved
+
+            /**
+             * the current page needs to be saved
+             * data: {}
+             */
             SAVE: "PAGE_SAVE",
-            //the current page needs to be deleted
+
+            /**
+             * the current page needs to be deleted
+             * data: {}
+             */
             DELETE: "PAGE_DELETE",
+
+            CHANGED: {
+
+                /**
+                 * sent out by the manager when the html of the page changed because of a:
+                 * - block was added
+                 * - block was moved
+                 * - block was removed
+                 * - column was resized
+                 *
+                 * data: {
+                 *     surface: the page-surface
+                 *     oldValue: the old inner html of the page, before the change
+                 * }
+                 */
+                HTML: "PAGE_CHANGED_HTML",
+            },
+
         },
 
         BLOCK: {
-            //a block needs to receive focus
+            /**
+             * a block needs to receive focus
+             * data: {
+             *     surface: the block-surface that needs to receive focus or null if we want the page to get it (and blur any focused blocks)
+             *     element: this is the specific 'deep' html element at this mouse position that was clicked
+             * }
+             */
             FOCUS: "BLOCK_FOCUS",
-            //a block needs to be deleted
+
+            /**
+             * a block needs to be deleted
+             * data: {
+             *     surface: the block-surface that needs to be deleted
+             * }
+             */
             DELETE: "BLOCK_DELETE",
+
+            /**
+             * a new block was added to the page
+             * data: {
+             *     surface: the block-surface that was created
+             * }
+             */
+            CREATED: "BLOCK_CREATED",
+
+            /**
+             * a block was moved to a new location on the page
+             * data: {
+             *     surface: the block-surface that was moved
+             * }
+             */
+            MOVED: "BLOCK_MOVED",
+
+            /**
+             * a block was deleted from the page
+             * data: {
+             *     surface: the block-surface that was deleted
+             * }
+             */
+            DELETED: "BLOCK_DELETED",
+
+
+            // group of events that are sent out when this block was changed
+            CHANGED: {
+
+                /**
+                 * the inner html of this block changed
+                 * data: {
+                 *     surface: the block-surface that was changed
+                 *     element: the jQuery element on which inner html was changed
+                 *     oldValue: the old value of the inner html
+                 *     configElement: the jQuery sidebar widget to call .val().change() on if we undo/redo this action
+                 *     configOldValue: a value, a callback function or null (to use the oldValue) that will be supplied to the config's .val() callback on undo
+                 *     configNewValue: a value, a callback function or null (to use the newValue) that will be supplied to the config's .val() callback on redo
+                 *     listener: the listener callback that is called on each undo and redo
+                 * }
+                 */
+                HTML: "BLOCK_CHANGED_HTML",
+
+                /**
+                 * an attribute of this block changed
+                 * data: {
+                 *     TODO
+                 * }
+                 */
+                ATTRIBUTE: "BLOCK_CHANGED_ATTRIBUTE",
+            },
         },
 
         FINDER: {
-            // sent out when we want to load the finder in a container-element,
-            // passed to the event using the 'container' option.
-            // When done, the 'callback' option is called (if specified)
+            /**
+             * sent out when we want to load the finder in a container-element,
+             * passed to the event using the 'container' option.
+             * When done, the 'callback' option is called (if specified)
+             * data: {
+             *     container: the container element in which to put the loaded finder html
+             *     options: the options that will passed as-is to the finder JS
+             *     callback: function(success) that will be called when all is loaded successfully or not
+             * }
+             */
             LOAD: "FINDER_LOAD",
         },
     };

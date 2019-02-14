@@ -24,7 +24,7 @@
  * to search for matching widgets, all the way up to the page and all config boxes
  * of those widgets will be added to the sidebar, in correct order.
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Notification, Undo)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "constants.blocks.media.commons", "base.core.Class", "base.core.Commons", "blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Undo", function (BlocksConstants, BlocksMessages, MediaConstants, MediaCommonsConstants, Class, Commons, Broadcaster, Notification, Undo)
 {
     var Widget = this;
 
@@ -102,6 +102,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
         //-----PUBLIC VARIABLES-----
         id: null,
+        focusedSurface: null,
+        focusedElement: null,
+        focusedHotspot: null,
         creationStamp: null,
 
         //-----PRIVATE VARIABLES-----
@@ -137,6 +140,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         focus: function (block, element, hotspot, event)
         {
+            this.focusedSurface = block;
+            this.focusedElement = element;
+            this.focusedHotspot = hotspot;
         },
 
         /**
@@ -144,6 +150,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          */
         blur: function (block, element)
         {
+            this.focusedSurface = null;
+            this.focusedElement = null;
+            this.focusedHotspot = null;
         },
 
         /**
@@ -810,6 +819,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          **/
         addValueHtml: function (Sidebar, element, labelText, placeholderText, confirm, textarea)
         {
+            var _this = this;
             var inputEl = null;
 
             var getterFunction = function ()
@@ -823,7 +833,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var retVal = element.html(newVal);
 
                 if (oldVal != newVal) {
-                    Undo.recordHtmlChange(element, oldVal, inputEl.find('input'));
+                    Broadcaster.send(Broadcaster.EVENTS.BLOCK.CHANGED.HTML, null, {
+                        surface: _this.focusedSurface,
+                        element: element,
+                        oldValue: oldVal,
+                        configElement: inputEl.find('input')
+                    });
                 }
 
                 return retVal;

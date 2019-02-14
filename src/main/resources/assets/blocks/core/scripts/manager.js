@@ -46,10 +46,12 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     var dimensionTimer = null;
     var dimensionTimeout = DEFAULT_DIMENSION_TIMEOUT;
     var dimensions = undefined;
-    var contentObserver = null;
 
     //general flag to keep track when the system is booted or not
     var booted = false;
+
+    //temp variable to store page html during DnD
+    var pageContentHtml = undefined;
 
     //-----MAIN ENTRY POINT: LOAD THE SIDEBAR HTML AND BOOTSTRAP THE BLOCKS SYSTEM-----
     Sidebar.load();
@@ -82,6 +84,16 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             if (UI.focusedSurface && UI.focusedSurface !== UI.pageSurface) {
                 switchFocus(UI.pageSurface, UI.pageSurface.element, event);
             }
+        });
+
+        UI.registerKeystrokeAction(UI.KEYCODE.Z, UI.KEYCODE.MODIFIER.CTRL, function ()
+        {
+            Undo.undo();
+        });
+
+        UI.registerKeystrokeAction(UI.KEYCODE.Y, UI.KEYCODE.MODIFIER.CTRL, function ()
+        {
+            Undo.redo();
         });
 
         //open (animated) the sidebar
@@ -184,11 +196,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     /**
      * Sent out by mouse.js when a click is registered.
-     *
-     * @param eventData has this structure:
-     *   eventData.surface: the surface of the block
-     *   eventData.element: the low-level DOM element (in the block element) we clicked
-     *   eventData.originalEvent: the mousedown event that originated the click
      */
     $(document).on(Broadcaster.EVENTS.MOUSE.CLICK, function (event, eventData)
     {
@@ -244,6 +251,12 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     {
         if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
 
+            //if we're dragging a resizer, we need to store a snapshot of the page
+            //because the DOM will be updated during preview (see drag stop)
+            if (eventData.surface.isResizer()) {
+                pageContentHtml = UI.pageSurface.element.html();
+            }
+
             //add a general and a typed dragging class to the overlay wrapper
             UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS);
             UI.overlayWrapper.addClass(BlocksConstants.OVERLAY_DRAG_CLASS + '-' + eventData.surface.type);
@@ -280,31 +293,48 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 return (className.match(new RegExp('\\S*' + BlocksConstants.OVERLAY_DRAG_CLASS + '\\S*', 'g')) || []).join(' ');
             });
 
-            var draggedBlock = eventData.surface;
+            var draggedSurface = eventData.surface;
 
             // we call this method from the abort handler as well...
-            if (draggedBlock) {
+            if (draggedSurface) {
                 //reset hover information that was stored during previewing
-                draggedBlock.resetPreviewMoveTo();
+                draggedSurface.resetPreviewMoveTo();
 
                 //reset the drag class on the dragged surface (except when creating a new block)
-                if (draggedBlock.overlay) {
-                    draggedBlock.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
+                if (draggedSurface.overlay) {
+                    draggedSurface.overlay.removeClass(BlocksConstants.OVERLAY_DRAG_CLASS);
                 }
 
+                var oldHtml = UI.pageSurface.element.html();
                 var activeDropspot = blocks.elements.Surface.getActiveDropspot();
                 // note that eg. resizers don't have dropspots, their preview is immediate
                 // also, this is called on drag abort, with explicitly no active dropspot
                 if (activeDropspot) {
 
                     //save a reference to the parent before it's removed
-                    var oldParent = draggedBlock.parent;
+                    var oldParent = draggedSurface.parent;
 
-                    if (!draggedBlock.isNew()) {
-                        draggedBlock.moveTo(activeDropspot.anchor, activeDropspot.side);
+                    if (!draggedSurface.isNew()) {
+
+                        if (UI.allowLayout) {
+
+                            draggedSurface.moveTo(activeDropspot.anchor, activeDropspot.side);
+
+                            postChangeBlock(oldParent);
+
+                            Broadcaster.send(Broadcaster.EVENTS.BLOCK.MOVED, event, {
+                                surface: draggedSurface
+                            });
+                            //when the block was moved, the entire page changed
+                            Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+                                surface: UI.pageSurface,
+                                oldValue: oldHtml,
+                            });
+                        }
                     }
                     else {
                         if (UI.allowCreate) {
+
                             createNewBlock(function callback(newBlockEl, onComplete)
                             {
                                 var parentSurface = activeDropspot.anchor;
@@ -318,17 +348,37 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                                 if (onComplete) {
                                     onComplete();
                                 }
+
+                                postChangeBlock(oldParent);
+
+                                Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
+                                    surface: newBlock
+                                });
+                                //when the block was added, the entire page changed
+                                Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+                                    surface: UI.pageSurface,
+                                    oldValue: oldHtml,
+                                });
                             });
                         }
                     }
-
-                    postChangeBlock(oldParent);
                 }
                 else {
                     //note that resizers don't have dropspots, but they do change the page,
                     //so make sure this is sent out (eg. needed by Undo)
-                    if (draggedBlock.isResizer()) {
-                        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
+                    //Also note that this will also be called on drag abort, which is
+                    //exactly what we want (to have immediate resizer updated, but with proper undo)
+                    if (draggedSurface.isResizer()) {
+                        //note that, for now, we don't implement a 'column changed' event
+                        //because it's not consistent: if we move around blocks, sometimes
+                        //columns get changed as well and those events would need to be
+                        //implemented as well. For now, only firing a page change is enough, I guess.
+                        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+                            surface: UI.pageSurface,
+                            oldValue: pageContentHtml,
+                        });
+
+                        pageContentHtml = undefined;
                     }
                 }
             }
@@ -528,12 +578,22 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         });
     });
 
+    $(document).on(Broadcaster.EVENTS.PAGE.CHANGED.HTML, function (event, eventData)
+    {
+        //note: executing this will trigger the update of oldBlocksHtml, see listener above
+        Undo.recordHtmlChange(eventData.surface.element, eventData.oldValue, null, null, null, function ()
+        {
+            //Rebuild the page model when an undo/redo was executed so everything is in sync.
+            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
+        });
+    });
+
     $(document).on(Broadcaster.EVENTS.BLOCK.FOCUS, function (event, eventData)
     {
-        //if the block in the data is empty, we'll assume the page should be focused
-        //note: it doesn't make sense to pass the EVENTS.BLOCK.FOCUS event, pass the original one instead
-        if (eventData && eventData.block && eventData.element) {
-            switchFocus(eventData.block, eventData.element, event.originalEvent);
+        //if the surface in the data is empty, we'll assume the page should be focused
+        if (eventData && eventData.surface && eventData.element) {
+            //note: it doesn't make sense to pass the EVENTS.BLOCK.FOCUS event, pass the original one instead
+            switchFocus(eventData.surface, eventData.element, event.originalEvent);
         }
         else if (UI.pageSurface) {
             switchFocus(UI.pageSurface, UI.pageSurface.element, event.originalEvent);
@@ -545,6 +605,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         if (UI.allowDelete) {
             //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
+            var oldHtml = UI.pageSurface.element.html();
+
             var surface = eventData.surface;
 
             //save a reference to the parent before it's removed
@@ -552,8 +614,45 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             surface.parent._removeChild(surface);
             postChangeBlock(oldParent);
 
+            Broadcaster.send(Broadcaster.EVENTS.BLOCK.DELETED, event, {
+                surface: surface
+            });
+            //when the block was deleted, the entire page changed
+            Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+                surface: UI.pageSurface,
+                oldValue: oldHtml,
+            });
+
             switchFocus(UI.pageSurface, UI.pageSurface.element, event);
         }
+    });
+
+    $(document).on(Broadcaster.EVENTS.BLOCK.CHANGED.HTML, function (event, eventData)
+    {
+        //note: executing this will trigger the update of oldBlocksHtml, see listener above
+        Undo.recordHtmlChange(eventData.element, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
+        {
+            //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
+            if (eventData.listener) {
+                eventData.listener(value, action, cmd);
+            }
+
+            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
+        });
+    });
+
+    $(document).on(Broadcaster.EVENTS.BLOCK.CHANGED.ATTRIBUTE, function (event, eventData)
+    {
+        //note: executing this will trigger the update of oldBlocksHtml, see listener above
+        Undo.recordHtmlChange(eventData.element, eventData.oldValue, eventData.configElement, eventData.configOldValue, eventData.configNewValue, function (value, action, cmd)
+        {
+            //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
+            if (eventData.listener) {
+                eventData.listener(value, action, cmd);
+            }
+
+            Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
+        });
     });
 
     /**
@@ -727,10 +826,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //because simplify can modify the dom slightly
         UI.pageSurface._simplify(true);
         UI.pageSurface._refresh(true);
-
-        // notify others the page has changed
-        // Note that we might need to split this up in block added/moved/removed in the future
-        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED);
     };
 
     var createNewBlock = function (callback)
@@ -1099,44 +1194,20 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 dimensionTimer = setInterval(refreshPage, dimensionTimeout);
             }
 
-            //we not only poll for dimension changes, but also wait for html
-            //content changes to happen on the main content tag.
-            //note how we debounce this because it's triggered quite often on changes
-            if (!contentObserver) {
-                var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-                if (MutationObserver) {
-                    contentObserver = new MutationObserver(function (mutationsList)
-                    {
-                        //see discussions here for why we need to fire this after a little timeout:
-                        //https://stackoverflow.com/questions/14564617/when-are-mutationobserver-callbacks-fired
-                        //note that we also fire it asap to make very quick changes (eg. attributes) feel more
-                        //direct when eg. sliding a bar in the sidebar
-                        refreshPage(true);
-                        setTimeout(function ()
-                        {
-                            refreshPage(true);
-                        }, 500);
-                    });
-                    //for details, see https://dom.spec.whatwg.org/#mutationobserver
-                    contentObserver.observe(UI.pageContent[0], {
-                        childList: true, //Set to true if mutations to target’s children are to be observed.
-                        attributes: true, //Set to true if mutations to target’s attributes are to be observed.
-                        characterData: true, //Set to true if mutations to target’s data are to be observed.
-                        subtree: true, //Set to true if mutations to not just target, but also target’s descendants are to be observed.
-                    });
-                }
-            }
+            // Big note here: we used to boot a MutationObserver here (see code around 14/2/19)
+            // but it seems like jQuery does some behind-the-scenes attribute-tricks when calculating
+            // the dimensions of hidden elements (it temporarily makes them visible), causing attribute-changes
+            // inside the refresh, effectively creating an endless event loop that's not easily solvable.
+            // Instead of blindly following the mutation observer events, we decided to implement a more
+            // controlled refresh-policy (eg. active calling of refresh when the DOM changes instead of
+            // watching the DOM with an observer). As a plus, we have a lot more control over the DOM (eg. undo)
+            // but on the other side, we need to implement the calls for all actions.
         }
         else {
             if (dimensionTimer) {
                 clearInterval(dimensionTimer);
             }
             dimensionTimer = null;
-
-            if (contentObserver) {
-                contentObserver.disconnect();
-            }
-            contentObserver = null;
         }
     };
 

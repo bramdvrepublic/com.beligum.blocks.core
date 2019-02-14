@@ -17,7 +17,7 @@
 /**
  * Central plugin that holds references to a number of elements and centralizes keyboard actions.
  */
-base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", function (Commons, BlocksConstants)
+base.plugin("blocks.core.UI", ["base.core.Commons", "blocks.core.Broadcaster", "constants.blocks.core", function (Commons, Broadcaster, BlocksConstants)
 {
     var UI = this;
 
@@ -219,6 +219,16 @@ base.plugin("blocks.core.UI", ["base.core.Commons", "constants.blocks.core", fun
 
         //for chaining
         return event;
+    };
+
+    /**
+     * This is a wrapper around the lower-level event broadcast to offer other modules
+     * a more uniform and code-friendly way of requesting a refresh of the page admin UI.
+     */
+    this.refresh = function()
+    {
+        //note: no parent event or data, we want to keep it simple
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     };
 
     /**

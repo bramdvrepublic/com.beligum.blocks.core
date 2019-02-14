@@ -400,9 +400,18 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     //but they're generated on-the-fly, so we explicitly removed them from the option list below.
     this.cssSelectorGenerator = new CssSelectorGenerator({selectors: ['class', 'tag', 'nthchild']});
     this.enabled = false;
-    this.oldPageHtml = '';
 
-    UI.registerKeystrokeAction(UI.KEYCODE.Z, UI.KEYCODE.MODIFIER.CTRL, function ()
+    //-----PUBLIC METHODS-----
+    this.enable = function (enable)
+    {
+        if (enable) {
+            this.enabled = true;
+        }
+        else {
+            this.enabled = false;
+        }
+    };
+    this.undo = function ()
     {
         if (Undo.stack.canUndo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
             Undo.stack.undo();
@@ -410,9 +419,8 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         else {
             Logger.info("Can't undo anymore");
         }
-    });
-
-    UI.registerKeystrokeAction(UI.KEYCODE.Y, UI.KEYCODE.MODIFIER.CTRL, function ()
+    };
+    this.redo = function ()
     {
         if (Undo.stack.canRedo(UI.focusedSurface.element[0], UI.pageSurface.element[0])) {
             Undo.stack.redo();
@@ -420,25 +428,6 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
         else {
             Logger.info("Can't redo anymore");
         }
-    });
-
-    //-----PUBLIC METHODS-----
-    this.enable = function (enable)
-    {
-        if (enable) {
-            this.enabled = true;
-            //initialize the html of the page now it's inside it's wrapper element
-            this.oldPageHtml = UI.pageContent.html();
-        }
-        else {
-            this.enabled = false;
-            //note: it makes sense to 'forget' this when the sidebar is closed
-            this.oldPageHtml = '';
-        }
-    };
-    this.isInsideUndoRedo = function (element)
-    {
-        return this.isInsideUndo(element) || this.isInsideRedo(element);
     };
     this.isInsideUndo = function (element)
     {
@@ -448,6 +437,11 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
     {
         return typeof element.data(Undo.Command.REDO_DATA) !== 'undefined';
     };
+    this.isInsideUndoRedo = function (element)
+    {
+        return this.isInsideUndo(element) || this.isInsideRedo(element);
+    };
+
     /**
      * Records an inner HTML change that can later be undone.
      *
@@ -465,6 +459,7 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
             return new Undo.UpdateHtmlCommand(UI.focusedSurface.element[0], element, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
+
     /**
      * Records an attribute change that can later be undone.
      *
@@ -483,31 +478,6 @@ base.plugin("blocks.core.Undo", ["base.core.Class", "constants.blocks.core", "bl
             return new Undo.UpdateAttributeCommand(UI.focusedSurface.element[0], element, attribute, oldVal, configElement, configOldValue, configNewValue, listener);
         });
     };
-
-    //-----EVENTS-----
-    //note: if another block executes a change, we need to make sure
-    //the old html is updated or we'll bypass that change and jump further back in time
-    $(document).on(Broadcaster.EVENTS.UNDO.RECORDED, function (event)
-    {
-        Undo.oldPageHtml = UI.pageContent.html();
-    });
-    // This handles the undo/redo of the general page layout (adding/moving/deleting blocks & resizing of columns).
-    $(document).on(Broadcaster.EVENTS.PAGE.CHANGED, function (event, extraData)
-    {
-        //Note: blocks-layout is moved around when the sidebar opens,
-        //so we need to re-fetch it every time the DOM changes to avoid stale references
-        if (UI.pageContent.html() !== Undo.oldPageHtml) {
-            //note: executing this will trigger the update of oldBlocksHtml, see listener above
-            Undo.recordHtmlChange(UI.pageContent, Undo.oldPageHtml, null, null, null, function ()
-            {
-                //Rebuild the page model when an undo/redo was executed so everything is in sync.
-                Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD, null);
-
-                // every time the page is undone/redone, we need to make sure the stored html is updated
-                Undo.oldPageHtml = UI.pageContent.html();
-            });
-        }
-    });
 
     //-----PRIVATE METHODS-----
     var _executeDelayedCommand = function (cmdName, element, oldValue, commandCallback)
