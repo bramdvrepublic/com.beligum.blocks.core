@@ -617,6 +617,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             //save a reference to the parent before it's removed
             var oldParent = surface.parent;
             surface.parent._removeChild(surface);
+            if (surface.overlay) {
+                surface.overlay.remove();
+            }
             postChangeBlock(oldParent);
 
             Broadcaster.send(Broadcaster.EVENTS.BLOCK.DELETED, event, {
