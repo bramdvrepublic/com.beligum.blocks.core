@@ -456,7 +456,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         var pageHtml = getBodyHtml();
 
         var dialog = new BootstrapDialog({
-            type: BootstrapDialog.TYPE_PRIMARY,
+            type: BootstrapDialog.TYPE_DEFAULT,
             title: BlocksMessages.savePageDialogTitle,
             message: BlocksMessages.savePageDialogMessage,
             buttons: []
@@ -494,7 +494,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         var onConfirm = function (deleteAllTranslations)
         {
             var dialog = new BootstrapDialog({
-                type: BootstrapDialog.TYPE_DANGER,
+                type: BootstrapDialog.TYPE_DEFAULT,
                 title: BlocksMessages.deletingPageDialogTitle,
                 message: BlocksMessages.deletingPageDialogMessage,
                 buttons: []
@@ -537,7 +537,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         BootstrapDialog.show({
             title: BlocksMessages.deletePageDialogTitle,
-            type: BootstrapDialog.TYPE_DANGER,
+            type: BootstrapDialog.TYPE_DEFAULT,
             message: BlocksMessages.deletePageDialogMessage,
             buttons: [
                 {
@@ -585,8 +585,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             //note: executing this will trigger the update of oldBlocksHtml, see listener above
             Undo.recordHtmlChange(eventData.surface.element, eventData.oldValue, null, null, null, function ()
             {
-                //Rebuild the page model when an undo/redo was executed so everything is in sync.
-                Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
+                //we wrapped the listener callback to add a refresh, but the sender could have passed a listener too
+                if (eventData.listener) {
+                    eventData.listener(value, action, cmd);
+                }
+
+                //Rebuild the page model when an undo/redo was executed
+                //note that we need to reload, not refresh because undo will replace the page html entirely
+                Broadcaster.send(Broadcaster.EVENTS.PAGE.RELOAD);
             });
         }
 
@@ -853,23 +859,18 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //Note: the inner div will be replaced when the new load() content comes in
         var box = $('<div><div style="padding: 20px;">' + BlocksMessages.newBlockLoading + '</div></div>');
 
-        var endpointUrlParams = '';
+        var data = {};
         var currentTypeof = UI.html.attr('typeof');
         if (currentTypeof) {
-            endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
-            endpointUrlParams += BlocksConstants.GET_BLOCKS_TYPEOF_PARAM + '=' + encodeURIComponent(currentTypeof);
+            data[BlocksConstants.GET_BLOCKS_TYPEOF_PARAM] = currentTypeof;
         }
         var pageTemplate = UI.html.attr(BlocksConstants.HTML_ROOT_TEMPLATE_ATTR);
         if (pageTemplate) {
-            endpointUrlParams += endpointUrlParams == '' ? '?' : '&';
-            endpointUrlParams += BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM + '=' + encodeURIComponent(pageTemplate);
+            data[BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM] = pageTemplate;
         }
-        box.load(BlocksConstants.GET_BLOCKS_ENDPOINT + endpointUrlParams, function (response, status, xhr)
+        box.load(BlocksConstants.GET_BLOCKS_ENDPOINT + '?' + $.param(data), function (response, status, xhr)
         {
-            if (status == "error") {
-                Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);
-            }
-            else {
+            if (status === "success") {
                 box.find("a").click(function (event)
                 {
                     var name = $(this).attr("data-value");
@@ -885,7 +886,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                         waitingDialog.open();
                     }
 
-                    $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT + name)
+                    var data = {};
+                    data[BlocksConstants.GET_BLOCK_NAME_PARAM] = name;
+                    $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT, data)
                         .done(function (data)
                         {
                             if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] !== "") {
@@ -931,6 +934,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                             }
                         });
                 });
+            }
+            else {
+                Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);
             }
         });
 

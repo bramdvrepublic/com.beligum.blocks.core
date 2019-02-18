@@ -222,12 +222,12 @@ public class PageAdminEndpoint
      * @param name the name of the block template to instantiate
      */
     @GET
-    @Path("/block/{name:.*}")
+    @Path("/block")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(logical = Logical.OR,
                          value ={ PAGE_UPDATE_ALL_PERM,
                                   PAGE_UPDATE_OWN_PERM })
-    public Response getBlock(@PathParam("name") String name) throws IOException
+    public Response getBlock(@QueryParam(GET_BLOCK_NAME_PARAM) String name) throws IOException
     {
         HashMap<String, Object> retVal = new HashMap<>();
 
@@ -267,11 +267,11 @@ public class PageAdminEndpoint
     }
 
     @POST
-    @javax.ws.rs.Path("/save")
+    @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
     //keep these in sync with the code in the PageRouter
     //Note: security is handled by R.resourceManager().save()
-    public Response savePage(@QueryParam("url") URI url, String content) throws IOException
+    public Response savePage(@QueryParam(PAGE_URL_PARAM) URI url, String content) throws IOException
     {
         //!!! WARNING: this method is also called directly from the PageRouter
         // if it needs to persist the created page, beware of changes !!!

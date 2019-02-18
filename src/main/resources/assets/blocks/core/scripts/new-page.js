@@ -89,7 +89,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
         BootstrapDialog.show({
             title: BlocksMessages.newPageCopyDialogTitle,
             message: message,
-            type: BootstrapDialog.TYPE_INFO,
+            type: BootstrapDialog.TYPE_DEFAULT,
             buttons: [
                 {
                     id: 'btn-close',
@@ -102,7 +102,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
                 {
                     id: 'btn-ok',
                     label: BlocksMessages.ok,
-                    cssClass: 'btn-info',
+                    cssClass: 'btn-primary',
                     action: function (dialogRef)
                     {
                         var createUrl = BlocksConstants.NEW_PAGE_TEMPLATE_ENDPOINT + '?'
