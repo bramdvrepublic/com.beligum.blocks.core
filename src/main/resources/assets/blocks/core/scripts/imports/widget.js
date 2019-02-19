@@ -1421,17 +1421,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var fileSelectOptions = {};
                 fileSelectOptions[Widget.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
                 {
-                    // Define variable so we can access it after of or cancel
-                    var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
-
                     var finderOptions = {};
 
-                    if (selectedFilePath && selectedFilePath.indexOf(MediaCommonsConstants.HDFS_URL_BASE) === 0) {
-
-                        var mediaFilePath = decodeURI(selectedFilePath);
-
+                    //let's take the most recent value from the input box to pass to the finder, otherwise
+                    //we take the one that was passed when building this action initially
+                    var filePath = input ? input.val() : selectedFilePath;
+                    if (filePath && filePath.indexOf(MediaCommonsConstants.HDFS_URL_BASE) === 0) {
                         //decode it as the reverse of the encode below
-                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = mediaFilePath;
+                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = decodeURI(filePath);
                     }
 
                     finderOptions.onSelect = function (selectedFileUrls)
@@ -1452,23 +1449,17 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             input.focus();
                         }
                         Sidebar.unloadFinder();
-                        // restore sidebar width
-                        Sidebar.setWidth(sidebarWidth);
                     };
 
                     finderOptions.onCancel = function ()
                     {
                         Sidebar.unloadFinder();
-                        // restore sidebar width
-                        Sidebar.setWidth(sidebarWidth);
                     };
-
-                    // save sidebar width
-                    sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
-                    var windowWidth = $(window).width();
 
                     //first move the sidebar, then load it, because we don't have a watcher that updates the components-size
                     // (was problematic with the statusbar elements)
+                    var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
+                    var windowWidth = $(window).width();
                     if (windowWidth / 2 > sidebarWidth) {
                         Sidebar.setWidth(windowWidth / 2, function ()
                         {

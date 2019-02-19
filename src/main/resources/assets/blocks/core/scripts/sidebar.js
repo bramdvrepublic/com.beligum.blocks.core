@@ -318,7 +318,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         }
 
         // Using a broadcast event, we cut the ties with the blocks.media project
-        //Note: maybe it's not necessary to reload this every time,
+        // Note: maybe it's not necessary to reload this every time,
         // but it allows us to always present a fresh up-to-date view of the server content
         var container = frame.find(".panel-body");
         Broadcaster.send(Broadcaster.EVENTS.FINDER.LOAD, null, {
@@ -353,6 +353,9 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             contextTab.removeClass(BlocksConstants.LOADING_CLASS);
             finderTab.addClass(BlocksConstants.LOADING_CLASS);
             finderTab.html('');
+
+            //auto-close the sidebar to the previous width
+            Sidebar.setWidth(getInitialWidth());
         }
     };
 
