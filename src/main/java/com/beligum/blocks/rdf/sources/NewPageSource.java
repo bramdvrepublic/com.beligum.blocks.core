@@ -149,7 +149,7 @@ public class NewPageSource extends PageSource
                 //Not any more: we're trying to always use the curie name as 'value' in dropdowns etc, so to make the type dropdown
                 //              work, it needs to be a curie value
                 if (typeofAttr.isEmpty()) {
-                    newTypeOf = Classes.Page.getCurieName();
+                    newTypeOf = Classes.DEFAULT_CLASS.getCurieName();
                 }
                 else {
                     newTypeOf = URI.create(typeofAttr);

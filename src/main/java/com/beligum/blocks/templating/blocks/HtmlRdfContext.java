@@ -17,6 +17,7 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
 import net.htmlparser.jericho.Attribute;
 import net.htmlparser.jericho.Attributes;
@@ -170,14 +171,7 @@ public class HtmlRdfContext
                 //here we must try to expand a CURIE
                 if (uri != null) {
 
-                    //note: a CURIE:
-                    // - is absolute
-                    // - has it's prefix as scheme
-                    // - has a null path
-                    // - has a null host
-                    // - has it's suffix as schemeSpecificPart
-                    // So this test below checks if the URI is a CURIE
-                    if (uri.isAbsolute() && uri.getHost() == null && uri.getPath() == null) {
+                    if (RdfTools.isCurie(uri)) {
 
                         boolean validCurie = false;
                         if (!this.currentPrefixesStack.isEmpty()) {

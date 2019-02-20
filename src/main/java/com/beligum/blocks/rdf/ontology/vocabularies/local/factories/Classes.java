@@ -54,5 +54,7 @@ public class Classes implements RdfResourceFactory
 
 
     //-----CONFIGS-----
+    //centralized constant for the default entity type when nothing is set
+    public static final RdfClass DEFAULT_CLASS = Page;
 
 }

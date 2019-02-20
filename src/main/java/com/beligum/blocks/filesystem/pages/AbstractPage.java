@@ -55,6 +55,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -67,6 +68,21 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
     //-----CONSTANTS-----
     //Note: don't change this or the entire DB will be corrupt
     protected static final String DIR_PAGE_NAME = "index";
+
+    /**
+     * This is a collection of page names that can't be created by end users
+     * because their usage is too common in our own code
+     */
+    protected static final String[] RESERVED_PAGE_NAMES = {
+                    //this is the file name of the directory with this name (stored on disk inside a directory with the page name)
+                    DIR_PAGE_NAME,
+                    //this is used to create a virtual endpoint into the ontology metadata of this system, eg. http://www.reinvention.be/ontology/
+                    "ontology",
+                    //these two are future placeholders to query metadata information about certain pages/media in the system, eg. http://www.reinvention.be/contact/meta?type=creator
+                    "meta", "metadata",
+                    //the special resources url prefix; sync this with com.beligum.blocks.config.Settings.RESOURCE_ENDPOINT
+                    "resource"
+    };
 
     //-----VARIABLES-----
     protected URI canonicalAddress;
@@ -352,8 +368,9 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         if (pageName == null) {
             pageName = DIR_PAGE_NAME;
         }
-        else if (pageName.equals(DIR_PAGE_NAME)) {
-            throw new IOException("You can't instance a file with the same name of the directory filename store. Choose any other name, but not this one; " + pageName);
+        else if (Arrays.binarySearch(RESERVED_PAGE_NAMES, pageName) >= 0) {
+            throw new IOException("You can't instance a page named '" + pageName + "' because it's a reserved name." +
+                                  " This is the list of reserved page names: " + Arrays.toString(RESERVED_PAGE_NAMES));
         }
 
         String ext = Settings.instance().getPagesFileExtension();

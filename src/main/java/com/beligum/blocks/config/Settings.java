@@ -44,6 +44,7 @@ import java.util.*;
  */
 public class Settings
 {
+    //sync this with the reserved page keywords
     public static final String RESOURCE_ENDPOINT = "/resource/";
 
     private static final String COMMON_PREFIX = "blocks.core";

@@ -23,11 +23,16 @@ import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.security.SecurityManager;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.controllers.BlocksReferenceController;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
+import com.google.common.base.Enums;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
@@ -96,7 +101,16 @@ public abstract class HtmlTemplate
         description,
         icon,
         controller,
-        display
+        display,
+        properties
+    }
+
+    public enum SpecialProperty
+    {
+        //specifying "_all" means we indicate we want to include/allow all properties of a specific vocabulary context
+        _vocab,
+        //specifying "_class" means we indicate we want to include/allow all properties of a specific class context
+        _class
     }
 
     public enum MetaDisplayType
@@ -134,6 +148,9 @@ public abstract class HtmlTemplate
     // This will hold the html after the <template> tags
     protected Segment suffixHtml;
     protected List<SubstitionReference> normalizationSubstitutions;
+    protected List<String> rdfProperties;
+    protected SpecialProperty rdfPropertiesSpecial;
+    protected List<String> nonRdfProperties;
     //make sure to check init() (and make sure it's re-inited when init() is called) if you add more variables
 
     //-----CONSTRUCTORS-----
@@ -217,10 +234,45 @@ public abstract class HtmlTemplate
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
 
+        //see below in parseHtml() for why these are initialized to null and not empty
+        this.rdfProperties = null;
+        this.rdfPropertiesSpecial = null;
+        this.nonRdfProperties = null;
+        String properties = this.getMetaValue(tempHtml, MetaProperty.properties, true);
+        //note that we distinguish between non-existing and empty
+        if (properties != null) {
+            this.rdfProperties = new ArrayList<>();
+            if (!StringUtils.isEmpty(properties)) {
+                //let's support both spaces and commas as delimeters
+                for (String prop : Splitter.onPattern("[ ,]").trimResults().omitEmptyStrings().split(properties)) {
+                    //this will also support constants
+                    String p = R.resourceManager().getTemplateEngine().serializePropertyKey(prop);
+                    this.rdfPropertiesSpecial = Enums.getIfPresent(SpecialProperty.class, p).orNull();
+
+                    //if it's not a special value, just add it to the list
+                    if (this.rdfPropertiesSpecial == null) {
+                        this.rdfProperties.add(p);
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (this.rdfPropertiesSpecial != null && !this.rdfProperties.isEmpty()) {
+                    Logger.error("Encountered properties metadata in " + this.relativePath + " that contained other values next to a special value," +
+                                 " This is not supported and only the first special value will be retained; " + this.rdfPropertiesSpecial);
+                    this.rdfProperties.clear();
+                }
+            }
+        }
+        //note that for now, there's no meta tag for non-rdf properties (we just set it to zero and have it auto-filled in parseHtml())
+        //(mainly because those are always there as placeholders for true rdf properties, see eg. blocks-fact-entry)
+
         this.inlineStyleElements = parseInlineStyles(tempHtml);
         this.externalStyleElements = parseExternalStyles(tempHtml);
         this.inlineScriptElements = parseInlineScripts(tempHtml);
         this.externalScriptElements = parseExternalScripts(tempHtml);
+        // TODO working on this for future use, don't use it yet
         this.resourceReferences = parseResourceReferences(tempHtml);
 
         //prepend the html with the parent resources if it's there
@@ -346,14 +398,42 @@ public abstract class HtmlTemplate
      */
     public static boolean isPropertyTag(StartTag startTag)
     {
-        return startTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null || startTag.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
+        return isRdfPropertyTag(startTag) || isNonRdfPropertyTag(startTag);
     }
     /**
-     * Same doIsValid as the method above, but with a JSoup element
+     * Same as isPropertyTag, but only for rdf property attributes
+     */
+    public static boolean isRdfPropertyTag(StartTag startTag)
+    {
+        return startTag.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null;
+    }
+    /**
+     * Same as isPropertyTag, but only for non-rdf data-property attributes
+     */
+    public static boolean isNonRdfPropertyTag(StartTag startTag)
+    {
+        return startTag.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
+    }
+    /**
+     * Same isPropertyTag as the method above, but with a JSoup element
      */
     public static boolean isPropertyTag(org.jsoup.nodes.Element element)
     {
-        return element.hasAttr(HtmlParser.RDF_PROPERTY_ATTR) || element.hasAttr(HtmlParser.NON_RDF_PROPERTY_ATTR);
+        return isRdfPropertyTag(element) || isNonRdfPropertyTag(element);
+    }
+    /**
+     * Same as isPropertyTag, but only for rdf property attributes
+     */
+    public static boolean isRdfPropertyTag(org.jsoup.nodes.Element element)
+    {
+        return element.hasAttr(HtmlParser.RDF_PROPERTY_ATTR);
+    }
+    /**
+     * Same as isPropertyTag, but only for non-rdf data-property attributes
+     */
+    public static boolean isNonRdfPropertyTag(org.jsoup.nodes.Element element)
+    {
+        return element.hasAttr(HtmlParser.NON_RDF_PROPERTY_ATTR);
     }
     /**
      * Returns true if the supplied name is "property" or "data-property"
@@ -614,6 +694,111 @@ public abstract class HtmlTemplate
         return this.normalizationSubstitutions;
     }
 
+    /**
+     * Returns true if this template has or can have any properties at all, regardless of context, filters, etc. (see below)
+     */
+    public boolean hasProperties()
+    {
+        return this.hasRdfProperties() || this.hasNonRdfProperties();
+    }
+
+    /**
+     * Returns true if this template has or can have any properties at all, regardless of context, filters, etc. (see below)
+     */
+    public boolean hasRdfProperties()
+    {
+        return this.rdfPropertiesSpecial != null || (this.rdfProperties != null && !this.rdfProperties.isEmpty());
+    }
+
+    /**
+     * Returns true if this template has any non-rdf (data-property) properties, regardless of context, filters, etc. (see below)
+     */
+    public boolean hasNonRdfProperties()
+    {
+        return this.nonRdfProperties != null && !this.nonRdfProperties.isEmpty();
+    }
+
+    /**
+     * Returns the properties in this template (note: it doesn't return the properties of possible sub-template instances).
+     *
+     * @param includeRdfProperties    add the rdf properties to the retVal
+     * @param includeNonRdfProperties add the non-rdf properties (data-property attribute) to the retVal
+     * @param defaultVocab            the vocabulary context in which this properties request is performed
+     * @param defaultClass            the rdf class context in which this properties request is performed
+     */
+    public Iterable<String> getProperties(boolean includeRdfProperties, boolean includeNonRdfProperties, RdfVocabulary defaultVocab, RdfClass defaultClass)
+    {
+        //this initialization will make calling this method and parsing below a lot easier
+        Iterable<String> retVal = Collections.emptySet();
+
+        //use the vocab of the class if the default vocab is not specified
+        final RdfVocabulary finalDefaultVocab = defaultVocab == null && defaultClass != null ? defaultClass.getVocabulary() : defaultVocab;
+
+        //this function prefixes the properties with the prefix of the vocab
+        // if it's set and it doesn't have another prefix.
+        //Note though that data-property values actually shouldn't get a vocab prefix,
+        //but we expand them too, for simplicity (and we do this throughout our entire app)
+        Function<String, String> prefixProperty = new Function<String, String>()
+        {
+            @Nullable
+            @Override
+            public String apply(@Nullable String property)
+            {
+                String retVal = property;
+
+                //if we have a vocab and it's not a URI, resolve it
+                if (finalDefaultVocab != null && !retVal.contains(":")) {
+                    retVal = finalDefaultVocab.getPrefix() + ":" + retVal;
+                }
+
+                return retVal;
+            }
+        };
+
+        // 1) parse the RDF properties:
+        if (includeRdfProperties ) {
+            // Note that our rules dictate: if there's at least one special property set, we ignore all others
+            if (this.rdfPropertiesSpecial != null) {
+
+                Iterable<RdfProperty> dynamicProps = null;
+                switch (this.rdfPropertiesSpecial) {
+                    case _vocab:
+                        dynamicProps = finalDefaultVocab != null ? finalDefaultVocab.getAllProperties().values() : Collections.emptySet();
+                        break;
+                    case _class:
+                        dynamicProps = defaultClass != null ? defaultClass.getProperties() : Collections.emptySet();
+                        break;
+                    default:
+                        Logger.error("Encountered unimplemented special properties value; " + this.rdfPropertiesSpecial);
+                        break;
+                }
+
+                if (dynamicProps != null) {
+                    retVal = Iterables.transform(dynamicProps, new Function<RdfProperty, String>()
+                    {
+                        @Nullable
+                        @Override
+                        public String apply(@Nullable RdfProperty property)
+                        {
+                            return property.getCurieName().toString();
+                        }
+                    });
+                }
+            }
+            else {
+                retVal = Iterables.transform(this.rdfProperties, prefixProperty);
+            }
+        }
+
+        // 2) parse the non-RDF properties and add them if enabled
+        if (includeNonRdfProperties) {
+            //note that we also prefix the non-rdf properties, for uniformity
+            retVal = Iterables.concat(retVal, Iterables.transform(this.nonRdfProperties, prefixProperty));
+        }
+
+        return retVal;
+    }
+
     //-----PROTECTED METHODS-----
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
 
@@ -794,6 +979,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
+    // TODO working on this for future use, needs tender loving care
     private Iterable<ResourceReference> parseResourceReferences(OutputDocument html) throws IOException
     {
         List<ResourceReference> retVal = new ArrayList<>();
@@ -1022,6 +1208,8 @@ public abstract class HtmlTemplate
         //On top of that, we support the normalization of unchanged property elements
         this.normalizationSubstitutions = new ArrayList<>();
         List<SubstitionReference> phase2 = new ArrayList<>();
+        List<String> explicitRdfProperties = new ArrayList<>();
+        List<String> explicitNonRdfProperties = new ArrayList<>();
         Elements templateIter = templateHtml.body().children().select("*");
         for (org.jsoup.nodes.Element e : templateIter) {
 
@@ -1049,7 +1237,7 @@ public abstract class HtmlTemplate
             // that <blocks-text> block, they must be left alone.
 
             //(3) check if the element is a property
-            if (this.isPropertyTag(e)) {
+            if (isPropertyTag(e)) {
                 //Since we iterate _all_ properties, we'll also iterate properties
                 //of other template instances (eg. when a template uses other templates).
                 //A property 'belongs' to it's parent template instance,
@@ -1066,7 +1254,19 @@ public abstract class HtmlTemplate
 
                 //only add references to properties that belong to us
                 if (parentTemplateInstance.tagName().equals(this.getTemplateName())) {
-                    phase2.add(new CollapseTemplateProperty(this.cssSelector(e), e));
+
+                    TemplateProperty prop = new TemplateProperty(this.cssSelector(e), e);
+                    phase2.add(prop);
+
+                    //store the explicit properties (the ones that are present in the template definition) to a temp list, see below why
+                    //make sure constants are serialized and the value is trimmed
+                    String propName = R.resourceManager().getTemplateEngine().serializePropertyKey(getPropertyAttribute(e)).trim();
+                    if (isRdfPropertyTag(e)) {
+                        explicitRdfProperties.add(propName);
+                    }
+                    else {
+                        explicitNonRdfProperties.add(propName);
+                    }
                 }
             }
 
@@ -1082,11 +1282,26 @@ public abstract class HtmlTemplate
             //Also note that we could remove the dash-check, but we kept it to make the remake above valid
             //(because it's also relevant for the property-checking above)
             if (e.tagName().contains("-") && e.tagName().equals(this.getTemplateName())) {
-                phase2.add(new CollapseTemplateInstance(this.cssSelector(e), e));
+                phase2.add(new TemplateInstance(this.cssSelector(e), e));
             }
         }
         //now add all phase 2 substitutions at the end of the existing list so we're sure they're executed after phase 1
         this.normalizationSubstitutions.addAll(phase2);
+
+        //First of all, please note that both collections below are already (possibly) initialized during parsing of the meta tag.
+        //This is subtle: we allow the developer to explicitly define the supported properties
+        //in the meta tags (to allow for javascript-generated properties, see blocks-fact-entry),
+        //but if such meta information doesn't exist, it's pulled from the properties in the html itself.
+        //Note that there's a difference between a null collection or an empty one:
+        // - a null collection means: no metadata was found
+        // - an empty collection means: the metadata explicitly set it to empty
+        // --> so we only override on null.
+        if (this.rdfProperties == null) {
+            this.rdfProperties = explicitRdfProperties;
+        }
+        if (this.nonRdfProperties == null) {
+            this.nonRdfProperties = explicitNonRdfProperties;
+        }
 
         /*
         // This is a bit stupid to iterate the DOM another time, but the written Jericho code to detect RDF properties
@@ -1310,10 +1525,11 @@ public abstract class HtmlTemplate
         }
     }
 
-    public static class CollapseTemplateProperty extends SubstitionReference
+    public static class TemplateProperty extends SubstitionReference
     {
         protected String element;
-        protected CollapseTemplateProperty(String cssSelector, org.jsoup.nodes.Element propertyElement)
+
+        protected TemplateProperty(String cssSelector, org.jsoup.nodes.Element propertyElement)
         {
             super(cssSelector);
 
@@ -1346,10 +1562,10 @@ public abstract class HtmlTemplate
         }
     }
 
-    public static class CollapseTemplateInstance extends SubstitionReference
+    public static class TemplateInstance extends SubstitionReference
     {
         protected Map<String, String> attributes;
-        protected CollapseTemplateInstance(String cssSelector, org.jsoup.nodes.Element element)
+        protected TemplateInstance(String cssSelector, org.jsoup.nodes.Element element)
         {
             super(cssSelector);
 

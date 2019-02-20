@@ -33,6 +33,9 @@ import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Classes;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
@@ -100,9 +103,9 @@ public class PageAdminEndpoint
     @GET
     @Path("/template")
     @RequiresPermissions(logical = Logical.OR,
-                         value ={ PAGE_CREATE_ALL_PERM,
-                                  PAGE_CREATE_TEMPLATE_ALL_PERM,
-                                  PAGE_CREATE_COPY_ALL_PERM })
+                         value = { PAGE_CREATE_ALL_PERM,
+                                   PAGE_CREATE_TEMPLATE_ALL_PERM,
+                                   PAGE_CREATE_COPY_ALL_PERM })
     public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) URI pageUrl,
                                     @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
                                     @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl,
@@ -153,13 +156,17 @@ public class PageAdminEndpoint
     @GET
     @Path("/blocks")
     @RequiresPermissions(logical = Logical.OR,
-                         value ={ PAGE_UPDATE_ALL_PERM,
-                                  PAGE_UPDATE_OWN_PERM })
+                         value = { PAGE_UPDATE_ALL_PERM,
+                                   PAGE_UPDATE_OWN_PERM })
     public Response getBlocks(@QueryParam(GET_BLOCKS_TYPEOF_PARAM) String typeOfStr, @QueryParam(GET_BLOCKS_TEMPLATE_PARAM) String pageTemplateName)
     {
         RdfClass typeOf = null;
         if (!StringUtils.isEmpty(typeOfStr)) {
             typeOf = RdfFactory.getClassForResourceType(typeOfStr);
+        }
+        //make sure we always have a type
+        if (typeOf == null) {
+            typeOf = Classes.DEFAULT_CLASS;
         }
 
         PageTemplate pageTemplate = null;
@@ -180,17 +187,79 @@ public class PageAdminEndpoint
 
         Template template = new_block.get().getNewTemplate();
 
-        //build a list of all blocks that are accessible from this template and remote page
+        //build a list of all blocks that are accessible from this template and/or type
         TemplateCache cache = TemplateCache.instance();
         List<Map<String, String>> templates = new ArrayList<>();
         for (HtmlTemplate htmlTemplate : cache.getAllTemplates()) {
-            if (htmlTemplate instanceof TagTemplate && htmlTemplate.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+
+            //we're looking for visible tag templates (not pages)
+            if (htmlTemplate instanceof TagTemplate && !htmlTemplate.getDisplayType().equals(HtmlTemplate.MetaDisplayType.HIDDEN)) {
 
                 TagTemplate tagTemplate = (TagTemplate) htmlTemplate;
 
-                //don't include the blocks where we have them disabled for the page template
-                if (!cache.isDisabled(tagTemplate) && (pageTemplate == null || !cache.isDisabled(tagTemplate, pageTemplate))) {
+                //don't include the blocks that are disabled entirely or disabled only for this page template
+                boolean enableTemplate = !cache.isDisabled(tagTemplate) && (pageTemplate == null || !cache.isDisabled(tagTemplate, pageTemplate));
 
+                //note that the default class is an exception: we allow it to have all blocks
+                //also note that we don't filter out templates that don't have any properties at all
+                // (otherwise these would always be filtered out by the logic below)
+                if (enableTemplate && !typeOf.equals(Classes.DEFAULT_CLASS) && tagTemplate.hasProperties()) {
+
+                    //If we reach this point, we know the template-tag has some properties.
+                    //These properties can be RDF properties ("property" attribute) or
+                    //data hook properties ("data-property").
+                    //The goal of this filter is to filter out all template-tags that can
+                    //make the current page context invalid in the RDF sense. This means we
+                    //are interested in RDF properties inside this template-tag that, once added
+                    //to the current page (the whole reason this method is called), would be
+                    //invalid because those properties are not part of the ontology of this page class.
+                    //Note however that some of the template-tags have special dynamic property-lists
+                    //that are generated on the fly, taking the current context (eg. the current local
+                    //vocabulary and the page class context) into account.
+                    //This also means that template-tags without rdf properties (only data properties)
+                    //should always be allowed because they're transparent to the rdf parser.
+
+                    //request the properties for the current context
+                    Iterable<String> rdfProperties = htmlTemplate.getProperties(true, false, typeOf.getVocabulary(), typeOf);
+                    Iterable<String> dataProperties = htmlTemplate.getProperties(false, true, typeOf.getVocabulary(), typeOf);
+
+                    boolean hasRdfProperties = rdfProperties.iterator().hasNext();
+                    boolean hasNonRdfProperties = dataProperties.iterator().hasNext();
+
+                    //stop short if this template doesn't have any properties in the current context
+                    enableTemplate = enableTemplate && (hasRdfProperties || hasNonRdfProperties);
+
+                    //This is tricky: let's say a template-tag can have rdf properties (in general),
+                    // but they are activated contextually (eg. blocks-fact-entry) and in the current context,
+                    // there are none (eg. because the current page type doesn't have any properties in its ontology).
+                    // Then this template-tag shouldn't be enabled because the user won't be able to create instances
+                    // of this tempalte-tag (the client-side UI should prevent this)
+                    enableTemplate = enableTemplate && !(tagTemplate.hasRdfProperties() && !hasRdfProperties);
+
+                    if (enableTemplate) {
+                        for (String p : rdfProperties) {
+
+                            RdfProperty rdfProp = (RdfProperty) RdfFactory.getClassForResourceType(p);
+                            if (rdfProp != null) {
+                                enableTemplate = enableTemplate && typeOf.getProperties().contains(rdfProp);
+                            }
+                            else {
+                                //let's do this so the developer is forced to fix it (the block won't show up, see log msg below)
+                                enableTemplate = false;
+                                Logger.warn("Encountered an RDF property ('" + p + "' in template '" + htmlTemplate.getTemplateName() +"')" +
+                                            " that doesn't seem to resolve to a valid property in any known vocabulary." +
+                                            " As a result, this template is disabled and won't show up in the list of blocks." +
+                                            " Please fix this!");
+                            }
+
+                            if (!enableTemplate) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (enableTemplate) {
                     ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
                                     .put(Entries.NEW_BLOCK_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))
                                     .put(Entries.NEW_BLOCK_TITLE.getValue(), template.getContext().evaluate(htmlTemplate.getTitle()));
@@ -225,8 +294,8 @@ public class PageAdminEndpoint
     @Path("/block")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(logical = Logical.OR,
-                         value ={ PAGE_UPDATE_ALL_PERM,
-                                  PAGE_UPDATE_OWN_PERM })
+                         value = { PAGE_UPDATE_ALL_PERM,
+                                   PAGE_UPDATE_OWN_PERM })
     public Response getBlock(@QueryParam(GET_BLOCK_NAME_PARAM) String name) throws IOException
     {
         HashMap<String, Object> retVal = new HashMap<>();

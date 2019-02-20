@@ -104,6 +104,21 @@ public class RdfTools
     }
 
     /**
+     * Returns true if the url is a CURIE, but a full-blown URI
+     */
+    public static boolean isCurie(URI uri)
+    {
+        //note: a CURIE:
+        // - is absolute
+        // - has it's prefix as scheme
+        // - has a null path
+        // - has a null host
+        // - has it's suffix as schemeSpecificPart
+        // So this test below checks if the URI is a CURIE
+        return uri.isAbsolute() && uri.getHost() == null && uri.getPath() == null;
+    }
+
+    /**
      * Converts a URI to it's CURIE variant, using the locally known ontologies
      */
     public static URI fullToCurie(URI fullUri)

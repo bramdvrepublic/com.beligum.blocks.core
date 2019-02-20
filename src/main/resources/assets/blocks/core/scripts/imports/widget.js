@@ -1427,8 +1427,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //we take the one that was passed when building this action initially
                     var filePath = input ? input.val() : selectedFilePath;
                     if (filePath && filePath.indexOf(MediaCommonsConstants.HDFS_URL_BASE) === 0) {
-                        //decode it as the reverse of the encode below
-                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = decodeURI(filePath);
+                        //decode it as the reverse of the encode below and trim the possible alias extension
+                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = Commons.trimExtension(decodeURI(filePath), MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER);
                     }
 
                     finderOptions.onSelect = function (selectedFileUrls)
