@@ -335,7 +335,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     else {
                         if (UI.allowCreate) {
 
-                            createNewBlock(function callback(newBlockEl, onComplete)
+                            loadNewBlockList(function callback(newBlockEl, onComplete)
                             {
                                 var parentSurface = activeDropspot.anchor;
                                 // Create a new block and immediately move it to the final location.
@@ -850,14 +850,17 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         UI.pageSurface._refresh(true);
     };
 
-    var createNewBlock = function (callback)
+    var loadNewBlockList = function (callback)
     {
         //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
-        // show select box with all blocks
-        var boxDialog;
-        //Note: the inner div will be replaced when the new load() content comes in
-        var box = $('<div><div style="padding: 20px;">' + BlocksMessages.newBlockLoading + '</div></div>');
+        var boxDialog = BootstrapDialog.show({
+            type: BootstrapDialog.TYPE_DEFAULT,
+            title: BlocksMessages.selectFromTheListBelow,
+            cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
+            message: BlocksMessages.newBlockLoading,
+            buttons: [],
+        });
 
         var data = {};
         var currentTypeof = UI.html.attr('typeof');
@@ -868,87 +871,124 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         if (pageTemplate) {
             data[BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM] = pageTemplate;
         }
-        box.load(BlocksConstants.GET_BLOCKS_ENDPOINT + '?' + $.param(data), function (response, status, xhr)
-        {
-            if (status === "success") {
-                box.find("a").click(function (event)
-                {
-                    var name = $(this).attr("data-value");
 
-                    //not always very fast, so show the wait dialog
-                    //var waitingDialog;
-                    var waitingDialog = new BootstrapDialog({
-                        message: BlocksMessages.newBlockLoadingResources
-                    });
+        // show select box with all blocks
+        $.getJSON(BlocksConstants.GET_BLOCKS_ENDPOINT, data)
+            .done(function (data)
+            {
+                if (data.length === 0) {
+                    Notification.error(BlocksMessages.newBlockEmptyError);
 
-                    boxDialog.close();
-                    if (waitingDialog) {
-                        waitingDialog.open();
+                    if (boxDialog) {
+                        boxDialog.close();
+                    }
+                }
+                else if (data.length === 1) {
+                    //just take the first one
+                    createNewBlock(data[0].name, boxDialog, callback);
+                }
+                else {
+                    var formGroup = $('<div class="form-group" ' + BlocksConstants.FORCE_CLICK_ATTR + ' />');
+                    var listGroup = $('<div class="list-group"/>').appendTo(formGroup);
+                    for (var i = 0; i < data.length; i++) {
+
+                        var block = data[i];
+
+                        var link = $("<a/>", {
+                            "href": "javascript:void(0)",
+                            "class": "list-group-item",
+                            "data-value": block.name,
+
+                            //when we click on the block, we need to load it's resources
+                            //and create a new block at the active dropspot
+                            click: function ()
+                            {
+                                createNewBlock($(this).attr("data-value"), boxDialog, callback);
+                            }
+                        }).appendTo(listGroup);
+
+                        var preview = $('<div class="preview">' +
+                            '<i class="fa ' + (block.icon ? block.icon : 'fa-square-o') + '"></i>' +
+                            '</div>').appendTo(link);
+                        var caption = $('<div class="caption">' +
+                            '<span class="title">' + block.title + '</span>' +
+                            '<span class="description">' + block.description + '</span>' +
+                            '</div>').appendTo(link);
                     }
 
-                    var data = {};
-                    data[BlocksConstants.GET_BLOCK_NAME_PARAM] = name;
-                    $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT, data)
-                        .done(function (data)
-                        {
-                            if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] !== "") {
+                    if (jQuery().perfectScrollbar) {
+                        boxDialog.getModalBody().perfectScrollbar();
+                    }
 
-                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES);
-                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES);
-
-                                // Whow, this is weird stuff!
-                                // Originally just $(data.html), but docs say the current version is safer.
-                                // Problem was it failed with certains custom elements:
-                                // th-search didn't work, where div-search did work.
-                                // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
-                                // Fixed with a patched version (see pom.xml)
-                                // Note: fixed in JQuery 1.12.0 & 2.2.0 & 3.0 so we should probably get rid of the patched JQuery
-                                var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
-
-                                //resetDragDrop();
-                                //cancelled = false;
-                                // Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
-                                // {
-                                //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
-                                //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
-                                // });
-
-                                callback(block, function onComplete()
-                                {
-                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
-                                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
-                                });
-                            }
-                            else {
-                                Notification.error(BlocksMessages.newBlockError, data);
-                            }
-                        })
-                        .fail(function (xhr, textStatus, exception)
-                        {
-                            Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
-                        })
-                        .always(function ()
-                        {
-                            if (waitingDialog) {
-                                waitingDialog.close();
-                            }
-                        });
-                });
-            }
-            else {
-                Notification.error(BlocksMessages.newBlockError + (response ? "; " + response : ""), xhr);
-            }
-        });
-
-        boxDialog = BootstrapDialog.show({
-            title: BlocksMessages.selectFromTheListBelow,
-            cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
-            message: function ()
+                    boxDialog.setMessage(formGroup);
+                }
+            })
+            .fail(function (xhr, textStatus, exception)
             {
-                return box
-            },
-            buttons: [],
-        });
+                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+
+                if (boxDialog) {
+                    boxDialog.close();
+                }
+            })
+    };
+
+    var createNewBlock = function(name, dialog, callback)
+    {
+        if (dialog) {
+            //not always very fast, so show the wait dialog
+            dialog.setMessage(BlocksMessages.newBlockLoadingResources);
+        }
+
+        var data = {};
+        data[BlocksConstants.GET_BLOCK_NAME_PARAM] = name;
+        $.getJSON(BlocksConstants.GET_BLOCK_ENDPOINT, data)
+            .done(function (data)
+            {
+                if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] !== "") {
+
+                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES);
+                    addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES);
+
+                    // Whow, this is weird stuff!
+                    // Originally just $(data.html), but docs say the current version is safer.
+                    // Problem was it failed with certains custom elements:
+                    // th-search didn't work, where div-search did work.
+                    // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
+                    // Fixed with a patched version (see pom.xml)
+                    // Note: fixed in JQuery 1.12.0 & 2.2.0 & 3.0 so we should probably get rid of the patched JQuery
+                    var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
+
+                    //resetDragDrop();
+                    //cancelled = false;
+                    // Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
+                    // {
+                    //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
+                    //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
+                    // });
+
+                    if (callback) {
+                        callback(block, function onComplete()
+                        {
+                            addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
+                            addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
+                        });
+                    }
+                }
+                else {
+                    Notification.error(BlocksMessages.newBlockError, data);
+                }
+            })
+            .fail(function (xhr, textStatus, exception)
+            {
+                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+            })
+            .always(function ()
+            {
+                if (dialog) {
+                    dialog.close();
+                }
+            });
     };
 
     var addHeadResources = function (resourceArray, className, resourceType, isScript)

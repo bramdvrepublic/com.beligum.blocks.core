@@ -26,7 +26,9 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
 import com.beligum.blocks.filesystem.index.reindex.*;
 import com.beligum.blocks.filesystem.pages.PageFixTask;
@@ -34,18 +36,15 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Classes;
 import com.beligum.blocks.rdf.sources.NewPageSource;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TagTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
-import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.modals.new_block;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.Logical;
@@ -185,11 +184,9 @@ public class PageAdminEndpoint
             }
         }
 
-        Template template = new_block.get().getNewTemplate();
-
         //build a list of all blocks that are accessible from this template and/or type
         TemplateCache cache = TemplateCache.instance();
-        List<Map<String, String>> templates = new ArrayList<>();
+        List<BlockInfo> retVal = new ArrayList<>();
         for (HtmlTemplate htmlTemplate : cache.getAllTemplates()) {
 
             //we're looking for visible tag templates (not pages)
@@ -200,89 +197,97 @@ public class PageAdminEndpoint
                 //don't include the blocks that are disabled entirely or disabled only for this page template
                 boolean enableTemplate = !cache.isDisabled(tagTemplate) && (pageTemplate == null || !cache.isDisabled(tagTemplate, pageTemplate));
 
+                //"create sync" means: sync the offered list of blocks to the rdf ontology of the page type
                 //note that the default class is an exception: we allow it to have all blocks
-                //also note that we don't filter out templates that don't have any properties at all
-                // (otherwise these would always be filtered out by the logic below)
-                if (enableTemplate && !typeOf.equals(Classes.DEFAULT_CLASS) && tagTemplate.hasProperties()) {
+                if (enableTemplate && Settings.instance().getEnableRdfCreateSync() && !typeOf.equals(Classes.DEFAULT_CLASS)) {
 
-                    //If we reach this point, we know the template-tag has some properties.
-                    //These properties can be RDF properties ("property" attribute) or
-                    //data hook properties ("data-property").
-                    //The goal of this filter is to filter out all template-tags that can
-                    //make the current page context invalid in the RDF sense. This means we
-                    //are interested in RDF properties inside this template-tag that, once added
-                    //to the current page (the whole reason this method is called), would be
-                    //invalid because those properties are not part of the ontology of this page class.
-                    //Note however that some of the template-tags have special dynamic property-lists
-                    //that are generated on the fly, taking the current context (eg. the current local
-                    //vocabulary and the page class context) into account.
-                    //This also means that template-tags without rdf properties (only data properties)
-                    //should always be allowed because they're transparent to the rdf parser.
+                    boolean enableStrictMode = Settings.instance().getEnableRdfCreateSyncStrict();
 
-                    //request the properties for the current context
-                    Iterable<String> rdfProperties = htmlTemplate.getProperties(true, false, typeOf.getVocabulary(), typeOf);
-                    Iterable<String> dataProperties = htmlTemplate.getProperties(false, true, typeOf.getVocabulary(), typeOf);
+                    //we don't filter out templates that don't have any properties at all
+                    // (otherwise these would always be filtered out by the logic below)
+                    if (tagTemplate.hasProperties()) {
 
-                    boolean hasRdfProperties = rdfProperties.iterator().hasNext();
-                    boolean hasNonRdfProperties = dataProperties.iterator().hasNext();
+                        if (!tagTemplate.hasProperties()) {
+                            enableTemplate = false;
+                        }
 
-                    //stop short if this template doesn't have any properties in the current context
-                    enableTemplate = enableTemplate && (hasRdfProperties || hasNonRdfProperties);
+                        //If we reach this point, we know the template-tag has some properties.
+                        //These properties can be RDF properties ("property" attribute) or
+                        //data hook properties ("data-property").
+                        //The goal of this filter is to filter out all template-tags that can
+                        //make the current page context invalid in the RDF sense. This means we
+                        //are interested in RDF properties inside this template-tag that, once added
+                        //to the current page (the whole reason this method is called), would be
+                        //invalid because those properties are not part of the ontology of this page class.
+                        //Note however that some of the template-tags have special dynamic property-lists
+                        //that are generated on the fly, taking the current context (eg. the current local
+                        //vocabulary and the page class context) into account.
+                        //This also means that template-tags without rdf properties (only data properties)
+                        //should always be allowed because they're transparent to the rdf parser.
 
-                    //This is tricky: let's say a template-tag can have rdf properties (in general),
-                    // but they are activated contextually (eg. blocks-fact-entry) and in the current context,
-                    // there are none (eg. because the current page type doesn't have any properties in its ontology).
-                    // Then this template-tag shouldn't be enabled because the user won't be able to create instances
-                    // of this tempalte-tag (the client-side UI should prevent this)
-                    enableTemplate = enableTemplate && !(tagTemplate.hasRdfProperties() && !hasRdfProperties);
+                        //request the properties for the current context
+                        Iterable<String> rdfProperties = htmlTemplate.getProperties(true, false, typeOf.getVocabulary(), typeOf);
+                        Iterable<String> nonRdfProperties = htmlTemplate.getProperties(false, true, typeOf.getVocabulary(), typeOf);
 
-                    if (enableTemplate) {
-                        for (String p : rdfProperties) {
+                        boolean hasRdfProperties = rdfProperties.iterator().hasNext();
+                        boolean hasNonRdfProperties = nonRdfProperties.iterator().hasNext();
 
-                            RdfProperty rdfProp = (RdfProperty) RdfFactory.getClassForResourceType(p);
-                            if (rdfProp != null) {
-                                enableTemplate = enableTemplate && typeOf.getProperties().contains(rdfProp);
-                            }
-                            else {
-                                //let's do this so the developer is forced to fix it (the block won't show up, see log msg below)
-                                enableTemplate = false;
-                                Logger.warn("Encountered an RDF property ('" + p + "' in template '" + htmlTemplate.getTemplateName() +"')" +
-                                            " that doesn't seem to resolve to a valid property in any known vocabulary." +
-                                            " As a result, this template is disabled and won't show up in the list of blocks." +
-                                            " Please fix this!");
-                            }
+                        //stop short if this template doesn't have any properties in the current context
+                        enableTemplate = enableTemplate && (hasRdfProperties || hasNonRdfProperties);
 
-                            if (!enableTemplate) {
-                                break;
+                        //This is tricky: let's say a template-tag can have rdf properties (in general),
+                        // but they are activated contextually (eg. blocks-fact-entry) and in the current context,
+                        // there are none (eg. because the current page type doesn't have any properties in its ontology).
+                        // Then this template-tag shouldn't be enabled because the user won't be able to create instances
+                        // of this tempalte-tag (the client-side UI should prevent this)
+                        enableTemplate = enableTemplate && !(tagTemplate.hasRdfProperties() && !hasRdfProperties);
+
+                        //if strict mode is active and this template has no true rdf properties,
+                        //disable it because this is only allowed for the default page type
+                        if (enableTemplate && !hasRdfProperties) {
+                            enableTemplate = false;
+                        }
+
+                        if (enableTemplate) {
+                            for (String p : rdfProperties) {
+
+                                RdfProperty rdfProp = (RdfProperty) RdfFactory.getClassForResourceType(p);
+                                if (rdfProp != null) {
+                                    enableTemplate = enableTemplate && typeOf.getProperties().contains(rdfProp);
+                                }
+                                else {
+                                    //let's do this so the developer is forced to fix it (the block won't show up, see log msg below)
+                                    enableTemplate = false;
+                                    Logger.warn("Encountered an RDF property ('" + p + "' in template '" + htmlTemplate.getTemplateName() + "')" +
+                                                " that doesn't seem to resolve to a valid property in any known vocabulary." +
+                                                " As a result, this template is disabled and won't show up in the list of blocks." +
+                                                " Please fix this!");
+                                }
+
+                                if (!enableTemplate) {
+                                    break;
+                                }
                             }
                         }
+                    }
+                    //if the page type has no properties (eg. a spacer) and it's not the default type (already checked)
+                    //and strict mode is enabled, we need to disable this template because non-rdf templates are only allowed
+                    //for the default type in strict mode
+                    else if (enableStrictMode) {
+                        enableTemplate = false;
                     }
                 }
 
                 if (enableTemplate) {
-                    ImmutableMap.Builder<String, String> map = ImmutableMap.<String, String>builder()
-                                    .put(Entries.NEW_BLOCK_NAME.getValue(), template.getContext().evaluate(htmlTemplate.getTemplateName()))
-                                    .put(Entries.NEW_BLOCK_TITLE.getValue(), template.getContext().evaluate(htmlTemplate.getTitle()));
-
-                    if (!StringUtils.isEmpty(htmlTemplate.getDescription())) {
-                        map.put(Entries.NEW_BLOCK_DESCRIPTION.getValue(), template.getContext().evaluate(htmlTemplate.getDescription()));
-                    }
-
-                    if (!StringUtils.isEmpty(htmlTemplate.getIcon())) {
-                        map.put(Entries.NEW_BLOCK_ICON.getValue(), template.getContext().evaluate(htmlTemplate.getIcon()));
-                    }
-
-                    templates.add(map.build());
+                    retVal.add(new BlockInfo(tagTemplate));
                 }
             }
         }
 
         //sort the blocks by title
-        Collections.sort(templates, new MapComparator(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue()));
+        Collections.sort(retVal, (o1, o2) -> o1.getTitle().compareTo(o2.getTitle()));
 
-        template.set(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TEMPLATES.getValue(), templates);
-
-        return Response.ok(template).build();
+        return Response.ok(retVal).build();
     }
 
     /**

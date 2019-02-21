@@ -98,7 +98,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             UI.startButton.detach();
 
             //set up perfect-scrollbar.js
-            if ($.perfectScrollbar) {
+            if (jQuery().perfectScrollbar) {
                 //only scroll from the tab content so the header doesn't scroll away
                 UI.sidebar.find('.' + BlocksConstants.SIDEBAR_CONTAINER_CLASS).perfectScrollbar();
             }

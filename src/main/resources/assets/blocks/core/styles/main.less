@@ -110,6 +110,22 @@ body.@{BODY_EDIT_MODE_CLASS} {
   width: 4px;
 }
 
+//some modal dialog styling
+.bootstrap-dialog {
+
+  .modal-header {
+    padding-top: 22px;
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+
+  &.type-default {
+    .bootstrap-dialog-title {
+      font-weight: bold;
+    }
+  }
+}
+
 .@{BLOCK_OVERLAY_WRAPPER_CLASS},
 .@{SURFACE_WRAPPER_CLASS},
 .@{RESIZER_WRAPPER_CLASS},
@@ -1117,6 +1133,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         @preview-margin: (@grid-gutter-width / 2);
 
         .preview {
+
+          .opacity(0.5);
+
           width: @preview-size;
           height: @preview-size;
           margin-right: @preview-margin;
@@ -1125,8 +1144,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           float: left;
 
           .fa {
-            color: tint(@brand-primary, 50%);
-
             position: relative;
             width: 100%;
             height: 100%;
@@ -1154,12 +1171,12 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             padding: 0;
 
             &.title {
-              color: @brand-primary;
               padding-top: 2px;
             }
             &.description {
               .opacity(0.8);
               padding-top: 3px;
+              font-size: 0.9em;
             }
           }
         }
@@ -1172,7 +1189,16 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   .modal-body {
     //max-width: 600px;
     max-height: 400px;
-    overflow-y: auto;
+    //overflow-y: auto;
+    margin: 20px;
+
+    .form-group {
+      margin-bottom: 0;
+
+      .list-group {
+        margin-bottom: 0;
+      }
+    }
   }
 }
 

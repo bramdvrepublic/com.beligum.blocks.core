@@ -30,7 +30,6 @@ import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
 import com.beligum.blocks.security.AclImpl;
 import com.beligum.blocks.security.ifaces.Acl;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
@@ -398,6 +397,14 @@ public class Settings
     public String getRdfOntologyPrefix()
     {
         return R.configuration().getString(ONTOLOGY_PREFIX + ".prefix");
+    }
+    public boolean getEnableRdfCreateSync()
+    {
+        return R.configuration().getBoolean(RDF_PREFIX + ".enable-create-sync", true);
+    }
+    public boolean getEnableRdfCreateSyncStrict()
+    {
+        return R.configuration().getBoolean(RDF_PREFIX + ".enable-create-sync-strict", false);
     }
     public boolean getEnableRestrictedDefaultRead()
     {

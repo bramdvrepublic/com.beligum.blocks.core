@@ -22,6 +22,7 @@ import com.beligum.base.models.Person;
 import com.beligum.base.models.Principal;
 import com.beligum.base.models.Subject;
 import com.beligum.base.routing.ifaces.ReverseRoute;
+import gen.com.beligum.base.auth.endpoints.AbstractUsersEndpointRoutes;
 import gen.com.beligum.blocks.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 
@@ -73,10 +74,9 @@ public class UsersEndpoint extends AbstractUsersEndpoint
     @Override
     public ReverseRoute getUserRedirect(long userId)
     {
-        //TODO this isn't right (a reverse route of this class?) and doesn't compile (at least sometimes it doesn't)
+        //TODO this isn't right (a reverse route of this class?) and doesn't even always compile (we need to call verify first)
         // We should implement the possibility for endpoints to have superclasses and adjust the reverse routes generator.
-        //return UsersEndpointRoutes.getUser(userId);
-        return null;
+        return UsersEndpointRoutes.getUser(userId);
     }
 
     //-----PROTECTED METHODS-----
