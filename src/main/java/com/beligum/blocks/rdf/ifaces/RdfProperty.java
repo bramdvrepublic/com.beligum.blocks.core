@@ -21,6 +21,7 @@ import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import net.sf.ehcache.transaction.xa.EhcacheXAException;
 import org.eclipse.rdf4j.model.Value;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -76,4 +77,13 @@ public interface RdfProperty extends RdfClass
      * Converts the supplied value to an object to be used during index lookups
      */
     Object prepareIndexValue(String value, Locale language) throws IOException;
+
+    /**
+     * Allows returning a generated value for this resource
+     *
+     * @param parameter
+     * @return the generated value as a String
+     */
+    String getGeneratedValue(String parameter) throws IOException;
+
 }

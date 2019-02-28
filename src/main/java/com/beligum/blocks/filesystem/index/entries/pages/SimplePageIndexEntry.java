@@ -39,9 +39,13 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private String typeOf;
     private String language;
     private String canonicalAddress;
+    private String subResourceExtraProperty;
+
 
     //-----CONSTRUCTORS-----
-    public SimplePageIndexEntry(String id, String parentId, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
+    public SimplePageIndexEntry(String id, String parentId, URI resource,
+                                RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description,
+                                URI image, String subResourceExtraProperty) throws IOException
     {
         this(id,
              parentId,
@@ -51,14 +55,15 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
              language == null ? null : language.getLanguage(),
              canonicalAddress == null ? null : canonicalAddress.toString(),
              description,
-             image == null ? null : image.toString());
+             image == null ? null : image.toString(),
+             subResourceExtraProperty);
     }
     //for serialization
     private SimplePageIndexEntry() throws IOException
     {
-        this((String) null, (String) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null);
+        this((String) null, (String) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null,  (String) null);
     }
-    private SimplePageIndexEntry(String id, String parentId, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
+    private SimplePageIndexEntry(String id, String parentId, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image, String subResourceExtraProperty) throws IOException
     {
         super(id);
 
@@ -70,6 +75,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         this.setCanonicalAddress(canonicalAddress);
         this.setDescription(description);
         this.setImage(image);
+        this.setSubResourceExtraProperty(subResourceExtraProperty);
     }
     //    protected SimplePageIndexEntry(String documentId, Resource subject, Model rdfModel, String language) throws IOException
     //    {
@@ -117,6 +123,11 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         return indexEntry.getId();
     }
 
+    @Override
+    public String getSubResourceExtraProperty()
+    {
+        return subResourceExtraProperty;
+    }
     //-----PUBLIC METHODS-----
     @Override
     public String getParentId()
@@ -144,6 +155,10 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private void setCanonicalAddress(String canonicalAddress)
     {
         this.canonicalAddress = canonicalAddress;
+    }
+    private void setSubResourceExtraProperty(String subResourceExtraProperty)
+    {
+        this.subResourceExtraProperty = subResourceExtraProperty;
     }
     @Override
     public String getTypeOf()

@@ -201,7 +201,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                         String label = resourceValue.getLabel();
 
                         String humanReadableFieldName = LucenePageIndexer.buildHumanReadableFieldName(fieldName);
-
+                        //if the label is null (e.g. for 'object resources'), add an empty label
+                        if(label == null){
+                            label ="";
+                        }
                         indexer.indexStringField(humanReadableFieldName, label);
                         //we'll mimic the behavior of String indexing, see above
                         if (label.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {

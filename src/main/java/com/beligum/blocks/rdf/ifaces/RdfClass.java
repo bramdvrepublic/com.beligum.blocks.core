@@ -163,10 +163,20 @@ public interface RdfClass extends RdfResource
     @JsonIgnore
     void setMainProperty(RdfProperty property);
 
+    @JsonIgnore
+    void setPropertyType(RdfProperty property);
+
     /**
      * The main property, see setMainProperty() for details
      */
     RdfProperty getMainProperty();
+
+    RdfProperty getPropertyType();
+
+    RdfProperty[] getLabelProperties();
+
+    @JsonIgnore
+    void setLabelProperties(RdfProperty[] property);
 
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>

@@ -332,7 +332,10 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             }
 
             String parsedQuery = sb.toString();
-
+            //when a query is empty, we don't find any results. Find everything instead.
+            if(StringUtils.isEmpty(parsedQuery)){
+                parsedQuery = "[* TO *]";
+            }
             //this check is necessary because in Lucene, '"bram"' doesn't seem to match 'bram'
             if (multiword) {
                 //Update: instead of searching for the exact phrase, we switched to an ordered search where

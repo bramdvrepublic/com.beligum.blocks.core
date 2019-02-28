@@ -23,6 +23,7 @@ import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfGeneratedValue;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.rdf.ontology.indexers.DefaultRdfPropertyIndexer;
@@ -44,6 +45,8 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     private RdfClass dataType;
     private InputType widgetType;
     private InputTypeConfig widgetConfig;
+    private RdfGeneratedValue generatedValue;
+
 
     //-----CONSTRUCTORS-----
     public RdfPropertyImpl(String name,
@@ -75,12 +78,27 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            URI[] isSameAs,
                            boolean isPublic)
     {
+        this(name, vocabulary, title, label, dataType, widgetType, widgetConfig, isSameAs, isPublic, null);
+
+    }
+    public RdfPropertyImpl(String name,
+                           RdfVocabulary vocabulary,
+                           MessagesFileEntry title,
+                           MessagesFileEntry label,
+                           RdfClass dataType,
+                           InputType widgetType,
+                           InputTypeConfig widgetConfig,
+                           URI[] isSameAs,
+                           boolean isPublic,
+                           RdfGeneratedValue generatedValue)
+    {
         super(name, vocabulary, title, label, isSameAs, isPublic, null);
 
         this.widgetType = widgetType;
         //make it uniform; no nulls
         this.widgetConfig = widgetConfig == null ? new InputTypeConfig() : widgetConfig;
         this.dataType = dataType;
+        this.generatedValue = generatedValue;
 
         //we don't have subclasses so don't worry about type checking (yet)
         vocabulary.addProperty(this);
@@ -93,6 +111,12 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
             if ((dataType.equals(XSD.DATE) && !widgetType.equals(InputType.Date))
                 || (dataType.equals(XSD.TIME) && !widgetType.equals(InputType.Time))
                 || (dataType.equals(XSD.DATE_TIME) && !widgetType.equals(InputType.DateTime))) {
+                throw new RuntimeException("Encountered RDF property with datatype-inputtype mismatch; "+this);
+            }
+            //check if the the immutable is a String or Integer
+            if (widgetType.equals(InputType.Immutable) && !(dataType.equals(XSD.STRING)
+                                                            || dataType.equals(XSD.INTEGER)
+                                                            || dataType.equals(XSD.INT))){
                 throw new RuntimeException("Encountered RDF property with datatype-inputtype mismatch; "+this);
             }
         }
@@ -138,6 +162,12 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     public Object prepareIndexValue(String value, Locale language) throws IOException
     {
         return DefaultRdfPropertyIndexer.INSTANCE.prepareIndexValue(this, value, language);
+    }
+
+    @Override
+    public String getGeneratedValue(String parameter) throws IOException
+    {
+        return this.generatedValue == null ? null : this.generatedValue.getValue(parameter);
     }
 
     //-----PROTECTED METHODS-----

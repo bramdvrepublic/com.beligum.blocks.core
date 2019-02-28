@@ -128,6 +128,7 @@ public class PageModel
             String title = null;
             String description = null;
             URI image = null;
+            String subResourceExtraProperty = null;
 
             //note: the getResourceSummarizer() never returns null (has a SimpleResourceIndexer as fallback),
             //but let's play safe
@@ -138,10 +139,11 @@ public class PageModel
                     title = summary.getTitle();
                     description = summary.getDescription();
                     image = summary.getImage();
+                    subResourceExtraProperty = summary.getSubResourceExtraProperty();
                 }
             }
 
-            retVal = new SimplePageIndexEntry(id, parentId, resource, type, title, lang, canonicalAddress, description, image);
+            retVal = new SimplePageIndexEntry(id, parentId, resource, type, title, lang, canonicalAddress, description, image, subResourceExtraProperty);
         }
 
         return retVal;

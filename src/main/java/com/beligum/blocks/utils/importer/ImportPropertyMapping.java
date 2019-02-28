@@ -22,7 +22,7 @@ import java.net.URI;
 /**
  * Created by bram on 4/5/16.
  */
-public class ImportPropertyMapping implements Serializable
+public class ImportPropertyMapping extends AbstractComparableProperty implements Serializable
 {
     //-----CONSTANTS-----
 
@@ -34,10 +34,11 @@ public class ImportPropertyMapping implements Serializable
     public ImportPropertyMapping()
     {
     }
-    public ImportPropertyMapping(URI rdfPropertyCurieName, String rdfPropertyValue)
+    public ImportPropertyMapping(URI rdfPropertyCurieName, String rdfPropertyValue, Integer index)
     {
         this.rdfPropertyCurieName = rdfPropertyCurieName;
         this.rdfPropertyValue = rdfPropertyValue;
+        super.index = index;
     }
 
     //-----PUBLIC METHODS-----
@@ -49,7 +50,10 @@ public class ImportPropertyMapping implements Serializable
     {
         return rdfPropertyValue;
     }
-
+    public Integer getIndex()
+    {
+        return index;
+    }
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----

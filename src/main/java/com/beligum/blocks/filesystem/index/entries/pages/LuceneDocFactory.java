@@ -155,6 +155,10 @@ public class LuceneDocFactory
                                    indexEntry.getCanonicalAddress() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getCanonicalAddress(),
                                    org.apache.lucene.document.Field.Store.NO));
 
+        retVal.add(new StringField(PageIndexEntry.Field.subResourceExtraProperty.name(),
+                                   indexEntry.getSubResourceExtraProperty() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getSubResourceExtraProperty(),
+                                   org.apache.lucene.document.Field.Store.NO));
+
         retVal.add(new TextField(IndexEntry.Field.description.name(),
                                  indexEntry.getDescription() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getDescription(),
                                  org.apache.lucene.document.Field.Store.NO));

@@ -39,6 +39,7 @@ public interface PageIndexEntry extends IndexEntry
         language,
         canonicalAddress,
         object,
+        subResourceExtraProperty
     }
 
     //-----VARIABLES-----
@@ -46,7 +47,10 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-
+    /**
+     * Get the type of a subResource
+     */
+    String getSubResourceExtraProperty();
     /**
      * Only for sub-resources: the id of the parent index entry or null if this entry is not a sub-resource
      */

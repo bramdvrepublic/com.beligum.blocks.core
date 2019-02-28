@@ -49,6 +49,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private ResourceSummarizer resourceSummarizer;
     private Set<RdfClass> superClasses;
     private RdfProperty mainProperty;
+    private RdfProperty propertyType;
+    private RdfProperty[] labelProperties;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -136,7 +138,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         }
 
         this.mainProperty = null;
-
+        this.labelProperties = null;
         //only add ourself to the selected vocabulary if we are a pure class
         if (this.vocabulary != null && this.getType().equals(Type.CLASS)) {
             this.vocabulary.addClass(this);
@@ -241,9 +243,29 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         }
     }
     @Override
+    public void setPropertyType(RdfProperty propertyType)
+    {
+        this.propertyType = propertyType;
+    }
+    @Override
     public RdfProperty getMainProperty()
     {
         return this.mainProperty;
+    }
+    @Override
+    public RdfProperty getPropertyType()
+    {
+        return this.propertyType;
+    }
+    @Override
+    public RdfProperty[] getLabelProperties()
+    {
+        return this.labelProperties;
+    }
+    @Override
+    public void setLabelProperties(RdfProperty[] labelProperties)
+    {
+            this.labelProperties = labelProperties;
     }
     @Override
     public ResourceSummarizer getResourceSummarizer()

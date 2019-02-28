@@ -39,10 +39,7 @@ import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.QueryResults;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailGraphQuery;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
@@ -483,6 +480,20 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         this.assertActive();
 
         return this.connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
+    }
+    /**
+     * Perform a graphquery (construct statements)
+     * http://docs.rdf4j.org/rdf-tutorial/#_example_16_sparql_construct_queries
+     * @param sparqlQuery
+     * @return
+     * @throws IOException
+     */
+    @Override
+    public GraphQuery graphQuery(String sparqlQuery) throws IOException
+    {
+        this.assertActive();
+
+        return this.connection.prepareGraphQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
     }
 
     //-----PROTECTED METHODS-----

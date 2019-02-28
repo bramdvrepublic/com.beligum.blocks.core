@@ -42,6 +42,11 @@ public class SesamePageIndexer implements PageIndexer
     //-----CONSTANTS-----
     private static final String DATA_SUBDIR = "data";
     private static final String INDEX_SUBDIR = "index";
+    //creates an index for all of the comma-separated options:
+    //defaults is just spoc and posc.
+    //Creating more indexes potentially speeds up querying (a lot), but also adds overhead for maintaining the indexes. Also, every added index takes up additional disk space.
+    //See http://docs.rdf4j.org/server-workbench-console/#_native_store_indexes
+    private static final String INDEXES = "spoc,posc,opsc,ospc";
 
     //-----VARIABLES-----
     private Object repositoryLock;
@@ -102,7 +107,7 @@ public class SesamePageIndexer implements PageIndexer
                         if (!Files.exists(dataDir)) {
                             Files.createDirectories(dataDir);
                         }
-                        NativeStore dataRepo = new NativeStore(dataDir.toFile());
+                        NativeStore dataRepo = new NativeStore(dataDir.toFile(), INDEXES);
 
                         //                    Works, but disabled because we implemented our own (and because we frequently had "AlreadyClosedException, Lucene Index is now corrupt")
                         //                    //instance the repository for the lucene index

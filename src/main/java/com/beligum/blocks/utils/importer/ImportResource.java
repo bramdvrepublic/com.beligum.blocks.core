@@ -16,17 +16,19 @@
 
 package com.beligum.blocks.utils.importer;
 
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import javax.xml.bind.annotation.XmlElement;
 import java.io.Serializable;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by bram on 4/5/16.
  */
-public class ImportResource implements Serializable
+public class ImportResource extends AbstractComparableProperty implements Serializable
 {
     //-----CONSTANTS-----
 
@@ -34,17 +36,24 @@ public class ImportResource implements Serializable
     //a list instead of a map allows us to add double mappings...
     @XmlElement
     private List<ImportPropertyMapping> properties;
+    @XmlElement
+    private List <ImportResourceObject> resourceObjects;
 
     //-----CONSTRUCTORS-----
     public ImportResource()
     {
         this.properties = new ArrayList<>();
+        this.resourceObjects = new ArrayList<>();
     }
 
     //-----PUBLIC METHODS-----
-    public void addRdfProperty(RdfProperty rdfProperty, String rdfPropertyValue)
+    public void addRdfProperty(RdfProperty rdfProperty, String rdfPropertyValue, Integer index)
     {
-        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurieName(), rdfPropertyValue));
+        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurieName(), rdfPropertyValue, index));
+    }
+    public void addResourceObject(ImportResourceObject resourceObject)
+    {
+        this.resourceObjects.add(resourceObject);
     }
     public ImportPropertyMapping getMapping(String rdfPropertyCurieName)
     {
@@ -60,9 +69,15 @@ public class ImportResource implements Serializable
 
         return retVal;
     }
+
     public List<ImportPropertyMapping> getRdfProperties()
     {
         return properties;
+    }
+
+    public List<ImportResourceObject> getResourceObjects()
+    {
+        return resourceObjects;
     }
 
     //-----PROTECTED METHODS-----

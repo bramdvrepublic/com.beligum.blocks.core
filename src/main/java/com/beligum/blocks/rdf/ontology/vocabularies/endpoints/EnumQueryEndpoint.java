@@ -90,7 +90,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
                 retVal = Arrays.asList(new AutocompleteSuggestion[] { new LangFilteredEnumSuggestion(this.getSuggestions().get(query), language) });
             }
             else {
-                retVal = Collections2.transform(this.getSuggestions().values(), new Function<EnumAutocompleteSuggestion, AutocompleteSuggestion>()
+                retVal = Collections2.transform(this.   getSuggestions().values(), new Function<EnumAutocompleteSuggestion, AutocompleteSuggestion>()
                 {
                     public AutocompleteSuggestion apply(EnumAutocompleteSuggestion from)
                     {

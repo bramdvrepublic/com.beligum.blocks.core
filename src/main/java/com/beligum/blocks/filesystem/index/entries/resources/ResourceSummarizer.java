@@ -52,18 +52,28 @@ public interface ResourceSummarizer
         String getTitle();
         String getDescription();
         URI getImage();
+        String getSubResourceExtraProperty();
     }
     class DefaultSummarizedResource implements SummarizedResource
     {
         private String title;
         private String description;
         private URI image;
+        private String subResourceExtraProperty;
 
+        public DefaultSummarizedResource(String title, String description, URI image, String subResourceExtraProperty)
+        {
+            this.title = title;
+            this.description = description;
+            this.image = image;
+            this.subResourceExtraProperty = subResourceExtraProperty;
+        }
         public DefaultSummarizedResource(String title, String description, URI image)
         {
             this.title = title;
             this.description = description;
             this.image = image;
+            this.subResourceExtraProperty = null;
         }
 
         @Override
@@ -80,6 +90,11 @@ public interface ResourceSummarizer
         public URI getImage()
         {
             return image;
+        }
+        @Override
+        public String getSubResourceExtraProperty()
+        {
+            return subResourceExtraProperty;
         }
     }
 }

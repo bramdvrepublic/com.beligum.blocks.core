@@ -17,6 +17,7 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
+import org.eclipse.rdf4j.query.GraphQuery;
 import org.eclipse.rdf4j.query.TupleQuery;
 
 import java.io.IOException;
@@ -60,6 +61,16 @@ public interface SparqlQueryConnection extends QueryConnection
      * Build a low-level query object from the supplied SPARQL query
      */
     TupleQuery query(String sparqlQuery) throws IOException;
+
+    /**
+     *   Perform a graphquery (construct statements)
+     *   http://docs.rdf4j.org/rdf-tutorial/#_example_16_sparql_construct_queries
+     * @param sparqlQuery
+     * @return
+     * @throws IOException
+     */
+    GraphQuery graphQuery(String sparqlQuery) throws IOException;
+
 
     //-----PROTECTED METHODS-----
 
