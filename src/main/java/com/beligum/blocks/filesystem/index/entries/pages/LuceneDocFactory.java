@@ -17,7 +17,7 @@
 package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;

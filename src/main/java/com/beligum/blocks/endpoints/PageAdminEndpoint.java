@@ -25,7 +25,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
@@ -36,8 +36,8 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Classes;
-import com.beligum.blocks.rdf.sources.NewPageSource;
+import com.beligum.blocks.rdf.ontologies.local.factories.Classes;
+import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TagTemplate;
@@ -226,8 +226,8 @@ public class PageAdminEndpoint
                         //should always be allowed because they're transparent to the rdf parser.
 
                         //request the properties for the current context
-                        Iterable<String> rdfProperties = htmlTemplate.getProperties(true, false, typeOf.getVocabulary(), typeOf);
-                        Iterable<String> nonRdfProperties = htmlTemplate.getProperties(false, true, typeOf.getVocabulary(), typeOf);
+                        Iterable<String> rdfProperties = htmlTemplate.getProperties(true, false, typeOf.getOntology(), typeOf);
+                        Iterable<String> nonRdfProperties = htmlTemplate.getProperties(false, true, typeOf.getOntology(), typeOf);
 
                         boolean hasRdfProperties = rdfProperties.iterator().hasNext();
                         boolean hasNonRdfProperties = nonRdfProperties.iterator().hasNext();

@@ -17,12 +17,10 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -32,7 +30,6 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
-import javax.xml.bind.annotation.XmlSchema;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;

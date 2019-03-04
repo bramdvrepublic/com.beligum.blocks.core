@@ -19,16 +19,15 @@ package com.beligum.blocks.filesystem.pages;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.blocks.config.InputType;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.utils.importer.ImportTools;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.index.reindex.ReindexTask;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
-import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
-import com.beligum.blocks.rdf.sources.NewPageSource;
+import com.beligum.blocks.rdf.ontologies.RDF;
+import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang.StringUtils;
@@ -136,7 +135,7 @@ public class PageFixTask extends ReindexTask
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
                             propertyAttributes.populateMap(attrMap, false);
 
-                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(com.beligum.blocks.rdf.ontology.vocabularies.XSD.STRING.getCurieName().toString())) {
+                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(XSD.STRING.getCurieName().toString())) {
                                 // if we reach this point, we are dealing with a <blocks-fact-entry> start tag that has a datatype="xsd:string",
                                 // but was later upgraded to rdf:langString. Following our own rules in RDF.LANGSTRING,
                                 // we'll delete the datatype-attribute.

@@ -18,19 +18,18 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.RdfClassImpl;
-import com.beligum.blocks.rdf.ontology.vocabularies.LocalVocabulary;
-import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LocalQueryEndpoint;
+import com.beligum.blocks.rdf.RdfClassImpl;
+import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -41,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
-import static gen.com.beligum.base.core.constants.base.core.ADMIN_ROLE_NAME;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
@@ -54,7 +52,7 @@ public class RdfEndpoint
     //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
     //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
     public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
-                                                                LocalVocabulary.INSTANCE,
+                                                                Local.INSTANCE,
                                                                 core.Entries.rdfClassAllTitle,
                                                                 core.Entries.rdfClassAllLabel,
                                                                 new URI[] {},

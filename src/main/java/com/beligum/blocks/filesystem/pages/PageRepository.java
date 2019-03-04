@@ -30,8 +30,6 @@ import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.logger.PageLogEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.sources.NewPageSource;
-import com.beligum.blocks.rdf.sources.PageSource;
 import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.FileContext;

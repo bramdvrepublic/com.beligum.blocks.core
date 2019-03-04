@@ -63,7 +63,7 @@ public class HtmlRdfContext
 
         //Note: the RDFa 1.1 spec clearly states the prefix mappings are locally scoped, which means they have to be organized in
         // a stack and built up/torn down according to the html tags.
-        //Also note that this represents a stack of maps: the idea is to build a new map (or context) that's (possibly) based on the previous context,$
+        //Also note that this represents a stack of maps: the idea is to build a new map (or context) that's (possibly) based on the previous context,
         // and push it on the stack
         this.currentPrefixesStack = new Stack<>();
         this.currentPrefixesStack.push(getDefaultRdfPrefixes());

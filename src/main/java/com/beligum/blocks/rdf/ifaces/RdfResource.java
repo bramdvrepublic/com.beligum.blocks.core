@@ -26,9 +26,33 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public interface RdfResource extends JsonObject
 {
+    enum Type
+    {
+        ONTOLOGY,
+        CLASS,
+        PROPERTY,
+        DATATYPE,
+    }
+
     /**
-     * Indicates whether this resource should be added to public comboboxes and so on (eg. the ones in the UI on the client side)
+     * Return the type of this resource, see RdfResource.Type.
+     * Since RdfProperty and RdfDataType are both subclasses of RdfClass,
+     * this will allow us to detect pure classes (that are not a property or datatype).
+     */
+    Type getType();
+
+    /**
+     * The short, well formed (capitalized and/or camel-cased) name that needs to be appended to the context of this resource to get the full describing URI for this class.
+     * Eg. WaterWell, sameAs, Class, XMLLiteral, ...
+     */
+    String getName();
+
+    /**
+     * Indicates whether this resource should be exposed to the end-users while administering pages.
+     * Eg. added to public comboboxes and so on (eg. the ones in the UI on the client side)
      */
     @JsonIgnore
     boolean isPublic();
+
+
 }

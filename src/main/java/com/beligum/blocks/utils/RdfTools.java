@@ -18,14 +18,14 @@ package com.beligum.blocks.utils;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -144,7 +144,7 @@ public class RdfTools
         //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
         URI retVal = null;
 
-        RdfVocabulary vocab = RdfFactory.getVocabularyForPrefix(resourceTypeCurie.getScheme());
+        RdfOntology vocab = RdfFactory.getOntologyForPrefix(resourceTypeCurie.getScheme());
         if (vocab != null) {
             retVal = vocab.resolve(resourceTypeCurie.getPath());
         }

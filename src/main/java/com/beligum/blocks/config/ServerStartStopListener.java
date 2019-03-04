@@ -26,6 +26,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.Config;

@@ -18,7 +18,7 @@ package com.beligum.blocks.templating.blocks.analyzer;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.sources.PageSource;
+import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;

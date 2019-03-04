@@ -20,7 +20,7 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.filesystem.index.ifaces.RdfTupleResult;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
+import com.beligum.blocks.rdf.ontologies.XSD;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;

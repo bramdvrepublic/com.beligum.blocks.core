@@ -73,7 +73,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
         //-----STATICS-----
         STATIC: {
-            //will keep an index of all registered properties (to back-reference from their overlays)
+            //will keep an index of all registered surfaces (to back-reference from their overlays)
             INDEX: {},
             INDEX_ATTR: "data-index",
 
@@ -101,17 +101,33 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Reverse-lookup the surface belonging to the supplied element based on it's id attribute
-             *
-             * @param element
+             * Reverse-lookup the surface data structure belonging to the supplied overlay element
+             * @param overlayEl
              */
-            lookup: function (element)
+            lookup: function (overlayEl)
             {
                 var retVal = null;
 
-                //note that only the active dropspot is visible (and there should only be one)
-                if (element && element.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
-                    retVal = blocks.elements.Surface.INDEX[element.attr(blocks.elements.Surface.INDEX_ATTR)];
+                if (overlayEl && overlayEl.hasAttribute(blocks.elements.Surface.INDEX_ATTR)) {
+                    retVal = blocks.elements.Surface.INDEX[overlayEl.attr(blocks.elements.Surface.INDEX_ATTR)];
+                }
+
+                return retVal;
+            },
+
+            /**
+             * Reverse-lookup the surface data structure belonging to the supplied DOM element
+             * @param element
+             */
+            domLookup: function (element)
+            {
+                var retVal = null;
+
+                if (element) {
+                    var surface = element.data(blocks.elements.Surface.INDEX_ATTR);
+                    if (surface) {
+                        retVal = surface;
+                    }
                 }
 
                 return retVal;
@@ -155,6 +171,18 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             isProperty: function (element)
             {
                 return element.hasAttribute("property") || element.hasAttribute("data-property");
+            },
+
+            /**
+             * Combination of all the previous method into one with optional filters to specify what you're looking for
+             */
+            isSurface: function (element, disableContainers, disableRows, disableColumns, disableBlocks, disableProperties)
+            {
+                return (!disableContainers && blocks.elements.Surface.isContainer(element))
+                    || (!disableRows && blocks.elements.Surface.isRow(element))
+                    || (!disableColumns && blocks.elements.Surface.isColumn(element))
+                    || (!disableBlocks && blocks.elements.Surface.isBlock(element))
+                    || (!disableProperties && blocks.elements.Surface.isProperty(element));
             },
 
             /**
@@ -242,6 +270,12 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //will be used to back-reference from the overlay to this object
             this.id = Commons.generateId();
             blocks.elements.Surface.INDEX[this.id] = this;
+
+            //if we have an element, we'll attach the id of this surface to it using jQuerys data
+            if (element) {
+                //let's re-use the index attribute name as the key to store the data under
+                element.data(blocks.elements.Surface.INDEX_ATTR, this);
+            }
 
             this.type = this._getType();
             this.name = this._getName();
@@ -376,7 +410,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         /**
          * Reset any extra stored information after previewing possible dropspots.
          */
-        resetPreviewMoveTo: function()
+        resetPreviewMoveTo: function ()
         {
             //reset the stats that were filled in _selectDropspot()
             this.dropspotStats = undefined;
@@ -450,7 +484,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * @returns {*}
          * @private
          */
-        _getTagName: function()
+        _getTagName: function ()
         {
             var retVal = null;
 
@@ -1007,7 +1041,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @private
          */
-        _simplify: function(deep)
+        _simplify: function (deep)
         {
             //NOOP: by default, we don't do anything specific,
             //except for going deeper if needed

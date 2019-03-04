@@ -16,17 +16,20 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
 import org.eclipse.rdf4j.model.Value;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by bram on 2/26/16.
@@ -56,16 +59,6 @@ public interface RdfProperty extends RdfClass
     InputTypeConfig getWidgetConfig();
 
     /**
-     * A map of key/value entries that contain specific settings for the input widget type
-     */
-    void setWidgetConfig(InputTypeConfig config);
-
-    /**
-     * An instance (eg. for enums) of an endpoint to use while looking up possible values of this property.
-     */
-    void setEndpoint(RdfQueryEndpoint endpoint);
-
-    /**
      * This method gets called when this property is being indexed by our custom (currently only Lucene) indexer.
      * It should call the right method on the indexer to index the property value as closely as possible.
      * @return the value-object as it was indexed
@@ -76,4 +69,5 @@ public interface RdfProperty extends RdfClass
      * Converts the supplied value to an object to be used during index lookups
      */
     Object prepareIndexValue(String value, Locale language) throws IOException;
+
 }

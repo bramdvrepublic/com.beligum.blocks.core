@@ -17,7 +17,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -43,32 +43,13 @@ import java.util.Set;
 //@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
 public interface RdfClass extends RdfResource
 {
-    enum Type
-    {
-        CLASS,
-        PROPERTY,
-        DATATYPE,
-    }
-
-    /**
-     * Since both RdfProperty and RdfDataType are both subclasses of RdfClass,
-     * this will allow us to detect pure classes (that are not a property or datatype).
-     */
-    Type getType();
-
-    /**
-     * The short, capitalized and camel-cased name that needs to be appended to the vocab to get the full describing URI for this class.
-     * Eg. WaterWell
-     */
-    String getName();
-
     /**
      * The site-specific ontology URI for this class. Together with the name, it forms the full URI.
      * Eg. http://www.reinvention.be/ontology/
      */
     //note: data (URI and prefix) serialized in getFullName and getCurieName
     @JsonIgnore
-    RdfVocabulary getVocabulary();
+    RdfOntology getOntology();
 
     /**
      * The full, absolute URI of this class that is built from the vocabulary URI and the name
@@ -150,6 +131,11 @@ public interface RdfClass extends RdfResource
     ResourceSummarizer getResourceSummarizer();
 
     /**
+     * The main property, see setMainProperty() for details
+     */
+    RdfProperty getMainProperty();
+
+    /**
      * Setter for the value above. Note that this was pulled out of the constructor and made public to allow us to set it in a separate mapping.
      * This was because there was a cyclic static initialization dependency while creating the objects: terms relied on classes which relied on terms (to initialize this set).
      */
@@ -162,11 +148,6 @@ public interface RdfClass extends RdfResource
      */
     @JsonIgnore
     void setMainProperty(RdfProperty property);
-
-    /**
-     * The main property, see setMainProperty() for details
-     */
-    RdfProperty getMainProperty();
 
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>

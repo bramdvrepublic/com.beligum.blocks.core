@@ -18,7 +18,7 @@ package com.beligum.blocks.templating.blocks.analyzer;
 
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
-import com.beligum.blocks.rdf.sources.PageSource;
+import com.beligum.blocks.filesystem.pages.PageSource;
 import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.EndTag;

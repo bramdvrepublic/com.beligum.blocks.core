@@ -29,7 +29,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.controllers.BlocksReferenceController;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.Enums;
@@ -726,13 +726,13 @@ public abstract class HtmlTemplate
      * @param defaultVocab            the vocabulary context in which this properties request is performed
      * @param defaultClass            the rdf class context in which this properties request is performed
      */
-    public Iterable<String> getProperties(boolean includeRdfProperties, boolean includeNonRdfProperties, RdfVocabulary defaultVocab, RdfClass defaultClass)
+    public Iterable<String> getProperties(boolean includeRdfProperties, boolean includeNonRdfProperties, RdfOntology defaultVocab, RdfClass defaultClass)
     {
         //this initialization will make calling this method and parsing below a lot easier
         Iterable<String> retVal = Collections.emptySet();
 
         //use the vocab of the class if the default vocab is not specified
-        final RdfVocabulary finalDefaultVocab = defaultVocab == null && defaultClass != null ? defaultClass.getVocabulary() : defaultVocab;
+        final RdfOntology finalDefaultVocab = defaultVocab == null && defaultClass != null ? defaultClass.getOntology() : defaultVocab;
 
         //this function prefixes the properties with the prefix of the vocab
         // if it's set and it doesn't have another prefix.

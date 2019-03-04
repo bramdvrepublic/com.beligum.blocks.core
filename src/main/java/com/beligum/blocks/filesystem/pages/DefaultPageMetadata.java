@@ -1,20 +1,13 @@
 package com.beligum.blocks.filesystem.pages;
 
-import com.beligum.base.config.ifaces.SecurityConfig;
-import com.beligum.base.security.PermissionRole;
-import com.beligum.base.server.R;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
-import com.beligum.blocks.rdf.ontology.vocabularies.local.factories.Terms;
-import com.beligum.blocks.rdf.sources.PageSource;
-import com.beligum.blocks.security.ifaces.Acl;
+import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
-import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
