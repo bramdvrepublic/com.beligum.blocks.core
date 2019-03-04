@@ -379,7 +379,7 @@ public class Settings
     }
     public URI getRdfOntologyUri()
     {
-        if (!this.triedRdfOntologyUri) {
+        if (!this.triedRdfOnto logyUri) {
             String uri = R.configuration().getString(ONTOLOGY_PREFIX + ".uri");
             if (!StringUtils.isEmpty(uri)) {
                 try {
@@ -392,6 +392,7 @@ public class Settings
 
             this.triedRdfOntologyUri = true;
         }
+
         return this.cachedRdfOntologyUri;
     }
     public String getRdfOntologyPrefix()

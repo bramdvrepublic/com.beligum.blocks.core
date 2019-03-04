@@ -144,9 +144,9 @@ public class RdfTools
         //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
         URI retVal = null;
 
-        RdfOntology vocab = RdfFactory.getOntologyForPrefix(resourceTypeCurie.getScheme());
-        if (vocab != null) {
-            retVal = vocab.resolve(resourceTypeCurie.getPath());
+        RdfOntology ontology = RdfFactory.getOntologyForPrefix(resourceTypeCurie.getScheme());
+        if (ontology != null) {
+            retVal = ontology.resolve(resourceTypeCurie.getPath());
         }
         else {
             Logger.warn("Encountered unknown curie schema, returning null for; " + resourceTypeCurie);
@@ -421,7 +421,7 @@ public class RdfTools
                             break;
 
                         case 3:
-                            this.resourceClass = RdfFactory.getClassForResourceType(URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + this.path.getName(1).toString()));
+                            this.resourceClass = RdfFactory.getClassForResourceType(Settings.instance().getRdfOntologyPrefix() + ":" + this.path.getName(1).toString());
                             this.resourceId = this.path.getName(2).toString();
                             this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
 

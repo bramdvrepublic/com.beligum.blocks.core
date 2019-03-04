@@ -26,6 +26,7 @@ import java.net.URI;
 
 /**
  * See http://rdf4j.org/doc/4/apidocs/index.html?org/openrdf/model/vocabulary/XMLSchema.html
+ *
  * Created by bram on 2/27/16.
  */
 public final class XSD extends RdfOntologyImpl

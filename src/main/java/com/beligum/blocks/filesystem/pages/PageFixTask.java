@@ -123,7 +123,7 @@ public class PageFixTask extends ReindexTask
             if (propertyEl != null) {
                 String resourceType = HtmlTemplate.getPropertyAttribute(propertyEl.getStartTag());
                 if (!StringUtils.isEmpty(resourceType)) {
-                    RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(resourceType));
+                    RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceType);
                     if (rdfClass != null && rdfClass instanceof RdfProperty) {
                         RdfProperty rdfProperty = (RdfProperty) rdfClass;
                         StartTag propertyStartTag = propertyEl.getStartTag();

@@ -38,6 +38,8 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     private final Map<URI, RdfResource> allTypes;
     private final Map<URI, RdfClass> allClasses;
     private final Map<URI, RdfClass> publicClasses;
+    private final Map<URI, RdfDataType> allDataTypes;
+    private final Map<URI, RdfDataType> publicDataTypes;
     private final Map<URI, RdfProperty> allProperties;
     private final Map<URI, RdfProperty> publicProperties;
 
@@ -98,6 +100,7 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         //        this.allTypes = new HashMap<>();
         //        this.allClasses = new HashMap<>();
         //        this.publicClasses = new HashMap<>();
+        //        this.allDataTypes = new HashMap<>();
         //        this.publicDataTypes = new HashMap<>();
         //        this.allProperties = new HashMap<>();
         //        this.publicProperties = new HashMap<>();
@@ -114,7 +117,7 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     {
         return Type.ONTOLOGY;
     }
-    //We'll overload the name method to return the full URI of the namespace
+    //We'll overload the name method to return the full URI of the namespace, which is the only true identifier of an ontology
     @Override
     public String getName()
     {
@@ -151,6 +154,16 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     public Map<URI, RdfClass> getPublicClasses()
     {
         return publicClasses;
+    }
+    @Override
+    public Map<URI, RdfDataType> getAllDataTypes()
+    {
+        return allDataTypes;
+    }
+    @Override
+    public Map<URI, RdfDataType> getPublicDataTypes()
+    {
+        return publicDataTypes;
     }
     @Override
     public Map<URI, RdfProperty> getAllProperties()

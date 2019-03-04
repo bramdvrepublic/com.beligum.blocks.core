@@ -179,7 +179,7 @@ public interface RdfClass extends RdfResource
             JsonNode node = oc.readTree(p);
             String value = node.textValue();
 
-            return value == null ? null : RdfFactory.getClassForResourceType(URI.create(value));
+            return value == null ? null : RdfFactory.getClassForResourceType(value);
         }
     }
 }

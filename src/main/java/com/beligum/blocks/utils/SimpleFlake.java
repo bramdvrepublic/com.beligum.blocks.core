@@ -26,7 +26,27 @@ import java.util.concurrent.ThreadLocalRandom;
  * Created by wouter on 2/05/15.
  * <p/>
  * copied from: https://github.com/jschwartz73/simpleflake-java/blob/master/src/main/java/com/outjected/simpleflake/SimpleFlake.java
+ * ----------------------------------
+ * Simpleflake aims to create a Twitter Snowflake compatible identifier without coordination between generators.
+ *
+ * The result is a signed 64 bit long broken down as follows
+ *
+ * bit 64 - Sign just like in java
+ *
+ * bit 63-23 - Timestamp in millisecons utilizing same arbritray EPOCH as twiiter(1288834974657L) or Thu, 04 Nov 2010 01:42:54 GMT
+ *
+ * bit 22-1 - Random bits
+ *
+ * While this does not provide exact ordering it does provide ordering by the millisecond. ID’s generated within the same millisecond will be random.
+ *
+ * Care must be taken to ensure the server has accurate time (ntp).
+ *
+ * While duplicates are prevented when utilizing a single instance, if multiple instances are created either in the same or different VM’s collisions are possible though unlikely at low insert rates. Once/if collisions becomes an issue you can gracefully migrate to Twitter snowflake since the EPOCH and format are the same.
+ *
+ * Simpleflake for Java is inspired by Simpleflake for Python.
+ * ----------------------------------
  * <p/>
+ *
  * See: http://engineering.custommade.com/simpleflake-distributed-id-generation-for-the-lazy/
  */
 

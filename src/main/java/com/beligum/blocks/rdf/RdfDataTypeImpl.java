@@ -55,6 +55,16 @@ public class RdfDataTypeImpl extends RdfClassImpl implements RdfDataType
         {
             super(rdfFactory, rdfDataType);
         }
+
+        @Override
+        public RdfDataType create()
+        {
+            if (this.rdfResource.ontology != null && this.rdfResource.getType().equals(Type.DATATYPE)) {
+                this.rdfResource.ontology.addDataType(this.rdfResource);
+            }
+
+            return super.create();
+        }
     }
 
 }

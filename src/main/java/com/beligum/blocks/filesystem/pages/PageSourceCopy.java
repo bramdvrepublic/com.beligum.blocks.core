@@ -73,7 +73,7 @@ public class PageSourceCopy extends PageSource
             else {
                 //since we're making a copy of a page, it makes sense to use the class of that page
                 String typeOfStr = this.htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
-                RdfClass typeOf = StringUtils.isEmpty(typeOfStr) ? Classes.DEFAULT_CLASS : RdfFactory.getClassForResourceType(URI.create(typeOfStr));
+                RdfClass typeOf = StringUtils.isEmpty(typeOfStr) ? Classes.DEFAULT_CLASS : RdfFactory.getClassForResourceType(typeOfStr);
                 if (typeOf==null) {
                     throw new IOException("Unable to parse the html @typeof attribute to a valid RDF class; " + this.document);
                 }

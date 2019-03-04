@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
 
 import java.net.URI;
+import java.util.Objects;
 
 public class RdfNamespaceImpl implements RdfNamespace
 {
@@ -38,4 +39,19 @@ public class RdfNamespaceImpl implements RdfNamespace
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+
+    //-----MGMT METHODS-----
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof RdfNamespaceImpl)) return false;
+        RdfNamespaceImpl that = (RdfNamespaceImpl) o;
+        return Objects.equals(getUri(), that.getUri());
+    }
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getUri());
+    }
 }

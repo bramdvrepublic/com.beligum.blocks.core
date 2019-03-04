@@ -20,7 +20,7 @@ import com.beligum.base.database.models.ifaces.JsonObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * This is the top-level interface for all RDF(S) related classes
+ * This is the top-level interface for all RDF(S) related structures.
  *
  * Created by bram on 3/2/16.
  */

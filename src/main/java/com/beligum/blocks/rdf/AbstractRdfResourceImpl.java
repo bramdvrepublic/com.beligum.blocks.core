@@ -72,4 +72,26 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+
+    //-----MANAGEMENT METHODS-----
+    @Override
+    public String toString()
+    {
+        return "" + this.getName();
+    }
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof RdfResource)) return false;
+
+        RdfResource rdfResource = (RdfResource) o;
+
+        return getName() != null ? getName().equals(rdfResource.getName()) : rdfResource.getName() == null;
+    }
+    @Override
+    public int hashCode()
+    {
+        return getName() != null ? getName().hashCode() : 0;
+    }
 }

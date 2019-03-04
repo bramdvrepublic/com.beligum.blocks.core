@@ -173,6 +173,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     {
         return "" + this.getCurieName();
     }
+    /**
+     * Note that we overload the equals() method of AbstractRdfResourceImpl to use the CURIE instead of the name
+     * because two classes with the same name, but in different ontologies are not the same thing, but I guess
+     * we can assume two classes (or properties or datatypes) with the same CURIE to be equal, right?
+     */
     @Override
     public boolean equals(Object o)
     {
@@ -181,7 +186,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
         RdfClassImpl rdfClass = (RdfClassImpl) o;
 
-        //I guess we can assume two classes (or properties) with the same CURIE to be equal, right?
         return getCurieName() != null ? getCurieName().equals(rdfClass.getCurieName()) : rdfClass.getCurieName() == null;
     }
     @Override

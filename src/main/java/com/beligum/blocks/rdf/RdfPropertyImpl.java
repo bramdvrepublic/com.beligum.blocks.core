@@ -103,7 +103,9 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         public RdfProperty create()
         {
             //we don't have subclasses so don't worry about type checking (yet)
-            this.rdfResource.ontology.addProperty(this.rdfResource);
+            if (this.rdfResource.ontology != null && this.rdfResource.getType().equals(Type.PROPERTY)) {
+                this.rdfResource.ontology.addProperty(this.rdfResource);
+            }
 
             if (this.rdfResource.dataType == null) {
                 Logger.error("Datatype of " + this.rdfResource.getName() + " (" + this.rdfResource.getFullName() + ") is null! This is a static-initializer bug and should be fixed");
@@ -120,15 +122,21 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
             return super.create();
         }
 
-        public Builder widgetConfig(InputTypeConfig config)
+        public Builder dataType(RdfClass dataType)
         {
-            this.rdfResource.widgetConfig = config;
+            this.rdfResource.dataType = dataType;
 
             return this;
         }
-        public Builder setEndpoint(RdfQueryEndpoint endpoint)
+        public Builder widgetType(InputType widgetType)
         {
-            this.rdfResource.queryEndpoint = endpoint;
+            this.rdfResource.widgetType = widgetType;
+
+            return this;
+        }
+        public Builder widgetConfig(InputTypeConfig widgetConfig)
+        {
+            this.rdfResource.widgetConfig = widgetConfig;
 
             return this;
         }

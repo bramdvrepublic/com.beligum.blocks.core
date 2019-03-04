@@ -478,7 +478,7 @@ public class PageAdminEndpoint
                     boolean allClassesOk = true;
                     Set<RdfClass> rdfClasses = new HashSet<>();
                     for (String c : classCurie) {
-                        RdfClass rdfClass = RdfFactory.getClassForResourceType(URI.create(c));
+                        RdfClass rdfClass = RdfFactory.getClassForResourceType(c);
                         if (rdfClass == null) {
                             retVal =
                                             Response.ok("Can't start an index all action because you supplied an unknown 'class' parameter: '" + c +

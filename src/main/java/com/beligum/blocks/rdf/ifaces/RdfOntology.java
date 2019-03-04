@@ -69,6 +69,20 @@ public interface RdfOntology extends RdfCompositeResource
      */
     //avoids infinite recursion
     @JsonIgnore
+    Map<URI, RdfDataType> getAllDataTypes();
+
+    /**
+     * Returns all properties in this vocabulary that are accessible from the client-side UI
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Map<URI, RdfDataType> getPublicDataTypes();
+
+    /**
+     * Returns all properties in this vocabulary
+     */
+    //avoids infinite recursion
+    @JsonIgnore
     Map<URI, RdfProperty> getAllProperties();
 
     /**
@@ -77,15 +91,5 @@ public interface RdfOntology extends RdfCompositeResource
     //avoids infinite recursion
     @JsonIgnore
     Map<URI, RdfProperty> getPublicProperties();
-
-    /**
-     * Call this method to add a class to the vocabulary (probably only during static initialization)
-     */
-    void addClass(RdfClass rdfClass);
-
-    /**
-     * Call this method to add a property to the vocabulary (probably only during static initialization)
-     */
-    void addProperty(RdfProperty rdfProperty);
 
 }

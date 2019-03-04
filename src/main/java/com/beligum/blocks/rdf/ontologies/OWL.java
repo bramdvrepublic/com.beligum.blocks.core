@@ -42,6 +42,8 @@ import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
  * will cause it to become an OWL 2 Full ontology and may have other,
  * unexpected, consequences.
  *
+ * For RDF schema, see https://www.w3.org/2002/07/owl#
+ *
  * Created by bram on 2/28/16.
  */
 public final class OWL extends RdfOntologyImpl
@@ -78,7 +80,7 @@ public final class OWL extends RdfOntologyImpl
                           .label(Entries.OWL_label_Class)
                           .create();
 
-        Class = rdfFactory.newClass("Thing")
+        Thing = rdfFactory.newClass("Thing")
                           .ontology(this)
                           .title(Entries.OWL_title_Thing)
                           .label(Entries.OWL_label_Thing)
@@ -88,6 +90,7 @@ public final class OWL extends RdfOntologyImpl
                            .ontology(this)
                            .title(Entries.OWL_title_sameAs)
                            .label(Entries.OWL_label_sameAs)
+                           .dataType(Thing)
                            .create();
     }
 
