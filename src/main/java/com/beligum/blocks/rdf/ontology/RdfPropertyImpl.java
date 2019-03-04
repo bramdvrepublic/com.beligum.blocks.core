@@ -22,16 +22,14 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfGeneratedValue;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.rdf.ifaces.*;
 import com.beligum.blocks.rdf.ontology.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Locale;
 
 /**
@@ -46,7 +44,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     private InputType widgetType;
     private InputTypeConfig widgetConfig;
     private RdfGeneratedValue generatedValue;
-
+    private RdfInitialValue initialValue;
 
     //-----CONSTRUCTORS-----
     public RdfPropertyImpl(String name,
@@ -81,6 +79,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         this(name, vocabulary, title, label, dataType, widgetType, widgetConfig, isSameAs, isPublic, null);
 
     }
+
     public RdfPropertyImpl(String name,
                            RdfVocabulary vocabulary,
                            MessagesFileEntry title,
@@ -92,6 +91,21 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            boolean isPublic,
                            RdfGeneratedValue generatedValue)
     {
+        this(name, vocabulary, title, label, dataType, widgetType, widgetConfig, isSameAs, isPublic, null, null);
+
+    }
+    public RdfPropertyImpl(String name,
+                           RdfVocabulary vocabulary,
+                           MessagesFileEntry title,
+                           MessagesFileEntry label,
+                           RdfClass dataType,
+                           InputType widgetType,
+                           InputTypeConfig widgetConfig,
+                           URI[] isSameAs,
+                           boolean isPublic,
+                           RdfGeneratedValue generatedValue,
+                           RdfInitialValue initialValue)
+    {
         super(name, vocabulary, title, label, isSameAs, isPublic, null);
 
         this.widgetType = widgetType;
@@ -99,7 +113,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         this.widgetConfig = widgetConfig == null ? new InputTypeConfig() : widgetConfig;
         this.dataType = dataType;
         this.generatedValue = generatedValue;
-
+        this.initialValue = initialValue;
         //we don't have subclasses so don't worry about type checking (yet)
         vocabulary.addProperty(this);
 
@@ -168,6 +182,12 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     public String getGeneratedValue(String parameter) throws IOException
     {
         return this.generatedValue == null ? null : this.generatedValue.getValue(parameter);
+    }
+
+    @Override
+    public String getInitialValue() throws IOException, URISyntaxException
+    {
+        return this.initialValue == null ? null : this.initialValue.getValue();
     }
 
     //-----PROTECTED METHODS-----

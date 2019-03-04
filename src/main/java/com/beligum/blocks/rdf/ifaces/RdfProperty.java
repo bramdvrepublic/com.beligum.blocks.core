@@ -27,6 +27,7 @@ import org.eclipse.rdf4j.model.Value;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Locale;
 
 /**
@@ -86,4 +87,11 @@ public interface RdfProperty extends RdfClass
      */
     String getGeneratedValue(String parameter) throws IOException;
 
+    /**
+     * Allows returning an initial value for this resource
+     * (that will be loaded when constructing the block)
+     *
+     * @return the generated value as a String
+     */
+    String getInitialValue() throws IOException, URISyntaxException;
 }
