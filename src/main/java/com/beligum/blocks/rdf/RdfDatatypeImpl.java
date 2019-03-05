@@ -16,23 +16,20 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.blocks.rdf.ifaces.RdfDataType;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
-
-import java.net.URI;
+import com.beligum.blocks.exceptions.RdfInitializationException;
+import com.beligum.blocks.rdf.ifaces.RdfDatatype;
 
 /**
  * Created by bram on 2/25/16.
  */
-public class RdfDataTypeImpl extends RdfClassImpl implements RdfDataType
+public class RdfDatatypeImpl extends RdfClassImpl implements RdfDatatype
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    RdfDataTypeImpl(String name)
+    RdfDatatypeImpl(String name)
     {
         super(name);
     }
@@ -49,15 +46,15 @@ public class RdfDataTypeImpl extends RdfClassImpl implements RdfDataType
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    public static class Builder extends AbstractRdfOntologyMember.Builder<RdfDataType, RdfDataTypeImpl, RdfDataTypeImpl.Builder>
+    public static class Builder extends AbstractRdfOntologyMember.Builder<RdfDatatype, RdfDatatypeImpl, RdfDatatypeImpl.Builder>
     {
-        Builder(RdfFactory rdfFactory, RdfDataTypeImpl rdfDataType)
+        Builder(RdfFactory rdfFactory, RdfDatatypeImpl rdfDataType)
         {
             super(rdfFactory, rdfDataType);
         }
 
         @Override
-        public RdfDataType create()
+        public RdfDatatype create() throws RdfInitializationException
         {
             //Note: this call will add us to the ontology
             return super.create();

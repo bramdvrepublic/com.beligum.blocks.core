@@ -16,11 +16,10 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.blocks.rdf.RdfFactory;
+import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -67,18 +66,18 @@ public interface RdfOntology extends RdfResource
     Map<URI, RdfClass> getPublicClasses();
 
     /**
-     * Returns all properties in this vocabulary
+     * Returns all properties of all classes in this vocabulary
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfDataType> getAllDataTypes();
+    Map<URI, RdfProperty> getAllClassProperties();
 
     /**
-     * Returns all properties in this vocabulary that are accessible from the client-side UI
+     * Returns all properties of all public classes in this vocabulary
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfDataType> getPublicDataTypes();
+    Map<URI, RdfProperty> getPublicClassProperties();
 
     /**
      * Returns all properties in this vocabulary
@@ -95,9 +94,9 @@ public interface RdfOntology extends RdfResource
     Map<URI, RdfProperty> getPublicProperties();
 
     /**
-     * Registers an ontology member into this ontology; don't use this manually, it's for internal use only (hence the factory dependency)
+     * Internal use only!
      */
     @JsonIgnore
-    void register(RdfFactory rdfFactory, RdfOntologyMember member);
+    void _register(RdfOntologyMember member) throws RdfInitializationException;
 
 }

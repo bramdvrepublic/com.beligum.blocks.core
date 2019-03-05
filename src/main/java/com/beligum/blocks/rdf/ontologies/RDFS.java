@@ -17,11 +17,11 @@
 package com.beligum.blocks.rdf.ontologies;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfDataType;
+import com.beligum.blocks.rdf.ifaces.RdfDatatype;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.RdfClassImpl;
-import com.beligum.blocks.rdf.RdfDataTypeImpl;
+import com.beligum.blocks.rdf.RdfDatatypeImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
 import com.beligum.blocks.rdf.RdfPropertyImpl;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
@@ -58,7 +58,7 @@ public final class RDFS extends RdfOntologyImpl
     /**
      * The class of literal values, eg. textual strings and integers
      */
-    public static final RdfDataType LITERAL = new RdfDataTypeImpl("Literal", INSTANCE, Entries.RDFS_title_Literal, Entries.RDFS_label_Literal);
+    public static final RdfDatatype LITERAL = new RdfDatatypeImpl("Literal", INSTANCE, Entries.RDFS_title_Literal, Entries.RDFS_label_Literal);
 
     /**
      * The class of classes

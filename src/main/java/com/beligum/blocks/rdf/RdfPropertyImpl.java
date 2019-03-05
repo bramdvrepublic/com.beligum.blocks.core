@@ -16,7 +16,6 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
@@ -24,18 +23,14 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfDataType;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -64,26 +59,36 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     @Override
     public RdfClass getDataType()
     {
+        this.assertNoProxy();
+
         return dataType;
     }
     @Override
     public InputType getWidgetType()
     {
+        this.assertNoProxy();
+
         return widgetType;
     }
     @Override
     public InputTypeConfig getWidgetConfig()
     {
+        this.assertNoProxy();
+
         return widgetConfig;
     }
     @Override
     public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException
     {
+        this.assertNoProxy();
+
         return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, resource, this, value, language, options);
     }
     @Override
     public Object prepareIndexValue(String value, Locale language) throws IOException
     {
+        this.assertNoProxy();
+
         return DefaultRdfPropertyIndexer.INSTANCE.prepareIndexValue(this, value, language);
     }
 
@@ -100,7 +105,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         }
 
         @Override
-        public RdfProperty create()
+        public RdfProperty create() throws RdfInitializationException
         {
             //make it uniform; no nulls
             if (this.rdfResource.widgetConfig == null) {

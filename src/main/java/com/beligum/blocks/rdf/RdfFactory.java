@@ -22,7 +22,9 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.*;
 import org.apache.commons.lang3.StringUtils;
@@ -33,16 +35,39 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Main factory class for all RDF-related initialization and lookup.
+ * <p>
+ * Note that this facilitates a specific pattern and needs a bit more explanation:
+ * <p>
+ * When creating ontologies, we want to be able to link them together at compile time, but also initialize the specifics of all ontology
+ * members during boot at runtime (eg. create a sort of framework for the ontology in code, but load the details from a config file).
+ * To make this possible, we create stub-objects (proxies) in code that can be linked into other ontologies, only supplying the bare necessities
+ * (eg. only the name of the member), while filling in the details after the system has finished booting, effectively transforming those proxies
+ * to valid instances with all bells and whistles correctly initialized.
+ * <p>
+ * We have hidden all this functionality behind a few methods in this class. Eg. to create a RDF class in an ontology, you call:
+ * <p>
+ * public static RdfClass Thing = RdfFactory.newProxyClass("Thing");
+ * <p>
+ * After boot finishes, the create() method of the ontology is called, with a valid instance of this factory class. This instance
+ * more or less functions as a 'key' (note the private constructor of RdfFactory) to initialize the proxy further using a decorator
+ * pattern. Eg. to finish creating the 'Thing' above, we call:
+ * <p>
+ * rdfFactory.proxy(Thing)
+ * .ontology(this)
+ * .title(Entries.OWL_title_Thing)
+ * .label(Entries.OWL_label_Thing)
+ * .create();
+ * <p>
+ * Note that create() needs to be called to finish everything off. Also note it returns the instance, but can be ignored to simplify the code.
+ * If a method inside an ontology member is called without having created it properly, an RdfProxyException is thrown to signal the developer
+ * a mistake was made.
+ * <p>
  * Created by bram on 2/26/16.
  */
 public class RdfFactory
 {
     //-----CONSTANTS-----
-    private enum RdfMapCacheKey
-    {
-        LOCAL_PUBLIC_CLASSES,
-        LOCAL_PUBLIC_CLASS_PROPERTIES,
-    }
 
     //-----VARIABLES-----
     private static RdfFactory instance = null;
@@ -118,20 +143,13 @@ public class RdfFactory
 
         return retVal;
     }
-//    /**
-//     * Returns all public classes in the local ontology
-//     */
-//    public static Set<RdfClass> getLocalPublicClasses()
-//    {
-//        return getLocalRdfMapCache(RdfMapCacheKey.LOCAL_PUBLIC_CLASSES, RdfClass.class);
-//    }
-//    /**
-//     * Returns all properties (so not only the public ones) across all public classes in the local ontology
-//     */
-//    public static Set<RdfProperty> getLocalPublicClassProperties()
-//    {
-//        return getLocalRdfMapCache(RdfMapCacheKey.LOCAL_PUBLIC_CLASS_PROPERTIES, RdfProperty.class);
-//    }
+    /**
+     * Returns a reference to the local ontology
+     */
+    public static RdfOntology getLocalOntology()
+    {
+        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfOntologyPrefix());
+    }
     /**
      * This will instantiate all ontologies once if needed, so we can be sure every RDF member has been assigned to it's proper ontology, etc.
      */
@@ -143,20 +161,30 @@ public class RdfFactory
                 if (instance == null) {
 
                     instance = new RdfFactory();
+
                     for (Class<? extends RdfOntology> c : ReflectionFunctions.searchAllClassesImplementing(RdfOntology.class, true)) {
                         try {
                             //passing an instance of RdfFactory (note the private constructor) to the constructor, assures other developers won't be able to
                             //create RDF ontology instances manually
                             RdfOntology rdfOntology = c.getConstructor(instance.getClass()).newInstance(instance);
 
-                            merge and save local
-
-                            //store the ontology in a lookup map
-                            RdfFactory.getOntologyMap().put(rdfOntology.getNamespace().getUri(), rdfOntology);
-                            RdfFactory.getOntologyPrefixMap().put(rdfOntology.getNamespace().getPrefix(), rdfOntology);
+                            //this is support for a splitted implementation of an ontology, spread out over multiple java classes
+                            //(needed for modularization)
+                            if (RdfFactory.getOntologyMap().containsKey(rdfOntology.getNamespace().getUri())) {
+                                RdfOntology existingOntology = RdfFactory.getOntologyMap().get(rdfOntology.getNamespace().getUri());
+                                for (RdfOntologyMember m : rdfOntology.getAllMembers().values()) {
+                                    existingOntology._register(m);
+                                }
+                            }
+                            //a true new ontology; make sure we add it to the lookup maps
+                            else {
+                                //store the ontology in a lookup map
+                                RdfFactory.getOntologyMap().put(rdfOntology.getNamespace().getUri(), rdfOntology);
+                                RdfFactory.getOntologyPrefixMap().put(rdfOntology.getNamespace().getPrefix(), rdfOntology);
+                            }
                         }
                         catch (Exception e) {
-                            throw new RuntimeException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
+                            throw new RdfInstantiationException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
                         }
                     }
                 }
@@ -165,17 +193,74 @@ public class RdfFactory
     }
 
     //-----PUBLIC FACTORY METHODS-----
-    public RdfClassImpl.Builder newClass(String name)
+    /**
+     * Create a new RdfClass proxy instance. A proxy instance is converted to a true valid instance by passing it to the
+     * appropriate proxy() method below (returning a builder wrapper) and then calling create(). Note that all operations on
+     * proxy objects will throw a RdfProxyException.
+     */
+    public static RdfClass newProxyClass(String name)
     {
-        return new RdfClassImpl.Builder(this, new RdfClassImpl(name));
+        return new RdfClassImpl(name);
     }
-    public RdfPropertyImpl.Builder newProperty(String name)
+    /**
+     * Create a new RdfProperty proxy instance. A proxy instance is converted to a true valid instance by passing it to the
+     * appropriate proxy() method below (returning a builder wrapper) and then calling create(). Note that all operations on
+     * proxy objects will throw a RdfProxyException.
+     */
+    public static RdfProperty newProxyProperty(String name)
     {
-        return new RdfPropertyImpl.Builder(this, new RdfPropertyImpl(name));
+        return new RdfPropertyImpl(name);
     }
-    public RdfDataTypeImpl.Builder newDatatype(String name)
+    /**
+     * Create a new RdfDatatype proxy instance. A proxy instance is converted to a true valid instance by passing it to the
+     * appropriate proxy() method below (returning a builder wrapper) and then calling create(). Note that all operations on
+     * proxy objects will throw a RdfProxyException.
+     */
+    public static RdfDatatype newProxyDatatype(String name)
     {
-        return new RdfDataTypeImpl.Builder(this, new RdfDataTypeImpl(name));
+        return new RdfDatatypeImpl(name);
+    }
+    /**
+     * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
+     * Note that you can't pass already created classes.
+     */
+    public RdfClassImpl.Builder proxy(RdfClass rdfProxyClass) throws RdfInitializationException
+    {
+        if (rdfProxyClass.isProxy()) {
+            //note: this cast is safe because in sync with the factory method above (and a private constructor)
+            return new RdfClassImpl.Builder(this, (RdfClassImpl) rdfProxyClass);
+        }
+        else {
+            throw new RdfInitializationException("This RDF class has already been built, you can't call this method twice on the same instance; " + rdfProxyClass);
+        }
+    }
+    /**
+     * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
+     * Note that you can't pass already created classes.
+     */
+    public RdfPropertyImpl.Builder proxy(RdfProperty rdfProxyProperty) throws RdfInitializationException
+    {
+        if (rdfProxyProperty.isProxy()) {
+            //note: this cast is safe because in sync with the factory method above (and a private constructor)
+            return new RdfPropertyImpl.Builder(this, (RdfPropertyImpl) rdfProxyProperty);
+        }
+        else {
+            throw new RdfInitializationException("This RDF class has already been built, you can't call this method twice on the same instance; " + rdfProxyProperty);
+        }
+    }
+    /**
+     * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
+     * Note that you can't pass already created classes.
+     */
+    public RdfDatatypeImpl.Builder proxy(RdfDatatype rdfProxyDatatype) throws RdfInitializationException
+    {
+        if (rdfProxyDatatype.isProxy()) {
+            //note: this cast is safe because in sync with the factory method above (and a private constructor)
+            return new RdfDatatypeImpl.Builder(this, (RdfDatatypeImpl) rdfProxyDatatype);
+        }
+        else {
+            throw new RdfInitializationException("This RDF class has already been built, you can't call this method twice on the same instance; " + rdfProxyDatatype);
+        }
     }
 
     //-----PROTECTED METHODS-----
@@ -194,7 +279,8 @@ public class RdfFactory
             });
         }
         catch (IOException e) {
-            throw new RdfInitializationException("Error while initializing RDF ontologies; this shouldn't happen", e);
+            //don't throw a RdfInitializationException, it spills over into the calling methods too much
+            throw new RuntimeException("Error while initializing RDF ontologies; this shouldn't happen", e);
         }
     }
     private static Map<String, RdfOntology> getOntologyPrefixMap()
@@ -210,43 +296,8 @@ public class RdfFactory
             });
         }
         catch (IOException e) {
-            throw new RdfInitializationException("Error while initializing RDF ontology prefixes; this shouldn't happen", e);
+            //don't throw a RdfInitializationException, it spills over into the calling methods too much
+            throw new RuntimeException("Error while initializing RDF ontology prefixes; this shouldn't happen", e);
         }
     }
-//    private static <T> Set<T> getLocalRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
-//    {
-//        try {
-//            Map<RdfMapCacheKey, Set> entries = R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_ONTOLOGY_ENTRIES, new CacheFunction<CacheKey, Map<RdfMapCacheKey, Set>>()
-//            {
-//                @Override
-//                public Map<RdfMapCacheKey, Set> apply(CacheKey cacheKey)
-//                {
-//                    //make sure all ontologies are initialized
-//                    assertInitialized();
-//
-//                    RdfOntology localOntology = RdfFactory.getOntologyForPrefix(Settings.instance().getRdfOntologyPrefix());
-//
-//                    Set<RdfClass> localPublicClasses = new HashSet<>(localOntology.getPublicClasses().values());
-//
-//                    Set<RdfProperty> localPublicProperties = new HashSet<>();
-//                    for (RdfClass rdfClass : localOntology.getPublicClasses().values()) {
-//                        if (rdfClass.getProperties() != null) {
-//                            localPublicProperties.addAll(rdfClass.getProperties());
-//                        }
-//                    }
-//
-//                    Map<RdfMapCacheKey, Set> retVal = new HashMap<>();
-//                    retVal.put(RdfMapCacheKey.LOCAL_PUBLIC_CLASSES, localPublicClasses);
-//                    retVal.put(RdfMapCacheKey.LOCAL_PUBLIC_CLASS_PROPERTIES, localPublicProperties);
-//
-//                    return retVal;
-//                }
-//            });
-//
-//            return entries.get(type);
-//        }
-//        catch (IOException e) {
-//            throw new RdfInitializationException("Error while initializing RDF ontologies; this shouldn't happen", e);
-//        }
-//    }
 }

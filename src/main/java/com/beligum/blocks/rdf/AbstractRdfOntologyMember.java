@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
 import com.beligum.blocks.exceptions.RdfInitializationException;
+import com.beligum.blocks.exceptions.RdfProxyException;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
@@ -12,6 +13,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    protected boolean proxy;
     protected RdfOntology ontology;
     protected MessagesFileEntry title;
     protected MessagesFileEntry label;
@@ -22,65 +24,98 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     {
         super(name);
 
+        //will be set to false when it was passed through the create() factory method
+        this.proxy = true;
         //make it uniform (never null, always an array)
         this.isSameAs = new URI[] {};
     }
 
     //-----PUBLIC METHODS-----
     @Override
+    public boolean isProxy()
+    {
+        return proxy;
+    }
+    @Override
     public RdfOntology getOntology()
     {
+        this.assertNoProxy();
+
         return ontology;
     }
     @Override
     public URI getFullName()
     {
+        this.assertNoProxy();
+
         return this.ontology.resolve(this.getName());
     }
     @Override
     public URI getCurieName()
     {
+        this.assertNoProxy();
+
         return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
     }
     @Override
     public String getTitleKey()
     {
+        this.assertNoProxy();
+
         return title.getCanonicalKey();
     }
     @Override
     public String getTitle()
     {
+        this.assertNoProxy();
+
         //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
         return this.title == null ? null : this.title.toString(R.i18n().getOptimalRefererLocale());
     }
     @Override
     public MessagesFileEntry getTitleMessage()
     {
+        this.assertNoProxy();
+
         return title;
     }
     @Override
     public String getLabelKey()
     {
+        this.assertNoProxy();
+
         return label.getCanonicalKey();
     }
     @Override
     public String getLabel()
     {
+        this.assertNoProxy();
+
         //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
         return this.label == null ? null : this.label.toString(R.i18n().getOptimalRefererLocale());
     }
     @Override
     public MessagesFileEntry getLabelMessage()
     {
+        this.assertNoProxy();
+
         return label;
     }
     @Override
     public URI[] getIsSameAs()
     {
+        this.assertNoProxy();
+
         return isSameAs;
     }
 
     //-----PROTECTED METHODS-----
+    protected void assertNoProxy()
+    {
+        if (this.isProxy()) {
+            throw new RdfProxyException("A core functionality method of an RDF ontology member was called without properly initializing it; please see RdfFactory comments for details; " + this);
+        }
+    }
 
     //-----PRIVATE METHODS-----
 
@@ -143,14 +178,14 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         }
 
         //-----PUBLIC METHODS-----
-        public T create()
+        public T create() throws RdfInitializationException
         {
             if (this.rdfResource.ontology == null) {
                 throw new RdfInitializationException(
                                 "Trying to create an RdfClass '" + this.rdfResource.getName() + "' without any ontology to connect to, can't continue because too much depends on this.");
             }
             else {
-                this.rdfResource.ontology.register(this.rdfFactory, this.rdfResource);
+                this.rdfResource.ontology._register(this.rdfResource);
             }
 
             if (this.rdfResource.title == null) {
@@ -160,6 +195,9 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             if (this.rdfResource.label == null) {
                 this.rdfResource.label = this.rdfResource.title;
             }
+
+            //here, all checks passed and the proxy can be converted to a valid instance
+            this.rdfResource.proxy = false;
 
             //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
             return (T) this.rdfResource;

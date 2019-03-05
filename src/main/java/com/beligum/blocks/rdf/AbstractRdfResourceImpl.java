@@ -18,6 +18,7 @@ package com.beligum.blocks.rdf;
 
 import com.beligum.base.database.models.AbstractJsonObject;
 import com.beligum.blocks.exceptions.RdfInitializationException;
+import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
 import org.apache.commons.lang.StringUtils;
 
@@ -50,7 +51,7 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     protected AbstractRdfResourceImpl(String name, boolean isPublic)
     {
         if (StringUtils.isEmpty(name)) {
-            throw new RdfInitializationException("Trying to create a nameless RDF resource, this isn't allowed.");
+            throw new RdfInstantiationException("Trying to create a nameless RDF resource, this isn't allowed.");
         }
 
         this.name = name;

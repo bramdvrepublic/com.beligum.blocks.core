@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
+import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.*;
 import com.beligum.blocks.rdf.RdfNamespaceImpl;
@@ -55,43 +56,43 @@ public final class OWL extends RdfOntologyImpl
     /**
      * The class of OWL classes
      */
-    public static RdfClass Class;
+    public static RdfClass Class = RdfFactory.newProxyClass("Class");
 
     /**
      * The class of OWL individuals
      * Note: this is actually an OwlClass (that subclasses rdfs:Class)
      */
-    public static RdfClass Thing;
+    public static RdfClass Thing = RdfFactory.newProxyClass("Thing");
 
     /**
      * The property that determines that two given individuals are equal
      */
-    public static RdfProperty sameAs;
+    public static RdfProperty sameAs = RdfFactory.newProxyProperty("sameAs");
 
     //TODO complete the implementation of the OWL ontology
 
     //-----CONSTRUCTORS-----
     @Override
-    protected void create(RdfFactory rdfFactory)
+    protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        Class = rdfFactory.newClass("Class")
-                          .ontology(this)
-                          .title(Entries.OWL_title_Class)
-                          .label(Entries.OWL_label_Class)
-                          .create();
+        rdfFactory.proxy(Class)
+                  .ontology(this)
+                  .title(Entries.OWL_title_Class)
+                  .label(Entries.OWL_label_Class)
+                  .create();
 
-        Thing = rdfFactory.newClass("Thing")
-                          .ontology(this)
-                          .title(Entries.OWL_title_Thing)
-                          .label(Entries.OWL_label_Thing)
-                          .create();
+        rdfFactory.proxy(Thing)
+                  .ontology(this)
+                  .title(Entries.OWL_title_Thing)
+                  .label(Entries.OWL_label_Thing)
+                  .create();
 
-        sameAs = rdfFactory.newProperty("sameAs")
-                           .ontology(this)
-                           .title(Entries.OWL_title_sameAs)
-                           .label(Entries.OWL_label_sameAs)
-                           .dataType(Thing)
-                           .create();
+        rdfFactory.proxy(sameAs)
+                  .ontology(this)
+                  .title(Entries.OWL_title_sameAs)
+                  .label(Entries.OWL_label_sameAs)
+                  .dataType(Thing)
+                  .create();
     }
 
     //-----PUBLIC METHODS-----

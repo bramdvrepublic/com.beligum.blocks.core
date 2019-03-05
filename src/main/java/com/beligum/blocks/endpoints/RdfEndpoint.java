@@ -71,7 +71,7 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_CLASS_READ_ALL_PERM)
     public Response getClasses() throws IOException
     {
-        return Response.ok(RdfFactory.getLocalPublicClasses()).build();
+        return Response.ok(RdfFactory.getLocalOntology().getPublicClasses().values()).build();
     }
 
     @GET
@@ -80,7 +80,7 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
     public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
-        Set<RdfProperty> retVal = null;
+        Collection<RdfProperty> retVal = null;
 
         if (resourceTypeCurie != null) {
             RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
@@ -96,7 +96,7 @@ public class RdfEndpoint
 
         //if nothing happened, we just return the intersecting properties of all public classes
         if (retVal == null) {
-            retVal = RdfFactory.getLocalPublicClassProperties();
+            retVal = RdfFactory.getLocalOntology().getPublicClassProperties().values();
         }
 
         return Response.ok(retVal).build();

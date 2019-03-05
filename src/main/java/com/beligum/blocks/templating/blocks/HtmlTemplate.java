@@ -748,7 +748,7 @@ public abstract class HtmlTemplate
 
                 //if we have a vocab and it's not a URI, resolve it
                 if (finalDefaultVocab != null && !retVal.contains(":")) {
-                    retVal = finalDefaultVocab.getPrefix() + ":" + retVal;
+                    retVal = finalDefaultVocab.getNamespace().getPrefix() + ":" + retVal;
                 }
 
                 return retVal;

@@ -15,6 +15,14 @@ public interface RdfOntologyMember extends RdfResource
     //-----VARIABLES-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * This will only return false when this member was passed through the Builder.create() method
+     * and thus converted from a proxy/stub to a fully initialized instance.
+     */
+    @JsonIgnore
+    boolean isProxy();
+
     /**
      * The site-specific ontology URI for this class. Together with the name, it forms the full URI.
      * Eg. http://www.reinvention.be/ontology/

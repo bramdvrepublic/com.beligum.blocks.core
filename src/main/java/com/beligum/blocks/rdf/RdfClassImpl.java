@@ -61,26 +61,36 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     @Override
     public Set<RdfClass> getSuperClasses()
     {
+        this.assertNoProxy();
+
         return superClasses;
     }
     @Override
     public Set<RdfProperty> getProperties()
     {
+        this.assertNoProxy();
+
         return properties;
     }
     @Override
     public RdfQueryEndpoint getEndpoint()
     {
+        this.assertNoProxy();
+
         return endpoint;
     }
     @Override
     public ResourceSummarizer getResourceSummarizer()
     {
+        this.assertNoProxy();
+
         return resourceSummarizer;
     }
     @Override
     public RdfProperty getMainProperty()
     {
+        this.assertNoProxy();
+
         return mainProperty;
     }
     //-----PROTECTED METHODS-----
@@ -96,7 +106,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         }
 
         @Override
-        public RdfClass create()
+        public RdfClass create() throws RdfInitializationException
         {
             //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
             if (this.rdfResource.resourceSummarizer == null) {
@@ -119,11 +129,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             //Note: this call will add us to the ontology
             return super.create();
         }
-        public Builder superClass(RdfClass superClass)
+        public Builder superClass(RdfClass superClass) throws RdfInitializationException
         {
             return this.superClasses(superClass);
         }
-        public Builder superClasses(RdfClass... superClasses)
+        public Builder superClasses(RdfClass... superClasses) throws RdfInitializationException
         {
             for (RdfClass c : superClasses) {
                 if (this.rdfResource.superClasses.contains(c)) {
@@ -136,11 +146,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder property(RdfProperty property)
+        public Builder property(RdfProperty property) throws RdfInitializationException
         {
             return this.properties(property);
         }
-        public Builder properties(RdfProperty... properties)
+        public Builder properties(RdfProperty... properties) throws RdfInitializationException
         {
             for (RdfProperty p : properties) {
                 if (this.rdfResource.properties.contains(p)) {
@@ -165,7 +175,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder mainProperty(RdfProperty mainProperty)
+        public Builder mainProperty(RdfProperty mainProperty) throws RdfInitializationException
         {
             if (!this.rdfResource.properties.contains(mainProperty)) {
                 throw new RdfInitializationException("Can't set main property of class " + this + " to " + mainProperty + " because it's not a property of this class.");

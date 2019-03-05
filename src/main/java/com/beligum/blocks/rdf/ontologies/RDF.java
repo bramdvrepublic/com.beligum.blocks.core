@@ -17,11 +17,11 @@
 package com.beligum.blocks.rdf.ontologies;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfDataType;
+import com.beligum.blocks.rdf.ifaces.RdfDatatype;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.RdfClassImpl;
-import com.beligum.blocks.rdf.RdfDataTypeImpl;
+import com.beligum.blocks.rdf.RdfDatatypeImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
 import com.beligum.blocks.rdf.RdfPropertyImpl;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
@@ -66,7 +66,7 @@ public final class RDF extends RdfOntologyImpl
     /**
      * The datatype of XML literal values
      */
-    public static final RdfDataType XMLLITERAL = new RdfDataTypeImpl("XMLLiteral", INSTANCE, Entries.RDF_title_XMLLiteral, Entries.RDF_label_XMLLiteral);
+    public static final RdfDatatype XMLLITERAL = new RdfDatatypeImpl("XMLLiteral", INSTANCE, Entries.RDF_title_XMLLiteral, Entries.RDF_label_XMLLiteral);
 
     /**
      * The subject of the subject RDF statement
@@ -217,11 +217,11 @@ public final class RDF extends RdfOntologyImpl
      * ##########################
      *
      */
-    public static final RdfDataType LANGSTRING = new RdfDataTypeImpl("langString", INSTANCE, Entries.RDF_title_langString, Entries.RDF_label_langString);
+    public static final RdfDatatype LANGSTRING = new RdfDatatypeImpl("langString", INSTANCE, Entries.RDF_title_langString, Entries.RDF_label_langString);
 
     /**
      * The datatype of RDF literals storing fragments of HTML content
      */
-    public static final RdfDataType HTML = new RdfDataTypeImpl("HTML", INSTANCE, Entries.RDF_title_HTML, Entries.RDF_label_HTML);
+    public static final RdfDatatype HTML = new RdfDatatypeImpl("HTML", INSTANCE, Entries.RDF_title_HTML, Entries.RDF_label_HTML);
 
 }

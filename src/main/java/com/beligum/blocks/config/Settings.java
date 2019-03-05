@@ -45,6 +45,7 @@ public class Settings
 {
     //sync this with the reserved page keywords
     public static final String RESOURCE_ENDPOINT = "/resource/";
+    public static final String DEFAULT_ONTOLOGY_ENDPOINT = "/ontology/";
 
     private static final String COMMON_PREFIX = "blocks.core";
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
@@ -82,7 +83,7 @@ public class Settings
     private static Settings instance;
     private Boolean cachedDeleteLocksOnStartup;
     private URI cachedRdfOntologyUri;
-    private boolean triedRdfOntologyUri;
+    private String cachedRdfOntologyPrefix;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
     private URI cachedPagesStoreJournalDir;
@@ -379,8 +380,8 @@ public class Settings
     }
     public URI getRdfOntologyUri()
     {
-        if (!this.triedRdfOnto logyUri) {
-            String uri = R.configuration().getString(ONTOLOGY_PREFIX + ".uri");
+        if (this.cachedRdfOntologyUri == null) {
+            String uri = R.configuration().getString(ONTOLOGY_PREFIX + ".uri", null);
             if (!StringUtils.isEmpty(uri)) {
                 try {
                     this.cachedRdfOntologyUri = URI.create(uri);
@@ -390,14 +391,25 @@ public class Settings
                 }
             }
 
-            this.triedRdfOntologyUri = true;
+            if (StringUtils.isEmpty(uri)) {
+                this.cachedRdfOntologyUri = R.configuration().getSiteDomain().resolve(DEFAULT_ONTOLOGY_ENDPOINT);
+                Logger.info("Using a default ontology URL, constructed from the main base URL using a standardized endpoint; " + this.cachedRdfOntologyUri);
+            }
         }
 
         return this.cachedRdfOntologyUri;
     }
     public String getRdfOntologyPrefix()
     {
-        return R.configuration().getString(ONTOLOGY_PREFIX + ".prefix");
+        if (this.cachedRdfOntologyPrefix == null) {
+            this.cachedRdfOntologyPrefix = R.configuration().getString(ONTOLOGY_PREFIX + ".prefix", null);
+
+            if (StringUtils.isEmpty(this.cachedRdfOntologyPrefix)) {
+                throw new RuntimeException("Encountered an empty RDF ontology URI, this if forbidden; " + this.cachedRdfOntologyPrefix);
+            }
+        }
+
+        return this.cachedRdfOntologyPrefix;
     }
     public boolean getEnableRdfCreateSync()
     {

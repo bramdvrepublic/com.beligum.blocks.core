@@ -19,29 +19,29 @@ package com.beligum.blocks.exceptions;
 /**
  * Special runtime exception to use when the static RDF initialization goes wrong
  */
-public class RdfInitializationException extends Exception
+public class RdfProxyException extends RuntimeException
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public RdfInitializationException()
+    public RdfProxyException()
     {
     }
-    public RdfInitializationException(String message)
+    public RdfProxyException(String message)
     {
         super(message);
     }
-    public RdfInitializationException(String message, Throwable cause)
+    public RdfProxyException(String message, Throwable cause)
     {
         super(message, cause);
     }
-    public RdfInitializationException(Throwable cause)
+    public RdfProxyException(Throwable cause)
     {
         super(cause);
     }
-    public RdfInitializationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
+    public RdfProxyException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
     }

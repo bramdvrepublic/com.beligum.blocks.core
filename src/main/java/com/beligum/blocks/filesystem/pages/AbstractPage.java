@@ -60,6 +60,9 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.beligum.blocks.config.Settings.DEFAULT_ONTOLOGY_ENDPOINT;
+import static com.beligum.blocks.config.Settings.RESOURCE_ENDPOINT;
+
 /**
  * Created by bram on 1/27/16.
  */
@@ -77,11 +80,11 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     //this is the file name of the directory with this name (stored on disk inside a directory with the page name)
                     DIR_PAGE_NAME,
                     //this is used to create a virtual endpoint into the ontology metadata of this system, eg. http://www.reinvention.be/ontology/
-                    "ontology",
+                    StringUtils.strip(DEFAULT_ONTOLOGY_ENDPOINT, "/"),
                     //these two are future placeholders to query metadata information about certain pages/media in the system, eg. http://www.reinvention.be/contact/meta?type=creator
                     "meta", "metadata",
                     //the special resources url prefix; sync this with com.beligum.blocks.config.Settings.RESOURCE_ENDPOINT
-                    "resource"
+                    StringUtils.strip(RESOURCE_ENDPOINT, "/"),
     };
 
     //-----VARIABLES-----

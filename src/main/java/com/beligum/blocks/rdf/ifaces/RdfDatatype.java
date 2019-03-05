@@ -21,8 +21,14 @@ package com.beligum.blocks.rdf.ifaces;
  * This class in itself is more or less a representation of rdfs:Datatype, while instances
  * of this class attached to RdfProperties more or less coincide with the rdfs:range concept.
  *
+ * Note that, contrary to RdfProperty, this does extend RdfClass because a regular class can be a datatype too and
+ * it is used that way a well; if we want to add a property as an instance of a certain class to an ontology, the datatype
+ * of that property will be a true RdfClass and not a RdfDataType. Actually, RdfDataType is a bit superfluous because it doesn't
+ * really add a lot more to RdfClass. However, we keep it around because of XSD entries are actually more like true datatypes
+ * than classes...
+ *
  * Created by bram on 3/2/16.
  */
-public interface RdfDataType extends RdfClass
+public interface RdfDatatype extends RdfClass
 {
 }
