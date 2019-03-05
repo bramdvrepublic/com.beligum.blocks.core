@@ -23,6 +23,7 @@ import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.rdf4j.model.Value;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -32,9 +33,16 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
+ * This is more or less the OO representation of the RDF:Property
+ *
+ * Note that for our use, it doesn't make sense to implement super properties because there's not much to inherit.
+ *
+ * Note that, strictly speaking, this should subclass RdfClass, but we moved towards extending
+ * a higher interface because too much methods of RdfClass didn't have any meaning here.
+ *
  * Created by bram on 2/26/16.
  */
-public interface RdfProperty extends RdfClass
+public interface RdfProperty extends RdfOntologyMember
 {
     /**
      * The full datatype (can also be XSD) of this property. This is used by the client side code, together with the WidgetType (see below),

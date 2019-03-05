@@ -22,6 +22,7 @@ import com.beligum.blocks.rdf.ifaces.*;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
@@ -33,15 +34,13 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Collection<RdfResource> members;
-
-    private final Map<URI, RdfResource> allTypes;
-    private final Map<URI, RdfClass> allClasses;
-    private final Map<URI, RdfClass> publicClasses;
-    private final Map<URI, RdfDataType> allDataTypes;
-    private final Map<URI, RdfDataType> publicDataTypes;
-    private final Map<URI, RdfProperty> allProperties;
-    private final Map<URI, RdfProperty> publicProperties;
+    private Map<URI, RdfOntologyMember> allMembers;
+    private Map<URI, RdfClass> allClasses;
+    private Map<URI, RdfClass> publicClasses;
+    private Map<URI, RdfDataType> allDataTypes;
+    private Map<URI, RdfDataType> publicDataTypes;
+    private Map<URI, RdfProperty> allProperties;
+    private Map<URI, RdfProperty> publicProperties;
 
     //-----CONSTRUCTORS-----
     /**
@@ -56,34 +55,56 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
      */
     RdfOntologyImpl(RdfFactory rdfFactory)
     {
+        this.allMembers = new LinkedHashMap<>();
+        this.allClasses = new LinkedHashMap<>();
+        this.publicClasses = new LinkedHashMap<>();
+        this.allProperties = new LinkedHashMap<>();
+        this.publicProperties = new LinkedHashMap<>();
+        this.allDataTypes = new LinkedHashMap<>();
+        this.publicDataTypes = new LinkedHashMap<>();
+
         //this call should initialize all member fields
         this.create(rdfFactory);
 
         // we give a chance to initialize() method to fill the members collection,
         // but if it didn't do that, we'll iterate the fields of this ontology here
         // to build a list of all rdf resources using reflection and heuristics.
-        if (this.members == null) {
+        if (this.allMembers.isEmpty()) {
             try {
-                this.members = new LinkedHashSet<>();
                 for (Field field : this.getClass().getFields()) {
-                    if (field.getType().isAssignableFrom(RdfResource.class)) {
-                        RdfResource member = (RdfResource) field.get(this);
+                    if (field.getType().isAssignableFrom(RdfOntologyMember.class)) {
+                        RdfOntologyMember member = (RdfOntologyMember) field.get(this);
                         if (member == null) {
                             throw new RdfInitializationException("Field inside an RDF ontology turned out null after initializing the ontology; this shouldn't happen; " + this);
                         }
                         else {
                             //first, make sure to initialize the list
-                            this.members.add(member);
+                            this.allMembers.put(member.getCurieName(), member);
 
                             //then, fill some maps for later use
                             switch (member.getType()) {
                                 case ONTOLOGY:
                                     throw new RdfInitializationException("Encountered a sub-ontology; this is not supported yet, please fix this; " + member);
                                 case CLASS:
+                                    RdfClass rdfClass = (RdfClass) member;
+                                    this.allClasses.put(rdfClass.getCurieName(), rdfClass);
+                                    if (rdfClass.isPublic()) {
+                                        this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
+                                    }
                                     break;
                                 case PROPERTY:
+                                    RdfProperty rdfProperty = (RdfProperty) member;
+                                    this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                                    if (rdfProperty.isPublic()) {
+                                        this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                                    }
                                     break;
                                 case DATATYPE:
+                                    RdfDataType rdfDataType = (RdfDataType) member;
+                                    this.allDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
+                                    if (rdfDataType.isPublic()) {
+                                        this.publicDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
+                                    }
                                     break;
                                 default:
                                     throw new RdfInitializationException("Encountered unimplemented RDF resource type; please fix this; " + member);
@@ -96,19 +117,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
                 throw new RdfInitializationException("Error happened while auto-iterating the members of an ontology; " + this, e);
             }
         }
-
-        //        this.allTypes = new HashMap<>();
-        //        this.allClasses = new HashMap<>();
-        //        this.publicClasses = new HashMap<>();
-        //        this.allDataTypes = new HashMap<>();
-        //        this.publicDataTypes = new HashMap<>();
-        //        this.allProperties = new HashMap<>();
-        //        this.publicProperties = new HashMap<>();
-        //
-        //        //add this vocabulary to the cached map of vocabularies
-        //        RdfFactory.getOntologies().put(this.getNamespace(), this);
-        //        //store the prefix mapping
-        //        RdfFactory.getOntologyPrefixes().put(this.getPrefix(), this.getNamespace());
     }
 
     //-----PUBLIC METHODS-----
@@ -124,11 +132,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         return this.getNamespace().getUri().toString();
     }
     @Override
-    public Collection<RdfResource> getMembers()
-    {
-        return this.members;
-    }
-    @Override
     public URI resolve(String suffix)
     {
         //note: we can't use namespace.resolve(suffix) because it doesn't resolve anchor-based ontologies correctly
@@ -141,9 +144,9 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         return URI.create(this.getNamespace().getPrefix() + ":" + suffix);
     }
     @Override
-    public Map<URI, RdfResource> getAllTypes()
+    public Map<URI, RdfOntologyMember> getAllMembers()
     {
-        return allTypes;
+        return allMembers;
     }
     @Override
     public Map<URI, RdfClass> getAllClasses()
@@ -176,23 +179,36 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         return publicProperties;
     }
     @Override
-    public void addClass(RdfClass rdfClass)
+    public void register(RdfFactory rdfFactory, RdfOntologyMember member)
     {
-        this.allTypes.put(rdfClass.getCurieName(), rdfClass);
+        //first, make sure to register the resource into the set of all members
+        this.allMembers.put(member.getCurieName(), member);
 
-        this.allClasses.put(rdfClass.getCurieName(), rdfClass);
-        if (rdfClass.isPublic()) {
-            this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
-        }
-    }
-    @Override
-    public void addProperty(RdfProperty rdfProperty)
-    {
-        this.allTypes.put(rdfProperty.getCurieName(), rdfProperty);
-
-        this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
-        if (rdfProperty.isPublic()) {
-            this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
+        //then, fill some specific lookup maps and check for errors in the mean time
+        switch (this.getType()) {
+            case CLASS:
+                RdfClass rdfClass = (RdfClass) member;
+                this.allClasses.put(rdfClass.getCurieName(), rdfClass);
+                if (rdfClass.isPublic()) {
+                    this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
+                }
+                break;
+            case PROPERTY:
+                RdfProperty rdfProperty = (RdfProperty) member;
+                this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                if (rdfProperty.isPublic()) {
+                   this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                }
+                break;
+            case DATATYPE:
+                RdfDataType rdfDataType = (RdfDataType) member;
+                this.allDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
+                if (rdfDataType.isPublic()) {
+                    this.publicDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
+                }
+                break;
+            default:
+                throw new RdfInitializationException("Encountered unimplemented RDF resource type; please fix this; " + member);
         }
     }
 

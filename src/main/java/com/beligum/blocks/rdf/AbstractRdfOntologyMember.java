@@ -1,20 +1,17 @@
 package com.beligum.blocks.rdf;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
+import com.beligum.base.server.R;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
-import com.beligum.blocks.rdf.ifaces.RdfResource;
+import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
 
-public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl
+public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl implements RdfOntologyMember
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    // Little trick: by declaring the variables here, but the getter-implementations in RdfClassImpl,
-    // we can correctly use @Override in RdfClassImpl and keep the getters where they belong (in the RdfClass interface),
-    // but can set these variables below in the builder.
     protected RdfOntology ontology;
     protected MessagesFileEntry title;
     protected MessagesFileEntry label;
@@ -26,14 +23,93 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl
         super(name);
 
         //make it uniform (never null, always an array)
-        this.isSameAs =  new URI[] {};
+        this.isSameAs = new URI[] {};
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public RdfOntology getOntology()
+    {
+        return ontology;
+    }
+    @Override
+    public URI getFullName()
+    {
+        return this.ontology.resolve(this.getName());
+    }
+    @Override
+    public URI getCurieName()
+    {
+        return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
+    }
+    @Override
+    public String getTitleKey()
+    {
+        return title.getCanonicalKey();
+    }
+    @Override
+    public String getTitle()
+    {
+        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
+        return this.title == null ? null : this.title.toString(R.i18n().getOptimalRefererLocale());
+    }
+    @Override
+    public MessagesFileEntry getTitleMessage()
+    {
+        return title;
+    }
+    @Override
+    public String getLabelKey()
+    {
+        return label.getCanonicalKey();
+    }
+    @Override
+    public String getLabel()
+    {
+        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
+        return this.label == null ? null : this.label.toString(R.i18n().getOptimalRefererLocale());
+    }
+    @Override
+    public MessagesFileEntry getLabelMessage()
+    {
+        return label;
+    }
+    @Override
+    public URI[] getIsSameAs()
+    {
+        return isSameAs;
+    }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+
+    //-----MANAGEMENT METHODS-----
+    @Override
+    public String toString()
+    {
+        return "" + this.getCurieName();
+    }
+    /**
+     * Note that we overload the equals() method of AbstractRdfResourceImpl to use the CURIE instead of the name
+     * because two classes with the same name, but in different ontologies are not the same thing, but I guess
+     * we can assume two classes (or properties or datatypes) with the same CURIE to be equal, right?
+     */
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof RdfClassImpl)) return false;
+
+        RdfClassImpl rdfClass = (RdfClassImpl) o;
+
+        return getCurieName() != null ? getCurieName().equals(rdfClass.getCurieName()) : rdfClass.getCurieName() == null;
+    }
+    @Override
+    public int hashCode()
+    {
+        return getCurieName() != null ? getCurieName().hashCode() : 0;
+    }
 
     //-----INNER CLASSES-----
 
@@ -70,7 +146,11 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl
         public T create()
         {
             if (this.rdfResource.ontology == null) {
-                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without any ontology to connect to, can't continue because too much depends on this.");
+                throw new RdfInitializationException(
+                                "Trying to create an RdfClass '" + this.rdfResource.getName() + "' without any ontology to connect to, can't continue because too much depends on this.");
+            }
+            else {
+                this.rdfResource.ontology.register(this.rdfFactory, this.rdfResource);
             }
 
             if (this.rdfResource.title == null) {

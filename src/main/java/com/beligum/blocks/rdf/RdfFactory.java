@@ -22,7 +22,6 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.*;
@@ -31,9 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by bram on 2/26/16.
@@ -99,7 +96,7 @@ public class RdfFactory
         if (ontology != null) {
             //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
             //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
-            retVal = ontology.getAllTypes().get(resourceTypeCurie);
+            retVal = ontology.getAllMembers().get(resourceTypeCurie);
         }
 
         return retVal;

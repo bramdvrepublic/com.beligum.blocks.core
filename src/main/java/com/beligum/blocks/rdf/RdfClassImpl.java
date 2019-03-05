@@ -16,17 +16,13 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
 
-import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -40,15 +36,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected RdfOntology ontology;
-    protected MessagesFileEntry title;
-    protected MessagesFileEntry label;
-    protected URI[] isSameAs;
-    protected RdfQueryEndpoint queryEndpoint;
-    protected Set<RdfProperty> properties;
-    protected ResourceSummarizer resourceSummarizer;
-    protected Set<RdfClass> superClasses;
-    protected RdfProperty mainProperty;
+    private Set<RdfClass> superClasses;
+    private Set<RdfProperty> properties;
+    private RdfQueryEndpoint endpoint;
+    private ResourceSummarizer resourceSummarizer;
+    private RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
     RdfClassImpl(String name)
@@ -56,8 +48,8 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         super(name);
 
         //makes sense that the properties and superclasses are returned in the same order they are added, no?
-        this.properties = new LinkedHashSet<>();
         this.superClasses = new LinkedHashSet<>();
+        this.properties = new LinkedHashSet<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -67,61 +59,9 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return Type.CLASS;
     }
     @Override
-    public RdfOntology getOntology()
+    public Set<RdfClass> getSuperClasses()
     {
-        return ontology;
-    }
-    @Override
-    public URI getFullName()
-    {
-        return this.ontology.resolve(this.getName());
-    }
-    @Override
-    public URI getCurieName()
-    {
-        return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
-    }
-    @Override
-    public String getTitleKey()
-    {
-        return title.getCanonicalKey();
-    }
-    @Override
-    public String getTitle()
-    {
-        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
-        return this.title == null ? null : this.title.toString(R.i18n().getOptimalRefererLocale());
-    }
-    @Override
-    public MessagesFileEntry getTitleMessage()
-    {
-        return title;
-    }
-    @Override
-    public String getLabelKey()
-    {
-        return label.getCanonicalKey();
-    }
-    @Override
-    public String getLabel()
-    {
-        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
-        return this.label == null ? null : this.label.toString(R.i18n().getOptimalRefererLocale());
-    }
-    @Override
-    public MessagesFileEntry getLabelMessage()
-    {
-        return label;
-    }
-    @Override
-    public URI[] getIsSameAs()
-    {
-        return isSameAs;
-    }
-    @Override
-    public RdfQueryEndpoint getEndpoint()
-    {
-        return queryEndpoint;
+        return superClasses;
     }
     @Override
     public Set<RdfProperty> getProperties()
@@ -129,9 +69,9 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return properties;
     }
     @Override
-    public RdfProperty getMainProperty()
+    public RdfQueryEndpoint getEndpoint()
     {
-        return this.mainProperty;
+        return endpoint;
     }
     @Override
     public ResourceSummarizer getResourceSummarizer()
@@ -139,60 +79,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return resourceSummarizer;
     }
     @Override
-    public void addProperties(RdfProperty... properties)
+    public RdfProperty getMainProperty()
     {
-        if (properties != null) {
-            for (RdfProperty p : properties) {
-                if (this.properties.contains(p)) {
-                    throw new RdfInitializationException("Can't add property " + p + " to class " + this + " because it would overwrite and existing property, can't continue.");
-                }
-                else {
-                    this.properties.add(p);
-                }
-            }
-        }
+        return mainProperty;
     }
-    @Override
-    public void setMainProperty(RdfProperty property)
-    {
-        if (!this.properties.contains(property)) {
-            throw new RdfInitializationException("Can't set main property of class " + this + " to " + property + " because it's not a property of this class.");
-        }
-        else {
-            this.mainProperty = property;
-        }
-    }
-
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-
-    //-----MANAGEMENT METHODS-----
-    @Override
-    public String toString()
-    {
-        return "" + this.getCurieName();
-    }
-    /**
-     * Note that we overload the equals() method of AbstractRdfResourceImpl to use the CURIE instead of the name
-     * because two classes with the same name, but in different ontologies are not the same thing, but I guess
-     * we can assume two classes (or properties or datatypes) with the same CURIE to be equal, right?
-     */
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o) return true;
-        if (!(o instanceof RdfClassImpl)) return false;
-
-        RdfClassImpl rdfClass = (RdfClassImpl) o;
-
-        return getCurieName() != null ? getCurieName().equals(rdfClass.getCurieName()) : rdfClass.getCurieName() == null;
-    }
-    @Override
-    public int hashCode()
-    {
-        return getCurieName() != null ? getCurieName().hashCode() : 0;
-    }
 
     //-----INNER CLASSES-----
     public static class Builder extends AbstractRdfOntologyMember.Builder<RdfClass, RdfClassImpl, RdfClassImpl.Builder>
@@ -223,22 +116,46 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                 }
             }
 
-            //only add ourself to the selected ontology if we are a pure class
-            if (this.rdfResource.ontology != null && this.rdfResource.getType().equals(Type.CLASS)) {
-                this.rdfResource.ontology.addClass(this.rdfResource);
-            }
-
+            //Note: this call will add us to the ontology
             return super.create();
         }
-        public Builder queryEndpoint(RdfQueryEndpoint queryEndpoint)
+        public Builder superClass(RdfClass superClass)
         {
-            this.rdfResource.queryEndpoint = queryEndpoint;
+            return this.superClasses(superClass);
+        }
+        public Builder superClasses(RdfClass... superClasses)
+        {
+            for (RdfClass c : superClasses) {
+                if (this.rdfResource.superClasses.contains(c)) {
+                    throw new RdfInitializationException("Can't add superclass " + c + " to class " + this + " because it would overwrite and existing superclass, can't continue.");
+                }
+                else {
+                    this.rdfResource.superClasses.add(c);
+                }
+            }
 
             return this;
         }
-        public Builder properties(Set<RdfProperty> properties)
+        public Builder property(RdfProperty property)
         {
-            this.rdfResource.properties = properties;
+            return this.properties(property);
+        }
+        public Builder properties(RdfProperty... properties)
+        {
+            for (RdfProperty p : properties) {
+                if (this.rdfResource.properties.contains(p)) {
+                    throw new RdfInitializationException("Can't add properties " + p + " to class " + this + " because it would overwrite and existing properties, can't continue.");
+                }
+                else {
+                    this.rdfResource.properties.add(p);
+                }
+            }
+
+            return this;
+        }
+        public Builder endpoint(RdfQueryEndpoint endpoint)
+        {
+            this.rdfResource.endpoint = endpoint;
 
             return this;
         }
@@ -248,9 +165,14 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder superClasses(Set<RdfClass> superClasses)
+        public Builder mainProperty(RdfProperty mainProperty)
         {
-            this.rdfResource.superClasses = superClasses;
+            if (!this.rdfResource.properties.contains(mainProperty)) {
+                throw new RdfInitializationException("Can't set main property of class " + this + " to " + mainProperty + " because it's not a property of this class.");
+            }
+            else {
+                this.rdfResource.mainProperty = mainProperty;
+            }
 
             return this;
         }

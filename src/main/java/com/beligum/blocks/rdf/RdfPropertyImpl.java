@@ -24,6 +24,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfDataType;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
@@ -32,12 +33,14 @@ import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
  */
-public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
+public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfProperty
 {
     //-----CONSTANTS-----
 
@@ -50,9 +53,6 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     RdfPropertyImpl(String name)
     {
         super(name);
-
-        //make it uniform; no nulls
-        this.widgetConfig = new InputTypeConfig();
     }
 
     //-----PUBLIC METHODS-----
@@ -102,9 +102,9 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         @Override
         public RdfProperty create()
         {
-            //we don't have subclasses so don't worry about type checking (yet)
-            if (this.rdfResource.ontology != null && this.rdfResource.getType().equals(Type.PROPERTY)) {
-                this.rdfResource.ontology.addProperty(this.rdfResource);
+            //make it uniform; no nulls
+            if (this.rdfResource.widgetConfig == null) {
+                this.rdfResource.widgetConfig = new InputTypeConfig();
             }
 
             if (this.rdfResource.dataType == null) {
@@ -119,6 +119,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                 }
             }
 
+            //Note: this call will add us to the ontology
             return super.create();
         }
 

@@ -16,15 +16,17 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.blocks.rdf.RdfFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 
 /**
  * Created by bram on 2/28/16.
  */
-public interface RdfOntology extends RdfCompositeResource
+public interface RdfOntology extends RdfResource
 {
     /**
      * The namespace of this vocabulary, consisting of a full URI and a shorthand prefix
@@ -48,7 +50,7 @@ public interface RdfOntology extends RdfCompositeResource
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfResource> getAllTypes();
+    Map<URI, RdfOntologyMember> getAllMembers();
 
     /**
      * Returns all classes in this vocabulary
@@ -91,5 +93,11 @@ public interface RdfOntology extends RdfCompositeResource
     //avoids infinite recursion
     @JsonIgnore
     Map<URI, RdfProperty> getPublicProperties();
+
+    /**
+     * Registers an ontology member into this ontology; don't use this manually, it's for internal use only (hence the factory dependency)
+     */
+    @JsonIgnore
+    void register(RdfFactory rdfFactory, RdfOntologyMember member);
 
 }

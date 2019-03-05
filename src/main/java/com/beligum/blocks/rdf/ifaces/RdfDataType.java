@@ -17,6 +17,10 @@
 package com.beligum.blocks.rdf.ifaces;
 
 /**
+ * The data type of a property, eg. XSD:string for a RDFS:label property.
+ * This class in itself is more or less a representation of rdfs:Datatype, while instances
+ * of this class attached to RdfProperties more or less coincide with the rdfs:range concept.
+ *
  * Created by bram on 3/2/16.
  */
 public interface RdfDataType extends RdfClass
