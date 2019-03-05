@@ -573,7 +573,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return retVal;
         },
 
-        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener, addEmptyEntry)
+        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener, emptyEntry)
         {
             var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
                 [{
@@ -602,11 +602,17 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     var comboEntries = [];
 
-                    if (addEmptyEntry) {
-                        comboEntries.push({
-                            name: BlocksMessages.comboboxEmptySelection,
-                            value: ''
-                        });
+                    if (emptyEntry) {
+                        //'emptyEntry' used to be a 'addEmptyEntry' boolean, this supports both the new and old use case
+                        if (!Commons.isUnset(emptyEntry.name) && !Commons.isUnset(emptyEntry.value)) {
+                            comboEntries.push(emptyEntry);
+                        }
+                        else {
+                            comboEntries.push({
+                                name: BlocksMessages.comboboxEmptySelection,
+                                value: ''
+                            });
+                        }
                     }
 
                     $.each(data, function (idx, entry)

@@ -105,30 +105,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             super(rdfFactory, rdfClass);
         }
 
-        @Override
-        public RdfClass create() throws RdfInitializationException
-        {
-            //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
-            if (this.rdfResource.resourceSummarizer == null) {
-                this.rdfResource.resourceSummarizer = new SimpleResourceSummarizer();
-            }
-
-            for (RdfClass c : this.rdfResource.superClasses) {
-                //we save the relationship and add all properties of the superclasses to this class
-                this.rdfResource.superClasses.add(c);
-                for (RdfProperty p : c.getProperties()) {
-                    if (this.rdfResource.properties.contains(p)) {
-                        throw new RdfInitializationException("RDFClass " + this + " inherits from " + c + ", but the property " + p + " would overwrite an existing property, can't continue.");
-                    }
-                    else {
-                        this.rdfResource.properties.add(p);
-                    }
-                }
-            }
-
-            //Note: this call will add us to the ontology
-            return super.create();
-        }
         public Builder superClass(RdfClass superClass) throws RdfInitializationException
         {
             return this.superClasses(superClass);
@@ -185,6 +161,31 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             }
 
             return this;
+        }
+
+        @Override
+        RdfClass create() throws RdfInitializationException
+        {
+            //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
+            if (this.rdfResource.resourceSummarizer == null) {
+                this.rdfResource.resourceSummarizer = new SimpleResourceSummarizer();
+            }
+
+            for (RdfClass c : this.rdfResource.superClasses) {
+                //we save the relationship and add all properties of the superclasses to this class
+                this.rdfResource.superClasses.add(c);
+                for (RdfProperty p : c.getProperties()) {
+                    if (this.rdfResource.properties.contains(p)) {
+                        throw new RdfInitializationException("RDFClass " + this + " inherits from " + c + ", but the property " + p + " would overwrite an existing property, can't continue.");
+                    }
+                    else {
+                        this.rdfResource.properties.add(p);
+                    }
+                }
+            }
+
+            //Note: this call will add us to the ontology
+            return super.create();
         }
     }
 }

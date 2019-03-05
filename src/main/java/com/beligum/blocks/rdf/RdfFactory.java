@@ -31,8 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Main factory class for all RDF-related initialization and lookup.
@@ -70,7 +69,10 @@ public class RdfFactory
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private static RdfFactory instance = null;
+    private static boolean initialized = false;
+
+    RdfOntology ontology;
+    Set<AbstractRdfOntologyMember.Builder> registry;
 
     //-----CONSTRUCTORS-----
     /**
@@ -79,6 +81,8 @@ public class RdfFactory
      */
     private RdfFactory()
     {
+        this.ontology = null;
+        this.registry = new LinkedHashSet<>();
     }
 
     //-----STATIC METHODS-----
@@ -156,17 +160,17 @@ public class RdfFactory
     public static void assertInitialized()
     {
         //speedy synchronization
-        if (instance == null) {
+        if (!initialized) {
             synchronized (RdfFactory.class) {
-                if (instance == null) {
-
-                    instance = new RdfFactory();
+                if (!initialized) {
 
                     for (Class<? extends RdfOntology> c : ReflectionFunctions.searchAllClassesImplementing(RdfOntology.class, true)) {
                         try {
-                            //passing an instance of RdfFactory (note the private constructor) to the constructor, assures other developers won't be able to
-                            //create RDF ontology instances manually
-                            RdfOntology rdfOntology = c.getConstructor(instance.getClass()).newInstance(instance);
+                            //Passing an instance of RdfFactory (note the private constructor) to the constructor, assures other developers won't be able to
+                            //create RDF ontology instances manually.
+                            //Also note that we create a new factory instance for each ontology, because we want to track the ontology members that were created
+                            //during this session, to auto-finalize them after creating the instances from the proxies, see RdfOntology constructor for details.
+                            RdfOntology rdfOntology = c.getConstructor(RdfFactory.class).newInstance(new RdfFactory());
 
                             //this is support for a splitted implementation of an ontology, spread out over multiple java classes
                             //(needed for modularization)
@@ -187,6 +191,8 @@ public class RdfFactory
                             throw new RdfInstantiationException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
                         }
                     }
+
+                    initialized = true;
                 }
             }
         }

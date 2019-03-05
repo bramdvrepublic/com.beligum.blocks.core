@@ -104,8 +104,27 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
             super(rdfFactory, rdfProperty);
         }
 
+        public Builder dataType(RdfClass dataType)
+        {
+            this.rdfResource.dataType = dataType;
+
+            return this;
+        }
+        public Builder widgetType(InputType widgetType)
+        {
+            this.rdfResource.widgetType = widgetType;
+
+            return this;
+        }
+        public Builder widgetConfig(InputTypeConfig widgetConfig)
+        {
+            this.rdfResource.widgetConfig = widgetConfig;
+
+            return this;
+        }
+
         @Override
-        public RdfProperty create() throws RdfInitializationException
+        RdfProperty create() throws RdfInitializationException
         {
             //make it uniform; no nulls
             if (this.rdfResource.widgetConfig == null) {
@@ -126,25 +145,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             //Note: this call will add us to the ontology
             return super.create();
-        }
-
-        public Builder dataType(RdfClass dataType)
-        {
-            this.rdfResource.dataType = dataType;
-
-            return this;
-        }
-        public Builder widgetType(InputType widgetType)
-        {
-            this.rdfResource.widgetType = widgetType;
-
-            return this;
-        }
-        public Builder widgetConfig(InputTypeConfig widgetConfig)
-        {
-            this.rdfResource.widgetConfig = widgetConfig;
-
-            return this;
         }
     }
 }

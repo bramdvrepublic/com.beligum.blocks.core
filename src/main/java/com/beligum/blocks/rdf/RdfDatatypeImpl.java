@@ -54,7 +54,7 @@ public class RdfDatatypeImpl extends RdfClassImpl implements RdfDatatype
         }
 
         @Override
-        public RdfDatatype create() throws RdfInitializationException
+        RdfDatatype create() throws RdfInitializationException
         {
             //Note: this call will add us to the ontology
             return super.create();

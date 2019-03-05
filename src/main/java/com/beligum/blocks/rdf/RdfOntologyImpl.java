@@ -52,6 +52,9 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
      */
     RdfOntologyImpl(RdfFactory rdfFactory) throws RdfInitializationException
     {
+        //now we're created, store a reference in the factory
+        rdfFactory.ontology = this;
+
         this.allMembers = new LinkedHashMap<>();
         this.allClasses = new LinkedHashMap<>();
         this.publicClasses = new LinkedHashMap<>();
@@ -63,26 +66,12 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         //this call should initialize all member fields
         this.create(rdfFactory);
 
-        // we give a chance to initialize() method to fill the members collection,
-        // but if it didn't do that, we'll iterate the fields of this ontology here
-        // to build a list of all rdf resources using reflection and heuristics.
-        if (this.allMembers.isEmpty()) {
-            try {
-                for (Field field : this.getClass().getFields()) {
-                    //should we also check for a static modifier here?
-                    if (field.getType().isAssignableFrom(RdfOntologyMember.class)) {
-                        RdfOntologyMember member = (RdfOntologyMember) field.get(this);
-                        if (member == null) {
-                            throw new RdfInitializationException("Field inside an RDF ontology turned out null after initializing the ontology; this shouldn't happen; " + this);
-                        }
-                        else {
-                            this._register(member);
-                        }
-                    }
-                }
-            }
-            catch (Exception e) {
-                throw new RdfInitializationException("Error happened while auto-iterating the members of an ontology; " + this, e);
+        // now loop through all members that were created during the scope of the last create()
+        // to do some auto post-initialization
+        for (AbstractRdfOntologyMember.Builder m : rdfFactory.registry) {
+            //if the caller refrained from calling create(), do it here
+            if (m.rdfResource.isProxy()) {
+                m.create();
             }
         }
     }

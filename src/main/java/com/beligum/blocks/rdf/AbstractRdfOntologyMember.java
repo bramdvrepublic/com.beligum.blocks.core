@@ -175,39 +175,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             this.rdfFactory = rdfFactory;
             this.rdfResource = rdfResource;
+
+            // register that the new member was "created" in the scope of this rdfFactory
+            // so we can do some auto post-initialization in RdfOntology constructor
+            this.rdfFactory.registry.add(this);
         }
 
         //-----PUBLIC METHODS-----
-        public T create() throws RdfInitializationException
-        {
-            if (this.rdfResource.ontology == null) {
-                throw new RdfInitializationException(
-                                "Trying to create an RdfClass '" + this.rdfResource.getName() + "' without any ontology to connect to, can't continue because too much depends on this.");
-            }
-            else {
-                this.rdfResource.ontology._register(this.rdfResource);
-            }
-
-            if (this.rdfResource.title == null) {
-                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without title, can't continue because too much depends on this.");
-            }
-
-            if (this.rdfResource.label == null) {
-                this.rdfResource.label = this.rdfResource.title;
-            }
-
-            //here, all checks passed and the proxy can be converted to a valid instance
-            this.rdfResource.proxy = false;
-
-            //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
-            return (T) this.rdfResource;
-        }
-        public B ontology(RdfOntology ontology)
-        {
-            this.rdfResource.ontology = ontology;
-
-            return this.builder;
-        }
         public B isPublic(boolean isPublic)
         {
             this.rdfResource.isPublic = isPublic;
@@ -234,6 +208,34 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         }
 
         //-----PROTECTED METHODS-----
+        /**
+         * Note this method is package-private because it's called automatically for every new member
+         * in the RdfOntology constructor
+         */
+        T create() throws RdfInitializationException
+        {
+            //we don't expost the ontology setter because we can fill it here automatically
+            this.rdfResource.ontology = this.rdfFactory.ontology;
+
+            //register the member into the ontology, filling all the right mappings
+            this.rdfResource.ontology._register(this.rdfResource);
+
+            if (this.rdfResource.title == null) {
+                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without title, can't continue because too much depends on this.");
+            }
+
+            if (this.rdfResource.label == null) {
+                this.rdfResource.label = this.rdfResource.title;
+            }
+
+            // --- here, we all done initializing/checking the resource ---
+
+            //here, all checks passed and the proxy can be converted to a valid instance
+            this.rdfResource.proxy = false;
+
+            //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
+            return (T) this.rdfResource;
+        }
 
         //-----PRIVATE METHODS-----
     }

@@ -16,14 +16,9 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfDatatype;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
-import com.beligum.blocks.rdf.RdfClassImpl;
-import com.beligum.blocks.rdf.RdfDatatypeImpl;
-import com.beligum.blocks.rdf.RdfOntologyImpl;
-import com.beligum.blocks.rdf.RdfPropertyImpl;
+import com.beligum.blocks.exceptions.RdfInitializationException;
+import com.beligum.blocks.rdf.*;
+import com.beligum.blocks.rdf.ifaces.*;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
 import java.net.URI;
@@ -44,96 +39,91 @@ import java.net.URI;
  */
 public final class RDF extends RdfOntologyImpl
 {
-    //-----SINGLETON-----
-    public static final RdfOntology INSTANCE = new RDF();
+    //-----CONSTANTS-----
+    public static final RdfNamespace NAMESPACE = new RdfNamespaceImpl("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf");
 
-    private RDF()
-    {
-        super(URI.create("http://www.w3.org/1999/02/22-rdf-syntax-ns#"), "rdf");
-    }
-
-    //-----ENTRIES-----
+    //-----MEMBERS-----
     /**
      * The subject is an instance of a class
      */
-    public static final RdfProperty TYPE = new RdfPropertyImpl("type", INSTANCE, Entries.RDF_title_type, Entries.RDF_label_type, RDFS.CLASS);
+    public static RdfProperty type = RdfFactory.newProxyProperty("type");
 
     /**
      * The class of RDF properties
      */
-    public static final RdfClass PROPERTY = new RdfClassImpl("Property", INSTANCE, Entries.RDF_title_Property, Entries.RDF_label_Property);
+    public static RdfClass Property = RdfFactory.newProxyClass("Property");
 
     /**
      * The datatype of XML literal values
      */
-    public static final RdfDatatype XMLLITERAL = new RdfDatatypeImpl("XMLLiteral", INSTANCE, Entries.RDF_title_XMLLiteral, Entries.RDF_label_XMLLiteral);
+    public static RdfDatatype XMLLiteral = RdfFactory.newProxyDatatype("XMLLiteral");
 
     /**
      * The subject of the subject RDF statement
      */
-    public static final RdfProperty SUBJECT = new RdfPropertyImpl("subject", INSTANCE, Entries.RDF_title_subject, Entries.RDF_label_subject, RDFS.RESOURCE);
+    public static RdfProperty subject = RdfFactory.newProxyProperty("subject");
 
     /**
      * The predicate of the subject RDF statement
      */
-    public static final RdfProperty PREDICATE = new RdfPropertyImpl("predicate", INSTANCE, Entries.RDF_title_predicate, Entries.RDF_label_predicate, RDFS.RESOURCE);
+    public static RdfProperty predicate = RdfFactory.newProxyProperty("predicate");
 
     /**
      * The object of the subject RDF statement
      */
-    public static final RdfProperty OBJECT = new RdfPropertyImpl("object", INSTANCE, Entries.RDF_title_object, Entries.RDF_label_object, RDFS.RESOURCE);
+    public static RdfProperty object = RdfFactory.newProxyProperty("object");
 
     /**
      * The class of RDF statements
      */
-    public static final RdfClass STATEMENT = new RdfClassImpl("Statement", INSTANCE, Entries.RDF_title_Statement, Entries.RDF_label_Statement);
+    public static RdfClass Statement = RdfFactory.newProxyClass("Statement");
 
     /**
      * The class of unordered containers
      */
-    public static final RdfClass BAG = new RdfClassImpl("Bag", INSTANCE, Entries.RDF_title_Bag, Entries.RDF_label_Bag);
+    public static RdfClass Bag = RdfFactory.newProxyClass("Bag");
 
     /**
      * The class of containers of alternatives
      */
-    public static final RdfClass ALT = new RdfClassImpl("Alt", INSTANCE, Entries.RDF_title_Alt, Entries.RDF_label_Alt);
+    public static RdfClass Alt = RdfFactory.newProxyClass("Alt");
 
     /**
      * The class of ordered containers
      */
-    public static final RdfClass SEQ = new RdfClassImpl("Seq", INSTANCE, Entries.RDF_title_Seq, Entries.RDF_label_Seq);
+    public static RdfClass Seq = RdfFactory.newProxyClass("Seq");
 
     /**
      * Idiomatic property used for structured values
      */
-    public static final RdfProperty VALUE = new RdfPropertyImpl("value", INSTANCE, Entries.RDF_title_value, Entries.RDF_label_value, RDFS.RESOURCE);
+    public static RdfProperty value = RdfFactory.newProxyProperty("value");
 
     /**
      * weird: this type doesn't seem to occur in https://www.w3.org/1999/02/22-rdf-syntax-ns# ??
      * See eg. here for more info: https://www.w3.org/TR/rdf-syntax-grammar/#section-Syntax-list-elements
      */
-    public static final RdfProperty LI = new RdfPropertyImpl("li", INSTANCE, Entries.RDF_title_li, Entries.RDF_label_li, RDFS.RESOURCE);
+    public static RdfProperty li = RdfFactory.newProxyProperty("li");
 
     /**
      * The class of RDF Lists
      */
-    public static final RdfClass LIST = new RdfClassImpl("List", INSTANCE, Entries.RDF_title_List, Entries.RDF_label_List);
+    public static RdfClass List = RdfFactory.newProxyClass("List");
 
     /**
      * The first item in the subject RDF list
      */
-    public static final RdfProperty FIRST = new RdfPropertyImpl("first", INSTANCE, Entries.RDF_title_first, Entries.RDF_label_first, RDFS.RESOURCE);
+    public static RdfProperty first = RdfFactory.newProxyProperty("first");
 
     /**
      * The rest of the subject RDF list after the first item
      */
-    public static final RdfProperty REST = new RdfPropertyImpl("rest", INSTANCE, Entries.RDF_title_rest, Entries.RDF_label_rest, RDF.LIST);
+    public static RdfProperty rest = RdfFactory.newProxyProperty("rest");
 
     /**
      * The empty list, with no items in it. If the rest of a list is nil then the list has no more items in it.
      * !!NOTE!! the datatype is actually an RDF List, not a Class, but that's not modeled in this class hierarchy yet...
      */
-    public static final RdfClass NIL = new RdfClassImpl("nil", INSTANCE, Entries.RDF_title_nil, Entries.RDF_label_nil);
+    public static RdfClass nil = RdfFactory.newProxyClass("nil");
 
     //see https://github.com/RubenVerborgh/N3.js/issues/15:
     // "rdf:PlainLiteral was the datatype suggested (and standardised) by the OWL community before the RDF community created RDF-1.1:"
@@ -217,11 +207,103 @@ public final class RDF extends RdfOntologyImpl
      * ##########################
      *
      */
-    public static final RdfDatatype LANGSTRING = new RdfDatatypeImpl("langString", INSTANCE, Entries.RDF_title_langString, Entries.RDF_label_langString);
+    public static RdfDatatype langString = RdfFactory.newProxyDatatype("langString");
 
     /**
      * The datatype of RDF literals storing fragments of HTML content
      */
-    public static final RdfDatatype HTML = new RdfDatatypeImpl("HTML", INSTANCE, Entries.RDF_title_HTML, Entries.RDF_label_HTML);
+    public static RdfDatatype HTML = RdfFactory.newProxyDatatype("HTML");
+
+    //-----CONSTRUCTORS-----
+    @Override
+    protected void create(RdfFactory rdfFactory) throws RdfInitializationException
+    {
+        rdfFactory.proxy(type)
+                  .title(Entries.RDF_title_type)
+                  .label(Entries.RDF_label_type)
+                  .dataType(RDFS.CLASS);
+
+        rdfFactory.proxy(Property)
+                  .title(Entries.RDF_title_Property)
+                  .label(Entries.RDF_label_Property);
+
+        rdfFactory.proxy(XMLLiteral)
+                  .title(Entries.RDF_title_XMLLiteral)
+                  .label(Entries.RDF_label_XMLLiteral);
+
+        rdfFactory.proxy(subject)
+                  .title(Entries.RDF_title_subject)
+                  .label(Entries.RDF_label_subject)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(predicate)
+                  .title(Entries.RDF_title_predicate)
+                  .label(Entries.RDF_label_predicate)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(object)
+                  .title(Entries.RDF_title_object)
+                  .label(Entries.RDF_label_object)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(Statement)
+                  .title(Entries.RDF_title_Statement)
+                  .label(Entries.RDF_label_Statement);
+
+        rdfFactory.proxy(Bag)
+                  .title(Entries.RDF_title_Bag)
+                  .label(Entries.RDF_label_Bag);
+
+        rdfFactory.proxy(Alt)
+                  .title(Entries.RDF_title_Alt)
+                  .label(Entries.RDF_label_Alt);
+
+        rdfFactory.proxy(Seq)
+                  .title(Entries.RDF_title_Seq)
+                  .label(Entries.RDF_label_Seq);
+
+        rdfFactory.proxy(value)
+                  .title(Entries.RDF_title_value)
+                  .label(Entries.RDF_label_value)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(li)
+                  .title(Entries.RDF_title_li)
+                  .label(Entries.RDF_label_li)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(List)
+                  .title(Entries.RDF_title_List)
+                  .label(Entries.RDF_label_List);
+
+        rdfFactory.proxy(first)
+                  .title(Entries.RDF_title_first)
+                  .label(Entries.RDF_label_first)
+                  .dataType(RDFS.RESOURCE);
+
+        rdfFactory.proxy(rest)
+                  .title(Entries.RDF_title_rest)
+                  .label(Entries.RDF_label_rest)
+                  .dataType(List);
+
+        rdfFactory.proxy(nil)
+                  .title(Entries.RDF_title_nil)
+                  .label(Entries.RDF_label_nil);
+
+        rdfFactory.proxy(langString)
+                  .title(Entries.RDF_title_langString)
+                  .label(Entries.RDF_label_langString);
+
+        rdfFactory.proxy(HTML)
+                  .title(Entries.RDF_title_HTML)
+                  .label(Entries.RDF_label_HTML);
+    }
+
+    //-----PUBLIC METHODS-----
+    @Override
+    public RdfNamespace getNamespace()
+    {
+        return NAMESPACE;
+    }
 
 }

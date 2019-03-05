@@ -49,16 +49,17 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 public class RdfEndpoint
 {
     //-----CONSTANTS-----
-    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
-    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
-    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
-                                                                Local.INSTANCE,
-                                                                core.Entries.rdfClassAllTitle,
-                                                                core.Entries.rdfClassAllLabel,
-                                                                new URI[] {},
-                                                                false,
-                                                                new LocalQueryEndpoint(),
-                                                                null);
+    private static final RdfQueryEndpoint SEARCH_ALL_ENDPOINT = new LocalQueryEndpoint();
+//    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
+//    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
+//    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
+//                                                                Local.INSTANCE,
+//                                                                core.Entries.rdfClassAllTitle,
+//                                                                core.Entries.rdfClassAllLabel,
+//                                                                new URI[] {},
+//                                                                false,
+//                                                                new LocalQueryEndpoint(),
+//                                                                null);
 
     //-----VARIABLES-----
 
@@ -131,25 +132,26 @@ public class RdfEndpoint
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
-        //support a search-all-types-query when the type is empty
-        RdfClass rdfClass = null;
-        if (resourceTypeCurie == null || StringUtils.isEmpty(resourceTypeCurie.toString())) {
-            rdfClass = ALL_CLASSES;
+        //support a search-all-types-query when this is empty
+        RdfClass resourceClassFilter = null;
+        RdfQueryEndpoint endpoint = null;
+        if (resourceTypeCurie != null && !StringUtils.isEmpty(resourceTypeCurie.toString())) {
+            resourceClassFilter = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            if (resourceClassFilter != null) {
+                endpoint = resourceClassFilter.getEndpoint();
+            }
         }
         else {
-            rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            endpoint = SEARCH_ALL_ENDPOINT;
         }
 
-        if (rdfClass != null) {
-            RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
-            if (endpoint != null) {
-                RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
-                if (prefixSearch) {
-                    queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
-                }
-
-                retVal = endpoint.search(rdfClass == ALL_CLASSES ? null : rdfClass, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
+        if (endpoint != null) {
+            RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
+            if (prefixSearch) {
+                queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
             }
+
+            retVal = endpoint.search(resourceClassFilter, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
         }
         else {
             Logger.warn("Encountered unknown resource type; " + resourceTypeCurie);
