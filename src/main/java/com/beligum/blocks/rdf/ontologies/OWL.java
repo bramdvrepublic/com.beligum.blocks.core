@@ -56,18 +56,18 @@ public final class OWL extends RdfOntologyImpl
     /**
      * The class of OWL classes
      */
-    public static RdfClass Class = RdfFactory.newProxyClass("Class");
+    public static final RdfClass Class = RdfFactory.newProxyClass("Class");
 
     /**
      * The class of OWL individuals
      * Note: this is actually an OwlClass (that subclasses rdfs:Class)
      */
-    public static RdfClass Thing = RdfFactory.newProxyClass("Thing");
+    public static final RdfClass Thing = RdfFactory.newProxyClass("Thing");
 
     /**
      * The property that determines that two given individuals are equal
      */
-    public static RdfProperty sameAs = RdfFactory.newProxyProperty("sameAs");
+    public static final RdfProperty sameAs = RdfFactory.newProxyProperty("sameAs");
 
     //TODO complete the implementation of the OWL ontology
 
@@ -75,24 +75,18 @@ public final class OWL extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.proxy(Class)
-                  .ontology(this)
+        rdfFactory.register(Class)
                   .title(Entries.OWL_title_Class)
-                  .label(Entries.OWL_label_Class)
-                  .create();
+                  .label(Entries.OWL_label_Class);
 
-        rdfFactory.proxy(Thing)
-                  .ontology(this)
+        rdfFactory.register(Thing)
                   .title(Entries.OWL_title_Thing)
-                  .label(Entries.OWL_label_Thing)
-                  .create();
+                  .label(Entries.OWL_label_Thing);
 
-        rdfFactory.proxy(sameAs)
-                  .ontology(this)
+        rdfFactory.register(sameAs)
                   .title(Entries.OWL_title_sameAs)
                   .label(Entries.OWL_label_sameAs)
-                  .dataType(Thing)
-                  .create();
+                  .dataType(Thing);
     }
 
     //-----PUBLIC METHODS-----

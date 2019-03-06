@@ -78,17 +78,17 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
         String fieldName = property.getCurieName().toString();
 
-        if (value instanceof Literal && !property.getDataType().equals(XSD.ANY_URI)) {
+        if (value instanceof Literal && !property.getDataType().equals(XSD.anyURI)) {
             Literal objLiteral = (Literal) value;
 
             //Note: for an overview possible values, check com.beligum.blocks.config.InputType
-            if (property.getDataType().equals(XSD.BOOLEAN)) {
+            if (property.getDataType().equals(XSD.boolean_)) {
                 String val = objLiteral.booleanValue() ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
                 indexer.indexConstantField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
             //because both date and time are strict dates, we'll use the millis (long) since epoch as the index value
-            else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.DATE_TIME)) {
+            else if (property.getDataType().equals(XSD.date) || property.getDataType().equals(XSD.dateTime)) {
 
                 //the return value is mostly used to sort the field, and to construct the _all field, do it makes sense to return the long instead of the calendar object
                 GregorianCalendar cal = objLiteral.calendarValue().toGregorianCalendar();
@@ -100,7 +100,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 retVal = new RdfIndexer.IndexResult(val);
             }
             //we don't have a date for time, so we'll use the millis since midnight as the index value
-            else if (property.getDataType().equals(XSD.TIME)) {
+            else if (property.getDataType().equals(XSD.time)) {
                 //Note that this will create a date with the day set to 01/01/1970
                 GregorianCalendar cal = objLiteral.calendarValue().toGregorianCalendar();
                 //dates are indexed with UTC timezone, so make sure it's not created with the server's timezone
@@ -111,50 +111,50 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.INT)
-                     || property.getDataType().equals(XSD.INTEGER)
-                     || property.getDataType().equals(XSD.NEGATIVE_INTEGER)
-                     || property.getDataType().equals(XSD.UNSIGNED_INT)
-                     || property.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
-                     || property.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
-                     || property.getDataType().equals(XSD.POSITIVE_INTEGER)
-                     || property.getDataType().equals(XSD.SHORT)
-                     || property.getDataType().equals(XSD.UNSIGNED_SHORT)
-                     || property.getDataType().equals(XSD.BYTE)
-                     || property.getDataType().equals(XSD.UNSIGNED_BYTE)) {
+            else if (property.getDataType().equals(XSD.int_)
+                     || property.getDataType().equals(XSD.integer)
+                     || property.getDataType().equals(XSD.negativeInteger)
+                     || property.getDataType().equals(XSD.unsignedInt)
+                     || property.getDataType().equals(XSD.nonNegativeInteger)
+                     || property.getDataType().equals(XSD.nonPositiveInteger)
+                     || property.getDataType().equals(XSD.positiveInteger)
+                     || property.getDataType().equals(XSD.short_)
+                     || property.getDataType().equals(XSD.unsignedShort)
+                     || property.getDataType().equals(XSD.byte_)
+                     || property.getDataType().equals(XSD.unsignedByte)) {
                 Integer val = objLiteral.intValue();
                 indexer.indexIntegerField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.LANGUAGE)) {
+            else if (property.getDataType().equals(XSD.language)) {
                 String val = objLiteral.stringValue();
                 indexer.indexStringField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.LONG)
-                     || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
+            else if (property.getDataType().equals(XSD.long_)
+                     || property.getDataType().equals(XSD.unsignedLong)) {
                 Long val = objLiteral.longValue();
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.FLOAT)) {
+            else if (property.getDataType().equals(XSD.float_)) {
                 Float val = objLiteral.floatValue();
                 indexer.indexFloatField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.DOUBLE)
+            else if (property.getDataType().equals(XSD.double_)
                      //this is doubtful, but let's take the largest one
                      // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
-                     || property.getDataType().equals(XSD.DECIMAL)) {
+                     || property.getDataType().equals(XSD.decimal)) {
                 Double val = objLiteral.doubleValue();
                 indexer.indexDoubleField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.STRING)
-                     || property.getDataType().equals(XSD.NORMALIZED_STRING)
+            else if (property.getDataType().equals(XSD.string)
+                     || property.getDataType().equals(XSD.normalizedString)
                      || property.getDataType().equals(RDF.LANGSTRING)
                      //this is a little tricky, but in the end it's just a string, right?
-                     || property.getDataType().equals(XSD.BASE64_BINARY)) {
+                     || property.getDataType().equals(XSD.base64Binary)) {
                 String val = objLiteral.stringValue();
                 indexer.indexStringField(fieldName, val);
                 //if the value is within certain bounds, also index it as a constant,
@@ -177,7 +177,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                                       property.getDataType());
             }
         }
-        else if (value instanceof IRI || property.getDataType().equals(XSD.ANY_URI)) {
+        else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
             //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
             URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 
@@ -242,23 +242,23 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
         Object retVal = null;
 
         if (value != null) {
-            if (property.getDataType().equals(XSD.BOOLEAN)) {
+            if (property.getDataType().equals(XSD.boolean_)) {
                 retVal = Boolean.parseBoolean(value) ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
             }
-            else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
+            else if (property.getDataType().equals(XSD.date) || property.getDataType().equals(XSD.time) || property.getDataType().equals(XSD.dateTime)) {
                 if (NumberUtils.isNumber(value)) {
                     retVal = Long.parseLong(value);
                 }
                 else {
-                    if (property.getDataType().equals(XSD.DATE)) {
+                    if (property.getDataType().equals(XSD.date)) {
                         LocalDate localDate = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(value));
                         retVal = localDate.atStartOfDay(UTC).toInstant().toEpochMilli();
                     }
-                    else if (property.getDataType().equals(XSD.DATE_TIME)) {
+                    else if (property.getDataType().equals(XSD.dateTime)) {
                         ZonedDateTime zonedDateTime = ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value));
                         retVal = zonedDateTime.toInstant().toEpochMilli();
                     }
-                    else if (property.getDataType().equals(XSD.TIME)) {
+                    else if (property.getDataType().equals(XSD.time)) {
                         LocalTime localTime = LocalTime.from(DateTimeFormatter.ISO_LOCAL_TIME.parse(value));
                         //we return the millis since midnight
                         retVal = localTime.toNanoOfDay()/1000000;
@@ -268,45 +268,45 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     }
                 }
             }
-            else if (property.getDataType().equals(XSD.INT)
-                     || property.getDataType().equals(XSD.INTEGER)
-                     || property.getDataType().equals(XSD.NEGATIVE_INTEGER)
-                     || property.getDataType().equals(XSD.UNSIGNED_INT)
-                     || property.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
-                     || property.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
-                     || property.getDataType().equals(XSD.POSITIVE_INTEGER)
-                     || property.getDataType().equals(XSD.SHORT)
-                     || property.getDataType().equals(XSD.UNSIGNED_SHORT)
-                     || property.getDataType().equals(XSD.BYTE)
-                     || property.getDataType().equals(XSD.UNSIGNED_BYTE)) {
+            else if (property.getDataType().equals(XSD.int_)
+                     || property.getDataType().equals(XSD.integer)
+                     || property.getDataType().equals(XSD.negativeInteger)
+                     || property.getDataType().equals(XSD.unsignedInt)
+                     || property.getDataType().equals(XSD.nonNegativeInteger)
+                     || property.getDataType().equals(XSD.nonPositiveInteger)
+                     || property.getDataType().equals(XSD.positiveInteger)
+                     || property.getDataType().equals(XSD.short_)
+                     || property.getDataType().equals(XSD.unsignedShort)
+                     || property.getDataType().equals(XSD.byte_)
+                     || property.getDataType().equals(XSD.unsignedByte)) {
                 retVal = Integer.parseInt(value);
             }
-            else if (property.getDataType().equals(XSD.LONG)
-                     || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
+            else if (property.getDataType().equals(XSD.long_)
+                     || property.getDataType().equals(XSD.unsignedLong)) {
                 retVal = Long.parseLong(value);
             }
-            else if (property.getDataType().equals(XSD.FLOAT)) {
+            else if (property.getDataType().equals(XSD.float_)) {
                 retVal = Float.parseFloat(value);
             }
-            else if (property.getDataType().equals(XSD.DOUBLE)) {
+            else if (property.getDataType().equals(XSD.double_)) {
                 retVal = Double.parseDouble(value);
             }
-            else if (property.getDataType().equals(XSD.DECIMAL)) {
+            else if (property.getDataType().equals(XSD.decimal)) {
                 retVal = Double.parseDouble(value);
             }
-            else if (property.getDataType().equals(XSD.STRING)
-                     || property.getDataType().equals(XSD.NORMALIZED_STRING)
+            else if (property.getDataType().equals(XSD.string)
+                     || property.getDataType().equals(XSD.normalizedString)
                      || property.getDataType().equals(RDF.LANGSTRING)) {
                 retVal = value;
             }
-            else if (property.getDataType().equals(XSD.LANGUAGE)) {
+            else if (property.getDataType().equals(XSD.language)) {
                 retVal = value;
             }
             else if (property.getDataType().equals(RDF.HTML)) {
                 retVal = StringFunctions.htmlToPlaintextRFC3676(value);
             }
             //Note: the pure class options if the IRI in the index() counterpart
-            else if (property.getDataType().equals(XSD.ANY_URI) || property.getDataType().getType().equals(RdfClass.Type.CLASS)) {
+            else if (property.getDataType().equals(XSD.anyURI) || property.getDataType().getType().equals(RdfClass.Type.CLASS)) {
                 //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
                 retVal = RdfTools.relativizeToLocalDomain(URI.create(value));
             }

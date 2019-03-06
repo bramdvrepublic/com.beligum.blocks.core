@@ -21,8 +21,6 @@ import com.beligum.blocks.rdf.*;
 import com.beligum.blocks.rdf.ifaces.*;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
-import java.net.URI;
-
 /**
  * The RDF Concepts Vocabulary (RDF)
  *
@@ -46,84 +44,84 @@ public final class RDF extends RdfOntologyImpl
     /**
      * The subject is an instance of a class
      */
-    public static RdfProperty type = RdfFactory.newProxyProperty("type");
+    public static final RdfProperty type = RdfFactory.newProxyProperty("type");
 
     /**
      * The class of RDF properties
      */
-    public static RdfClass Property = RdfFactory.newProxyClass("Property");
+    public static final RdfClass Property = RdfFactory.newProxyClass("Property");
 
     /**
      * The datatype of XML literal values
      */
-    public static RdfDatatype XMLLiteral = RdfFactory.newProxyDatatype("XMLLiteral");
+    public static final RdfDatatype XMLLiteral = RdfFactory.newProxyDatatype("XMLLiteral");
 
     /**
      * The subject of the subject RDF statement
      */
-    public static RdfProperty subject = RdfFactory.newProxyProperty("subject");
+    public static final RdfProperty subject = RdfFactory.newProxyProperty("subject");
 
     /**
      * The predicate of the subject RDF statement
      */
-    public static RdfProperty predicate = RdfFactory.newProxyProperty("predicate");
+    public static final RdfProperty predicate = RdfFactory.newProxyProperty("predicate");
 
     /**
      * The object of the subject RDF statement
      */
-    public static RdfProperty object = RdfFactory.newProxyProperty("object");
+    public static final RdfProperty object = RdfFactory.newProxyProperty("object");
 
     /**
      * The class of RDF statements
      */
-    public static RdfClass Statement = RdfFactory.newProxyClass("Statement");
+    public static final RdfClass Statement = RdfFactory.newProxyClass("Statement");
 
     /**
      * The class of unordered containers
      */
-    public static RdfClass Bag = RdfFactory.newProxyClass("Bag");
+    public static final RdfClass Bag = RdfFactory.newProxyClass("Bag");
 
     /**
      * The class of containers of alternatives
      */
-    public static RdfClass Alt = RdfFactory.newProxyClass("Alt");
+    public static final RdfClass Alt = RdfFactory.newProxyClass("Alt");
 
     /**
      * The class of ordered containers
      */
-    public static RdfClass Seq = RdfFactory.newProxyClass("Seq");
+    public static final RdfClass Seq = RdfFactory.newProxyClass("Seq");
 
     /**
      * Idiomatic property used for structured values
      */
-    public static RdfProperty value = RdfFactory.newProxyProperty("value");
+    public static final RdfProperty value = RdfFactory.newProxyProperty("value");
 
     /**
      * weird: this type doesn't seem to occur in https://www.w3.org/1999/02/22-rdf-syntax-ns# ??
      * See eg. here for more info: https://www.w3.org/TR/rdf-syntax-grammar/#section-Syntax-list-elements
      */
-    public static RdfProperty li = RdfFactory.newProxyProperty("li");
+    public static final RdfProperty li = RdfFactory.newProxyProperty("li");
 
     /**
      * The class of RDF Lists
      */
-    public static RdfClass List = RdfFactory.newProxyClass("List");
+    public static final RdfClass List = RdfFactory.newProxyClass("List");
 
     /**
      * The first item in the subject RDF list
      */
-    public static RdfProperty first = RdfFactory.newProxyProperty("first");
+    public static final RdfProperty first = RdfFactory.newProxyProperty("first");
 
     /**
      * The rest of the subject RDF list after the first item
      */
-    public static RdfProperty rest = RdfFactory.newProxyProperty("rest");
+    public static final RdfProperty rest = RdfFactory.newProxyProperty("rest");
 
     /**
      * The empty list, with no items in it. If the rest of a list is nil then the list has no more items in it.
      * !!NOTE!! the datatype is actually an RDF List, not a Class, but that's not modeled in this class hierarchy yet...
      */
-    public static RdfClass nil = RdfFactory.newProxyClass("nil");
+    public static final RdfClass nil = RdfFactory.newProxyClass("nil");
 
     //see https://github.com/RubenVerborgh/N3.js/issues/15:
     // "rdf:PlainLiteral was the datatype suggested (and standardised) by the OWL community before the RDF community created RDF-1.1:"
@@ -207,94 +205,94 @@ public final class RDF extends RdfOntologyImpl
      * ##########################
      *
      */
-    public static RdfDatatype langString = RdfFactory.newProxyDatatype("langString");
+    public static final RdfDatatype langString = RdfFactory.newProxyDatatype("langString");
 
     /**
      * The datatype of RDF literals storing fragments of HTML content
      */
-    public static RdfDatatype HTML = RdfFactory.newProxyDatatype("HTML");
+    public static final RdfDatatype HTML = RdfFactory.newProxyDatatype("HTML");
 
     //-----CONSTRUCTORS-----
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.proxy(type)
+        rdfFactory.register(type)
                   .title(Entries.RDF_title_type)
                   .label(Entries.RDF_label_type)
-                  .dataType(RDFS.CLASS);
+                  .dataType(RDFS.Class);
 
-        rdfFactory.proxy(Property)
+        rdfFactory.register(Property)
                   .title(Entries.RDF_title_Property)
                   .label(Entries.RDF_label_Property);
 
-        rdfFactory.proxy(XMLLiteral)
+        rdfFactory.register(XMLLiteral)
                   .title(Entries.RDF_title_XMLLiteral)
                   .label(Entries.RDF_label_XMLLiteral);
 
-        rdfFactory.proxy(subject)
+        rdfFactory.register(subject)
                   .title(Entries.RDF_title_subject)
                   .label(Entries.RDF_label_subject)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(predicate)
+        rdfFactory.register(predicate)
                   .title(Entries.RDF_title_predicate)
                   .label(Entries.RDF_label_predicate)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(object)
+        rdfFactory.register(object)
                   .title(Entries.RDF_title_object)
                   .label(Entries.RDF_label_object)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(Statement)
+        rdfFactory.register(Statement)
                   .title(Entries.RDF_title_Statement)
                   .label(Entries.RDF_label_Statement);
 
-        rdfFactory.proxy(Bag)
+        rdfFactory.register(Bag)
                   .title(Entries.RDF_title_Bag)
                   .label(Entries.RDF_label_Bag);
 
-        rdfFactory.proxy(Alt)
+        rdfFactory.register(Alt)
                   .title(Entries.RDF_title_Alt)
                   .label(Entries.RDF_label_Alt);
 
-        rdfFactory.proxy(Seq)
+        rdfFactory.register(Seq)
                   .title(Entries.RDF_title_Seq)
                   .label(Entries.RDF_label_Seq);
 
-        rdfFactory.proxy(value)
+        rdfFactory.register(value)
                   .title(Entries.RDF_title_value)
                   .label(Entries.RDF_label_value)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(li)
+        rdfFactory.register(li)
                   .title(Entries.RDF_title_li)
                   .label(Entries.RDF_label_li)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(List)
+        rdfFactory.register(List)
                   .title(Entries.RDF_title_List)
                   .label(Entries.RDF_label_List);
 
-        rdfFactory.proxy(first)
+        rdfFactory.register(first)
                   .title(Entries.RDF_title_first)
                   .label(Entries.RDF_label_first)
-                  .dataType(RDFS.RESOURCE);
+                  .dataType(RDFS.Resource);
 
-        rdfFactory.proxy(rest)
+        rdfFactory.register(rest)
                   .title(Entries.RDF_title_rest)
                   .label(Entries.RDF_label_rest)
                   .dataType(List);
 
-        rdfFactory.proxy(nil)
+        rdfFactory.register(nil)
                   .title(Entries.RDF_title_nil)
                   .label(Entries.RDF_label_nil);
 
-        rdfFactory.proxy(langString)
+        rdfFactory.register(langString)
                   .title(Entries.RDF_title_langString)
                   .label(Entries.RDF_label_langString);
 
-        rdfFactory.proxy(HTML)
+        rdfFactory.register(HTML)
                   .title(Entries.RDF_title_HTML)
                   .label(Entries.RDF_label_HTML);
     }

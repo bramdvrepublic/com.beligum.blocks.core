@@ -35,7 +35,6 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -129,13 +128,13 @@ public class PageFixTask extends ReindexTask
                         StartTag propertyStartTag = propertyEl.getStartTag();
 
                         //on 11/05/17, we started using the RDF.LANGSTRING datatype to mark a string as translatable,
-                        //this will process any XSD.STRING datatypes that should be "upgraded" to RDF.LANGSTRING
+                        //this will process any XSD.string datatypes that should be "upgraded" to RDF.LANGSTRING
                         if (rdfProperty.getDataType().equals(RDF.LANGSTRING)) {
                             Map<String, String> attrMap = new LinkedHashMap<>();
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
                             propertyAttributes.populateMap(attrMap, false);
 
-                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(XSD.STRING.getCurieName().toString())) {
+                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(XSD.string.getCurieName().toString())) {
                                 // if we reach this point, we are dealing with a <blocks-fact-entry> start tag that has a datatype="xsd:string",
                                 // but was later upgraded to rdf:langString. Following our own rules in RDF.LANGSTRING,
                                 // we'll delete the datatype-attribute.
@@ -147,7 +146,7 @@ public class PageFixTask extends ReindexTask
                         }
                         //we made a few mistakes in the past where we introduced the wrong inputType for date/time related dataTypes,
                         //this will make sure the inputType follows the dataType
-                        else if (rdfProperty.getDataType().equals(XSD.DATE) || rdfProperty.getDataType().equals(XSD.TIME) || rdfProperty.getDataType().equals(XSD.DATE_TIME)) {
+                        else if (rdfProperty.getDataType().equals(XSD.date) || rdfProperty.getDataType().equals(XSD.time) || rdfProperty.getDataType().equals(XSD.dateTime)) {
 
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
 
@@ -163,9 +162,9 @@ public class PageFixTask extends ReindexTask
 
                             try {
                                 //TODO this doesn't account for the GMT flag!
-                                if ((rdfProperty.getDataType().equals(XSD.DATE) && !classes.contains(InputType.Date.getConstant()))
-                                    || (rdfProperty.getDataType().equals(XSD.TIME) && !classes.contains(InputType.Time.getConstant()))
-                                    || (rdfProperty.getDataType().equals(XSD.DATE_TIME) && !classes.contains(InputType.DateTime.getConstant()))) {
+                                if ((rdfProperty.getDataType().equals(XSD.date) && !classes.contains(InputType.Date.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.time) && !classes.contains(InputType.Time.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(InputType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
                                     String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);

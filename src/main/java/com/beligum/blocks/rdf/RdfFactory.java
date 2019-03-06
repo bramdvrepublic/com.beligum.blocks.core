@@ -46,7 +46,7 @@ import java.util.*;
  * <p>
  * We have hidden all this functionality behind a few methods in this class. Eg. to create a RDF class in an ontology, you call:
  * <p>
- * public static RdfClass Thing = RdfFactory.newProxyClass("Thing");
+ * public static final RdfClass Thing = RdfFactory.newProxyClass("Thing");
  * <p>
  * After boot finishes, the create() method of the ontology is called, with a valid instance of this factory class. This instance
  * more or less functions as a 'key' (note the private constructor of RdfFactory) to initialize the proxy further using a decorator
@@ -57,6 +57,15 @@ import java.util.*;
  * .title(Entries.OWL_title_Thing)
  * .label(Entries.OWL_label_Thing)
  * .create();
+ *
+ * Update: we introduced a new factory instance for every ontology initialization, to keep track of the members added in this instance.
+ * This way, we can eliminate the need for these lines:
+ *
+ * .ontology(this)
+ * .create()
+ *
+ * because they can be added automatically after calling RdfOntology.create()
+ *
  * <p>
  * Note that create() needs to be called to finish everything off. Also note it returns the instance, but can be ignored to simplify the code.
  * If a method inside an ontology member is called without having created it properly, an RdfProxyException is thrown to signal the developer
@@ -71,7 +80,10 @@ public class RdfFactory
     //-----VARIABLES-----
     private static boolean initialized = false;
 
+    //package-private only: these will be used to keep track of classes added during this factory session
+    //will be initialized as soon as the ontology is created (because we're using a dynamic instanceof())
     RdfOntology ontology;
+    //a registry of builder instances to automatically call .create() on them
     Set<AbstractRdfOntologyMember.Builder> registry;
 
     //-----CONSTRUCTORS-----
@@ -174,11 +186,14 @@ public class RdfFactory
 
                             //this is support for a splitted implementation of an ontology, spread out over multiple java classes
                             //(needed for modularization)
+                            //Note that the registry of the factory instance will still contain all the builders created during this session since we
+                            //always create a new instance
                             if (RdfFactory.getOntologyMap().containsKey(rdfOntology.getNamespace().getUri())) {
                                 RdfOntology existingOntology = RdfFactory.getOntologyMap().get(rdfOntology.getNamespace().getUri());
                                 for (RdfOntologyMember m : rdfOntology.getAllMembers().values()) {
                                     existingOntology._register(m);
                                 }
+                                //don't add the ontology to the map, it will get garbage collected instead
                             }
                             //a true new ontology; make sure we add it to the lookup maps
                             else {
@@ -230,7 +245,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfClassImpl.Builder proxy(RdfClass rdfProxyClass) throws RdfInitializationException
+    public RdfClassImpl.Builder register(RdfClass rdfProxyClass) throws RdfInitializationException
     {
         if (rdfProxyClass.isProxy()) {
             //note: this cast is safe because in sync with the factory method above (and a private constructor)
@@ -244,7 +259,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfPropertyImpl.Builder proxy(RdfProperty rdfProxyProperty) throws RdfInitializationException
+    public RdfPropertyImpl.Builder register(RdfProperty rdfProxyProperty) throws RdfInitializationException
     {
         if (rdfProxyProperty.isProxy()) {
             //note: this cast is safe because in sync with the factory method above (and a private constructor)
@@ -258,7 +273,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfDatatypeImpl.Builder proxy(RdfDatatype rdfProxyDatatype) throws RdfInitializationException
+    public RdfDatatypeImpl.Builder register(RdfDatatype rdfProxyDatatype) throws RdfInitializationException
     {
         if (rdfProxyDatatype.isProxy()) {
             //note: this cast is safe because in sync with the factory method above (and a private constructor)

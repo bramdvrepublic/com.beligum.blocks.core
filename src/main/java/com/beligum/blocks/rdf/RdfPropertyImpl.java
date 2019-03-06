@@ -136,9 +136,9 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
             }
             else {
                 //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
-                if ((this.rdfResource.dataType.equals(XSD.DATE) && !this.rdfResource.widgetType.equals(InputType.Date))
-                    || (this.rdfResource.dataType.equals(XSD.TIME) && !this.rdfResource.widgetType.equals(InputType.Time))
-                    || (this.rdfResource.dataType.equals(XSD.DATE_TIME) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
+                if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(InputType.Date))
+                    || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(InputType.Time))
+                    || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
                     throw new RdfInitializationException("Encountered RDF property with datatype-inputtype mismatch; " + this);
                 }
             }

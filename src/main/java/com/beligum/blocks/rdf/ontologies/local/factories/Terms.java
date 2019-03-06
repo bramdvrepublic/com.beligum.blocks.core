@@ -82,7 +82,7 @@ public class Terms implements RdfResourceFactory
                                                                 Local.INSTANCE,
                                                                 ontology.Entries.propertyTitle_image,
                                                                 ontology.Entries.propertyLabel_image,
-                                                                XSD.ANY_URI,
+                                                                XSD.anyURI,
                                                                 InputType.Uri,
                                                                 null,
                                                                 new URI[] {
@@ -93,7 +93,7 @@ public class Terms implements RdfResourceFactory
                                                                  Local.INSTANCE,
                                                                  ontology.Entries.propertyTitle_sameAs,
                                                                  ontology.Entries.propertyLabel_sameAs,
-                                                                 XSD.ANY_URI,
+                                                                 XSD.anyURI,
                                                                  InputType.InlineEditor,
                                                                  null,
                                                                  new URI[] { OWL.SAMEAS.getFullName()
@@ -106,7 +106,7 @@ public class Terms implements RdfResourceFactory
                                                                   Local.INSTANCE,
                                                                   ontology.Entries.propertyTitle_created,
                                                                   ontology.Entries.propertyLabel_created,
-                                                                  XSD.DATE_TIME,
+                                                                  XSD.dateTime,
                                                                   InputType.DateTime,
                                                                   null,
                                                                   new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-created
@@ -117,7 +117,7 @@ public class Terms implements RdfResourceFactory
                                                                   Local.INSTANCE,
                                                                   ontology.Entries.propertyTitle_creator,
                                                                   ontology.Entries.propertyLabel_creator,
-                                                                  XSD.ANY_URI,
+                                                                  XSD.anyURI,
                                                                   InputType.Resource,
                                                                   null,
                                                                   new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-creator
@@ -128,7 +128,7 @@ public class Terms implements RdfResourceFactory
                                                                    Local.INSTANCE,
                                                                    ontology.Entries.propertyTitle_modified,
                                                                    ontology.Entries.propertyLabel_modified,
-                                                                   XSD.DATE_TIME,
+                                                                   XSD.dateTime,
                                                                    InputType.DateTime,
                                                                    null,
                                                                    new URI[] { //TODO http://dublincore.org/documents/dcmi-terms/#terms-modified
@@ -139,7 +139,7 @@ public class Terms implements RdfResourceFactory
                                                                       Local.INSTANCE,
                                                                       ontology.Entries.propertyTitle_contributor,
                                                                       ontology.Entries.propertyLabel_contributor,
-                                                                      XSD.ANY_URI,
+                                                                      XSD.anyURI,
                                                                       InputType.Resource,
                                                                       null,
                                                                       new URI[] { // TODO http://dublincore.org/documents/dcmi-terms/#terms-contributor
@@ -150,7 +150,7 @@ public class Terms implements RdfResourceFactory
                                                                   Local.INSTANCE,
                                                                   ontology.Entries.propertyTitle_aclRead,
                                                                   ontology.Entries.propertyLabel_aclRead,
-                                                                  XSD.INT,
+                                                                  XSD.int_,
                                                                   InputType.Number,
                                                                   null,
                                                                   new URI[] {
@@ -161,7 +161,7 @@ public class Terms implements RdfResourceFactory
                                                                     Local.INSTANCE,
                                                                     ontology.Entries.propertyTitle_aclUpdate,
                                                                     ontology.Entries.propertyLabel_aclUpdate,
-                                                                    XSD.INT,
+                                                                    XSD.int_,
                                                                     InputType.Number,
                                                                     null,
                                                                     new URI[] {
@@ -172,7 +172,7 @@ public class Terms implements RdfResourceFactory
                                                                     Local.INSTANCE,
                                                                     ontology.Entries.propertyTitle_aclDelete,
                                                                     ontology.Entries.propertyLabel_aclDelete,
-                                                                    XSD.INT,
+                                                                    XSD.int_,
                                                                     InputType.Number,
                                                                     null,
                                                                     new URI[] {
@@ -183,7 +183,7 @@ public class Terms implements RdfResourceFactory
                                                                     Local.INSTANCE,
                                                                     ontology.Entries.propertyTitle_aclManage,
                                                                     ontology.Entries.propertyLabel_aclManage,
-                                                                    XSD.INT,
+                                                                    XSD.int_,
                                                                     InputType.Number,
                                                                     null,
                                                                     new URI[] {

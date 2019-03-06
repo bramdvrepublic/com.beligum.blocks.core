@@ -74,6 +74,27 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
                 m.create();
             }
         }
+
+        // It's easy for the create() method to miss some fields, so let's help the dev
+        // a little bit by iterating all members of the ontology and check if they have been
+        // registered properly
+        try {
+            for (Field field : this.getClass().getFields()) {
+                //should we also check for a static modifier here?
+                if (field.getType().isAssignableFrom(RdfOntologyMember.class)) {
+                    RdfOntologyMember member = (RdfOntologyMember) field.get(this);
+                    if (member == null) {
+                        throw new RdfInitializationException("Field inside an RDF ontology turned out null after initializing the ontology; this shouldn't happen; " + this);
+                    }
+                    else if (member.isProxy()) {
+                        throw new RdfInitializationException("Field inside an RDF ontology turned out to be still a proxy after initializing the ontology; this shouldn't happen; " + this);
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            throw new RdfInitializationException("Error happened while validating the members of an ontology; " + this, e);
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -170,7 +191,7 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
                 RdfProperty rdfProperty = (RdfProperty) member;
                 this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
                 if (rdfProperty.isPublic()) {
-                   this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                    this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
                 }
                 break;
             case DATATYPE:

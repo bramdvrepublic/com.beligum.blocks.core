@@ -118,7 +118,7 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
         if (retVal != null) {
             try {
                 //if the value is a boolean, we want to return Yes/No instead of the raw true/false value
-                if (this.property.getDataType().equals(XSD.BOOLEAN)) {
+                if (this.property.getDataType().equals(XSD.boolean_)) {
                     if (rawValue.equals("true")) {
                         retVal = core.Entries.toggleLabelYes.toString();
                     }
@@ -129,17 +129,17 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
                         throw new IOException("Encountered unsupported boolean value; this shouldn't happen; " + rawValue);
                     }
                 }
-                else if (this.property.getDataType().equals(XSD.DATE)) {
+                else if (this.property.getDataType().equals(XSD.date)) {
                     //Note: local because we only support timezones in dateTime
                     TemporalAccessor value = DateTimeFormatter.ISO_LOCAL_DATE.parse(rawValue);
                     retVal = this.getDateFormatter().format(value);
                 }
-                else if (this.property.getDataType().equals(XSD.TIME)) {
+                else if (this.property.getDataType().equals(XSD.time)) {
                     //Note: local because we only support timezones in dateTime
                     TemporalAccessor value = DateTimeFormatter.ISO_LOCAL_TIME.parse(rawValue);
                     retVal = this.getTimeFormatter().format(value);
                 }
-                else if (this.property.getDataType().equals(XSD.DATE_TIME)) {
+                else if (this.property.getDataType().equals(XSD.dateTime)) {
                     TemporalAccessor value = DateTimeFormatter.ISO_DATE_TIME.parse(rawValue);
                     retVal = this.getDateTimeFormatter().format(value);
                 }

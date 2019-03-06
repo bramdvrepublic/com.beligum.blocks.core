@@ -142,7 +142,7 @@ public abstract class AbstractImporter implements Importer
                 }
 
                 //if the object is a literal, check if it needs to be trimmed
-                //BIG NOTE: XSD.ANY_URI is also an instance of a Literal!!
+                //BIG NOTE: XSD.anyURI is also an instance of a Literal!!
                 if (stmt.getObject() instanceof Literal) {
                     Literal literal = (Literal) stmt.getObject();
                     String objectValue = literal.getLabel();

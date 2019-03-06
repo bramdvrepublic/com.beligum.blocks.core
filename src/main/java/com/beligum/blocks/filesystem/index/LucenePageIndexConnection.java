@@ -207,30 +207,30 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             SortField.Type luceneSortField = SortField.Type.STRING;
 
             //TODO this doesn't work yet because we index everything as a string
-//            if (sortField.getDataType().equals(XSD.INT)
-//             || sortField.getDataType().equals(XSD.INTEGER)
-//             || sortField.getDataType().equals(XSD.NEGATIVE_INTEGER)
-//             || sortField.getDataType().equals(XSD.UNSIGNED_INT)
-//             || sortField.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
-//             || sortField.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
-//             || sortField.getDataType().equals(XSD.POSITIVE_INTEGER)
-//             || sortField.getDataType().equals(XSD.SHORT)
-//             || sortField.getDataType().equals(XSD.UNSIGNED_SHORT)
-//             || sortField.getDataType().equals(XSD.BYTE)
-//             || sortField.getDataType().equals(XSD.UNSIGNED_BYTE)) {
+//            if (sortField.getDataType().equals(XSD.int_)
+//             || sortField.getDataType().equals(XSD.integer)
+//             || sortField.getDataType().equals(XSD.negativeInteger)
+//             || sortField.getDataType().equals(XSD.unsignedInt)
+//             || sortField.getDataType().equals(XSD.nonNegativeInteger)
+//             || sortField.getDataType().equals(XSD.nonPositiveInteger)
+//             || sortField.getDataType().equals(XSD.positiveInteger)
+//             || sortField.getDataType().equals(XSD.short_)
+//             || sortField.getDataType().equals(XSD.unsignedShort)
+//             || sortField.getDataType().equals(XSD.byte_)
+//             || sortField.getDataType().equals(XSD.unsignedByte)) {
 //                luceneSortField = SortField.Type.INT;
 //            }
-//            else if (sortField.getDataType().equals(XSD.LONG)
-//            || sortField.getDataType().equals(XSD.UNSIGNED_LONG)) {
+//            else if (sortField.getDataType().equals(XSD.long_)
+//            || sortField.getDataType().equals(XSD.unsignedLong)) {
 //                luceneSortField = SortField.Type.LONG;
 //            }
-//            else if (sortField.getDataType().equals(XSD.FLOAT)) {
+//            else if (sortField.getDataType().equals(XSD.float_)) {
 //                luceneSortField = SortField.Type.FLOAT;
 //            }
-//            else if (sortField.getDataType().equals(XSD.DOUBLE)
+//            else if (sortField.getDataType().equals(XSD.double_)
 //                     //this is doubtful, but let's take the largest one
 //                     // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
-//                     || sortField.getDataType().equals(XSD.DECIMAL)) {
+//                     || sortField.getDataType().equals(XSD.decimal)) {
 //                luceneSortField = SortField.Type.DOUBLE;
 //            }
 
