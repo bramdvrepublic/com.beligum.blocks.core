@@ -129,7 +129,7 @@ public class PageFixTask extends ReindexTask
 
                         //on 11/05/17, we started using the RDF.LANGSTRING datatype to mark a string as translatable,
                         //this will process any XSD.string datatypes that should be "upgraded" to RDF.LANGSTRING
-                        if (rdfProperty.getDataType().equals(RDF.LANGSTRING)) {
+                        if (rdfProperty.getDataType().equals(RDF.langString)) {
                             Map<String, String> attrMap = new LinkedHashMap<>();
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
                             propertyAttributes.populateMap(attrMap, false);

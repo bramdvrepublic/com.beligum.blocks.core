@@ -318,7 +318,7 @@ public abstract class ImportTools
         }
 
         //Some extra filtering, based on the datatype
-        if (property.getDataType().equals(RDF.LANGSTRING)) {
+        if (property.getDataType().equals(RDF.langString)) {
             //see the comments in blocks-fact-entry.js and RDF.LANGSTRING for why we remove the datatype in case of a rdf:langString
             addDataType = false;
         }

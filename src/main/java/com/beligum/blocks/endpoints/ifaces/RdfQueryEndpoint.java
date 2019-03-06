@@ -17,6 +17,7 @@
 package com.beligum.blocks.endpoints.ifaces;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Model;
 
@@ -70,7 +71,7 @@ public interface RdfQueryEndpoint
      * @return a list of maxResults size
      * @throws IOException
      */
-    Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException;
+    Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.
@@ -82,7 +83,7 @@ public interface RdfQueryEndpoint
      * @return the wrapped value with all possible fields indicating how to render this value (if may contain null values for some properties of AutocompleteValue)
      * @throws IOException
      */
-    ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException;
+    ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException;
 
     /**
      * Returns the RDF properties that are good candidates to find a human readable string representation of instances of the specified class.

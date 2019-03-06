@@ -387,5 +387,9 @@ public final class XSD extends RdfOntologyImpl
     {
         return NAMESPACE;
     }
-    
+    @Override
+    public boolean isPublic()
+    {
+        return false;
+    }
 }

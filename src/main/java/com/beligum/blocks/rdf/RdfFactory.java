@@ -184,22 +184,25 @@ public class RdfFactory
                             //during this session, to auto-finalize them after creating the instances from the proxies, see RdfOntology constructor for details.
                             RdfOntology rdfOntology = c.getConstructor(RdfFactory.class).newInstance(new RdfFactory());
 
-                            //this is support for a splitted implementation of an ontology, spread out over multiple java classes
-                            //(needed for modularization)
-                            //Note that the registry of the factory instance will still contain all the builders created during this session since we
-                            //always create a new instance
-                            if (RdfFactory.getOntologyMap().containsKey(rdfOntology.getNamespace().getUri())) {
-                                RdfOntology existingOntology = RdfFactory.getOntologyMap().get(rdfOntology.getNamespace().getUri());
-                                for (RdfOntologyMember m : rdfOntology.getAllMembers().values()) {
-                                    existingOntology._register(m);
+                            //only public ontologies are saved to the map; the rest are just initialized and references from other public ontologies
+                            if (rdfOntology.isPublic()) {
+                                //this is support for a splitted implementation of an ontology, spread out over multiple java classes
+                                //(needed for modularization)
+                                //Note that the registry of the factory instance will still contain all the builders created during this session since we
+                                //always create a new instance
+                                if (RdfFactory.getOntologyMap().containsKey(rdfOntology.getNamespace().getUri())) {
+                                    RdfOntology existingOntology = RdfFactory.getOntologyMap().get(rdfOntology.getNamespace().getUri());
+                                    for (RdfOntologyMember m : rdfOntology.getAllMembers().values()) {
+                                        existingOntology._register(m);
+                                    }
+                                    //don't add the ontology to the map, it will get garbage collected instead
                                 }
-                                //don't add the ontology to the map, it will get garbage collected instead
-                            }
-                            //a true new ontology; make sure we add it to the lookup maps
-                            else {
-                                //store the ontology in a lookup map
-                                RdfFactory.getOntologyMap().put(rdfOntology.getNamespace().getUri(), rdfOntology);
-                                RdfFactory.getOntologyPrefixMap().put(rdfOntology.getNamespace().getPrefix(), rdfOntology);
+                                //a true new ontology; make sure we add it to the lookup maps
+                                else {
+                                    //store the ontology in a lookup map
+                                    RdfFactory.getOntologyMap().put(rdfOntology.getNamespace().getUri(), rdfOntology);
+                                    RdfFactory.getOntologyPrefixMap().put(rdfOntology.getNamespace().getPrefix(), rdfOntology);
+                                }
                             }
                         }
                         catch (Exception e) {

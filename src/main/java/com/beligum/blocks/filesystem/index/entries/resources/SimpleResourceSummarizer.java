@@ -20,7 +20,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
+import com.beligum.blocks.rdf.ontologies.Local;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -167,10 +167,10 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
     private void assertInit()
     {
         if (!this.initialized) {
-            this.titleIri = SimpleValueFactory.getInstance().createIRI(Terms.title.getFullName().toString());
-            this.textIri = SimpleValueFactory.getInstance().createIRI(Terms.text.getFullName().toString());
-            this.descriptionIri = SimpleValueFactory.getInstance().createIRI(Terms.description.getFullName().toString());
-            this.imageIri = SimpleValueFactory.getInstance().createIRI(Terms.image.getFullName().toString());
+            this.titleIri = SimpleValueFactory.getInstance().createIRI(Local.title.getFullName().toString());
+            this.textIri = SimpleValueFactory.getInstance().createIRI(Local.text.getFullName().toString());
+            this.descriptionIri = SimpleValueFactory.getInstance().createIRI(Local.description.getFullName().toString());
+            this.imageIri = SimpleValueFactory.getInstance().createIRI(Local.image.getFullName().toString());
 
             this.initialized = true;
         }

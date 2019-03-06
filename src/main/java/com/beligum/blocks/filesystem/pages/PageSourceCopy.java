@@ -17,9 +17,9 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.resources.ifaces.Source;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ontologies.local.factories.Classes;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
 
@@ -73,7 +73,7 @@ public class PageSourceCopy extends PageSource
             else {
                 //since we're making a copy of a page, it makes sense to use the class of that page
                 String typeOfStr = this.htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
-                RdfClass typeOf = StringUtils.isEmpty(typeOfStr) ? Classes.DEFAULT_CLASS : RdfFactory.getClassForResourceType(typeOfStr);
+                RdfClass typeOf = StringUtils.isEmpty(typeOfStr) ? Settings.DEFAULT_CLASS : RdfFactory.getClassForResourceType(typeOfStr);
                 if (typeOf==null) {
                     throw new IOException("Unable to parse the html @typeof attribute to a valid RDF class; " + this.document);
                 }

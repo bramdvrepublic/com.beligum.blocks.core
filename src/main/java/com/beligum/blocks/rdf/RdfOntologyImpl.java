@@ -98,6 +98,15 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * Explicitly re-enabled from the interface because it's important:
+     * only public interfaces will be stored in the lookup map during boot.
+     * Non-public ones are only meant to be referenced from other ontologies
+     * or used directly (like the Log ontology)
+     */
+    @Override
+    public abstract boolean isPublic();
+
     @Override
     public Type getType()
     {

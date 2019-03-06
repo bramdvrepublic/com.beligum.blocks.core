@@ -95,4 +95,9 @@ public final class OWL extends RdfOntologyImpl
     {
         return NAMESPACE;
     }
+    @Override
+    public boolean isPublic()
+    {
+        return false;
+    }
 }

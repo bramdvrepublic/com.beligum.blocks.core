@@ -27,6 +27,8 @@ import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrMapper;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.security.AclImpl;
 import com.beligum.blocks.security.ifaces.Acl;
 import com.google.common.collect.ImmutableMap;
@@ -46,6 +48,9 @@ public class Settings
     //sync this with the reserved page keywords
     public static final String RESOURCE_ENDPOINT = "/resource/";
     public static final String DEFAULT_ONTOLOGY_ENDPOINT = "/ontology/";
+
+    //centralized constant for the default entity type when nothing is set
+    public static final RdfClass DEFAULT_CLASS = Local.Page;
 
     private static final String COMMON_PREFIX = "blocks.core";
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";

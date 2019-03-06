@@ -19,11 +19,14 @@ package com.beligum.blocks.filesystem.logger;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.RdfClassImpl;
 import com.beligum.blocks.rdf.RdfPropertyImpl;
 import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.Log;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
@@ -60,108 +63,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     private static final String ANONYMOUS_NAME = "anonymous";
     private static final String ANONYMOUS_USERNAME = ANONYMOUS_NAME;
 
-    //instead of adding the LogEntry to the general ontology class, we decided to put it here,
-    // because it has little to do with the mapping of the general/public ontologies,
-    // it simply uses our same API.
-
-    private static final RdfClass LogEntry = new RdfClassImpl("LogEntry",
-                                                              Local.INSTANCE,
-                                                              ontology.Entries.classTitle_LogEntry,
-                                                              ontology.Entries.classLabel_LogEntry,
-                                                              new URI[] {},
-                                                              false,
-                                                              null);
-
-    private static final RdfProperty type = new RdfPropertyImpl("type",
-                                                                Local.INSTANCE,
-                                                                ontology.Entries.propertyTitle_type,
-                                                                ontology.Entries.propertyLabel_type,
-                                                                RDF.LANGSTRING,
-                                                                InputType.InlineEditor,
-                                                                null,
-                                                                new URI[] {},
-                                                                false);
-
-    private static final RdfProperty subject = new RdfPropertyImpl("subject",
-                                                                   Local.INSTANCE,
-                                                                   ontology.Entries.propertyTitle_subject,
-                                                                   ontology.Entries.propertyLabel_subject,
-                                                                   XSD.anyURI,
-                                                                   InputType.Resource,
-                                                                   null,
-                                                                   new URI[] {},
-                                                                   false);
-
-    private static final RdfProperty title = new RdfPropertyImpl("title",
-                                                                 Local.INSTANCE,
-                                                                 ontology.Entries.propertyTitle_title,
-                                                                 ontology.Entries.propertyLabel_title,
-                                                                 RDF.LANGSTRING,
-                                                                 InputType.InlineEditor,
-                                                                 null,
-                                                                 new URI[] {},
-                                                                 false);
-
-    private static final RdfProperty description = new RdfPropertyImpl("description",
-                                                                       Local.INSTANCE,
-                                                                       ontology.Entries.propertyTitle_description,
-                                                                       ontology.Entries.propertyLabel_description,
-                                                                       RDF.LANGSTRING,
-                                                                       InputType.Editor,
-                                                                       null,
-                                                                       new URI[] {},
-                                                                       false);
-
-    private static final RdfProperty createdAt = new RdfPropertyImpl("createdAt",
-                                                                     Local.INSTANCE,
-                                                                     ontology.Entries.propertyTitle_createdAt,
-                                                                     ontology.Entries.propertyLabel_createdAt,
-                                                                     XSD.dateTime,
-                                                                     InputType.DateTime,
-                                                                     null,
-                                                                     new URI[] {},
-                                                                     true);
-
-    private static final RdfProperty username = new RdfPropertyImpl("username",
-                                                                    Local.INSTANCE,
-                                                                    ontology.Entries.propertyTitle_username,
-                                                                    ontology.Entries.propertyLabel_username,
-                                                                    XSD.string,
-                                                                    InputType.InlineEditor,
-                                                                    null,
-                                                                    new URI[] {},
-                                                                    false);
-
-    private static final RdfProperty software = new RdfPropertyImpl("software",
-                                                                    Local.INSTANCE,
-                                                                    ontology.Entries.propertyTitle_software,
-                                                                    ontology.Entries.propertyLabel_software,
-                                                                    RDF.LANGSTRING,
-                                                                    InputType.InlineEditor,
-                                                                    null,
-                                                                    new URI[] {},
-                                                                    false);
-
-    private static final RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
-                                                                           Local.INSTANCE,
-                                                                           ontology.Entries.propertyTitle_softwareVersion,
-                                                                           ontology.Entries.propertyLabel_softwareVersion,
-                                                                           RDF.LANGSTRING,
-                                                                           InputType.InlineEditor,
-                                                                           null,
-                                                                           new URI[] {},
-                                                                           false);
-
     static {
-        LogEntry.addProperties(RdfLogWriter.type,
-                               RdfLogWriter.subject,
-                               RdfLogWriter.title,
-                               RdfLogWriter.description,
-                               RdfLogWriter.createdAt,
-                               RdfLogWriter.username,
-                               RdfLogWriter.software,
-                               RdfLogWriter.softwareVersion);
-
         try {
             DATATYPE_FACTORY = DatatypeFactory.newInstance();
         }
@@ -192,7 +94,7 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         PageLogEntry pageEntry = (PageLogEntry) logEntry;
 
         //Note: external IRIs always need to be absolute
-        IRI entryId = this.toIRI(RdfTools.createAbsoluteResourceId(RdfLogWriter.LogEntry));
+        IRI entryId = this.toIRI(RdfTools.createAbsoluteResourceId(Log.LogEntry));
 
         String creatorFirstName = pageEntry.getCreator() == null ? null : pageEntry.getCreator().getFirstName();
         if (creatorFirstName == null) {
@@ -212,28 +114,27 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         String startComment = "----- " + timestampStr + " -----";
         rdfWriter.handleComment(startComment);
 
-        this.logStatement(entryId, org.eclipse.rdf4j.model.vocabulary.RDF.TYPE, RdfLogWriter.LogEntry);
-        this.logStatement(entryId, RdfLogWriter.type, pageEntry.getAction().name());
-        this.logStatement(entryId, RdfLogWriter.subject, pageEntry.getPage().getPublicAbsoluteAddress());
-        this.logStatement(entryId, RdfLogWriter.title, "Log entry " + timestampStr + " for page " + pageEntry.getPage().getPublicAbsoluteAddress() + "", Locale.ENGLISH);
-        this.logStatement(entryId, RdfLogWriter.description, "Page " + pageEntry.getPage().getPublicAbsoluteAddress() + " was " + pageEntry.getAction().getVerb() + " by " + creatorName + " on " +
-                                                             ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), BlocksResource.FOLDER_TIMESTAMP_TIMEZONE)
-                                                                          .format(DateTimeFormatter.RFC_1123_DATE_TIME),
-                          Locale.ENGLISH);
-        this.logStatement(entryId, RdfLogWriter.createdAt, pageEntry.getUTCTimestamp());
+        this.logStatement(entryId, RDF.type, Log.LogEntry);
+        this.logStatement(entryId, Log.type, pageEntry.getAction().name());
+        this.logStatement(entryId, Log.subject, pageEntry.getPage().getPublicAbsoluteAddress());
+        this.logStatement(entryId, Log.title, "Log entry " + timestampStr + " for page " + pageEntry.getPage().getPublicAbsoluteAddress() + "", Locale.ENGLISH);
+        this.logStatement(entryId, Log.description, "Page " + pageEntry.getPage().getPublicAbsoluteAddress() + " was " + pageEntry.getAction().getVerb() + " by " + creatorName + " on " +
+                                                    ZonedDateTime.ofInstant(pageEntry.getUTCTimestamp(), BlocksResource.FOLDER_TIMESTAMP_TIMEZONE)
+                                                                 .format(DateTimeFormatter.RFC_1123_DATE_TIME), Locale.ENGLISH);
+        this.logStatement(entryId, Log.createdAt, pageEntry.getUTCTimestamp());
 
         //This is legacy code to show this URI was logged in earlier versions of Stralo,
         //but was replaced by the more uniform 'username' property during the ontology cleanup.
         //See https://github.com/republic-of-reinvention/com.stralo.framework/issues/13
         //this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
         String username = pageEntry.getCreator() != null && pageEntry.getCreator().getSubject() != null ? pageEntry.getCreator().getSubject().getPrincipal() : ANONYMOUS_USERNAME;
-        this.logStatement(entryId, RdfLogWriter.username, username);
+        this.logStatement(entryId, Log.username, username);
 
         //length is always > 0
         String[] software = this.buildSoftwareId();
-        this.logStatement(entryId, RdfLogWriter.software, software[0]);
+        this.logStatement(entryId, Log.software, software[0]);
         if (software.length > 1) {
-            this.logStatement(entryId, RdfLogWriter.softwareVersion, software[1]);
+            this.logStatement(entryId, Log.softwareVersion, software[1]);
         }
     }
     @Override
@@ -246,30 +147,34 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void logStatement(IRI subject, RdfProperty predicate, Instant object)
+    private void logStatement(IRI subject, RdfOntologyMember predicate, Instant object)
     {
         this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, this.toIRI(predicate), this.toLiteral(object)));
     }
-    private void logStatement(IRI subject, RdfProperty predicate, String object)
+    private void logStatement(IRI subject, RdfOntologyMember predicate, String object)
     {
         this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, this.toIRI(predicate), RDF_FACTORY.createLiteral(object)));
     }
-    private void logStatement(IRI subject, RdfProperty predicate, String object, Locale language)
+    private void logStatement(IRI subject, RdfOntologyMember predicate, String object, Locale language)
     {
         this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, this.toIRI(predicate), RDF_FACTORY.createLiteral(object, language.getLanguage())));
     }
-    private void logStatement(IRI subject, RdfProperty predicate, URI object)
+    private void logStatement(IRI subject, RdfOntologyMember predicate, URI object)
     {
         this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, this.toIRI(predicate), this.toIRI(object)));
     }
-    private void logStatement(IRI subject, IRI predicate, RdfClass object)
+    private void logStatement(IRI subject, IRI predicate, RdfOntologyMember object)
     {
         this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, predicate, this.toIRI(object)));
     }
-    private IRI toIRI(RdfClass rdfClass)
+    private void logStatement(IRI subject, RdfOntologyMember predicate, RdfOntologyMember object)
+    {
+        this.rdfWriter.handleStatement(RDF_FACTORY.createStatement(subject, this.toIRI(predicate), this.toIRI(object)));
+    }
+    private IRI toIRI(RdfOntologyMember rdfMember)
     {
         //Note: external IRIs always need to be absolute
-        return this.toIRI(rdfClass.getFullName());
+        return this.toIRI(rdfMember.getFullName());
     }
     private IRI toIRI(URI uri)
     {

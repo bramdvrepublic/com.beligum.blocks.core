@@ -41,6 +41,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
     //-----VARIABLES-----
     private RdfClass dataType;
+    private RdfQueryEndpoint endpoint;
     private InputType widgetType;
     private InputTypeConfig widgetConfig;
 
@@ -62,6 +63,13 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.assertNoProxy();
 
         return dataType;
+    }
+    @Override
+    public RdfQueryEndpoint getEndpoint()
+    {
+        this.assertNoProxy();
+
+        return endpoint;
     }
     @Override
     public InputType getWidgetType()

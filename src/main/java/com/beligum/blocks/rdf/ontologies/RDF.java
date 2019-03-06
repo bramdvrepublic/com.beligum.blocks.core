@@ -303,5 +303,9 @@ public final class RDF extends RdfOntologyImpl
     {
         return NAMESPACE;
     }
-
+    @Override
+    public boolean isPublic()
+    {
+        return false;
+    }
 }

@@ -26,8 +26,9 @@ import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontologies.local.WrappedPageResourceInfo;
@@ -102,7 +103,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return false;
     }
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
+    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -167,7 +168,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
+    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
     {
         ResourceInfo retVal = null;
 
@@ -225,7 +226,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
     {
         if (this.cachedLabelProps == null) {
-            this.cachedLabelProps = new RdfProperty[] { RDFS.LABEL, Terms.title };
+            this.cachedLabelProps = new RdfProperty[] { RDFS.label, Local.title };
         }
 
         return this.cachedLabelProps;

@@ -152,7 +152,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else if (property.getDataType().equals(XSD.string)
                      || property.getDataType().equals(XSD.normalizedString)
-                     || property.getDataType().equals(RDF.LANGSTRING)
+                     || property.getDataType().equals(RDF.langString)
                      //this is a little tricky, but in the end it's just a string, right?
                      || property.getDataType().equals(XSD.base64Binary)) {
                 String val = objLiteral.stringValue();
@@ -296,7 +296,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else if (property.getDataType().equals(XSD.string)
                      || property.getDataType().equals(XSD.normalizedString)
-                     || property.getDataType().equals(RDF.LANGSTRING)) {
+                     || property.getDataType().equals(RDF.langString)) {
                 retVal = value;
             }
             else if (property.getDataType().equals(XSD.language)) {

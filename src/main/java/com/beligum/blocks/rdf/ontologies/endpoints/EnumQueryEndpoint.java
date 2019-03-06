@@ -23,6 +23,7 @@ import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.local.WrappedSuggestionResourceInfo;
 import com.google.common.base.Function;
@@ -80,7 +81,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * Note that, for now, this method ignores queryType and options parameters
      */
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
+    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -108,7 +109,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * pass a lookup for a resourceId: UriBuilder.fromPath(rawValue).build()
      */
     @Override
-    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
+    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
     {
         //Note: the getPath() converts special URI characters back to their native form
         return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);

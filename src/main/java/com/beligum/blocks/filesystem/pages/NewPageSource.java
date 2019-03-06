@@ -19,9 +19,9 @@ package com.beligum.blocks.filesystem.pages;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ontologies.local.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlRdfContext;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
@@ -149,7 +149,7 @@ public class NewPageSource extends PageSource
                 //Not any more: we're trying to always use the curie name as 'value' in dropdowns etc, so to make the type dropdown
                 //              work, it needs to be a curie value
                 if (typeofAttr.isEmpty()) {
-                    newTypeOf = Classes.DEFAULT_CLASS.getCurieName();
+                    newTypeOf = Settings.DEFAULT_CLASS.getCurieName();
                 }
                 else {
                     newTypeOf = URI.create(typeofAttr);

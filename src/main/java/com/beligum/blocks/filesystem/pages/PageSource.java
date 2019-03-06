@@ -31,7 +31,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.SecurityTools;
@@ -247,16 +247,16 @@ public abstract class PageSource extends AbstractSource implements Source
             PermissionRole currentRole = R.securityManager().getCurrentRole();
 
             //update the created date
-            Element createdProp = this.findOrCreateElement(Terms.created, timestamp, true, false, false, false);
+            Element createdProp = this.findOrCreateElement(Local.created, timestamp, true, false, false, false);
 
             //update the creator URL
-            Element creatorProp = this.findOrCreateElement(Terms.creator, editorUri, true, false, false, false);
+            Element creatorProp = this.findOrCreateElement(Local.creator, editorUri, true, false, false, false);
 
             //update the modified date
-            Element modifiedProp = this.findOrCreateElement(Terms.modified, timestamp, true, true, false, false);
+            Element modifiedProp = this.findOrCreateElement(Local.modified, timestamp, true, true, false, false);
 
             //update the contributor list
-            Element contributorProp = this.findOrCreateElement(Terms.contributor, editorUri, false, false, false, false);
+            Element contributorProp = this.findOrCreateElement(Local.contributor, editorUri, false, false, false, false);
 
             if (!Settings.instance().getDisableAcls()) {
 
@@ -264,24 +264,24 @@ public abstract class PageSource extends AbstractSource implements Source
                 //It would mean that every page would get it's custom permissions if it's saved once and we don't want that,
 
                 //initialize the view ACL (no values are overwritten, only initialized)
-                Element aclViewProp = this.findOrCreateElement(Terms.aclRead, String.valueOf(SecurityTools.getDefaultReadAclLevel()), true, false, false, true);
+                Element aclViewProp = this.findOrCreateElement(Local.aclRead, String.valueOf(SecurityTools.getDefaultReadAclLevel()), true, false, false, true);
 
                 //initialize the update ACL (no values are overwritten, only initialized)
-                Element aclUpdateProp = this.findOrCreateElement(Terms.aclUpdate, String.valueOf(SecurityTools.getDefaultUpdateAclLevel()), true, false, false, true);
+                Element aclUpdateProp = this.findOrCreateElement(Local.aclUpdate, String.valueOf(SecurityTools.getDefaultUpdateAclLevel()), true, false, false, true);
 
                 //initialize the delete ACL (no values are overwritten, only initialized)
-                Element aclDeleteProp = this.findOrCreateElement(Terms.aclDelete, String.valueOf(SecurityTools.getDefaultDeleteAclLevel()), true, false, false, true);
+                Element aclDeleteProp = this.findOrCreateElement(Local.aclDelete, String.valueOf(SecurityTools.getDefaultDeleteAclLevel()), true, false, false, true);
 
                 //initialize the manage ACL (no values are overwritten, only initialized)
-                Element aclManageProp = this.findOrCreateElement(Terms.aclManage, String.valueOf(SecurityTools.getDefaultManageAclLevel()), true, false, false, true);
+                Element aclManageProp = this.findOrCreateElement(Local.aclManage, String.valueOf(SecurityTools.getDefaultManageAclLevel()), true, false, false, true);
             }
             else {
                 //if the ACL system is disabled, we need to make sure to delete incoming ACL entries (especially the empty ones)
                 //or the indexer will probably crash (because it doesn't know how to index empty integer property values)
-                this.deletePropertyElements(Terms.aclRead);
-                this.deletePropertyElements(Terms.aclUpdate);
-                this.deletePropertyElements(Terms.aclDelete);
-                this.deletePropertyElements(Terms.aclManage);
+                this.deletePropertyElements(Local.aclRead);
+                this.deletePropertyElements(Local.aclUpdate);
+                this.deletePropertyElements(Local.aclDelete);
+                this.deletePropertyElements(Local.aclManage);
             }
 
         }

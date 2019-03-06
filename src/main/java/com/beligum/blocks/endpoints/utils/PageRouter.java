@@ -21,7 +21,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
 import com.beligum.blocks.config.Permissions;
@@ -364,7 +364,7 @@ public class PageRouter
 
                 BooleanQuery pageQuery = new BooleanQuery();
                 //we'll search for pages that have an alias (possibly/probably non-existent)
-                pageQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), searchUri)), BooleanClause.Occur.SHOULD);
+                pageQuery.add(new TermQuery(new Term(Local.sameAs.getCurieName().toString(), searchUri)), BooleanClause.Occur.SHOULD);
                 //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
                 pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), searchUri)), BooleanClause.Occur.SHOULD);
                 //makes sense to make room for as much language-triples as we have clauses

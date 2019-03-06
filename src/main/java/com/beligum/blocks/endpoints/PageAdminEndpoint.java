@@ -36,7 +36,6 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.local.factories.Classes;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
@@ -165,7 +164,7 @@ public class PageAdminEndpoint
         }
         //make sure we always have a type
         if (typeOf == null) {
-            typeOf = Classes.DEFAULT_CLASS;
+            typeOf = Settings.DEFAULT_CLASS;
         }
 
         PageTemplate pageTemplate = null;
@@ -199,7 +198,7 @@ public class PageAdminEndpoint
 
                 //"create sync" means: sync the offered list of blocks to the rdf ontology of the page type
                 //note that the default class is an exception: we allow it to have all blocks
-                if (enableTemplate && Settings.instance().getEnableRdfCreateSync() && !typeOf.equals(Classes.DEFAULT_CLASS)) {
+                if (enableTemplate && Settings.instance().getEnableRdfCreateSync() && !typeOf.equals(Settings.DEFAULT_CLASS)) {
 
                     boolean enableStrictMode = Settings.instance().getEnableRdfCreateSyncStrict();
 

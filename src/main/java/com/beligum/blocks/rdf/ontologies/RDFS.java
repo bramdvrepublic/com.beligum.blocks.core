@@ -191,4 +191,9 @@ public final class RDFS extends RdfOntologyImpl
     {
         return NAMESPACE;
     }
+    @Override
+    public boolean isPublic()
+    {
+        return false;
+    }
 }

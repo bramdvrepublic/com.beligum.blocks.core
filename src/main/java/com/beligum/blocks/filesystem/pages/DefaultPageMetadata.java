@@ -4,7 +4,7 @@ import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
-import com.beligum.blocks.rdf.ontologies.local.factories.Terms;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
@@ -138,44 +138,44 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     {
         if (!StringUtils.isEmpty(property)) {
             if (!StringUtils.isEmpty(content)) {
-                if (property.equals(Terms.created.getName()) || property.equals(Terms.created.getCurieName().toString())) {
+                if (property.equals(Local.created.getName()) || property.equals(Local.created.getCurieName().toString())) {
                     this.createdUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Terms.creator.getName()) || property.equals(Terms.creator.getCurieName().toString())) {
+                else if (property.equals(Local.creator.getName()) || property.equals(Local.creator.getCurieName().toString())) {
                     this.creator = URI.create(content);
                     if (!this.creator.isAbsolute()) {
                         this.creator = baseUri.resolve(this.creator);
                     }
                 }
-                else if (property.equals(Terms.modified.getName()) || property.equals(Terms.modified.getCurieName().toString())) {
+                else if (property.equals(Local.modified.getName()) || property.equals(Local.modified.getCurieName().toString())) {
                     this.modifiedUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Terms.contributor.getName()) || property.equals(Terms.contributor.getCurieName().toString())) {
+                else if (property.equals(Local.contributor.getName()) || property.equals(Local.contributor.getCurieName().toString())) {
                     URI contributor = URI.create(content);
                     if (!contributor.isAbsolute()) {
                         contributor = baseUri.resolve(contributor);
                     }
                     this.contributors.add(contributor);
                 }
-                else if (property.equals(Terms.aclRead.getName()) || property.equals(Terms.aclRead.getCurieName().toString())) {
+                else if (property.equals(Local.aclRead.getName()) || property.equals(Local.aclRead.getCurieName().toString())) {
                     int aclReadLevel = NumberUtils.toInt(content, -1);
                     if (aclReadLevel >= 0) {
                         this.aclRead = aclReadLevel;
                     }
                 }
-                else if (property.equals(Terms.aclUpdate.getName()) || property.equals(Terms.aclUpdate.getCurieName().toString())) {
+                else if (property.equals(Local.aclUpdate.getName()) || property.equals(Local.aclUpdate.getCurieName().toString())) {
                     int aclUpdateLevel = NumberUtils.toInt(content, -1);
                     if (aclUpdateLevel >= 0) {
                         this.aclUpdate = aclUpdateLevel;
                     }
                 }
-                else if (property.equals(Terms.aclDelete.getName()) || property.equals(Terms.aclDelete.getCurieName().toString())) {
+                else if (property.equals(Local.aclDelete.getName()) || property.equals(Local.aclDelete.getCurieName().toString())) {
                     int aclDeleteLevel = NumberUtils.toInt(content, -1);
                     if (aclDeleteLevel >= 0) {
                         this.aclDelete = aclDeleteLevel;
                     }
                 }
-                else if (property.equals(Terms.aclManage.getName()) || property.equals(Terms.aclManage.getCurieName().toString())) {
+                else if (property.equals(Local.aclManage.getName()) || property.equals(Local.aclManage.getCurieName().toString())) {
                     int aclManageLevel = NumberUtils.toInt(content, -1);
                     if (aclManageLevel >= 0) {
                         this.aclManage = aclManageLevel;

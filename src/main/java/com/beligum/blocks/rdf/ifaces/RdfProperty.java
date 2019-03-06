@@ -52,6 +52,12 @@ public interface RdfProperty extends RdfOntologyMember
     RdfClass getDataType();
 
     /**
+     * An instance (eg. for enums) of an endpoint to use while looking up possible values of this property.
+     */
+    @JsonIgnore
+    RdfQueryEndpoint getEndpoint();
+
+    /**
      * This widget-type to be used in the admin sidebar (or just inline, eg. in the case of the editor)
      * to enter a value for an instance of this property.
      * Eg. InlineEditor
