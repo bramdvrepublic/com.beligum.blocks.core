@@ -44,25 +44,6 @@ public interface RdfOntologyMember extends RdfResource
     URI getCurieName();
 
     /**
-     * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
-     * This is the admin-side of this value; returns the key to this resource bundle
-     */
-    String getTitleKey();
-
-    /**
-     * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
-     * Eg. Water well
-     */
-    String getTitle();
-
-    /**
-     * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
-     * This is a more low-level (eg. API) accessor to this value, so know what you're doing.
-     */
-    @JsonIgnore
-    MessagesFileEntry getTitleMessage();
-
-    /**
      * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.
      * This is the admin-side of this value; returns the key to this resource bundle
      */

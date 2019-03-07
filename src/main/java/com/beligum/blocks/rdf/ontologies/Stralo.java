@@ -63,55 +63,46 @@ public class Stralo extends RdfOntologyImpl
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
         rdfFactory.register(sameAs)
-                  .title(Entries.propertyTitle_sameAs)
                   .label(Entries.propertyLabel_sameAs)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(created)
-                  .title(Entries.propertyTitle_created)
                   .label(Entries.propertyLabel_created)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
         rdfFactory.register(creator)
-                  .title(Entries.propertyTitle_creator)
                   .label(Entries.propertyLabel_creator)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
         rdfFactory.register(modified)
-                  .title(Entries.propertyTitle_modified)
                   .label(Entries.propertyLabel_modified)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
         rdfFactory.register(contributor)
-                  .title(Entries.propertyTitle_contributor)
                   .label(Entries.propertyLabel_contributor)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
         rdfFactory.register(aclRead)
-                  .title(Entries.propertyTitle_aclRead)
                   .label(Entries.propertyLabel_aclRead)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
         rdfFactory.register(aclUpdate)
-                  .title(Entries.propertyTitle_aclUpdate)
                   .label(Entries.propertyLabel_aclUpdate)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
         rdfFactory.register(aclDelete)
-                  .title(Entries.propertyTitle_aclDelete)
                   .label(Entries.propertyLabel_aclDelete)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
         rdfFactory.register(aclManage)
-                  .title(Entries.propertyTitle_aclManage)
                   .label(Entries.propertyLabel_aclManage)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);

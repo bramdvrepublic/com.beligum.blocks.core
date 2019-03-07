@@ -15,7 +15,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     //-----VARIABLES-----
     protected boolean proxy;
     protected RdfOntology ontology;
-    protected MessagesFileEntry title;
     protected MessagesFileEntry label;
     protected URI[] isSameAs;
 
@@ -56,28 +55,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.assertNoProxy();
 
         return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
-    }
-    @Override
-    public String getTitleKey()
-    {
-        this.assertNoProxy();
-
-        return title.getCanonicalKey();
-    }
-    @Override
-    public String getTitle()
-    {
-        this.assertNoProxy();
-
-        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
-        return this.title == null ? null : this.title.toString(R.i18n().getOptimalRefererLocale());
-    }
-    @Override
-    public MessagesFileEntry getTitleMessage()
-    {
-        this.assertNoProxy();
-
-        return title;
     }
     @Override
     public String getLabelKey()
@@ -188,12 +165,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             return this.builder;
         }
-        public B title(MessagesFileEntry title)
-        {
-            this.rdfResource.title = title;
-
-            return this.builder;
-        }
         public B label(MessagesFileEntry label)
         {
             this.rdfResource.label = label;
@@ -220,12 +191,8 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             //register the member into the ontology, filling all the right mappings
             this.rdfResource.ontology._register(this.rdfResource);
 
-            if (this.rdfResource.title == null) {
-                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without title, can't continue because too much depends on this.");
-            }
-
             if (this.rdfResource.label == null) {
-                this.rdfResource.label = this.rdfResource.title;
+                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without label, can't continue because too much depends on this.");
             }
 
             // --- here, we all done initializing/checking the resource ---

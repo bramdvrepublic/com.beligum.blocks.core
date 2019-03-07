@@ -55,55 +55,46 @@ public class Log extends RdfOntologyImpl
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
         rdfFactory.register(type)
-                  .title(Entries.propertyTitle_type)
                   .label(Entries.propertyLabel_type)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(subject)
-                  .title(Entries.propertyTitle_subject)
                   .label(Entries.propertyLabel_subject)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
         rdfFactory.register(title)
-                  .title(Entries.propertyTitle_title)
                   .label(Entries.propertyLabel_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(description)
-                  .title(Entries.propertyTitle_description)
                   .label(Entries.propertyLabel_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
         rdfFactory.register(createdAt)
-                  .title(Entries.propertyTitle_createdAt)
                   .label(Entries.propertyLabel_createdAt)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
         rdfFactory.register(username)
-                  .title(Entries.propertyTitle_username)
                   .label(Entries.propertyLabel_username)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(software)
-                  .title(Entries.propertyTitle_software)
                   .label(Entries.propertyLabel_software)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(softwareVersion)
-                  .title(Entries.propertyTitle_softwareVersion)
                   .label(Entries.propertyLabel_softwareVersion)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(LogEntry)
-                  .title(Entries.classTitle_LogEntry)
                   .label(Entries.classLabel_LogEntry)
                   .properties(type,
                               subject,

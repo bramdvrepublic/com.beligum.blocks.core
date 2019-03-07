@@ -217,83 +217,65 @@ public final class RDF extends RdfOntologyImpl
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
         rdfFactory.register(type)
-                  .title(Entries.RDF_title_type)
                   .label(Entries.RDF_label_type)
                   .dataType(RDFS.Class);
 
         rdfFactory.register(Property)
-                  .title(Entries.RDF_title_Property)
                   .label(Entries.RDF_label_Property);
 
         rdfFactory.register(XMLLiteral)
-                  .title(Entries.RDF_title_XMLLiteral)
                   .label(Entries.RDF_label_XMLLiteral);
 
         rdfFactory.register(subject)
-                  .title(Entries.RDF_title_subject)
                   .label(Entries.RDF_label_subject)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(predicate)
-                  .title(Entries.RDF_title_predicate)
                   .label(Entries.RDF_label_predicate)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(object)
-                  .title(Entries.RDF_title_object)
                   .label(Entries.RDF_label_object)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(Statement)
-                  .title(Entries.RDF_title_Statement)
                   .label(Entries.RDF_label_Statement);
 
         rdfFactory.register(Bag)
-                  .title(Entries.RDF_title_Bag)
                   .label(Entries.RDF_label_Bag);
 
         rdfFactory.register(Alt)
-                  .title(Entries.RDF_title_Alt)
                   .label(Entries.RDF_label_Alt);
 
         rdfFactory.register(Seq)
-                  .title(Entries.RDF_title_Seq)
                   .label(Entries.RDF_label_Seq);
 
         rdfFactory.register(value)
-                  .title(Entries.RDF_title_value)
                   .label(Entries.RDF_label_value)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(li)
-                  .title(Entries.RDF_title_li)
                   .label(Entries.RDF_label_li)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(List)
-                  .title(Entries.RDF_title_List)
                   .label(Entries.RDF_label_List);
 
         rdfFactory.register(first)
-                  .title(Entries.RDF_title_first)
                   .label(Entries.RDF_label_first)
                   .dataType(RDFS.Resource);
 
         rdfFactory.register(rest)
-                  .title(Entries.RDF_title_rest)
                   .label(Entries.RDF_label_rest)
                   .dataType(List);
 
         rdfFactory.register(nil)
-                  .title(Entries.RDF_title_nil)
                   .label(Entries.RDF_label_nil);
 
         rdfFactory.register(langString)
-                  .title(Entries.RDF_title_langString)
                   .label(Entries.RDF_label_langString);
 
         rdfFactory.register(HTML)
-                  .title(Entries.RDF_title_HTML)
                   .label(Entries.RDF_label_HTML);
     }
 

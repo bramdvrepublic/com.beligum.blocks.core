@@ -56,25 +56,21 @@ public class Local extends RdfOntologyImpl
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
         rdfFactory.register(title)
-                  .title(Entries.propertyTitle_title)
                   .label(Entries.propertyLabel_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
         rdfFactory.register(text)
-                  .title(Entries.propertyTitle_text)
                   .label(Entries.propertyLabel_text)
                   .dataType(RDF.HTML)
                   .widgetType(InputType.Editor);
 
         rdfFactory.register(description)
-                  .title(Entries.propertyTitle_description)
                   .label(Entries.propertyLabel_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
         rdfFactory.register(image)
-                  .title(Entries.propertyTitle_image)
                   .label(Entries.propertyLabel_image)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Uri);
@@ -84,7 +80,6 @@ public class Local extends RdfOntologyImpl
         // DBR.INSTANCE.resolve("Web_page"),
         // SCHEMA.INSTANCE.resolve("WebPage")
         rdfFactory.register(Page)
-                  .title(Entries.classTitle_Page)
                   .label(Entries.classLabel_Page)
                   .isPublic(true)
                   .endpoint(new LocalQueryEndpoint());
