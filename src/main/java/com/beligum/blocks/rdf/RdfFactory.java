@@ -164,7 +164,7 @@ public class RdfFactory
      */
     public static RdfOntology getLocalOntology()
     {
-        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfOntologyPrefix());
+        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfLocalOntologyNamespace().getPrefix());
     }
     /**
      * This will instantiate all ontologies once if needed, so we can be sure every RDF member has been assigned to it's proper ontology, etc.

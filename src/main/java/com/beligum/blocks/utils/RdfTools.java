@@ -126,10 +126,10 @@ public class RdfTools
         URI retVal = null;
 
         if (fullUri != null) {
-            URI relative = Settings.instance().getRdfOntologyUri().relativize(fullUri);
+            URI relative = Settings.instance().getRdfLocalOntologyNamespace().getUri().relativize(fullUri);
             //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
             if (!relative.isAbsolute()) {
-                retVal = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + relative.toString());
+                retVal = URI.create(Settings.instance().getRdfLocalOntologyNamespace().getPrefix() + ":" + relative.toString());
             }
         }
 
@@ -421,7 +421,7 @@ public class RdfTools
                             break;
 
                         case 3:
-                            this.resourceClass = RdfFactory.getClassForResourceType(Settings.instance().getRdfOntologyPrefix() + ":" + this.path.getName(1).toString());
+                            this.resourceClass = RdfFactory.getClassForResourceType(Settings.instance().getRdfLocalOntologyNamespace().getPrefix() + ":" + this.path.getName(1).toString());
                             this.resourceId = this.path.getName(2).toString();
                             this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
 

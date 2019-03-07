@@ -29,6 +29,10 @@ import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
 /**
+ * This Log ontology is a private ontology that's only used to write log entries into the log file.
+ * Eg. it has little to do with the mapping of the general/public ontologies,
+ * it simply uses our same API.
+ *
  * Created by bram on 2/28/16.
  */
 public class Log extends RdfOntologyImpl
@@ -36,10 +40,6 @@ public class Log extends RdfOntologyImpl
     //-----CONSTANTS-----
 
     //-----MEMBERS-----
-    //instead of adding the LogEntry to the general ontology class, we decided to put it here,
-    // because it has little to do with the mapping of the general/public ontologies,
-    // it simply uses our same API.
-
     public static final RdfClass LogEntry = RdfFactory.newProxyClass("LogEntry");
     public static final RdfProperty type = RdfFactory.newProxyProperty("type");
     public static final RdfProperty subject = RdfFactory.newProxyProperty("subject");

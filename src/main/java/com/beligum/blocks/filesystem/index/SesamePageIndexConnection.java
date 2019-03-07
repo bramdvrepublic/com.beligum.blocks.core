@@ -127,7 +127,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
+        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfLocalOntologyNamespace().getPrefix()).append(": <").append(Settings.instance().getRdfLocalOntologyNamespace().getUri()).append("> \n");
         queryBuilder.append("\n");
         queryBuilder.append("CONSTRUCT")
                     .append(" WHERE {\n")

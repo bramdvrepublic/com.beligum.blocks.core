@@ -59,6 +59,11 @@ public final class OWL extends RdfOntologyImpl
     public static final RdfClass Class = RdfFactory.newProxyClass("Class");
 
     /**
+     * The class of OWL classes
+     */
+    public static final RdfClass Individual = RdfFactory.newProxyClass("Class");
+
+    /**
      * The class of OWL individuals
      * Note: this is actually an OwlClass (that subclasses rdfs:Class)
      */

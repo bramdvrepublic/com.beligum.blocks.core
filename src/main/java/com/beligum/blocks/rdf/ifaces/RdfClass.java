@@ -51,6 +51,13 @@ public interface RdfClass extends RdfOntologyMember
     Set<RdfClass> getSuperClasses();
 
     /**
+     * A collection of all subclasses of this class.
+     * This is basically the inverse of getSuperClasses()
+     */
+    @JsonIgnore
+    Set<RdfClass> getSubClasses();
+
+    /**
      * A collection of all properties of this class. This list is returned by the RDF endpoint when the properties for a page of type 'this' is requested.
      * When this method returns null, all RdfProperties known to this server are returned. When an empty list is returned, this class doesn't have any properties.
      * Note that this will return the properties of all super classes as well.

@@ -14,9 +14,14 @@ public class RdfNamespaceImpl implements RdfNamespace
     private final String prefix;
 
     //-----CONSTRUCTORS-----
+    public RdfNamespaceImpl()
+    {
+        //this constructor is to support empty config settings (that need to be re-initialized later on)
+        this((URI) null, null);
+    }
     public RdfNamespaceImpl(String uri, String prefix)
     {
-        this(URI.create(uri), prefix);
+        this(uri == null ? null : URI.create(uri), prefix);
     }
     public RdfNamespaceImpl(URI uri, String prefix)
     {

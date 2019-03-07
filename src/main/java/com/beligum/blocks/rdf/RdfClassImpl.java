@@ -37,6 +37,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
     //-----VARIABLES-----
     private Set<RdfClass> superClasses;
+    private Set<RdfClass> subClasses;
     private Set<RdfProperty> properties;
     private RdfQueryEndpoint endpoint;
     private ResourceSummarizer resourceSummarizer;
@@ -49,6 +50,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
         //makes sense that the properties and superclasses are returned in the same order they are added, no?
         this.superClasses = new LinkedHashSet<>();
+        this.subClasses = new LinkedHashSet<>();
         this.properties = new LinkedHashSet<>();
     }
 
@@ -64,6 +66,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         this.assertNoProxy();
 
         return superClasses;
+    }
+    @Override
+    public Set<RdfClass> getSubClasses()
+    {
+        this.assertNoProxy();
+
+        return subClasses;
     }
     @Override
     public Set<RdfProperty> getProperties()
@@ -113,10 +122,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         {
             for (RdfClass c : superClasses) {
                 if (this.rdfResource.superClasses.contains(c)) {
-                    throw new RdfInitializationException("Can't add superclass " + c + " to class " + this + " because it would overwrite and existing superclass, can't continue.");
+                    throw new RdfInitializationException("Can't add superclass " + c + " to class " + this + " because it would overwrite and existing superclass, please fix this.");
                 }
                 else {
                     this.rdfResource.superClasses.add(c);
+                    //also wire-in this class as a subclass of the superclass
+                    //note that this cast should always work because it's defined in our generic signature
+                    ((RdfClassImpl) c).subClasses.add(this.rdfResource);
                 }
             }
 
