@@ -32,6 +32,7 @@ import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.lucene.index.Term;
@@ -127,7 +128,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfLocalOntologyNamespace().getPrefix()).append(": <").append(Settings.instance().getRdfLocalOntologyNamespace().getUri()).append("> \n");
+        queryBuilder.append("PREFIX ").append(Local.NAMESPACE.getPrefix()).append(": <").append(Local.NAMESPACE.getUri()).append("> \n");
         queryBuilder.append("\n");
         queryBuilder.append("CONSTRUCT")
                     .append(" WHERE {\n")

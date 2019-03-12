@@ -30,6 +30,7 @@ import com.beligum.blocks.rdf.ifaces.*;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.*;
 
@@ -57,13 +58,13 @@ import java.util.*;
  * .title(Entries.OWL_title_Thing)
  * .label(Entries.OWL_label_Thing)
  * .create();
- *
+ * <p>
  * Update: we introduced a new factory instance for every ontology initialization, to keep track of the members added in this instance.
  * This way, we can eliminate the need for these lines:
- *
+ * <p>
  * .ontology(this)
  * .create()
- *
+ * <p>
  * because they can be added automatically after calling RdfOntology.create()
  *
  * <p>
@@ -79,11 +80,11 @@ public class RdfFactory
 
     //-----VARIABLES-----
     private static boolean initialized = false;
+    private static Map<Class<RdfOntologyImpl>, RdfOntologyImpl> ontologyInstances = new LinkedHashMap<>();
 
-    //package-private only: these will be used to keep track of classes added during this factory session
-    //will be initialized as soon as the ontology is created (because we're using a dynamic instanceof())
-    RdfOntology ontology;
-    //a registry of builder instances to automatically call .create() on them
+    //package-private ontology we're creating members for during this session
+    RdfOntologyImpl ontology;
+    //a package-private registry of builder instances to automatically call .create() on them
     Set<AbstractRdfOntologyMember.Builder> registry;
 
     //-----CONSTRUCTORS-----
@@ -91,9 +92,9 @@ public class RdfFactory
      * This private constructor will function as a 'lock' that needs to be passed to the RDF initialization methods
      * and assures those can only be constructed from the assertInitialized() in this class.
      */
-    private RdfFactory()
+    private RdfFactory(RdfOntologyImpl ontology)
     {
-        this.ontology = null;
+        this.ontology = ontology;
         this.registry = new LinkedHashSet<>();
     }
 
@@ -164,7 +165,7 @@ public class RdfFactory
      */
     public static RdfOntology getLocalOntology()
     {
-        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfLocalOntologyNamespace().getPrefix());
+        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfMainOntologyNamespace().getPrefix());
     }
     /**
      * This will instantiate all ontologies once if needed, so we can be sure every RDF member has been assigned to it's proper ontology, etc.
@@ -176,39 +177,136 @@ public class RdfFactory
             synchronized (RdfFactory.class) {
                 if (!initialized) {
 
+                    //we allow different instances of the same ontology namespace as a means of modularizing
+                    //the ontology instantiating and two instances with the same namespace are considered equal
+                    Map<RdfNamespace, List<RdfOntologyImpl>> allOntologies = new LinkedHashMap<>();
+
                     for (Class<? extends RdfOntology> c : ReflectionFunctions.searchAllClassesImplementing(RdfOntology.class, true)) {
                         try {
-                            //Passing an instance of RdfFactory (note the private constructor) to the constructor, assures other developers won't be able to
-                            //create RDF ontology instances manually.
-                            //Also note that we create a new factory instance for each ontology, because we want to track the ontology members that were created
-                            //during this session, to auto-finalize them after creating the instances from the proxies, see RdfOntology constructor for details.
-                            RdfOntology rdfOntology = c.getConstructor(RdfFactory.class).newInstance(new RdfFactory());
+                            //universal way of creating new ontology instances
+                            RdfOntology rdfOntology = getOntologyInstance(c);
 
-                            //only public ontologies are saved to the map; the rest are just initialized and references from other public ontologies
-                            if (rdfOntology.isPublic()) {
-                                //this is support for a splitted implementation of an ontology, spread out over multiple java classes
-                                //(needed for modularization)
-                                //Note that the registry of the factory instance will still contain all the builders created during this session since we
-                                //always create a new instance
-                                if (RdfFactory.getOntologyMap().containsKey(rdfOntology.getNamespace().getUri())) {
-                                    RdfOntology existingOntology = RdfFactory.getOntologyMap().get(rdfOntology.getNamespace().getUri());
-                                    for (RdfOntologyMember m : rdfOntology.getAllMembers().values()) {
-                                        existingOntology._register(m);
+                            //for now, we only support RdfOntologyImpl
+                            if (!(rdfOntology instanceof RdfOntologyImpl)) {
+                                throw new RdfInstantiationException("Encountered an RDF ontology instance that's not a " + RdfOntologyImpl.class.getSimpleName() + ", please fix this; " + rdfOntology);
+                            }
+                            else {
+                                //we need this to call the create() method below
+                                RdfOntologyImpl rdfOntologyImpl = (RdfOntologyImpl) rdfOntology;
+
+                                //Passing an instance of RdfFactory (note the private constructor) to the create() method, assures other developers won't be able to
+                                //create RDF ontology instances manually (it's a sort of key for a lock)
+                                //Also note that we create a new factory instance for each ontology, because we want to track the ontology members that were created
+                                //during this session (using the registry), to auto-finalize them after creating the instances from the proxies.
+                                RdfFactory rdfFactory = new RdfFactory(rdfOntologyImpl);
+
+                                //this call will initialize all member fields
+                                rdfOntologyImpl.create(rdfFactory);
+
+                                // now loop through all members that were created during the scope of the last create()
+                                // to do some auto post-initialization and link them to the main ontology
+                                for (AbstractRdfOntologyMember.Builder builder : rdfFactory.registry) {
+                                    //all members should still be proxies here
+                                    if (builder.rdfResource.isProxy()) {
+                                        //now convert the proxy to a real member and attach it to the main ontology
+                                        builder.create();
                                     }
-                                    //don't add the ontology to the map, it will get garbage collected instead
+                                    else {
+                                        throw new RdfInitializationException("Encountered a non-proxy RDF ontology member, this shouldn't happen; " + builder);
+                                    }
                                 }
-                                //a true new ontology; make sure we add it to the lookup maps
-                                else {
-                                    //store the ontology in a lookup map
-                                    RdfFactory.getOntologyMap().put(rdfOntology.getNamespace().getUri(), rdfOntology);
-                                    RdfFactory.getOntologyPrefixMap().put(rdfOntology.getNamespace().getPrefix(), rdfOntology);
+
+                                // It's easy for the create() method to miss some fields, so let's help the dev
+                                // a little bit by iterating all members of the ontology and check if they have been
+                                // registered properly
+                                try {
+                                    for (Field field : rdfOntologyImpl.getClass().getFields()) {
+                                        //should we also check for a static modifier here?
+                                        if (field.getType().isAssignableFrom(RdfOntologyMember.class)) {
+                                            RdfOntologyMember member = (RdfOntologyMember) field.get(rdfOntologyImpl);
+                                            if (member == null) {
+                                                throw new RdfInitializationException(
+                                                                "Field inside an RDF ontology turned out null after initializing the ontology; this shouldn't happen; " + rdfOntologyImpl);
+                                            }
+                                            else if (member.isProxy()) {
+                                                throw new RdfInitializationException(
+                                                                "Field inside an RDF ontology turned out to be still a proxy after initializing the ontology; this shouldn't happen; " +
+                                                                rdfOntologyImpl);
+                                            }
+                                        }
+                                    }
                                 }
+                                catch (Exception e) {
+                                    throw new RdfInitializationException("Error happened while validating the members of an ontology; " + rdfOntologyImpl, e);
+                                }
+
+                                //if we reach this, all is well, so store it
+                                if (!allOntologies.containsKey(rdfOntologyImpl.getNamespace())) {
+                                    allOntologies.put(rdfOntologyImpl.getNamespace(), new ArrayList<>());
+                                }
+                                allOntologies.get(rdfOntologyImpl.getNamespace()).add(rdfOntologyImpl);
                             }
                         }
-                        catch (Exception e) {
-                            throw new RdfInstantiationException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
+                        catch (Throwable e) {
+                            throw new RdfInstantiationException("Error while initializing an RDF ontology - phase 1; " + c, e);
                         }
                     }
+
+                    for (Map.Entry<RdfNamespace, List<RdfOntologyImpl>> entry : allOntologies.entrySet()) {
+
+                        try {
+                            //let's assume the first one is the main one
+                            RdfOntologyImpl mainOntology = entry.getValue().get(0);
+
+                            boolean isPublic = mainOntology.isPublic();
+
+                            //if this ontology occurred more than once, we'll merge the others into the main ontology and discard them
+                            for (int i = 1; i < entry.getValue().size(); i++) {
+
+                                RdfOntologyImpl o = entry.getValue().get(i);
+
+                                //we'll configure it like this: if at least one of them is public, the main ontology is public
+                                if (!isPublic && o.isPublic()) {
+                                    isPublic = true;
+                                }
+
+                                //'move' all members to the main ontology
+                                for (RdfOntologyMember m : o.getAllMembers().values()) {
+                                    //note that this cast should always work because we control the member implementation
+                                    mainOntology._register((AbstractRdfOntologyMember) m);
+                                }
+                            }
+
+                            //'save' the resulting value back to the main ontology
+                            mainOntology.setPublic(isPublic);
+
+                            //only public ontologies are saved to the lookup maps; the rest are just initialized and referenced from other public ontologies
+                            if (mainOntology.isPublic()) {
+                                //store the ontology in a lookup map
+                                RdfFactory.getOntologyUriMap().put(mainOntology.getNamespace().getUri(), mainOntology);
+                                RdfFactory.getOntologyPrefixMap().put(mainOntology.getNamespace().getPrefix(), mainOntology);
+
+                                // if a public ontology references another ontology, regardless of being public or not,
+                                // we'll also save it in the lookup map, because we'll encounter it sooner or later
+                                for (RdfOntology ref : mainOntology.getReferencedOntologies()) {
+                                    if (!RdfFactory.getOntologyUriMap().containsKey(ref.getNamespace().getUri())) {
+                                        RdfFactory.getOntologyUriMap().put(ref.getNamespace().getUri(), ref);
+                                        RdfFactory.getOntologyPrefixMap().put(ref.getNamespace().getPrefix(), ref);
+                                    }
+                                }
+                            }
+
+                        }
+                        catch (Throwable e) {
+                            throw new RdfInstantiationException("Error while initializing an RDF ontology - phase 2; " + entry.getKey(), e);
+                        }
+                    }
+
+                    //if we reach this point, we iterated all ontologies and put them in our map above,
+                    // so it's safe to wipe the static map and release it's memory
+                    ontologyInstances.clear();
+
+                    //Note: no need to wipe the allOntologies map; it will be garbage collected
 
                     initialized = true;
                 }
@@ -224,7 +322,12 @@ public class RdfFactory
      */
     public static RdfClass newProxyClass(String name)
     {
-        return new RdfClassImpl(name);
+        try {
+            return new RdfClassImpl(getCallingOntology(), name);
+        }
+        catch (Throwable e) {
+            throw new RdfInstantiationException("Error happened while instantiating RDF ontology member; " + name, e);
+        }
     }
     /**
      * Create a new RdfProperty proxy instance. A proxy instance is converted to a true valid instance by passing it to the
@@ -233,7 +336,12 @@ public class RdfFactory
      */
     public static RdfProperty newProxyProperty(String name)
     {
-        return new RdfPropertyImpl(name);
+        try {
+            return new RdfPropertyImpl(getCallingOntology(), name);
+        }
+        catch (Throwable e) {
+            throw new RdfInstantiationException("Error happened while instantiating RDF ontology member; " + name, e);
+        }
     }
     /**
      * Create a new RdfDatatype proxy instance. A proxy instance is converted to a true valid instance by passing it to the
@@ -242,7 +350,12 @@ public class RdfFactory
      */
     public static RdfDatatype newProxyDatatype(String name)
     {
-        return new RdfDatatypeImpl(name);
+        try {
+            return new RdfDatatypeImpl(getCallingOntology(), name);
+        }
+        catch (Throwable e) {
+            throw new RdfInstantiationException("Error happened while instantiating RDF ontology member; " + name, e);
+        }
     }
     /**
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
@@ -290,7 +403,40 @@ public class RdfFactory
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static Map<URI, RdfOntology> getOntologyMap()
+    /**
+     * This is a little bit dirty magic code, but makes our lives a lot easier;
+     * it detects the initialization of static members in ontology classes (and limits them to ontology classes)
+     * so that the container class is auto-instantiated and attached to the members on creation.
+     * This avoids the need to pass the ontology class name over and over again to the static factory methods
+     * and wires-in the (hard needed) ontology information into the members so that our proxy-initialization functionality
+     * has a good bit of initial information inside once the create() factory method is called.
+     */
+    private static RdfOntologyImpl getCallingOntology() throws RdfInitializationException, IllegalAccessException, InstantiationException, ClassNotFoundException
+    {
+        return getOntologyInstance(Class.forName(Logger.getCallingClassName()));
+    }
+    /**
+     * Ontology instances can be created in two ways (always by calling the default constructor):
+     * - auto-magically when a ontologyMember is created, see method above
+     * - on system boot, when all ontologies are iterated
+     * <p>
+     * This method makes sure those are uniformly created
+     */
+    private static RdfOntologyImpl getOntologyInstance(Class<?> clazz) throws RdfInitializationException, IllegalAccessException, InstantiationException
+    {
+        if (!ontologyInstances.containsKey(clazz)) {
+            if (RdfOntology.class.isAssignableFrom(clazz)) {
+                Class<RdfOntologyImpl> ontologyClass = (Class<RdfOntologyImpl>) clazz;
+                ontologyInstances.put(ontologyClass, ontologyClass.newInstance());
+            }
+            else {
+                throw new RdfInitializationException("Found an RDF member that's not wrapped inside a " + RdfOntology.class.getSimpleName() + " class, please fix this; " + clazz);
+            }
+        }
+
+        return ontologyInstances.get(clazz);
+    }
+    private static Map<URI, RdfOntology> getOntologyUriMap()
     {
         try {
             return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_ONTOLOGIES, new CacheFunction<CacheKey, Map<URI, RdfOntology>>()

@@ -69,7 +69,7 @@ public class PropertyMap extends HashMap<String, Object>
             String keyStr = key.toString();
             if (!StringUtils.isEmpty(keyStr)) {
                 if (!keyStr.contains(":")) {
-                    String prefixUri = Settings.instance().getRdfLocalOntologyNamespace().getUri().toString();
+                    String prefixUri = Settings.instance().getRdfMainOntologyNamespace().getUri().toString();
                     if (!prefixUri.endsWith("/")) {
                         prefixUri += "/";
                     }

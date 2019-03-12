@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on 2/28/16.
@@ -94,9 +95,10 @@ public interface RdfOntology extends RdfResource
     Map<URI, RdfProperty> getPublicProperties();
 
     /**
-     * Internal use only!
+     * Returns a set of all ontologies that are used in properties/classes/datatypes within this ontology
      */
+    //avoids infinite recursion
     @JsonIgnore
-    void _register(RdfOntologyMember member) throws RdfInitializationException;
+    Set<RdfOntology> getReferencedOntologies();
 
 }

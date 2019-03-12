@@ -42,7 +42,7 @@ public abstract class AbstractImporter implements Importer
     //-----CONSTANTS-----
     //See https://www.w3.org/2011/rdfa-context/xhtml-rdfa-1.1
     public static final String XHTML_NS = "http://www.w3.org/1999/xhtml/vocab#";
-    public static final String LOCAL_NS = Settings.instance().getRdfLocalOntologyNamespace().getUri().toString();
+    public static final String LOCAL_NS = Settings.instance().getRdfMainOntologyNamespace().getUri().toString();
     public static final String XHTML_NS_ALTERNATE_NAME = "alternate";
     public static final String XHTML_NS_ALTERNATE = XHTML_NS + XHTML_NS_ALTERNATE_NAME;
     public static final String XHTML_NS_ICON_NAME = "icon";

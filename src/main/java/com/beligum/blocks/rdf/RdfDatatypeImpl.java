@@ -18,6 +18,7 @@ package com.beligum.blocks.rdf;
 
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfDatatype;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 
 /**
  * Created by bram on 2/25/16.
@@ -29,9 +30,9 @@ public class RdfDatatypeImpl extends RdfClassImpl implements RdfDatatype
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    RdfDatatypeImpl(String name)
+    RdfDatatypeImpl(RdfOntologyImpl ontology, String name)
     {
-        super(name);
+        super(ontology, name);
     }
 
     //-----PUBLIC METHODS-----

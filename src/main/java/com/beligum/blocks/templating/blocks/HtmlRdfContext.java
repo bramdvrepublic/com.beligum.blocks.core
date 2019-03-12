@@ -73,7 +73,7 @@ public class HtmlRdfContext
     public static URI getDefaultRdfVocab()
     {
         if (cachedDefaultRdfVocabAttr == null) {
-            cachedDefaultRdfVocabAttr = Settings.instance().getRdfLocalOntologyNamespace().getUri();
+            cachedDefaultRdfVocabAttr = Settings.instance().getRdfMainOntologyNamespace().getUri();
         }
 
         return cachedDefaultRdfVocabAttr;
@@ -82,8 +82,8 @@ public class HtmlRdfContext
     {
         if (cachedDefaultRdfPrefixAttr == null) {
             //TODO ideally, this should set the other prefixes too..., but it's more complex...
-            cachedDefaultRdfPrefixAttr = ImmutableMap.<String, URI>builder().put(Settings.instance().getRdfLocalOntologyNamespace().getPrefix(),
-                                                                                 Settings.instance().getRdfLocalOntologyNamespace().getUri())
+            cachedDefaultRdfPrefixAttr = ImmutableMap.<String, URI>builder().put(Settings.instance().getRdfMainOntologyNamespace().getPrefix(),
+                                                                                 Settings.instance().getRdfMainOntologyNamespace().getUri())
                                                                             .build();
         }
 

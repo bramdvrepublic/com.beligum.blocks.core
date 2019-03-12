@@ -21,6 +21,7 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.util.LinkedHashSet;
@@ -41,12 +42,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     private Set<RdfProperty> properties;
     private RdfQueryEndpoint endpoint;
     private ResourceSummarizer resourceSummarizer;
+    private RdfProperty labelProperty;
     private RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
-    RdfClassImpl(String name)
+    RdfClassImpl(RdfOntologyImpl ontology, String name)
     {
-        super(name);
+        super(ontology, name, false);
 
         //makes sense that the properties and superclasses are returned in the same order they are added, no?
         this.superClasses = new LinkedHashSet<>();
@@ -94,6 +96,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         this.assertNoProxy();
 
         return resourceSummarizer;
+    }
+    @Override
+    public RdfProperty getLabelProperty()
+    {
+        this.assertNoProxy();
+
+        return labelProperty;
     }
     @Override
     public RdfProperty getMainProperty()
@@ -160,6 +169,17 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         public Builder resourceSummarizer(ResourceSummarizer resourceSummarizer)
         {
             this.rdfResource.resourceSummarizer = resourceSummarizer;
+
+            return this;
+        }
+        public Builder labelProperty(RdfProperty labelProperty) throws RdfInitializationException
+        {
+            if (!this.rdfResource.properties.contains(labelProperty)) {
+                throw new RdfInitializationException("Can't set label property of class " + this + " to " + labelProperty + " because it's not a property of this class.");
+            }
+            else {
+                this.rdfResource.labelProperty = labelProperty;
+            }
 
             return this;
         }

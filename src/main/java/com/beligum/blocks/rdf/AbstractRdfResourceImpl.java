@@ -31,7 +31,7 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
 
     //-----VARIABLES-----
     //this is private because it's only accessible through the constructor
-    private final String name;
+    private String name;
 
     //protected because of the builder, see below
     protected boolean isPublic;
@@ -42,33 +42,9 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
      */
     protected AbstractRdfResourceImpl()
     {
-        this(null, false);
-    }
-    protected AbstractRdfResourceImpl(String name)
-    {
-        this(name, false);
-    }
-    protected AbstractRdfResourceImpl(String name, boolean isPublic)
-    {
-        if (StringUtils.isEmpty(name)) {
-            throw new RdfInstantiationException("Trying to create a nameless RDF resource, this isn't allowed.");
-        }
-
-        this.name = name;
-        this.isPublic = isPublic;
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-    @Override
-    public boolean isPublic()
-    {
-        return isPublic;
-    }
 
     //-----PROTECTED METHODS-----
 

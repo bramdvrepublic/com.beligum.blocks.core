@@ -20,21 +20,18 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.RdfNamespaceImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
 /**
  * Created by bram on 2/28/16.
  */
-public class Stralo extends RdfOntologyImpl
+public class Meta extends RdfOntologyImpl
 {
     //-----CONSTANTS-----
-    public static final RdfNamespace NAMESPACE = Settings.instance().getRdfStraloOntologyNamespace();
+    public static final RdfNamespace NAMESPACE = Settings.instance().getRdfMetaOntologyNamespace();
 
     //-----MEMBERS-----
 
@@ -116,8 +113,8 @@ public class Stralo extends RdfOntologyImpl
         return NAMESPACE;
     }
     @Override
-    public boolean isPublic()
+    protected boolean isPublicOntology()
     {
-        return false;
+        return true;
     }
 }

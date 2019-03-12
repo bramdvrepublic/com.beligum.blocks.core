@@ -20,7 +20,6 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.RdfNamespaceImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
@@ -34,7 +33,7 @@ import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 public class Local extends RdfOntologyImpl
 {
     //-----CONSTANTS-----
-    public static final RdfNamespace NAMESPACE = Settings.instance().getRdfLocalOntologyNamespace();
+    public static final RdfNamespace NAMESPACE = Settings.instance().getRdfMainOntologyNamespace();
 
     //-----MEMBERS-----
     //TODO integrate this in the ... (page?) block
@@ -86,6 +85,7 @@ public class Local extends RdfOntologyImpl
 
     }
 
+
     //-----PUBLIC METHODS-----
     @Override
     public RdfNamespace getNamespace()
@@ -93,7 +93,7 @@ public class Local extends RdfOntologyImpl
         return NAMESPACE;
     }
     @Override
-    public boolean isPublic()
+    protected boolean isPublicOntology()
     {
         return true;
     }

@@ -34,6 +34,7 @@ import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hadoop.fs.*;
@@ -136,7 +137,7 @@ public class ReadWritePage extends DefaultPage
                                                  //this approach is discussable (instead of using the OWL ontology directly),
                                                  // but the general approach is to use the local ontology as much as possible,
                                                  // so let's be consequent in our decisions...
-                                                 valueFactory.createIRI(Local.sameAs.getFullName().toString()),
+                                                 valueFactory.createIRI(Meta.sameAs.getFullName().toString()),
                                                  valueFactory.createIRI(externalResourceId.toString()));
 
                                 rdfDepsModel.addAll(externalRdfModel);

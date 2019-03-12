@@ -81,10 +81,17 @@ public interface RdfClass extends RdfOntologyMember
     ResourceSummarizer getResourceSummarizer();
 
     /**
+     * This is the property of this class that will be used "as the the RDFS:label" and in Stralo, it is linked
+     * to the HTML <title/> tag of the page.
+     */
+    RdfProperty getLabelProperty();
+
+    /**
      * Added for inline object (rdf subclasses) main property support: a main property of an inline object is
      * the property that the object actually represents (the other properties being extra information, like title + title type)
      */
     RdfProperty getMainProperty();
+
 
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>

@@ -23,6 +23,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
@@ -46,9 +47,9 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     private InputTypeConfig widgetConfig;
 
     //-----CONSTRUCTORS-----
-    RdfPropertyImpl(String name)
+    RdfPropertyImpl(RdfOntologyImpl ontology, String name)
     {
-        super(name);
+        super(ontology, name, false);
     }
 
     //-----PUBLIC METHODS-----

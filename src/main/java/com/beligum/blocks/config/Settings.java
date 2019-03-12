@@ -49,10 +49,12 @@ public class Settings
 {
     //sync this with the reserved page keywords
     public static final String RESOURCE_ENDPOINT = "/resource/";
-    public static final String DEFAULT_ONTOLOGY_ENDPOINT = "/ontology/";
-    public static final String DEFAULT_LOCAL_ONTOLOGY_PREFIX = "local";
-    public static final String DEFAULT_STRALO_ONTOLOGY_URI = "http://www.stralo.com" + DEFAULT_ONTOLOGY_ENDPOINT;
-    public static final String DEFAULT_STRALO_ONTOLOGY_PREFIX = "stralo";
+    public static final String DEFAULT_MAIN_ONTOLOGY_ENDPOINT = "/ontology/";
+    public static final String DEFAULT_MAIN_ONTOLOGY_PREFIX = "local";
+    public static final String DEFAULT_META_ONTOLOGY_ENDPOINT = DEFAULT_MAIN_ONTOLOGY_ENDPOINT + "meta/";
+    public static final String DEFAULT_META_ONTOLOGY_PREFIX = "meta";
+    public static final String DEFAULT_LOG_ONTOLOGY_ENDPOINT = DEFAULT_MAIN_ONTOLOGY_ENDPOINT + "log/";
+    public static final String DEFAULT_LOG_ONTOLOGY_PREFIX = "log";
 
     //centralized constant for the default entity type when nothing is set
     public static final RdfClass DEFAULT_CLASS = Local.Page;
@@ -61,8 +63,9 @@ public class Settings
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
     private static final String RDF_PREFIX = COMMON_PREFIX + ".rdf";
     private static final String RDF_ONTOLOGIES_KEY = RDF_PREFIX + ".ontologies.ontology";
-    private static final String RDF_LOCAL_ONTOLOGY_NAME = "local";
-    private static final String RDF_STRALO_ONTOLOGY_NAME = "stralo";
+    private static final String RDF_MAIN_ONTOLOGY_NAME = "main";
+    private static final String RDF_META_ONTOLOGY_NAME = "meta";
+    private static final String RDF_LOG_ONTOLOGY_NAME = "log";
 
     private static final String SECURITY_PREFIX = COMMON_PREFIX + ".security";
     private static final String SECURITY_ACLS_PREFIX = SECURITY_PREFIX + ".acls";
@@ -95,8 +98,9 @@ public class Settings
 
     private static Settings instance;
     private Boolean cachedDeleteLocksOnStartup;
-    private RdfNamespace cachedRdfLocalOntologyNamespace;
-    private RdfNamespace cachedRdfStraloOntologyNamespace;
+    private RdfNamespace cachedRdfMainOntologyNamespace;
+    private RdfNamespace cachedRdfMetaOntologyNamespace;
+    private RdfNamespace cachedRdfLogOntologyNamespace;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
     private URI cachedPagesStoreJournalDir;
@@ -392,61 +396,35 @@ public class Settings
     {
         return R.configuration().getBoolean(PAGES_PREFIX + ".enable-leave-edit-confirmation", false);
     }
-    public Map<String, RdfNamespace> getOntologyNamespaces()
+    public RdfNamespace getRdfMainOntologyNamespace()
     {
-        if (this.cachedRdfOntologiesMapping == null) {
-            this.cachedRdfOntologiesMapping = new LinkedHashMap<>();
-            List<HierarchicalConfiguration> ontologies = R.configuration().configurationsAt(RDF_ONTOLOGIES_KEY);
-            for (HierarchicalConfiguration ontology : ontologies) {
-                this.cachedRdfOntologiesMapping.put(ontology.getString("name"),
-                                                    new RdfNamespaceImpl(ontology.getString("uri"),
-                                                                         ontology.getString("prefix")));
-            }
+        if (this.cachedRdfMainOntologyNamespace == null) {
+            this.cachedRdfMainOntologyNamespace = this.initOntology(RDF_MAIN_ONTOLOGY_NAME,
+                                                                    R.configuration().getSiteDomain().resolve(DEFAULT_MAIN_ONTOLOGY_ENDPOINT),
+                                                                    DEFAULT_MAIN_ONTOLOGY_PREFIX);
         }
 
-        return this.cachedRdfOntologiesMapping;
+        return this.cachedRdfMainOntologyNamespace;
     }
-    public RdfNamespace getRdfLocalOntologyNamespace()
+    public RdfNamespace getRdfMetaOntologyNamespace()
     {
-        if (this.cachedRdfLocalOntologyNamespace == null) {
-            this.cachedRdfLocalOntologyNamespace = this.getOntologyNamespaces().get(RDF_LOCAL_ONTOLOGY_NAME);
-            if (this.cachedRdfLocalOntologyNamespace == null) {
-                // initialization will be done uniformally below
-                this.cachedRdfLocalOntologyNamespace = new RdfNamespaceImpl();
-            }
-
-            if (this.cachedRdfLocalOntologyNamespace.getUri() == null) {
-                this.cachedRdfLocalOntologyNamespace = new RdfNamespaceImpl(R.configuration().getSiteDomain().resolve(DEFAULT_ONTOLOGY_ENDPOINT), this.cachedRdfLocalOntologyNamespace.getPrefix());
-                Logger.info("Using a default local ontology URL, constructed from the main base URL using a standardized endpoint; " + this.cachedRdfLocalOntologyNamespace.getUri());
-            }
-            if (StringUtils.isEmpty(this.cachedRdfLocalOntologyNamespace.getPrefix())) {
-                this.cachedRdfLocalOntologyNamespace = new RdfNamespaceImpl(this.cachedRdfLocalOntologyNamespace.getUri(), DEFAULT_LOCAL_ONTOLOGY_PREFIX);
-                Logger.info("Using a default local ontology prefix; " + this.cachedRdfLocalOntologyNamespace.getPrefix());
-            }
+        if (this.cachedRdfMetaOntologyNamespace == null) {
+            this.cachedRdfMetaOntologyNamespace = this.initOntology(RDF_META_ONTOLOGY_NAME,
+                                                                    R.configuration().getSiteDomain().resolve(DEFAULT_META_ONTOLOGY_ENDPOINT),
+                                                                    DEFAULT_META_ONTOLOGY_PREFIX);
         }
 
-        return this.cachedRdfLocalOntologyNamespace;
+        return this.cachedRdfMetaOntologyNamespace;
     }
-    public RdfNamespace getRdfStraloOntologyNamespace()
+    public RdfNamespace getRdfLogOntologyNamespace()
     {
-        if (this.cachedRdfStraloOntologyNamespace == null) {
-            this.cachedRdfStraloOntologyNamespace = this.getOntologyNamespaces().get(RDF_STRALO_ONTOLOGY_NAME);
-            if (this.cachedRdfStraloOntologyNamespace == null) {
-                // initialization will be done uniformally below
-                this.cachedRdfStraloOntologyNamespace = new RdfNamespaceImpl();
-            }
-
-            if (this.cachedRdfStraloOntologyNamespace.getUri() == null) {
-                this.cachedRdfStraloOntologyNamespace = new RdfNamespaceImpl(DEFAULT_STRALO_ONTOLOGY_URI, this.cachedRdfStraloOntologyNamespace.getPrefix());
-                Logger.info("Using a default stralo ontology URL, constructed from the main base URL using a standardized endpoint; " + this.cachedRdfStraloOntologyNamespace.getUri());
-            }
-            if (StringUtils.isEmpty(this.cachedRdfStraloOntologyNamespace.getPrefix())) {
-                this.cachedRdfStraloOntologyNamespace = new RdfNamespaceImpl(this.cachedRdfStraloOntologyNamespace.getUri(), DEFAULT_STRALO_ONTOLOGY_PREFIX);
-                Logger.info("Using a default stralo ontology prefix; " + this.cachedRdfStraloOntologyNamespace.getPrefix());
-            }
+        if (this.cachedRdfLogOntologyNamespace == null) {
+            this.cachedRdfLogOntologyNamespace = this.initOntology(RDF_LOG_ONTOLOGY_NAME,
+                                                                    R.configuration().getSiteDomain().resolve(DEFAULT_LOG_ONTOLOGY_ENDPOINT),
+                                                                    DEFAULT_LOG_ONTOLOGY_PREFIX);
         }
 
-        return this.cachedRdfStraloOntologyNamespace;
+        return this.cachedRdfLogOntologyNamespace;
     }
     public boolean getEnableRdfCreateSync()
     {
@@ -539,5 +517,38 @@ public class Settings
         }
 
         return confFs == null ? null : UriBuilder.fromUri(tempUri).scheme(confFs.getScheme()).build();
+    }
+    private Map<String, RdfNamespace> getOntologyNamespaces()
+    {
+        if (this.cachedRdfOntologiesMapping == null) {
+            this.cachedRdfOntologiesMapping = new LinkedHashMap<>();
+            List<HierarchicalConfiguration> ontologies = R.configuration().configurationsAt(RDF_ONTOLOGIES_KEY);
+            for (HierarchicalConfiguration ontology : ontologies) {
+                this.cachedRdfOntologiesMapping.put(ontology.getString("name"),
+                                                    new RdfNamespaceImpl(ontology.getString("uri"),
+                                                                         ontology.getString("prefix")));
+            }
+        }
+
+        return this.cachedRdfOntologiesMapping;
+    }
+    private RdfNamespace initOntology(String ontologyName, URI defaultUri, String defaultPrefix)
+    {
+        RdfNamespace retVal = this.getOntologyNamespaces().get(ontologyName);
+        if (retVal == null) {
+            // initialization will be done uniformally below
+            retVal = new RdfNamespaceImpl();
+        }
+
+        if (retVal.getUri() == null) {
+            retVal = new RdfNamespaceImpl(defaultUri, retVal.getPrefix());
+            Logger.info("Using a default ontology URL for " + ontologyName + ", constructed from the main base URL using a standardized endpoint; " + retVal.getUri());
+        }
+        if (StringUtils.isEmpty(retVal.getPrefix())) {
+            retVal = new RdfNamespaceImpl(retVal.getUri(), defaultPrefix);
+            Logger.info("Using a default ontology prefix for " + ontologyName + "; " + retVal.getPrefix());
+        }
+
+        return retVal;
     }
 }

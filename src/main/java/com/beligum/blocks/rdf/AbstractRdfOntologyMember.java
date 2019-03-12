@@ -3,8 +3,10 @@ package com.beligum.blocks.rdf;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
 import com.beligum.blocks.exceptions.RdfInitializationException;
+import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfProxyException;
 import com.beligum.blocks.rdf.ifaces.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 
@@ -13,15 +15,28 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    protected RdfOntologyImpl ontology;
+    protected final String name;
+    protected boolean isPublic;
     protected boolean proxy;
-    protected RdfOntology ontology;
     protected MessagesFileEntry label;
     protected URI[] isSameAs;
 
     //-----CONSTRUCTORS-----
-    protected AbstractRdfOntologyMember(String name)
+    protected AbstractRdfOntologyMember(RdfOntologyImpl ontology, String name, boolean isPublic)
     {
-        super(name);
+        super();
+
+        if (ontology == null) {
+            throw new RdfInstantiationException("Can't create a RDF ontology member without an ontology; " + this);
+        }
+        if (StringUtils.isEmpty(name)) {
+            throw new RdfInstantiationException("Can't create a RDF ontology member without a name; " + this);
+        }
+
+        this.ontology = ontology;
+        this.name = name;
+        this.isPublic = isPublic;
 
         //will be set to false when it was passed through the create() factory method
         this.proxy = true;
@@ -31,6 +46,16 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
     //-----PUBLIC METHODS-----
     @Override
+    public String getName()
+    {
+        return name;
+    }
+    @Override
+    public boolean isPublic()
+    {
+        return isPublic;
+    }
+    @Override
     public boolean isProxy()
     {
         return proxy;
@@ -38,22 +63,16 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     @Override
     public RdfOntology getOntology()
     {
-        this.assertNoProxy();
-
         return ontology;
     }
     @Override
     public URI getFullName()
     {
-        this.assertNoProxy();
-
         return this.ontology.resolve(this.getName());
     }
     @Override
     public URI getCurieName()
     {
-        this.assertNoProxy();
-
         return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
     }
     @Override
@@ -156,6 +175,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             // register that the new member was "created" in the scope of this rdfFactory
             // so we can do some auto post-initialization in RdfOntology constructor
             this.rdfFactory.registry.add(this);
+
+            //if the ontology of the member wasn't initialized yet during static initialization,
+            //we do it here, but I don't think this will ever be needed...
+            if (this.rdfResource.ontology == null) {
+                this.rdfResource.ontology = rdfFactory.ontology;
+            }
         }
 
         //-----PUBLIC METHODS-----
@@ -180,16 +205,17 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
         //-----PROTECTED METHODS-----
         /**
+         * The ontology passed here is the actual main ontology for this member and can differ from the
+         * ontology instance the member belongs to because of our modular-ontologies-design.
+         * <p>
          * Note this method is package-private because it's called automatically for every new member
-         * in the RdfOntology constructor
+         * in the RdfOntology constructor.
          */
         T create() throws RdfInitializationException
         {
-            //we don't expost the ontology setter because we can fill it here automatically
-            this.rdfResource.ontology = this.rdfFactory.ontology;
-
-            //register the member into the ontology, filling all the right mappings
-            this.rdfResource.ontology._register(this.rdfResource);
+            if (this.rdfResource.ontology == null) {
+                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
+            }
 
             if (this.rdfResource.label == null) {
                 throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without label, can't continue because too much depends on this.");
@@ -199,6 +225,11 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             //here, all checks passed and the proxy can be converted to a valid instance
             this.rdfResource.proxy = false;
+
+            //register the member into the ontology, filling all the right mappings
+            //note that this needs to happen after creation (proxy = false) because it will
+            //call public methods on the resource
+            this.rdfResource.ontology._register(this.rdfResource);
 
             //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
             return (T) this.rdfResource;

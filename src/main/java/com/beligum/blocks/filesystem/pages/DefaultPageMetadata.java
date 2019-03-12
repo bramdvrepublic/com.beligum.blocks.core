@@ -5,6 +5,7 @@ import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
@@ -138,44 +139,44 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     {
         if (!StringUtils.isEmpty(property)) {
             if (!StringUtils.isEmpty(content)) {
-                if (property.equals(Local.created.getName()) || property.equals(Local.created.getCurieName().toString())) {
+                if (property.equals(Meta.created.getName()) || property.equals(Meta.created.getCurieName().toString())) {
                     this.createdUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Local.creator.getName()) || property.equals(Local.creator.getCurieName().toString())) {
+                else if (property.equals(Meta.creator.getName()) || property.equals(Meta.creator.getCurieName().toString())) {
                     this.creator = URI.create(content);
                     if (!this.creator.isAbsolute()) {
                         this.creator = baseUri.resolve(this.creator);
                     }
                 }
-                else if (property.equals(Local.modified.getName()) || property.equals(Local.modified.getCurieName().toString())) {
+                else if (property.equals(Meta.modified.getName()) || property.equals(Meta.modified.getCurieName().toString())) {
                     this.modifiedUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Local.contributor.getName()) || property.equals(Local.contributor.getCurieName().toString())) {
+                else if (property.equals(Meta.contributor.getName()) || property.equals(Meta.contributor.getCurieName().toString())) {
                     URI contributor = URI.create(content);
                     if (!contributor.isAbsolute()) {
                         contributor = baseUri.resolve(contributor);
                     }
                     this.contributors.add(contributor);
                 }
-                else if (property.equals(Local.aclRead.getName()) || property.equals(Local.aclRead.getCurieName().toString())) {
+                else if (property.equals(Meta.aclRead.getName()) || property.equals(Meta.aclRead.getCurieName().toString())) {
                     int aclReadLevel = NumberUtils.toInt(content, -1);
                     if (aclReadLevel >= 0) {
                         this.aclRead = aclReadLevel;
                     }
                 }
-                else if (property.equals(Local.aclUpdate.getName()) || property.equals(Local.aclUpdate.getCurieName().toString())) {
+                else if (property.equals(Meta.aclUpdate.getName()) || property.equals(Meta.aclUpdate.getCurieName().toString())) {
                     int aclUpdateLevel = NumberUtils.toInt(content, -1);
                     if (aclUpdateLevel >= 0) {
                         this.aclUpdate = aclUpdateLevel;
                     }
                 }
-                else if (property.equals(Local.aclDelete.getName()) || property.equals(Local.aclDelete.getCurieName().toString())) {
+                else if (property.equals(Meta.aclDelete.getName()) || property.equals(Meta.aclDelete.getCurieName().toString())) {
                     int aclDeleteLevel = NumberUtils.toInt(content, -1);
                     if (aclDeleteLevel >= 0) {
                         this.aclDelete = aclDeleteLevel;
                     }
                 }
-                else if (property.equals(Local.aclManage.getName()) || property.equals(Local.aclManage.getCurieName().toString())) {
+                else if (property.equals(Meta.aclManage.getName()) || property.equals(Meta.aclManage.getCurieName().toString())) {
                     int aclManageLevel = NumberUtils.toInt(content, -1);
                     if (aclManageLevel >= 0) {
                         this.aclManage = aclManageLevel;

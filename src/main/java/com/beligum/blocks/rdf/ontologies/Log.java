@@ -28,6 +28,8 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
+import javax.print.attribute.standard.MediaSize;
+
 /**
  * This Log ontology is a private ontology that's only used to write log entries into the log file.
  * Eg. it has little to do with the mapping of the general/public ontologies,
@@ -38,6 +40,7 @@ import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 public class Log extends RdfOntologyImpl
 {
     //-----CONSTANTS-----
+    public static final RdfNamespace NAMESPACE = Settings.instance().getRdfLogOntologyNamespace();
 
     //-----MEMBERS-----
     public static final RdfClass LogEntry = RdfFactory.newProxyClass("LogEntry");
@@ -110,10 +113,10 @@ public class Log extends RdfOntologyImpl
     @Override
     public RdfNamespace getNamespace()
     {
-        return null;
+        return NAMESPACE;
     }
     @Override
-    public boolean isPublic()
+    protected boolean isPublicOntology()
     {
         return false;
     }
