@@ -26,6 +26,8 @@ import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -70,7 +72,7 @@ public class RdfTools
      * Generate a new id-value
      * e.g. http://www.stralo.com/resource/877920329832560392
      */
-    public static URI createAbsoluteResourceId(RdfClass entity)
+    public static URI createAbsoluteResourceId(RdfResource entity)
     {
         return createAbsoluteResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString(), true);
     }
@@ -80,7 +82,7 @@ public class RdfTools
      * Generate a new id-value
      * e.g. /resource/877920329832560392
      */
-    public static URI createRelativeResourceId(RdfClass entity)
+    public static URI createRelativeResourceId(RdfResource entity)
     {
         return createRelativeResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString(), true);
     }
@@ -89,7 +91,7 @@ public class RdfTools
      * Create a absolute resource id, based on the type and an existing id-value
      * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
      */
-    public static URI createAbsoluteResourceId(RdfClass entity, String id)
+    public static URI createAbsoluteResourceId(RdfResource entity, String id)
     {
         return createAbsoluteResourceId(entity, id, false);
     }
@@ -98,7 +100,7 @@ public class RdfTools
      * Create a locale resource id, based on the type and an existing id-value
      * e.g. /v1/resource/address/big-street-in-antwerp
      */
-    public static URI createRelativeResourceId(RdfClass entity, String id)
+    public static URI createRelativeResourceId(RdfResource entity, String id)
     {
         return createRelativeResourceId(entity, id, false);
     }
@@ -121,7 +123,7 @@ public class RdfTools
     /**
      * Converts a URI to it's CURIE variant, using the locally known ontologies
      */
-    public static URI fullToCurie(URI fullUri)
+    public static URI full ToCurie(URI fullUri)
     {
         URI retVal = null;
 
@@ -139,12 +141,12 @@ public class RdfTools
     /**
      * Converts a CURIE to a full URI
      */
-    public static URI curieToFull(URI resourceTypeCurie)
+    public static URI curie ToFull(URI resourceTypeCurie)
     {
         //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
         URI retVal = null;
 
-        RdfOntology ontology = RdfFactory.getOntologyForPrefix(resourceTypeCurie.getScheme());
+        RdfOntology ontology = RdfFactory.getOntology(resourceTypeCurie.getScheme());
         if (ontology != null) {
             retVal = ontology.resolve(resourceTypeCurie.getPath());
         }
@@ -315,7 +317,7 @@ public class RdfTools
             //and the checking of a type seems to be a good measure
             if (typeOfIRI.isPresent()) {
 
-                RdfClass subType = RdfFactory.getClassForResourceType(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
+                RdfClass subType = RdfFactory.getClass(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
 
                 PageModel modelInfo = new PageModel(page, mainResource, subResource, subType, subModel);
 
@@ -350,7 +352,7 @@ public class RdfTools
     /**
      * Small wrapper to make all absolute call pass through here
      */
-    private static URI createAbsoluteResourceId(RdfClass entity, String id, boolean ontologyUniqueId)
+    private static URI createAbsoluteResourceId(RdfResource entity, String id, boolean ontologyUniqueId)
     {
         return createResourceIdPath(UriBuilder.fromUri(configuration().getSiteDomain()), entity, id, ontologyUniqueId).build();
     }
@@ -358,7 +360,7 @@ public class RdfTools
     /**
      * Small wrapper to make all relative call pass through here
      */
-    private static URI createRelativeResourceId(RdfClass entity, String id, boolean ontologyUniqueId)
+    private static URI createRelativeResourceId(RdfResource entity, String id, boolean ontologyUniqueId)
     {
         return createResourceIdPath(UriBuilder.fromUri("/"), entity, id, ontologyUniqueId).build();
     }
@@ -370,7 +372,7 @@ public class RdfTools
      * if it's not, we need additional information to resolve the resource (eg. coming from a SQL primary key or linking to an external ontology)
      * see this discussion https://github.com/republic-of-reinvention/com.stralo.framework/issues/15
      */
-    private static UriBuilder createResourceIdPath(UriBuilder uriBuilder, RdfClass entity, String id, boolean ontologyUniqueId)
+    private static UriBuilder createResourceIdPath(UriBuilder uriBuilder, RdfResource entity, String id, boolean ontologyUniqueId)
     {
         //this is the constant factor for all resource ID's and needs to be synced with isResourceUrl() and extractResourceId()
         uriBuilder.path(Settings.RESOURCE_ENDPOINT);
@@ -421,7 +423,14 @@ public class RdfTools
                             break;
 
                         case 3:
-                            this.resourceClass = RdfFactory.getClassForResourceType(Settings.instance().getRdfMainOntologyNamespace().getPrefix() + ":" + this.path.getName(1).toString());
+                            //this will add support for curies or just the name of the class in the default ontology
+                            String className = this.path.getName(1).toString();
+                            String prefix = null;
+                            if (className.contains(":")) {
+
+                            }
+
+                            this.resourceClass = RdfFactory.getClass(Settings.instance().getRdfMainOntologyNamespace().getPrefix() + ":" + this.path.getName(1).toString());
                             this.resourceId = this.path.getName(2).toString();
                             this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
 

@@ -46,59 +46,59 @@ public interface RdfOntology extends RdfResource
     URI resolveCurie(String suffix);
 
     /**
-     * Returns all typed members (classes, properties and dataTypes) in this vocabulary
+     * Returns all typed members (classes, properties and dataTypes) in this vocabulary.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfOntologyMember> getAllMembers();
+    Iterable<RdfOntologyMember> getAllMembers();
 
     /**
-     * Returns all classes in this vocabulary
+     * Returns the member with the specified name in this ontology or null if nothing was found
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfClass> getAllClasses();
+    RdfOntologyMember getMember(String name);
 
     /**
-     * Returns all classes in this vocabulary that are selectable from the client-side page-type-dropdown
+     * Returns all classes in this vocabulary.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfClass> getPublicClasses();
+    Iterable<RdfClass> getAllClasses();
 
     /**
-     * Returns all properties of all classes in this vocabulary
+     * Returns all classes in this vocabulary that are selectable from the client-side page-type-dropdown.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfProperty> getAllClassProperties();
+    Iterable<RdfClass> getPublicClasses();
 
     /**
-     * Returns all properties of all public classes in this vocabulary
+     * Returns all properties of all classes in this vocabulary.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfProperty> getPublicClassProperties();
+    Iterable<RdfProperty> getAllClassProperties();
 
     /**
-     * Returns all properties in this vocabulary
+     * Returns all properties of all public classes in this vocabulary.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfProperty> getAllProperties();
+    Iterable<RdfProperty> getPublicClassProperties();
 
     /**
-     * Returns all properties in this vocabulary that are accessible from the client-side UI
+     * Returns all properties in this vocabulary.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfProperty> getPublicProperties();
+    Iterable<RdfProperty> getAllProperties();
 
     /**
-     * Returns a set of all ontologies that are used in properties/classes/datatypes within this ontology
+     * Returns all properties in this vocabulary that are accessible from the client-side UI.
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfOntology> getReferencedOntologies();
+    Iterable<RdfProperty> getPublicProperties();
 
 }

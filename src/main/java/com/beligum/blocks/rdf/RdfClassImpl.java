@@ -23,7 +23,11 @@ import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSumma
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -62,26 +66,73 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     {
         return Type.CLASS;
     }
+    /**
+     * We need to overload this method for a RdfClass to also add all the referenced ontologies
+     * of all superclasses and properties.
+     */
     @Override
-    public Set<RdfClass> getSuperClasses()
+    public Iterable<RdfOntology> getOntologyReferences()
+    {
+        this.assertNoProxy();
+
+        Set<RdfOntology> retVal = new LinkedHashSet<>();
+
+        super.getOntologyReferences().forEach(retVal::add);
+
+        for (RdfClass c : this.getSuperClasses()) {
+            c.getOntologyReferences().forEach(retVal::add);
+        }
+        for (RdfProperty p : this.getProperties()) {
+            p.getOntologyReferences().forEach(retVal::add);
+        }
+
+        return retVal;
+
+        // this is the same (more performing) implementation but doesn't eliminate doubles...
+        //        Iterable<RdfOntology> retVal = super.getOntologyReferences();
+        //        for (RdfClass c : this.getSuperClasses()) {
+        //            retVal = Iterables.concat(retVal, c.getOntologyReferences());
+        //        }
+        //        for (RdfProperty p : this.getProperties()) {
+        //            retVal = Iterables.concat(retVal, p.getOntologyReferences());
+        //        }
+        //
+        //        return retVal;
+    }
+    @Override
+    public Iterable<RdfClass> getSuperClasses()
     {
         this.assertNoProxy();
 
         return superClasses;
     }
     @Override
-    public Set<RdfClass> getSubClasses()
+    public Iterable<RdfClass> getSubClasses()
     {
         this.assertNoProxy();
 
         return subClasses;
     }
     @Override
-    public Set<RdfProperty> getProperties()
+    public Iterable<RdfProperty> getProperties()
     {
         this.assertNoProxy();
 
-        return properties;
+        //by constructing it this way, we can keep using the references to the (proxy) superclasses
+        //until this method is really called.
+        Iterable<RdfProperty> retVal = this.properties;
+        for (RdfClass c : this.superClasses) {
+            retVal = Iterables.concat(retVal, c.getProperties());
+        }
+
+        return retVal;
+    }
+    @JsonIgnore
+    public boolean hasProperty(RdfProperty property)
+    {
+        this.assertNoProxy();
+
+        return Iterables.tryFind(this.getProperties(), Predicates.equalTo(property)).isPresent();
     }
     @Override
     public RdfQueryEndpoint getEndpoint()
@@ -111,6 +162,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
         return mainProperty;
     }
+
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
@@ -166,7 +218,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder resourceSummarizer(ResourceSummarizer resourceSummarizer)
+        public Builder summarizer(ResourceSummarizer resourceSummarizer)
         {
             this.rdfResource.resourceSummarizer = resourceSummarizer;
 
@@ -203,18 +255,9 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                 this.rdfResource.resourceSummarizer = new SimpleResourceSummarizer();
             }
 
-            for (RdfClass c : this.rdfResource.superClasses) {
-                //we save the relationship and add all properties of the superclasses to this class
-                this.rdfResource.superClasses.add(c);
-                for (RdfProperty p : c.getProperties()) {
-                    if (this.rdfResource.properties.contains(p)) {
-                        throw new RdfInitializationException("RDFClass " + this + " inherits from " + c + ", but the property " + p + " would overwrite an existing property, can't continue.");
-                    }
-                    else {
-                        this.rdfResource.properties.add(p);
-                    }
-                }
-            }
+            //note: instead of iterating the properties of the superclasses and adding them to this class,
+            //we overloaded the getProperties() method to include the properties of the superclass instead.
+            //This way, we work around the need for the superclasses to be initialized when this resource is created.
 
             //Note: this call will add us to the ontology
             return super.create();

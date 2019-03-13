@@ -120,7 +120,7 @@ public class ReadWritePage extends DefaultPage
                 URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
                 //this means the predicate is locally known
                 if (predicateCurie != null) {
-                    RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
+                    RdfProperty predicate = RdfFactory.getProperty(predicateCurie);
                     //should always be ok because of the check above
                     if (predicate != null) {
                         RdfClass dataType = predicate.getDataType();

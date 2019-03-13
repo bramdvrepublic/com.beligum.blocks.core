@@ -6,9 +6,13 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfProxyException;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl implements RdfOntologyMember
 {
@@ -103,6 +107,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.assertNoProxy();
 
         return isSameAs;
+    }
+    @Override
+    public Iterable<RdfOntology> getOntologyReferences()
+    {
+        this.assertNoProxy();
+
+        return Collections.singleton(this.ontology);
     }
 
     //-----PROTECTED METHODS-----

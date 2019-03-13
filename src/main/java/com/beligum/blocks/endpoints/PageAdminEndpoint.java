@@ -35,8 +35,9 @@ import com.beligum.blocks.filesystem.pages.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TagTemplate;
@@ -160,7 +161,10 @@ public class PageAdminEndpoint
     {
         RdfClass typeOf = null;
         if (!StringUtils.isEmpty(typeOfStr)) {
-            typeOf = RdfFactory.getClassForResourceType(typeOfStr);
+            typeOf = RdfFactory.getClass(typeOfStr);
+            if (typeOf == null) {
+                Logger.error("Watch out, " + typeOfStr + " couldn't be translated to a valid RDF class, using default instead.");
+            }
         }
         //make sure we always have a type
         if (typeOf == null) {
@@ -250,9 +254,9 @@ public class PageAdminEndpoint
                         if (enableTemplate) {
                             for (String p : rdfProperties) {
 
-                                RdfProperty rdfProp = (RdfProperty) RdfFactory.getClassForResourceType(p);
+                                RdfProperty rdfProp = RdfFactory.getProperty(p);
                                 if (rdfProp != null) {
-                                    enableTemplate = enableTemplate && typeOf.getProperties().contains(rdfProp);
+                                    enableTemplate = enableTemplate && typeOf.hasProperty(rdfProp);
                                 }
                                 else {
                                     //let's do this so the developer is forced to fix it (the block won't show up, see log msg below)
@@ -477,7 +481,7 @@ public class PageAdminEndpoint
                     boolean allClassesOk = true;
                     Set<RdfClass> rdfClasses = new HashSet<>();
                     for (String c : classCurie) {
-                        RdfClass rdfClass = RdfFactory.getClassForResourceType(c);
+                        RdfClass rdfClass = RdfFactory.getClass(c);
                         if (rdfClass == null) {
                             retVal =
                                             Response.ok("Can't start an index all action because you supplied an unknown 'class' parameter: '" + c +

@@ -20,13 +20,11 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.google.common.collect.Iterables;
 
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bram on 2/28/16.
@@ -36,14 +34,13 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Map<URI, RdfOntologyMember> allMembers;
+    private Map<String, RdfOntologyMember> allMembers;
     private Map<URI, RdfClass> allClasses;
     private Map<URI, RdfClass> publicClasses;
     private Map<URI, RdfProperty> allProperties;
     private Map<URI, RdfProperty> publicProperties;
     private Map<URI, RdfProperty> allClassProperties;
     private Map<URI, RdfProperty> publicClassProperties;
-    private Set<RdfOntology> referencedOntologies;
 
     //-----CONSTRUCTORS-----
     /**
@@ -68,7 +65,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         this.publicProperties = new LinkedHashMap<>();
         this.allClassProperties = new LinkedHashMap<>();
         this.publicClassProperties = new LinkedHashMap<>();
-        this.referencedOntologies = new LinkedHashSet<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -101,44 +97,66 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         return URI.create(this.getNamespace().getPrefix() + ":" + suffix);
     }
     @Override
-    public Map<URI, RdfOntologyMember> getAllMembers()
+    public Iterable<RdfOntologyMember> getAllMembers()
     {
-        return allMembers;
+        return allMembers.values();
     }
     @Override
-    public Map<URI, RdfClass> getAllClasses()
+    public RdfOntologyMember getMember(String name)
     {
-        return allClasses;
+        return allMembers.get(name);
     }
     @Override
-    public Map<URI, RdfClass> getPublicClasses()
+    public Iterable<RdfClass> getAllClasses()
     {
-        return publicClasses;
+        return allClasses.values();
     }
     @Override
-    public Map<URI, RdfProperty> getAllClassProperties()
+    public Iterable<RdfClass> getPublicClasses()
     {
-        return allClassProperties;
+        return publicClasses.values();
     }
     @Override
-    public Map<URI, RdfProperty> getPublicClassProperties()
+    public Iterable<RdfProperty> getAllClassProperties()
     {
-        return publicClassProperties;
+        return allClassProperties.values();
     }
     @Override
-    public Map<URI, RdfProperty> getAllProperties()
+    public Iterable<RdfProperty> getPublicClassProperties()
     {
-        return allProperties;
+        return publicClassProperties.values();
     }
     @Override
-    public Map<URI, RdfProperty> getPublicProperties()
+    public Iterable<RdfProperty> getAllProperties()
     {
-        return publicProperties;
+        return allProperties.values();
     }
     @Override
-    public Set<RdfOntology> getReferencedOntologies()
+    public Iterable<RdfProperty> getPublicProperties()
     {
-        return referencedOntologies;
+        return publicProperties.values();
+    }
+    @Override
+    public Iterable<RdfOntology> getOntologyReferences()
+    {
+        Set<RdfOntology> retVal = new LinkedHashSet<>();
+
+        retVal.add(this);
+
+        for (RdfOntologyMember m : this.getAllMembers()) {
+            m.getOntologyReferences().forEach(retVal::add);
+        }
+
+        return retVal;
+
+        // this is the same (more performing) implementation but doesn't eliminate doubles...
+        //        Iterable<RdfOntology> retVal = Collections.singleton(this);
+        //
+        //        for (RdfOntologyMember m : this.getAllMembers().values()) {
+        //            retVal = Iterables.concat(retVal, m.getOntologyReferences());
+        //        }
+        //
+        //        return retVal;
     }
 
     //-----PROTECTED METHODS-----
@@ -161,13 +179,13 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
      * Register an ontology member into this ontology, putting it into the relevant maps.
      * Note that this method is also used to merge another duplicate ontology into this one.
      */
-    protected void _register(AbstractRdfOntologyMember member) throws RdfInitializationException
+    void _register(AbstractRdfOntologyMember member) throws RdfInitializationException
     {
         //always make sure the ontology in the member points to this instance
         member.ontology = this;
 
         //first, make sure to register the resource into the set of all members
-        this.allMembers.put(member.getCurieName(), member);
+        this.allMembers.put(member.getName(), member);
 
         //then, fill some specific lookup maps and check for errors in the mean time
         switch (member.getType()) {
@@ -202,11 +220,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
                 break;
             default:
                 throw new RdfInitializationException("Encountered unimplemented RDF resource type; please fix this; " + member);
-        }
-
-        //keep a set of all foreign ontologies that are referenced from this ontology
-        if (!member.getOntology().equals(this)) {
-            this.referencedOntologies.add(member.getOntology());
         }
     }
 

@@ -164,7 +164,7 @@ public class NewPageSource extends PageSource
                     newResource = URI.create(this.getUri().getPath());
                 }
                 else {
-                    newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
+                    newResource = RdfTools.createRelativeResourceId(RdfFactory.getClass(newTypeOf));
                 }
             }
             //this happens when we instance a new page (or resource) but the resource already exists (in another language)

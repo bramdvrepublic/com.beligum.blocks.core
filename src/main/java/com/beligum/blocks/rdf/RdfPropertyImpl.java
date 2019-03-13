@@ -27,11 +27,14 @@ import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
+import com.google.common.collect.Iterables;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -57,6 +60,23 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     public Type getType()
     {
         return Type.PROPERTY;
+    }
+    /**
+     * We need to overload this method for a RdfProperty to also add all the referenced ontologies
+     * of the datatypes
+     */
+    @Override
+    public Iterable<RdfOntology> getOntologyReferences()
+    {
+        this.assertNoProxy();
+
+        Set<RdfOntology> retVal = new LinkedHashSet<>();
+        super.getOntologyReferences().forEach(retVal::add);
+        this.getDataType().getOntologyReferences().forEach(retVal::add);
+        return retVal;
+
+        // this is the same (more performing) implementation but doesn't eliminate doubles...
+        //return Iterables.concat(super.getOntologyReferences(), this.getDataType().getOntologyReferences());
     }
     @Override
     public RdfClass getDataType()

@@ -472,7 +472,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                 //Note: the type is the literal html string in the typeof="" attribute of a RDFa HTML page,
                 //so it needs parsing
                 URI rdfClassUri = URI.create(resultSet.getString(SQL_COLUMN_TYPE_NAME));
-                RdfClass rdfClass = RdfFactory.getClassForResourceType(rdfClassUri);
+                RdfClass rdfClass = RdfFactory.getClass(rdfClassUri);
                 //this is bad. It means we'll encounter a NPE later on because we don't have dependency information,
                 //so let's quit now with some additional debug information
                 if (rdfClass == null) {
@@ -496,7 +496,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                         lonelyClasses.add(node);
                     }
 
-                    Set<RdfProperty> props = rdfClass.getProperties();
+                    Iterable<RdfProperty> props = rdfClass.getProperties();
                     if (props != null) {
                         for (RdfProperty p : props) {
 

@@ -48,14 +48,14 @@ public interface RdfClass extends RdfOntologyMember
      * This class inherits all properties of all registered superclasses.
      */
     @JsonIgnore
-    Set<RdfClass> getSuperClasses();
+    Iterable<RdfClass> getSuperClasses();
 
     /**
      * A collection of all subclasses of this class.
      * This is basically the inverse of getSuperClasses()
      */
     @JsonIgnore
-    Set<RdfClass> getSubClasses();
+    Iterable<RdfClass> getSubClasses();
 
     /**
      * A collection of all properties of this class. This list is returned by the RDF endpoint when the properties for a page of type 'this' is requested.
@@ -63,7 +63,13 @@ public interface RdfClass extends RdfOntologyMember
      * Note that this will return the properties of all super classes as well.
      */
     @JsonIgnore
-    Set<RdfProperty> getProperties();
+    Iterable<RdfProperty> getProperties();
+
+    /**
+     * A check to see if the supplied property exists inside the iterable of getProperties()
+     */
+    @JsonIgnore
+    boolean hasProperty(RdfProperty property);
 
     /**
      * Factory method to get a reference to the endpoint for this class.
@@ -123,7 +129,7 @@ public interface RdfClass extends RdfOntologyMember
             JsonNode node = oc.readTree(p);
             String value = node.textValue();
 
-            return value == null ? null : RdfFactory.getClassForResourceType(value);
+            return value == null ? null : RdfFactory.getClass(value);
         }
     }
 }

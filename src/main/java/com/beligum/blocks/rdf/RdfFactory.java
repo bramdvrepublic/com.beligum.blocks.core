@@ -23,16 +23,18 @@ import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.*;
+
+import static org.apache.commons.lang.ArrayUtils.INDEX_NOT_FOUND;
 
 /**
  * Main factory class for all RDF-related initialization and lookup.
@@ -99,73 +101,206 @@ public class RdfFactory
     }
 
     //-----STATIC METHODS-----
-    public static RdfOntology getOntologyForPrefix(String prefix)
+    /**
+     * Returns a collection of all registered public ontologies.
+     * Note that this list consists of all ontologies that were marked public explicitly,
+     * but also those that are referenced from any public ontologies; eg. all ontologies that are 'accessible'
+     * from our explicit public ontologies (or it's members, properties, classes, datatypes, ...).
+     */
+    public static Iterable<RdfOntology> getPublicOntologies()
     {
         //make sure we booted the static members at least once
         assertInitialized();
 
-        return getOntologyPrefixMap().get(prefix);
+        return getPublicOntologyUriMap().values();
     }
-    public static RdfClass getClassForResourceType(String resourceTypeCurieStr)
+    /**
+     * Looks up the ontology in the public ontologies for the supplied URI
+     */
+    public static RdfOntology getOntology(URI uri)
     {
-        RdfClass retVal = null;
+        //make sure we booted the static members at least once
+        assertInitialized();
 
-        if (!StringUtils.isEmpty(resourceTypeCurieStr)) {
-            try {
-                retVal = getClassForResourceType(resourceTypeCurieStr);
+        return getPublicOntologyUriMap().get(uri);
+    }
+    /**
+     * Looks up the ontology in the public ontologies for the supplied prefix
+     */
+    public static RdfOntology getOntology(String prefix)
+    {
+        //make sure we booted the static members at least once
+        assertInitialized();
+
+        return getPublicOntologyPrefixMap().get(prefix);
+    }
+    /**
+     * This is the most general find-method to translate a random name to a RDF resource,
+     * according to a few heuristics.
+     * - the name is first trimmed
+     * - the name can either be:
+     * a) a full URI
+     * b) a CURIE-prefixed name
+     * c) a regular string to be looked up in the default vocabulary
+     * d) null or the empty string
+     * - if a match was found, the first one is returned
+     * - if nothing was found, null is returned
+     */
+    public static RdfResource lookup(String unsafeValue) throws IOException
+    {
+        RdfResource retVal = null;
+
+        if (!StringUtils.isEmpty(unsafeValue)) {
+
+            String value = unsafeValue.trim();
+
+            //this means it can be a URI or a CURIE
+            if (value.contains(":")) {
+
+                //first, check if we're dealing with a full blown URI
+                URI uri = null;
+                try {
+                    //Note that this will NOT throw an exception in case of a CURIE (which is a valid URI)
+                    uri = URI.create(value);
+                }
+                catch (IllegalArgumentException e) {
+                    //ignored
+                }
+
+                //here we must try to expand a CURIE
+                if (uri != null) {
+
+                    if (RdfTools.isCurie(uri)) {
+                        RdfOntology ontology = getPublicOntologyPrefixMap().get(uri.getScheme());
+                        if (ontology != null) {
+                            //this will return null when no such member was found, which is what we want
+                            retVal = ontology.getMember(uri.getSchemeSpecificPart());
+                        }
+                        else {
+                            throw new IOException("Encountered a CURIE with an unknown ontology prefix '" + uri.getScheme() + "'; " + value);
+                        }
+                    }
+                    //here, the URI is a full-blown uri
+                    else {
+                        //first, check if the uri is the namespace of an ontology
+                        retVal = getPublicOntologyUriMap().get(uri);
+
+                        //if it's not an ontology, we'll try to cut off the name and split the uri in an ontology uri and a name string;
+                        //RDF ontologies either use anchor based names or real endpoints, so search for the pound sign or use the last part of the path as the name
+                        if (retVal == null) {
+
+                            retVal = parseOntologyMemberUri(uri, "#");
+
+                            //if anchor-splitting didn't result anything, try the last slash
+                            if (retVal == null) {
+                                retVal = parseOntologyMemberUri(uri, "/");
+                            }
+                        }
+                    }
+                }
+                else {
+                    throw new IOException("Encountered a value with a colon (:), but it didn't parse to a valid URI; " + value);
+                }
             }
-            catch (Exception e) {
-                Logger.debug("Couldn't parse the supplied resource type curie to a valid URI", e);
+            //if the value is no CURIE or URI, prefix it with the default ontology and do a recursive call
+            else {
+                RdfFactory.getLocalOntology().res
+                String prefixUri = this.currentVocabStack.peek().toString();
+                if (!prefixUri.endsWith("/")) {
+                    prefixUri += "/";
+                }
+                String suffix = retVal;
+                while (suffix.startsWith("/")) {
+                    suffix = suffix.substring(1);
+                }
+                retVal = prefixUri + suffix;
             }
         }
 
         return retVal;
     }
-    public static RdfClass getClassForResourceType(URI resourceTypeCurie)
+    /**
+     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfClass instance
+     * Note that this will also return RdfDatatype because it extends RdfClass.
+     */
+    public static RdfClass getClass(URI curie)
     {
-        RdfResource retVal = getForResourceType(resourceTypeCurie);
+        RdfOntologyMember member = getOntologyMember(curie);
 
-        return retVal != null && retVal instanceof RdfClass ? (RdfClass) retVal : null;
+        return member != null && member instanceof RdfClass ? (RdfClass) member : null;
     }
-    public static RdfResource getForResourceType(URI resourceTypeCurie)
+    /**
+     * Convenience method around getClass() with a curie string instead of URI
+     */
+    public static RdfClass getClass(String curie)
+    {
+        return getClass(URI.create(curie));
+    }
+    /**
+     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfDatatype instance
+     */
+    public static RdfDatatype getDatatype(URI curie)
+    {
+        RdfOntologyMember member = getOntologyMember(curie);
+
+        return member != null && member instanceof RdfDatatype ? (RdfDatatype) member : null;
+    }
+    /**
+     * Convenience method around getDatatype() with a curie string instead of URI
+     */
+    public static RdfDatatype getDatatype(String curie)
+    {
+        return getDatatype(URI.create(curie));
+    }
+    /**
+     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfProperty instance
+     */
+    public static RdfProperty getProperty(URI curie)
+    {
+        RdfOntologyMember member = getOntologyMember(curie);
+
+        return member != null && member instanceof RdfProperty ? (RdfProperty) member : null;
+    }
+    /**
+     * Convenience method around getProperty() with a curie string instead of URI
+     */
+    public static RdfProperty getProperty(String curie)
+    {
+        return getProperty(URI.create(curie));
+    }
+    /**
+     * Convenience method around getOntologyMember() with a curie string instead of URI
+     */
+    public static RdfOntologyMember getOntologyMember(String curie)
+    {
+        return getOntologyMember(URI.create(curie));
+    }
+    /**
+     * Looks up the RDF ontology member in all known (public) ontologies.
+     * Returns null if nothing was found.
+     */
+    public static RdfOntologyMember getOntologyMember(URI curie)
     {
         //make sure we booted the static members at least once
         assertInitialized();
 
-        RdfResource retVal = null;
+        RdfOntologyMember retVal = null;
 
-        RdfOntology ontology = getOntologyForPrefix(resourceTypeCurie.getScheme());
+        RdfOntology ontology = getOntology(curie.getScheme());
         if (ontology != null) {
             //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
             //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
-            retVal = ontology.getAllMembers().get(resourceTypeCurie);
+            retVal = ontology.getMember(curie.getSchemeSpecificPart());
         }
 
         return retVal;
     }
     /**
-     * Returns the endpoint attached to the RDF class with the supplied curie or null if nothing was found.
-     */
-    public static RdfQueryEndpoint getEndpointForResourceType(URI resourceTypeCurie)
-    {
-        //make sure we booted the static members at least once
-        assertInitialized();
-
-        RdfQueryEndpoint retVal = null;
-
-        RdfClass rdfClass = (RdfClass) RdfFactory.getForResourceType(resourceTypeCurie);
-        if (rdfClass != null) {
-            retVal = rdfClass.getEndpoint();
-        }
-
-        return retVal;
-    }
-    /**
-     * Returns a reference to the local ontology
+     * Returns a reference to the local main ontology
      */
     public static RdfOntology getLocalOntology()
     {
-        return RdfFactory.getOntologyForPrefix(Settings.instance().getRdfMainOntologyNamespace().getPrefix());
+        return RdfFactory.getOntology(Settings.instance().getRdfMainOntologyNamespace().getPrefix());
     }
     /**
      * This will instantiate all ontologies once if needed, so we can be sure every RDF member has been assigned to it's proper ontology, etc.
@@ -271,7 +406,7 @@ public class RdfFactory
                                 }
 
                                 //'move' all members to the main ontology
-                                for (RdfOntologyMember m : o.getAllMembers().values()) {
+                                for (RdfOntologyMember m : o.getAllMembers()) {
                                     //note that this cast should always work because we control the member implementation
                                     mainOntology._register((AbstractRdfOntologyMember) m);
                                 }
@@ -283,15 +418,15 @@ public class RdfFactory
                             //only public ontologies are saved to the lookup maps; the rest are just initialized and referenced from other public ontologies
                             if (mainOntology.isPublic()) {
                                 //store the ontology in a lookup map
-                                RdfFactory.getOntologyUriMap().put(mainOntology.getNamespace().getUri(), mainOntology);
-                                RdfFactory.getOntologyPrefixMap().put(mainOntology.getNamespace().getPrefix(), mainOntology);
+                                RdfFactory.getPublicOntologyUriMap().put(mainOntology.getNamespace().getUri(), mainOntology);
+                                RdfFactory.getPublicOntologyPrefixMap().put(mainOntology.getNamespace().getPrefix(), mainOntology);
 
                                 // if a public ontology references another ontology, regardless of being public or not,
                                 // we'll also save it in the lookup map, because we'll encounter it sooner or later
-                                for (RdfOntology ref : mainOntology.getReferencedOntologies()) {
-                                    if (!RdfFactory.getOntologyUriMap().containsKey(ref.getNamespace().getUri())) {
-                                        RdfFactory.getOntologyUriMap().put(ref.getNamespace().getUri(), ref);
-                                        RdfFactory.getOntologyPrefixMap().put(ref.getNamespace().getPrefix(), ref);
+                                for (RdfOntology ref : mainOntology.getOntologyReferences()) {
+                                    if (!RdfFactory.getPublicOntologyUriMap().containsKey(ref.getNamespace().getUri())) {
+                                        RdfFactory.getPublicOntologyUriMap().put(ref.getNamespace().getUri(), ref);
+                                        RdfFactory.getPublicOntologyPrefixMap().put(ref.getNamespace().getPrefix(), ref);
                                     }
                                 }
                             }
@@ -436,10 +571,10 @@ public class RdfFactory
 
         return ontologyInstances.get(clazz);
     }
-    private static Map<URI, RdfOntology> getOntologyUriMap()
+    private static Map<URI, RdfOntology> getPublicOntologyUriMap()
     {
         try {
-            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_ONTOLOGIES, new CacheFunction<CacheKey, Map<URI, RdfOntology>>()
+            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_PUBLIC_ONTOLOGIES, new CacheFunction<CacheKey, Map<URI, RdfOntology>>()
             {
                 @Override
                 public Map<URI, RdfOntology> apply(CacheKey cacheKey)
@@ -450,13 +585,13 @@ public class RdfFactory
         }
         catch (IOException e) {
             //don't throw a RdfInitializationException, it spills over into the calling methods too much
-            throw new RuntimeException("Error while initializing RDF ontologies; this shouldn't happen", e);
+            throw new RuntimeException("Error while initializing RDF ontology URI map; this shouldn't happen", e);
         }
     }
-    private static Map<String, RdfOntology> getOntologyPrefixMap()
+    private static Map<String, RdfOntology> getPublicOntologyPrefixMap()
     {
         try {
-            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_ONTOLOGY_PREFIXES, new CacheFunction<CacheKey, Map<String, RdfOntology>>()
+            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_PUBLIC_ONTOLOGY_PREFIXES, new CacheFunction<CacheKey, Map<String, RdfOntology>>()
             {
                 @Override
                 public Map<String, RdfOntology> apply(CacheKey cacheKey)
@@ -467,7 +602,22 @@ public class RdfFactory
         }
         catch (IOException e) {
             //don't throw a RdfInitializationException, it spills over into the calling methods too much
-            throw new RuntimeException("Error while initializing RDF ontology prefixes; this shouldn't happen", e);
+            throw new RuntimeException("Error while initializing RDF ontology prefix map; this shouldn't happen", e);
         }
+    }
+    private static RdfOntologyMember parseOntologyMemberUri(URI uri, String separator)
+    {
+        RdfOntologyMember retVal = null;
+
+        String uriStr = uri.toString();
+        int sepIdx = uriStr.lastIndexOf(separator);
+        if (sepIdx >= 0 && sepIdx < uriStr.length() - separator.length()) {
+            RdfOntology ontology = getPublicOntologyUriMap().get(URI.create(uriStr.substring(0, sepIdx + separator.length())));
+            if (ontology != null) {
+                retVal = ontology.getMember(uriStr.substring(sepIdx + separator.length()));
+            }
+        }
+
+        return retVal;
     }
 }

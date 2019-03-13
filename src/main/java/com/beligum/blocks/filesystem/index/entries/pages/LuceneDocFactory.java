@@ -188,7 +188,7 @@ public class LuceneDocFactory
 
             URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
             if (predicateCurie != null) {
-                RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
+                RdfProperty predicate = RdfFactory.getProperty(predicateCurie);
                 if (predicate != null) {
 
                     //ask the RDF property to index itself to the lucene index

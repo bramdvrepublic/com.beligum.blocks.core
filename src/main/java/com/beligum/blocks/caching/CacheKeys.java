@@ -68,11 +68,9 @@ public enum CacheKeys implements CacheKey
     //Application cache key that keeps a cache of all active thread-bound transactions
     THREAD_TX_REGISTRY,
     //Application cache key that keeps a map to the instantiated ontologies
-    RDF_ONTOLOGIES,
+    RDF_PUBLIC_ONTOLOGIES,
     //Application cache key that maps ontology prefixes to full length vocabulary namespace URIs
-    RDF_ONTOLOGY_PREFIXES,
-    //Application cache key that keeps a map to the discovered Rdf ontology-entries (classes and properties)
-    RDF_ONTOLOGY_ENTRIES,
+    RDF_PUBLIC_ONTOLOGY_PREFIXES,
     //Request cache key that holds the resource action (create/update/...) for this request
     RESOURCE_ACTION
 }

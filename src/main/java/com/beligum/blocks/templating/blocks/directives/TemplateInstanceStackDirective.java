@@ -196,7 +196,7 @@ public class TemplateInstanceStackDirective extends Block
             this.template = template;
             this.controller = controller;
             this.frameDepth = frameDepth;
-            this.properties = new PropertyMap();
+            this.properties = new PropertyMap(template.getAbsolutePath().toUri());
         }
 
         //-----PUBLIC METHODS-----

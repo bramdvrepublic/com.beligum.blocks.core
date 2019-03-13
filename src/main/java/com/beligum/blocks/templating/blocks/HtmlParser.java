@@ -535,7 +535,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             name = this.renderTemplateValue(name);
         }
 
-        return rdfContext.normalizeProperty(tag, name);
+        try {
+            return rdfContext.normalizeProperty(name);
+        }
+        //catch and add some additional debug information about the tag
+        catch (IOException e) {
+            throw new IOException("Error happended while parsing property attribute '" + name + "' of tag " + tag, e);
+        }
     }
     /**
      * (Possibly) substitute a variable by it's (current) value (for the currently optimal locale)

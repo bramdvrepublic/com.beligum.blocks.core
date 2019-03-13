@@ -54,5 +54,10 @@ public interface RdfResource extends JsonObject
     @JsonIgnore
     boolean isPublic();
 
-
+    /**
+     * Returns a set of all ontologies that are used in properties/classes/datatypes within this ontology
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Iterable<RdfOntology> getOntologyReferences();
 }

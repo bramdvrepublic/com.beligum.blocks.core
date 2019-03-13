@@ -17,6 +17,8 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.rdf.RdfFactory;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
 import net.htmlparser.jericho.Attribute;
@@ -81,65 +83,32 @@ public class HtmlRdfContext
     public static Map<String, URI> getDefaultRdfPrefixes()
     {
         if (cachedDefaultRdfPrefixAttr == null) {
-            //TODO ideally, this should set the other prefixes too..., but it's more complex...
-            cachedDefaultRdfPrefixAttr = ImmutableMap.<String, URI>builder().put(Settings.instance().getRdfMainOntologyNamespace().getPrefix(),
-                                                                                 Settings.instance().getRdfMainOntologyNamespace().getUri())
-                                                                            .build();
+            ImmutableMap.Builder<String, URI> builder = ImmutableMap.builder();
+            //note: RdfFactory considers all 'public ontologies' the ones that are marked public,
+            // but also those that are referenced from any public ontologies; eg. all ontologies that are 'accessible'
+            // from our local public ontologies.
+            for (RdfOntology o : RdfFactory.getPublicOntologies()) {
+                builder.put(o.getNamespace().getPrefix(), o.getNamespace().getUri());
+            }
+            cachedDefaultRdfPrefixAttr = builder.build();
         }
 
         return cachedDefaultRdfPrefixAttr;
     }
 
     //-----PUBLIC METHODS-----
-    /**
-     * Update the internal context with relevant attributes from the supplied start tag
-     */
-    public void updateContext(StartTag tag) throws IOException
+    public URI getSourceUri()
     {
-        //if the tag is not stand-alone, parse and possibly push the new context on the stack and save it's end tag for popping
-        if (!tag.isEmptyElementTag() && tag.getElement().getEndTag() != null) {
-
-            //since it's not an empty element tag, it should have an end tag
-            EndTag endTag = tag.getElement().getEndTag();
-
-            URI newVocab = this.parseRdfVocabAttribute(tag);
-            if (newVocab != null) {
-                this.pushVocabulary(newVocab);
-                //the idea is to keep a list of end tags where we need to pop the stack and
-                // just assume they will be called in the right order (which should be the case because we have an end tag)
-                this.vocabPopTags.add(endTag);
-            }
-
-            Map<String, URI> newPrefixes = this.parseRdfPrefixAttribute(tag);
-            if (newPrefixes != null) {
-                this.pushPrefixes(newPrefixes);
-                this.prefixPopTags.add(endTag);
-            }
-        }
-    }
-    /**
-     * Check to see if we need to pop the context for the supplied end tag
-     */
-    public void updateContext(EndTag tag) throws Exception
-    {
-        //pop the vocab stack
-        if (this.vocabPopTags.contains(tag)) {
-            this.currentVocabStack.pop();
-            this.vocabPopTags.remove(tag);
-        }
-
-        //pop the prefix stack
-        if (this.prefixPopTags.contains(tag)) {
-            this.currentPrefixesStack.pop();
-            this.prefixPopTags.remove(tag);
-        }
+        return sourceUri;
     }
     /**
      * This will normalize (canonicalize) the supplied property-attribute value, taking into account the currently configured RDF context.
      * Eg. blabla 'can' become blabla, but also http://www.example.com/ontology/blabla, depending on the active default vocabulary.
-     * Also, eg; the ex:blabla CURIE will be expanded to it's full form, but only if the 'ex' ontology is active in the current context
+     * Also, eg; the ex:blabla CURIE will be expanded to it's full form, but only if the 'ex' ontology is active in the current context.
+     *
+     * Note that this implementation is unaware of the registered ontologies: it just works with plain (registered) URIs.
      */
-    public String normalizeProperty(StartTag tag, String value) throws IOException
+    public String normalizeProperty(String value) throws IOException
     {
         // According to http://www.w3.org/TR/rdfa-syntax/#A-property
         // a property is a "A white space separated list of TERMorCURIEorAbsIRIs"
@@ -192,8 +161,7 @@ public class HtmlRdfContext
 
                         //it makes sense to stop if we decided we're dealing with a curie, but it can't be expanded in the current context
                         if (!validCurie) {
-                            throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> as a CURIE with an unknown prefix '" + uri.getScheme() + "' in this context; " +
-                                                  this.sourceUri);
+                            throw new IOException("Encountered attribute '" + value + "' as a CURIE with an unknown prefix '" + uri.getScheme() + "' in this context; " + this.sourceUri);
                         }
                     }
                     else {
@@ -201,7 +169,7 @@ public class HtmlRdfContext
                     }
                 }
                 else {
-                    throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> as a URI or CURIE but it didn't parse to a valid URI; " + this.sourceUri);
+                    throw new IOException("Encountered attribute '" + value + "' as a URI or CURIE but it didn't parse to a valid URI; " + this.sourceUri);
                 }
             }
             //if the value is no CURIE or URI, prefix it with the currentVocab if we have one
@@ -218,20 +186,69 @@ public class HtmlRdfContext
             }
             //the value is no URI, CURIE and we don't have a vocab; it's invalid
             else {
-                throw new IOException("Encountered attribute '" + value + "' in tag <" + tag + "> that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " +
-                                      this.sourceUri);
+                throw new IOException("Encountered attribute '" + value + "' that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " + this.sourceUri);
             }
         }
 
         return retVal;
     }
+    /**
+     * Update the internal context with relevant attributes from the supplied start tag
+     */
+    public void updateContext(StartTag tag) throws IOException
+    {
+        //if the tag is not stand-alone, parse and possibly push the new context on the stack and save it's end tag for popping
+        if (!tag.isEmptyElementTag() && tag.getElement().getEndTag() != null) {
+
+            //since it's not an empty element tag, it should have an end tag
+            EndTag endTag = tag.getElement().getEndTag();
+
+            URI newVocab = this.parseRdfVocabAttribute(tag);
+            if (newVocab != null) {
+                this.pushVocabulary(newVocab);
+                //the idea is to keep a list of end tags where we need to pop the stack and
+                // just assume they will be called in the right order (which should be the case because we have an end tag)
+                this.vocabPopTags.add(endTag);
+            }
+
+            Map<String, URI> newPrefixes = this.parseRdfPrefixAttribute(tag);
+            if (newPrefixes != null) {
+                this.pushPrefixes(newPrefixes);
+                //the idea is to keep a list of end tags where we need to pop the stack and
+                // just assume they will be called in the right order (which should be the case because we have an end tag)
+                this.prefixPopTags.add(endTag);
+            }
+        }
+    }
+    /**
+     * Check to see if we need to pop the context for the supplied end tag
+     */
+    public void updateContext(EndTag tag) throws Exception
+    {
+        //pop the vocab stack
+        if (this.vocabPopTags.contains(tag)) {
+            this.currentVocabStack.pop();
+            this.vocabPopTags.remove(tag);
+        }
+
+        //pop the prefix stack
+        if (this.prefixPopTags.contains(tag)) {
+            this.currentPrefixesStack.pop();
+            this.prefixPopTags.remove(tag);
+        }
+    }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private URI pushVocabulary(URI vocab)
+    private URI pushVocabulary(URI vocab) throws IOException
     {
-        return this.currentVocabStack.push(vocab);
+        //for more details, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/27
+        throw new IOException("In-DOM switching of the default vocabulary is not allowed and disabled." +
+                              " The default ontology is fixed and always the main local ontology as configured in the settings and can't be updated inline." +
+                              " This is mainly to support the use regular names as values of the @property attributes in our template definition files, without" +
+                              " having to wonder in what context it will be used. If you want to work around this, please use CURIE-prefixed names instead.");
+        //return this.currentVocabStack.push(vocab);
     }
     private Map<String, URI> pushPrefixes(Map<String, URI> prefixes)
     {
@@ -260,7 +277,7 @@ public class HtmlRdfContext
                     retVal = URI.create(attr.getValue().trim());
                 }
                 catch (IllegalArgumentException e) {
-                    throw new IOException("You supplied a '" + HtmlParser.RDF_VOCAB_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
+                    throw new IOException("You supplied a '" + HtmlParser.RDF_VOCAB_ATTR + "' attribute value in tag " + tag + " of source '" + this.sourceUri +
                                           "', but it doesn't seem to be a valid URI; " + attr.getValue(), e);
                 }
             }
@@ -278,7 +295,7 @@ public class HtmlRdfContext
             if (attr != null && attr.hasValue()) {
                 String[] prefixAttrSplit = attr.getValue().trim().split(" ");
                 if (prefixAttrSplit.length % 2 != 0) {
-                    throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
+                    throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag " + tag + " of source '" + this.sourceUri +
                                           "', but it doesn't contain an even space-separated list that form one (or more) key-value pairs; " + attr.getValue());
                 }
                 for (int i = 0; i < prefixAttrSplit.length; i += 2) {
@@ -288,7 +305,7 @@ public class HtmlRdfContext
                         uri = URI.create(prefixAttrSplit[i + 1]);
                     }
                     catch (IllegalArgumentException e) {
-                        throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag <" + tag.getName() + "> of source '" + this.sourceUri +
+                        throw new IOException("You supplied a '" + HtmlParser.RDF_PREFIX_ATTR + "' attribute value in tag " + tag + " of source '" + this.sourceUri +
                                               "', but the value for prefix '" + p + "' doesn't seem to be a valid URI; " + attr.getValue(), e);
                     }
 

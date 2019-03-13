@@ -122,9 +122,9 @@ public class PageFixTask extends ReindexTask
             if (propertyEl != null) {
                 String resourceType = HtmlTemplate.getPropertyAttribute(propertyEl.getStartTag());
                 if (!StringUtils.isEmpty(resourceType)) {
-                    RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceType);
-                    if (rdfClass != null && rdfClass instanceof RdfProperty) {
-                        RdfProperty rdfProperty = (RdfProperty) rdfClass;
+                    RdfProperty rdfProperty = RdfFactory.getProperty(resourceType);
+                    if (rdfProperty != null) {
+
                         StartTag propertyStartTag = propertyEl.getStartTag();
 
                         //on 11/05/17, we started using the RDF.LANGSTRING datatype to mark a string as translatable,

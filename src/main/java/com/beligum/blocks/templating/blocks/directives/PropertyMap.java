@@ -16,36 +16,50 @@
 
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.templating.blocks.HtmlRdfContext;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 
 /**
- * Special map that holds property-value mappings where the property name follows the RDF vocabulary rules
+ * Special map that holds property-value mappings where the property name follows the RDF vocabulary rules.
+ * Eg. it expands all uses of a property to it's full blown URI before comparing/setting/getting them from the map
+ * so we can mix-and-mingle the default vocab, prefixed vocabs or full URIs.
+ * WATCH OUT: the default ontology is always the main one and isn't looked up from the <html> @vocab attribute
+ * (or any child inside it's body that might have changed the default vocab), see the exception in HtmlRdfContext.pushVocabulary()
  */
 public class PropertyMap extends HashMap<String, Object>
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    protected HtmlRdfContext rdfContext;
 
     //-----CONSTRUCTORS-----
-    public PropertyMap()
+    public PropertyMap(URI sourceUri)
     {
         super();
+
+        this.rdfContext = new HtmlRdfContext(sourceUri);
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public boolean containsKey(Object key)
     {
-        return super.containsKey(this.expandKey(key));
+        //note: this cast should always work, see the superclass
+        return super.containsKey(this.expandKey((String) key));
     }
     @Override
     public Object get(Object key)
     {
-        return super.get(this.expandKey(key));
+        //note: this cast should always work, see the superclass
+        return super.get(this.expandKey((String) key));
     }
     @Override
     public Object put(String key, Object value)
@@ -56,30 +70,18 @@ public class PropertyMap extends HashMap<String, Object>
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * Expands the key to it's full blown ontology-prefixed URI counterpart
+     */
     private String expandKey(String key)
     {
-        Object retVal = this.expandKey((Object)key);
-        return retVal == null ? null : retVal.toString();
-    }
-    private Object expandKey(Object key)
-    {
-        Object retVal = key;
+        String retVal = null;
 
-        if (key != null) {
-            String keyStr = key.toString();
-            if (!StringUtils.isEmpty(keyStr)) {
-                if (!keyStr.contains(":")) {
-                    String prefixUri = Settings.instance().getRdfMainOntologyNamespace().getUri().toString();
-                    if (!prefixUri.endsWith("/")) {
-                        prefixUri += "/";
-                    }
-                    String suffix = keyStr;
-                    while (suffix.startsWith("/")) {
-                        suffix = suffix.substring(1);
-                    }
-                    retVal = prefixUri + suffix;
-                }
-            }
+        try {
+            retVal = this.rdfContext.normalizeProperty(key);
+        }
+        catch (IOException e) {
+            Logger.error("Error happened while normalizing property key '" + key + "' in " + this.rdfContext.getSourceUri(), e);
         }
 
         return retVal;

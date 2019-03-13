@@ -48,7 +48,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
     @Override
     public void fillTemplateContext(TemplateContext templateContext)
     {
-        templateContext.set(TAG_TEMPLATE_PROPERTIES_VARIABLE, new PropertyMap());
+        templateContext.set(TAG_TEMPLATE_PROPERTIES_VARIABLE, new PropertyMap(templateContext.getTemplate().getUri()));
     }
 
     //-----PROTECTED METHODS-----

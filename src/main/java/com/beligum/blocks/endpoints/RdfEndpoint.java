@@ -72,7 +72,7 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_CLASS_READ_ALL_PERM)
     public Response getClasses() throws IOException
     {
-        return Response.ok(RdfFactory.getLocalOntology().getPublicClasses().values()).build();
+        return Response.ok(RdfFactory.getLocalOntology().getPublicClasses()).build();
     }
 
     @GET
@@ -81,12 +81,12 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
     public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
-        Collection<RdfProperty> retVal = null;
+        Iterable<RdfProperty> retVal = null;
 
         if (resourceTypeCurie != null) {
-            RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
             if (rdfClass != null) {
-                Set<RdfProperty> classProps = rdfClass.getProperties();
+                Iterable<RdfProperty> classProps = rdfClass.getProperties();
                 //note that the javadoc of getProperties() says that we returns all properties if this returns null (which will be true later on),
                 // but if it returns the empty array, no properties should be returned.
                 if (classProps != null) {
@@ -97,7 +97,7 @@ public class RdfEndpoint
 
         //if nothing happened, we just return the intersecting properties of all public classes
         if (retVal == null) {
-            retVal = RdfFactory.getLocalOntology().getPublicClassProperties().values();
+            retVal = RdfFactory.getLocalOntology().getPublicClassProperties();
         }
 
         return Response.ok(retVal).build();
@@ -112,7 +112,7 @@ public class RdfEndpoint
         RdfProperty retVal = null;
 
         if (resourceTypeCurie != null) {
-            RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
             if (rdfClass != null) {
                 retVal = rdfClass.getMainProperty();
             }
@@ -136,7 +136,7 @@ public class RdfEndpoint
         RdfClass resourceClassFilter = null;
         RdfQueryEndpoint endpoint = null;
         if (resourceTypeCurie != null && !StringUtils.isEmpty(resourceTypeCurie.toString())) {
-            resourceClassFilter = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            resourceClassFilter = RdfFactory.getClass(resourceTypeCurie);
             if (resourceClassFilter != null) {
                 endpoint = resourceClassFilter.getEndpoint();
             }
@@ -170,7 +170,7 @@ public class RdfEndpoint
     {
         ResourceInfo retVal = null;
 
-        RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+        RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
         if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
