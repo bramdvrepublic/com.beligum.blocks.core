@@ -21,8 +21,6 @@ import com.beligum.blocks.rdf.*;
 import com.beligum.blocks.rdf.ifaces.*;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
-import java.net.URI;
-
 /**
  * The RDF Schema vocabulary (RDFS)
  *
@@ -115,58 +113,66 @@ public final class RDFS extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.register(Resource)
+        rdfFactory.build(Resource)
                   .label(Entries.RDFS_label_Resource);
 
-        rdfFactory.register(Literal)
+        rdfFactory.build(Literal)
                   .label(Entries.RDFS_label_Literal);
 
-        rdfFactory.register(Class)
+        rdfFactory.build(Class)
                   .label(Entries.RDFS_label_Class);
 
-        rdfFactory.register(subClassOf)
+        rdfFactory.build(subClassOf)
                   .label(Entries.RDFS_label_subClassOf)
                   .dataType(RDFS.Class);
 
-        rdfFactory.register(subPropertyOf)
+        rdfFactory.build(subPropertyOf)
                   .label(Entries.RDFS_label_subPropertyOf)
                   .dataType(RDF.Property);
 
-        rdfFactory.register(domain)
+        rdfFactory.build(domain)
                   .label(Entries.RDFS_label_domain)
                   .dataType(RDFS.Class);
 
-        rdfFactory.register(range)
+        rdfFactory.build(range)
                   .label(Entries.RDFS_label_range)
                   .dataType(RDFS.Class);
 
-        rdfFactory.register(comment)
+        rdfFactory.build(comment)
                   .label(Entries.RDFS_label_comment)
-                  .dataType(RDFS.Literal);
+                  // according to the spec, this should be a RDFS.Literal,
+                  // but that's only a general superclass and isn't really usable
+                  // in practical situations, so let's restrict it to RDF.langString
+                  // (that's a subclass of RDFS.Literal)
+                  .dataType(RDF.langString);
 
-        rdfFactory.register(label)
+        rdfFactory.build(label)
                   .label(Entries.RDFS_label_label)
-                  .dataType(RDFS.Literal);
+                  // according to the spec, this should be a RDFS.Literal,
+                  // but that's only a general superclass and isn't really usable
+                  // in practical situations, so let's restrict it to RDF.langString
+                  // (that's a subclass of RDFS.Literal)
+                  .dataType(RDF.langString);
 
-        rdfFactory.register(Datatype)
+        rdfFactory.build(Datatype)
                   .label(Entries.RDFS_label_Datatype);
 
-        rdfFactory.register(Container)
+        rdfFactory.build(Container)
                   .label(Entries.RDFS_label_Container);
 
-        rdfFactory.register(member)
+        rdfFactory.build(member)
                   .label(Entries.RDFS_label_member)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(isDefinedBy)
+        rdfFactory.build(isDefinedBy)
                   .label(Entries.RDFS_label_isDefinedBy)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(seeAlso)
+        rdfFactory.build(seeAlso)
                   .label(Entries.RDFS_label_seeAlso)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(ContainerMembershipProperty)
+        rdfFactory.build(ContainerMembershipProperty)
                   .label(Entries.RDFS_label_ContainerMembershipProperty);
     }
 

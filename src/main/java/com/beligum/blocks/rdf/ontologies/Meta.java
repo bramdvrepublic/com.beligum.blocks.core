@@ -59,48 +59,48 @@ public class Meta extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.register(sameAs)
-                  .label(Entries.propertyLabel_sameAs)
+        rdfFactory.build(sameAs)
+                  .label(Entries.meta_label_sameAs)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(created)
-                  .label(Entries.propertyLabel_created)
+        rdfFactory.build(created)
+                  .label(Entries.meta_label_created)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.register(creator)
-                  .label(Entries.propertyLabel_creator)
+        rdfFactory.build(creator)
+                  .label(Entries.meta_label_creator)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.register(modified)
-                  .label(Entries.propertyLabel_modified)
+        rdfFactory.build(modified)
+                  .label(Entries.meta_label_modified)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.register(contributor)
-                  .label(Entries.propertyLabel_contributor)
+        rdfFactory.build(contributor)
+                  .label(Entries.meta_label_contributor)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.register(aclRead)
-                  .label(Entries.propertyLabel_aclRead)
+        rdfFactory.build(aclRead)
+                  .label(Entries.meta_label_aclRead)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.register(aclUpdate)
-                  .label(Entries.propertyLabel_aclUpdate)
+        rdfFactory.build(aclUpdate)
+                  .label(Entries.meta_label_aclUpdate)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.register(aclDelete)
-                  .label(Entries.propertyLabel_aclDelete)
+        rdfFactory.build(aclDelete)
+                  .label(Entries.meta_label_aclDelete)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.register(aclManage)
-                  .label(Entries.propertyLabel_aclManage)
+        rdfFactory.build(aclManage)
+                  .label(Entries.meta_label_aclManage)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 

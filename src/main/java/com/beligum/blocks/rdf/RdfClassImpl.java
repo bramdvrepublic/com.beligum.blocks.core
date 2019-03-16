@@ -46,7 +46,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     private Set<RdfProperty> properties;
     private RdfQueryEndpoint endpoint;
     private ResourceSummarizer resourceSummarizer;
-    private RdfProperty labelProperty;
     private RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
@@ -149,13 +148,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return resourceSummarizer;
     }
     @Override
-    public RdfProperty getLabelProperty()
-    {
-        this.assertNoProxy();
-
-        return labelProperty;
-    }
-    @Override
     public RdfProperty getMainProperty()
     {
         this.assertNoProxy();
@@ -221,17 +213,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         public Builder summarizer(ResourceSummarizer resourceSummarizer)
         {
             this.rdfResource.resourceSummarizer = resourceSummarizer;
-
-            return this;
-        }
-        public Builder labelProperty(RdfProperty labelProperty) throws RdfInitializationException
-        {
-            if (!this.rdfResource.properties.contains(labelProperty)) {
-                throw new RdfInitializationException("Can't set label property of class " + this + " to " + labelProperty + " because it's not a property of this class.");
-            }
-            else {
-                this.rdfResource.labelProperty = labelProperty;
-            }
 
             return this;
         }

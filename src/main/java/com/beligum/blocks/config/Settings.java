@@ -27,10 +27,14 @@ import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrMapper;
 import com.beligum.blocks.filesystem.hdfs.xattr.XAttrResolverFactory;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.RdfNamespaceImpl;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.security.AclImpl;
 import com.beligum.blocks.security.ifaces.Acl;
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.TransactionManager;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -55,6 +60,8 @@ public class Settings
     public static final String DEFAULT_META_ONTOLOGY_PREFIX = "meta";
     public static final String DEFAULT_LOG_ONTOLOGY_ENDPOINT = DEFAULT_MAIN_ONTOLOGY_ENDPOINT + "log/";
     public static final String DEFAULT_LOG_ONTOLOGY_PREFIX = "log";
+    public static final String DEFAULT_BLOCKS_ONTOLOGY_ENDPOINT = DEFAULT_MAIN_ONTOLOGY_ENDPOINT + "blocks/";
+    public static final String DEFAULT_BLOCKS_ONTOLOGY_PREFIX = "blocks";
 
     //centralized constant for the default entity type when nothing is set
     public static final RdfClass DEFAULT_CLASS = Local.Page;
@@ -66,6 +73,7 @@ public class Settings
     private static final String RDF_MAIN_ONTOLOGY_NAME = "main";
     private static final String RDF_META_ONTOLOGY_NAME = "meta";
     private static final String RDF_LOG_ONTOLOGY_NAME = "log";
+    private static final String RDF_BLOCKS_ONTOLOGY_NAME = "blocks";
 
     private static final String SECURITY_PREFIX = COMMON_PREFIX + ".security";
     private static final String SECURITY_ACLS_PREFIX = SECURITY_PREFIX + ".acls";
@@ -101,6 +109,8 @@ public class Settings
     private RdfNamespace cachedRdfMainOntologyNamespace;
     private RdfNamespace cachedRdfMetaOntologyNamespace;
     private RdfNamespace cachedRdfLogOntologyNamespace;
+    private RdfNamespace cachedRdfBlocksOntologyNamespace;
+    private RdfProperty cachedRdfLabelProperty;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
     private URI cachedPagesStoreJournalDir;
@@ -420,11 +430,47 @@ public class Settings
     {
         if (this.cachedRdfLogOntologyNamespace == null) {
             this.cachedRdfLogOntologyNamespace = this.initOntology(RDF_LOG_ONTOLOGY_NAME,
-                                                                    R.configuration().getSiteDomain().resolve(DEFAULT_LOG_ONTOLOGY_ENDPOINT),
-                                                                    DEFAULT_LOG_ONTOLOGY_PREFIX);
+                                                                   R.configuration().getSiteDomain().resolve(DEFAULT_LOG_ONTOLOGY_ENDPOINT),
+                                                                   DEFAULT_LOG_ONTOLOGY_PREFIX);
         }
 
         return this.cachedRdfLogOntologyNamespace;
+    }
+    public RdfNamespace getRdfBlocksOntologyNamespace()
+    {
+        if (this.cachedRdfBlocksOntologyNamespace == null) {
+            this.cachedRdfBlocksOntologyNamespace = this.initOntology(RDF_BLOCKS_ONTOLOGY_NAME,
+                                                                      R.configuration().getSiteDomain().resolve(DEFAULT_BLOCKS_ONTOLOGY_ENDPOINT),
+                                                                      DEFAULT_BLOCKS_ONTOLOGY_PREFIX);
+        }
+
+        return this.cachedRdfBlocksOntologyNamespace;
+    }
+    public RdfProperty getRdfLabelProperty()
+    {
+        if (this.cachedRdfLabelProperty == null) {
+            String propertyName = R.configuration().getString(RDF_PREFIX + ".label-property", null);
+            if (propertyName != null) {
+                try {
+                    RdfResource property = RdfFactory.lookup(propertyName);
+                    if (property instanceof RdfProperty) {
+                        this.cachedRdfLabelProperty = (RdfProperty) property;
+                    }
+                    else {
+                        Logger.error("A default RDF label property was configured, but it doesn't seem to be a property; " + propertyName);
+                    }
+                }
+                catch (IOException e) {
+                    Logger.error("Error happened while looking up the default RDF label property, " + propertyName, e);
+                }
+            }
+
+            if (this.cachedRdfLabelProperty == null) {
+                this.cachedRdfLabelProperty = RDFS.label;
+            }
+        }
+
+        return this.cachedRdfLabelProperty;
     }
     public boolean getEnableRdfCreateSync()
     {

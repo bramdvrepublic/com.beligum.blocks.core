@@ -125,7 +125,7 @@ public class HtmlRdfContext
             retVal = value.trim();
 
             //this means it can be a URI or a CURIE
-            if (retVal.contains(":")) {
+            if (RdfTools.isUri(retVal)) {
 
                 //first, check if we're dealing with a full blown URI
                 URI uri = null;

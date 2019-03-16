@@ -227,7 +227,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 //check if the element is an instance of a template and replace it with it's parsed version if it's the case
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
                 if (template != null) {
-                    retVal.replace(element, this.processTemplateInstance(source, element, template));
+                    retVal.replace(element, this.processTemplateInstance(source, element, template, template.getRenderType()));
                 }
             }
         }
@@ -294,9 +294,21 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
     /**
      * Process an instance of a (page or tag) template to a HTML string
      */
-    private StringBuilder processTemplateInstance(com.beligum.base.resources.ifaces.Source source, Element templateInstance, HtmlTemplate htmlTemplate) throws Exception
+    private StringBuilder processTemplateInstance(com.beligum.base.resources.ifaces.Source source, Element templateInstance, HtmlTemplate htmlTemplate, HtmlTemplate.MetaRenderType renderType) throws Exception
     {
-        //build the attributes map
+        boolean inline = false;
+        switch (renderType) {
+            case DEFAULT:
+                //NOOP
+                break;
+            case INLINE:
+                inline = true;
+                break;
+            default:
+                throw new IOException("Encountered unimplemented render type, this shouldn't happen; "+renderType);
+        }
+
+        //build the attributes map (note: inline blocks don't have attributes because their tag isn't rendered out)
         Map<String, String> attributes = new LinkedHashMap<>();
         templateInstance.getAttributes().populateMap(attributes, false);
 
@@ -338,13 +350,13 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                 StartTag startTag = ((StartTag) seg);
                 Element child = startTag.getElement();
 
-                // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
-                // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
-                boolean isVoidTag = startTag.equals(child);
+                // Note: this first check check if the tag is a single tag element (eg. a <link> tag that's not closed; eg. that's not <link/>).
+                // For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
+                boolean isSingleTag = child.getEndTag() == null && child.isEmpty() && child.getEnd() == child.getStartTag().getEnd();
 
                 //skip the entire tree of the element, we'll handle it right here
                 // but watch out: an <img> element doens't have and end tag, so check for null
-                if (!isVoidTag) {
+                if (!isSingleTag) {
                     if (child.getEndTag() != null) {
                         while (iter.hasNext() && !iter.next().equals(child.getEndTag())) ;
                     }
@@ -369,6 +381,8 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
                         //note that this will 'eat up' all same properties that are coming in this tag
                         properties.add(values);
                     }
+
+                    //recursive call
                     values.add(this.processSource(source, new Source(child)).toString());
                 }
             }
@@ -396,99 +410,89 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             }
         }
 
+        //some meaningful inline tag validation to help the developer have a clue what's going on
+        if (inline) {
+            if (!attributes.isEmpty()) {
+                throw new IOException("Encountered an inline template instance " + templateInstance +
+                                      " with attributes; this is forbidden because the attributes of the template will get lost because the tag isn't rendered out at all; " + source);
+            }
+            if (!properties.isEmpty()) {
+                throw new IOException("Encountered an inline template instance " + templateInstance +
+                                      " with properties inside; this is forbidden because the properties in the template definition are supposed to be hooked to the context of the parent" +
+                                      " in which this template instance is used (because the wrapping element won't be rendered out); " + source);
+            }
+        }
+
         //now start building the new tag
         StringBuilder builder = new StringBuilder();
 
         builder.append(htmlTemplate.getPrefixHtml());
 
-        //render the start tag, except if the template is eg. a page template
-        String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
-        if (renderTag != null) {
-
-            String attr = templateInstance.getAttributeValue(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
-
-            //note: this is subtle; it means we'll only consider the data-render-tag on the htmlTemplate (the definition file)
-            //if no such attribute is present on the instance (which is probably what is expected; the instances overrides the definition)
-            if (attr == null) {
-                Map<String, String> attrs = htmlTemplate.getAttributes();
-                if (attrs != null) {
-                    attr = attrs.get(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
-                }
-            }
-
-            //if it's not set, just render the tag name
-            if (attr != null) {
-                //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
-                if (attr.equals("")) {
-                    renderTag = null;
-                }
-                else {
-                    renderTag = attr;
-                }
-            }
-        }
-
         //the 'body' starts here
 
-        if (renderTag != null) {
-            builder.append("<").append(renderTag);
+        if (!inline) {
+            if (htmlTemplate.renderTemplateTag()) {
+                builder.append("<").append(htmlTemplate.getTemplateName());
 
-            //the optional attributes
-            if (!attributes.isEmpty()) {
-                builder.append(Attributes.generateHTML(attributes));
+                //the optional attributes
+                if (!attributes.isEmpty()) {
+                    builder.append(Attributes.generateHTML(attributes));
+                }
+                //close the start tag
+                builder.append(">").append(NEWLINE);
             }
-            //close the start tag
-            builder.append(">").append(NEWLINE);
-        }
-        // page templates are never rendered out (because their 'instance' is actually the <html> element)
-        // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
-        // that is added to the <html> tag (eg. <html $!HTML_TAG_ARGS>)
-        else if (htmlTemplate instanceof PageTemplate) {
-            if (!attributes.isEmpty()) {
-                //quick loop to remove empty attributes (we want as little as possible in the <html> tag)
-                Iterator<Map.Entry<String, String>> attIter = attributes.entrySet().iterator();
-                while (attIter.hasNext()) {
-                    if (StringUtils.isEmpty(attIter.next().getValue())) {
-                        attIter.remove();
+            // page templates are never rendered out (because their 'instance' is actually the <html> element)
+            // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
+            // that is added to the <html> tag (eg. <html $!HTML_TAG_ARGS>)
+            else if (htmlTemplate instanceof PageTemplate) {
+                if (!attributes.isEmpty()) {
+                    //quick loop to remove empty attributes (we want as little as possible in the <html> tag)
+                    Iterator<Map.Entry<String, String>> attIter = attributes.entrySet().iterator();
+                    while (attIter.hasNext()) {
+                        if (StringUtils.isEmpty(attIter.next().getValue())) {
+                            attIter.remove();
+                        }
+                    }
+
+                    //we use a regular #define because we don't have a stack context yet (not very problematic because we only have one page template per page)
+                    if (!attributes.isEmpty()) {
+                        //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
+                        builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append(NEWLINE);
                     }
                 }
-
-                //we use a regular #define because we don't have a stack context yet (not very problematic because we only have one page template per page)
-                if (!attributes.isEmpty()) {
-                    //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
-                    builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append(NEWLINE);
-                }
             }
-        }
 
-        // push the controller with the tag-attributes as arguments
-        // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
-        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
-               .append(htmlTemplate.getTemplateName()).append("\"");
-        for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            String value = attribute.getValue();
-            //don't forget to escape quotes in the attribute values cause eg. this is a valid situation: style="background-image: url(&quot;/webhdfs/v1/mission_bg.png&quot;);"
-            //and it results in the &quot; to be converted back to ", breaking the structure of the parsed html,
-            //so I guess the best thing to do is to convert it back to &quot;
-            String safeValue = value == null ? "" : value.replace("\"", "&quot;");
-            builder.append(",\"").append(attribute.getKey()).append("\",\"").append(safeValue).append("\"");
-        }
-        builder.append(")").append(NEWLINE);
-
-        //define the properties in the context
-        for (Token token : properties) {
-            //see above: if we have a value, it's a proper property
-            if (token instanceof PropertyToken) {
-                PropertyToken propertyToken = (PropertyToken) token;
-                //this allows us to assign multiple tags to a single property key
-                for (String value : ((PropertyToken) token).getValues()) {
-                    builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                           .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append(NEWLINE);
-                }
+            // push the controller with the tag-attributes as arguments
+            // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
+            // also note we don't start a new stack for inline blocks; the context is the context of the parent element in which this instance is used
+            builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal())
+                   .append(",\"").append(htmlTemplate.getTemplateName()).append("\"");
+            for (Map.Entry<String, String> attribute : attributes.entrySet()) {
+                String value = attribute.getValue();
+                //don't forget to escape quotes in the attribute values cause eg. this is a valid situation: style="background-image: url(&quot;/webhdfs/v1/mission_bg.png&quot;);"
+                //and it results in the &quot; to be converted back to ", breaking the structure of the parsed html,
+                //so I guess the best thing to do is to convert it back to &quot;
+                String safeValue = value == null ? "" : value.replace("\"", "&quot;");
+                builder.append(",\"").append(attribute.getKey()).append("\",\"").append(safeValue).append("\"");
             }
-            //otherwise it's something else, stored in the key
-            else {
-                builder.append(token.getValue());
+            builder.append(")").append(NEWLINE);
+
+            //define the properties in the context
+            //note it doesn't make sense to do this for inline instances; see checks above
+            for (Token token : properties) {
+                //see above: if we have a value, it's a proper property
+                if (token instanceof PropertyToken) {
+                    PropertyToken propertyToken = (PropertyToken) token;
+                    //this allows us to assign multiple tags to a single property key
+                    for (String value : ((PropertyToken) token).getValues()) {
+                        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
+                               .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append(NEWLINE);
+                    }
+                }
+                //otherwise it's something else, stored in the key
+                else {
+                    builder.append(token.getValue());
+                }
             }
         }
 
@@ -510,12 +514,14 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
             builder.append(IOUtils.toString(is));
         }
 
-        //pop the controller
-        builder.append("#end").append(NEWLINE);
+        if (!inline) {
+            //pop the controller
+            builder.append("#end").append(NEWLINE);
 
-        //the end tag
-        if (renderTag != null) {
-            builder.append("</").append(renderTag).append(">");
+            //the end tag
+            if (htmlTemplate.renderTemplateTag()) {
+                builder.append("</").append(htmlTemplate.getTemplateName()).append(">");
+            }
         }
 
         //the suffix html (mostly empty)

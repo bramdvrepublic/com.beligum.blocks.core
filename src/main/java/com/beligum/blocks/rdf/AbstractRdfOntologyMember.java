@@ -164,7 +164,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
      * Note that the RdfFactory instance is only accessible from the RdfFactory initialization method, so we have guaranteed
      * control over the creation of RdfResource-instances (package-private constructors)
      */
-    protected static abstract class Builder<T extends RdfResource, V extends AbstractRdfOntologyMember, B extends AbstractRdfOntologyMember.Builder>
+    protected static abstract class Builder<T extends RdfOntologyMember, V extends AbstractRdfOntologyMember, B extends AbstractRdfOntologyMember.Builder>
     {
         //-----CONSTANTS-----
 
@@ -183,13 +183,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             this.rdfFactory = rdfFactory;
             this.rdfResource = rdfResource;
 
-            // register that the new member was "created" in the scope of this rdfFactory
-            // so we can do some auto post-initialization in RdfOntology constructor
-            this.rdfFactory.registry.add(this);
-
-            //if the ontology of the member wasn't initialized yet during static initialization,
-            //we do it here, but I don't think this will ever be needed...
-            if (this.rdfResource.ontology == null) {
+            if (this.rdfResource.ontology != rdfFactory.ontology) {
                 this.rdfResource.ontology = rdfFactory.ontology;
             }
         }
@@ -236,11 +230,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             //here, all checks passed and the proxy can be converted to a valid instance
             this.rdfResource.proxy = false;
-
-            //register the member into the ontology, filling all the right mappings
-            //note that this needs to happen after creation (proxy = false) because it will
-            //call public methods on the resource
-            this.rdfResource.ontology._register(this.rdfResource);
 
             //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
             return (T) this.rdfResource;

@@ -54,34 +54,35 @@ public class Local extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.register(title)
-                  .label(Entries.propertyLabel_title)
+        rdfFactory.build(title)
+                  .label(Entries.main_label_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(text)
-                  .label(Entries.propertyLabel_text)
+        rdfFactory.build(text)
+                  .label(Entries.main_label_text)
                   .dataType(RDF.HTML)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.register(description)
-                  .label(Entries.propertyLabel_description)
+        rdfFactory.build(description)
+                  .label(Entries.main_label_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.register(image)
-                  .label(Entries.propertyLabel_image)
+        rdfFactory.build(image)
+                  .label(Entries.main_label_image)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Uri);
 
-        //Note: these two are commented out because we moved the vocabularies to a separate project,
-        // we might want to implement a setter to add sameAs URIs later on from that project
-        // DBR.INSTANCE.resolve("Web_page"),
-        // SCHEMA.INSTANCE.resolve("WebPage")
-        rdfFactory.register(Page)
-                  .label(Entries.classLabel_Page)
+        rdfFactory.build(Page)
+                  .label(Entries.main_label_Page)
                   .isPublic(true)
                   .endpoint(new LocalQueryEndpoint());
+
+        //Note: these two are commented out because we moved the vocabularies to a separate project,
+        // we might want to implement a setter to add sameAs URIs later on from that project
+        //.sameAs(DBR.INSTANCE.resolve("Web_page"),
+        //        SCHEMA.INSTANCE.resolve("WebPage"));
 
     }
 

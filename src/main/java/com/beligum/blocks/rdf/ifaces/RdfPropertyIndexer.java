@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.rdf.indexers;
+package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;

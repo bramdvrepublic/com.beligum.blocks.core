@@ -216,66 +216,66 @@ public final class RDF extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.register(type)
+        rdfFactory.build(type)
                   .label(Entries.RDF_label_type)
                   .dataType(RDFS.Class);
 
-        rdfFactory.register(Property)
+        rdfFactory.build(Property)
                   .label(Entries.RDF_label_Property);
 
-        rdfFactory.register(XMLLiteral)
+        rdfFactory.build(XMLLiteral)
                   .label(Entries.RDF_label_XMLLiteral);
 
-        rdfFactory.register(subject)
+        rdfFactory.build(subject)
                   .label(Entries.RDF_label_subject)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(predicate)
+        rdfFactory.build(predicate)
                   .label(Entries.RDF_label_predicate)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(object)
+        rdfFactory.build(object)
                   .label(Entries.RDF_label_object)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(Statement)
+        rdfFactory.build(Statement)
                   .label(Entries.RDF_label_Statement);
 
-        rdfFactory.register(Bag)
+        rdfFactory.build(Bag)
                   .label(Entries.RDF_label_Bag);
 
-        rdfFactory.register(Alt)
+        rdfFactory.build(Alt)
                   .label(Entries.RDF_label_Alt);
 
-        rdfFactory.register(Seq)
+        rdfFactory.build(Seq)
                   .label(Entries.RDF_label_Seq);
 
-        rdfFactory.register(value)
+        rdfFactory.build(value)
                   .label(Entries.RDF_label_value)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(li)
+        rdfFactory.build(li)
                   .label(Entries.RDF_label_li)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(List)
+        rdfFactory.build(List)
                   .label(Entries.RDF_label_List);
 
-        rdfFactory.register(first)
+        rdfFactory.build(first)
                   .label(Entries.RDF_label_first)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.register(rest)
+        rdfFactory.build(rest)
                   .label(Entries.RDF_label_rest)
                   .dataType(List);
 
-        rdfFactory.register(nil)
+        rdfFactory.build(nil)
                   .label(Entries.RDF_label_nil);
 
-        rdfFactory.register(langString)
+        rdfFactory.build(langString)
                   .label(Entries.RDF_label_langString);
 
-        rdfFactory.register(HTML)
+        rdfFactory.build(HTML)
                   .label(Entries.RDF_label_HTML);
     }
 

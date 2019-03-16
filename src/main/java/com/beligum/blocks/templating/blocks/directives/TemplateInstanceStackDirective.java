@@ -126,7 +126,7 @@ public class TemplateInstanceStackDirective extends Block
 
                 if (!stack.isEmpty()) {
                     String variable = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
-                    Map<String, Object> properties = stack.peek().getProperties();
+                    PropertyMap properties = stack.peek().getProperties();
                     //this allows us to assign multiple tags to a single property key
                     // by only converting to a list when multiple mappings are present, we allow for natural coding in VTL syntax
                     // and also save the fact "there's only one"

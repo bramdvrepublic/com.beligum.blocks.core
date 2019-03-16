@@ -30,8 +30,10 @@ import com.beligum.blocks.controllers.BlocksReferenceController;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
+import com.beligum.blocks.rdf.ontologies.Blocks;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Enums;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -65,9 +67,6 @@ import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_PROPERTY_ATTR;
 public abstract class HtmlTemplate
 {
     //-----CONSTANTS-----
-    //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
-    public static final String BLOCKS_META_TAG_PROPERTY_PREFIX = "blocks:";
-
     // Controls if the <script> or <style> tag needs to be included in the rendering
     // use it like this: <script data-scope-perm="$CONSTANTS.blocks.core.PAGE_CREATE_ALL_PERM"> to eg. only include the script when
     // the page create permission is required
@@ -82,27 +81,11 @@ public abstract class HtmlTemplate
     //set to 'skip' to skip this resource during the resource collecting phase and instead render it out where it's defined
     public static final String ATTRIBUTE_RESOURCE_JOIN_HINT = "data-join-hint";
 
-    // set this attribute on an instance to not render the tag itself, but mimic another tag name
-    // (eg <blocks-text data-render-tag="div"> to render out a <div> instead of a <blocks-text>)
-    // Beware: this will make the tag's direction server-to-client only!!
-    //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
-    public static final String ATTRIBUTE_RENDER_TAG = "data-render-tag";
-
     public enum ResourceJoinHint
     {
         UNDEFINED,
         EMPTY,
         skip
-    }
-
-    public enum MetaProperty
-    {
-        title,
-        description,
-        icon,
-        controller,
-        display,
-        properties
     }
 
     public enum SpecialProperty
@@ -113,10 +96,29 @@ public abstract class HtmlTemplate
         _class
     }
 
+    /**
+     * Flag to either make this block publicly visible to the page editor
+     * or make it visible internally only (eg. a "system" block)
+     */
     public enum MetaDisplayType
     {
         DEFAULT,
         HIDDEN
+    }
+
+    /**
+     * Flag to decide how to render out this block. Inline blocks are rendered out without their wrapping tags
+     * and result in special behavior. Because inline blocks get serialized to the client without tag,
+     * it's inner html is just spit out in the parent context, and the parser has no means of wiring possible properties back together
+     * when the page is returned to be saved. On top, all properties in the template definition file are "attached" to the context
+     * of the parent in which the inline block is instantiated. This also means that inline template instances can't have properties
+     * because it doesn't make sense; we have no means to attach them back during serialization. So, property tags are only permitted
+     * in the definition of the template, not instances.
+     */
+    public enum MetaRenderType
+    {
+        DEFAULT,
+        INLINE
     }
 
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
@@ -136,6 +138,7 @@ public abstract class HtmlTemplate
     protected String icon;
     protected Class<TemplateController> controllerClass;
     protected MetaDisplayType displayType;
+    protected MetaRenderType renderType;
     protected Iterable<ScopedResource> inlineScriptElements;
     protected Iterable<ScopedResource> externalScriptElements;
     protected Iterable<ScopedResource> inlineStyleElements;
@@ -187,7 +190,7 @@ public abstract class HtmlTemplate
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.title = superTemplate != null ? superTemplate.getTitle() : null;
-        String thisTitle = this.getMetaValue(tempHtml, MetaProperty.title, true);
+        String thisTitle = this.getMetaValue(tempHtml, Blocks.title, true);
         if (!StringUtils.isEmpty(thisTitle)) {
             this.title = thisTitle;
         }
@@ -196,7 +199,7 @@ public abstract class HtmlTemplate
         }
 
         this.description = superTemplate != null ? superTemplate.getDescription() : null;
-        String thisDescription = this.getMetaValue(tempHtml, MetaProperty.description, true);
+        String thisDescription = this.getMetaValue(tempHtml, Blocks.description, true);
         if (!StringUtils.isEmpty(thisDescription)) {
             this.description = thisDescription;
         }
@@ -205,7 +208,7 @@ public abstract class HtmlTemplate
         }
 
         this.icon = superTemplate != null ? superTemplate.getIcon() : null;
-        String thisIcon = this.getMetaValue(tempHtml, MetaProperty.icon, true);
+        String thisIcon = this.getMetaValue(tempHtml, Blocks.icon, true);
         if (!StringUtils.isEmpty(thisIcon)) {
             this.icon = thisIcon;
         }
@@ -213,7 +216,7 @@ public abstract class HtmlTemplate
             this.icon = core.Entries.emptyTemplateTitle.toString();
         }
 
-        String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
+        String controllerClassStr = this.getMetaValue(tempHtml, Blocks.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);
             if (TemplateController.class.isAssignableFrom(clazz)) {
@@ -229,16 +232,25 @@ public abstract class HtmlTemplate
         }
 
         this.displayType = superTemplate != null ? superTemplate.getDisplayType() : MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
+        String displayType = this.getMetaValue(tempHtml, Blocks.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
+        }
+
+        this.renderType = superTemplate != null ? superTemplate.getRenderType() : MetaRenderType.DEFAULT;
+        String renderType = this.getMetaValue(tempHtml, Blocks.render, true);
+        if (!StringUtils.isEmpty(renderType)) {
+            this.renderType = MetaRenderType.valueOf(renderType.toUpperCase());
+            if (this instanceof PageTemplate && this.renderType.equals(MetaRenderType.INLINE)) {
+                throw new ParseException("Encountered page template with an inline render meta tag. Inline rendering only makes sense for tag templates; " + relativePath, 0);
+            }
         }
 
         //see below in parseHtml() for why these are initialized to null and not empty
         this.rdfProperties = null;
         this.rdfPropertiesSpecial = null;
         this.nonRdfProperties = null;
-        String properties = this.getMetaValue(tempHtml, MetaProperty.properties, true);
+        String properties = this.getMetaValue(tempHtml, Blocks.properties, true);
         //note that we distinguish between non-existing and empty
         if (properties != null) {
             this.rdfProperties = new ArrayList<>();
@@ -682,6 +694,10 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
+    public MetaRenderType getRenderType()
+    {
+        return renderType;
+    }
     public Element getRootElement()
     {
         return rootElement;
@@ -747,8 +763,8 @@ public abstract class HtmlTemplate
                 String retVal = property;
 
                 //if we have a vocab and it's not a URI, resolve it
-                if (finalDefaultVocab != null && !retVal.contains(":")) {
-                    retVal = finalDefaultVocab.getNamespace().getPrefix() + ":" + retVal;
+                if (finalDefaultVocab != null && !RdfTools.isUri(retVal)) {
+                    retVal = finalDefaultVocab.resolveCurie(retVal).toString();
                 }
 
                 return retVal;
@@ -763,7 +779,7 @@ public abstract class HtmlTemplate
                 Iterable<RdfProperty> dynamicProps = null;
                 switch (this.rdfPropertiesSpecial) {
                     case _vocab:
-                        dynamicProps = finalDefaultVocab != null ? finalDefaultVocab.getAllProperties().values() : Collections.emptySet();
+                        dynamicProps = finalDefaultVocab != null ? finalDefaultVocab.getAllProperties() : Collections.emptySet();
                         break;
                     case _class:
                         dynamicProps = defaultClass != null ? defaultClass.getProperties() : Collections.emptySet();
@@ -876,7 +892,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private String getMetaValue(OutputDocument output, MetaProperty property, boolean eatItUp)
+    private String getMetaValue(OutputDocument output, RdfProperty property, boolean eatItUp)
     {
         String retVal = null;
 
@@ -885,7 +901,7 @@ public abstract class HtmlTemplate
         while (retVal == null && iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue(RDF_PROPERTY_ATTR);
-            if (propertyVal != null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX + property.toString())) {
+            if (propertyVal != null && propertyVal.equalsIgnoreCase(property.getCurieName().toString())) {
                 retVal = element.getAttributeValue(RDF_CONTENT_ATTR);
 
                 if (eatItUp) {

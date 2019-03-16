@@ -106,6 +106,14 @@ public class RdfTools
     }
 
     /**
+     * Returns true if the string looks like an URI, here to centralize this decision
+     */
+    public static boolean isUri(String uri)
+    {
+        return uri.contains(":");
+    }
+
+    /**
      * Returns true if the url is a CURIE, but a full-blown URI
      */
     public static boolean isCurie(URI uri)
@@ -123,35 +131,53 @@ public class RdfTools
     /**
      * Converts a URI to it's CURIE variant, using the locally known ontologies
      */
-    public static URI full ToCurie(URI fullUri)
+    public static URI fullToCurie(URI fullUri)
     {
         URI retVal = null;
 
         if (fullUri != null) {
-            URI relative = Settings.instance().getRdfMainOntologyNamespace().getUri().relativize(fullUri);
-            //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
-            if (!relative.isAbsolute()) {
-                retVal = URI.create(Settings.instance().getRdfMainOntologyNamespace().getPrefix() + ":" + relative.toString());
+            String fullUriStr = fullUri.toString();
+
+            for (RdfOntology o : RdfFactory.getPublicOntologies()) {
+
+                String ontologyUriStr = o.getNamespace().getUri().toString();
+                if (fullUriStr.startsWith(ontologyUriStr)) {
+                    retVal = o.resolveCurie(fullUriStr.substring(ontologyUriStr.length()));
+                }
+                // Note: this is the "old" way, but it doesn't work with anchor-based ontology member uri's (eg. http://www.w3.org/1999/02/22-rdf-syntax-ns#type)
+                //                URI relative = o.getNamespace().getUri().relativize(fullUri);
+                //                //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
+                //                if (!relative.isAbsolute()) {
+                //                    retVal = o.resolveCurie(relative.toString());
+                //                }
+
+                if (retVal != null) {
+                    break;
+                }
             }
+        }
+
+        if (retVal == null) {
+            Logger.warn("Encountered unknown ontology member, returning null for; " + fullUri);
         }
 
         return retVal;
     }
 
     /**
-     * Converts a CURIE to a full URI
+     * Converts a CURIE to a full URI, using the locally known ontologies
      */
-    public static URI curie ToFull(URI resourceTypeCurie)
+    public static URI curieToFull(URI curie)
     {
         //if we find nothing, we return null, which kind of makes sense to indicate an setRollbackOnly
         URI retVal = null;
 
-        RdfOntology ontology = RdfFactory.getOntology(resourceTypeCurie.getScheme());
+        RdfOntology ontology = RdfFactory.getOntology(curie.getScheme());
         if (ontology != null) {
-            retVal = ontology.resolve(resourceTypeCurie.getPath());
+            retVal = ontology.resolve(curie.getSchemeSpecificPart());
         }
         else {
-            Logger.warn("Encountered unknown curie schema, returning null for; " + resourceTypeCurie);
+            Logger.warn("Encountered unknown curie schema, returning null for; " + curie);
         }
 
         return retVal;
@@ -425,12 +451,21 @@ public class RdfTools
                         case 3:
                             //this will add support for curies or just the name of the class in the default ontology
                             String className = this.path.getName(1).toString();
-                            String prefix = null;
-                            if (className.contains(":")) {
-
+                            try {
+                                RdfResource resource = RdfFactory.lookup(className);
+                                if (resource != null && resource instanceof RdfClass) {
+                                    this.resourceClass = (RdfClass) resource;
+                                }
+                                else {
+                                    Logger.error("Error while translating the class of a resource uri (" + className + ") to a valid RDF member." +
+                                                 " Could translate it to a valid resource, but it doesn't seem to be a RdfClass, but a " +
+                                                 " This shouldn't happen; " + resource);
+                                }
+                            }
+                            catch (IOException e) {
+                                Logger.error("Error while translating the class of a resource uri (" + className + ") to a valid RDF member", e);
                             }
 
-                            this.resourceClass = RdfFactory.getClass(Settings.instance().getRdfMainOntologyNamespace().getPrefix() + ":" + this.path.getName(1).toString());
                             this.resourceId = this.path.getName(2).toString();
                             this.valid = this.resourceClass != null && StringUtils.isNotEmpty(this.resourceId);
 

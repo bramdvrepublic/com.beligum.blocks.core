@@ -61,12 +61,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.7.9-SNAPSHOT</version>
+            <version>0.8.0</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.5.5-SNAPSHOT</version>
+            <version>0.5.5</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>

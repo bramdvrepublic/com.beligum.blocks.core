@@ -26,6 +26,7 @@ import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;

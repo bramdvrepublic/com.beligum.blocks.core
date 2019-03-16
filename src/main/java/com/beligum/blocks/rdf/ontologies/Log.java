@@ -20,15 +20,11 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.RdfNamespaceImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
-
-import javax.print.attribute.standard.MediaSize;
 
 /**
  * This Log ontology is a private ontology that's only used to write log entries into the log file.
@@ -57,48 +53,48 @@ public class Log extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.register(type)
-                  .label(Entries.propertyLabel_type)
+        rdfFactory.build(type)
+                  .label(Entries.log_label_type)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(subject)
-                  .label(Entries.propertyLabel_subject)
+        rdfFactory.build(subject)
+                  .label(Entries.log_label_subject)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.register(title)
-                  .label(Entries.propertyLabel_title)
+        rdfFactory.build(title)
+                  .label(Entries.log_label_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(description)
-                  .label(Entries.propertyLabel_description)
+        rdfFactory.build(description)
+                  .label(Entries.log_label_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.register(createdAt)
-                  .label(Entries.propertyLabel_createdAt)
+        rdfFactory.build(createdAt)
+                  .label(Entries.log_label_createdAt)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.register(username)
-                  .label(Entries.propertyLabel_username)
+        rdfFactory.build(username)
+                  .label(Entries.log_label_username)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(software)
-                  .label(Entries.propertyLabel_software)
+        rdfFactory.build(software)
+                  .label(Entries.log_label_software)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(softwareVersion)
-                  .label(Entries.propertyLabel_softwareVersion)
+        rdfFactory.build(softwareVersion)
+                  .label(Entries.log_label_softwareVersion)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.register(LogEntry)
-                  .label(Entries.classLabel_LogEntry)
+        rdfFactory.build(LogEntry)
+                  .label(Entries.log_label_LogEntry)
                   .properties(type,
                               subject,
                               title,

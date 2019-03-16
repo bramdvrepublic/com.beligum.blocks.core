@@ -26,8 +26,8 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
+import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
-import com.google.common.collect.Iterables;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
@@ -48,6 +48,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     private RdfQueryEndpoint endpoint;
     private InputType widgetType;
     private InputTypeConfig widgetConfig;
+    private RdfPropertyIndexer indexer;
 
     //-----CONSTRUCTORS-----
     RdfPropertyImpl(RdfOntologyImpl ontology, String name)
@@ -111,14 +112,14 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     {
         this.assertNoProxy();
 
-        return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, resource, this, value, language, options);
+        return this.indexer.index(indexer, resource, this, value, language, options);
     }
     @Override
     public Object prepareIndexValue(String value, Locale language) throws IOException
     {
         this.assertNoProxy();
 
-        return DefaultRdfPropertyIndexer.INSTANCE.prepareIndexValue(this, value, language);
+        return this.indexer.prepareIndexValue(this, value, language);
     }
 
     //-----PROTECTED METHODS-----
@@ -151,6 +152,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             return this;
         }
+        public Builder indexer(RdfPropertyIndexer indexer)
+        {
+            this.rdfResource.indexer = indexer;
+
+            return this;
+        }
 
         @Override
         RdfProperty create() throws RdfInitializationException
@@ -170,6 +177,10 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
                     throw new RdfInitializationException("Encountered RDF property with datatype-inputtype mismatch; " + this);
                 }
+            }
+
+            if (this.rdfResource.indexer == null) {
+                this.rdfResource.indexer = DefaultRdfPropertyIndexer.INSTANCE;
             }
 
             //Note: this call will add us to the ontology

@@ -40,11 +40,6 @@ public class PropertyArray<E> extends ArrayList<E>
     {
         super();
     }
-    public PropertyArray(E firstElement)
-    {
-        this();
-        this.add(firstElement);
-    }
 
     //-----PUBLIC METHODS-----
     //NOTE sync these two
