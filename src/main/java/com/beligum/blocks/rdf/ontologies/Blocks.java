@@ -47,37 +47,37 @@ public class Blocks extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(title)
+        rdfFactory.register(title)
                   .label(Entries.blocks_label_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(description)
+        rdfFactory.register(description)
                   .label(Entries.blocks_label_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(icon)
+        rdfFactory.register(icon)
                   .label(Entries.blocks_label_icon)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(controller)
+        rdfFactory.register(controller)
                   .label(Entries.blocks_label_controller)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(display)
+        rdfFactory.register(display)
                   .label(Entries.blocks_label_display)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(render)
+        rdfFactory.register(render)
                   .label(Entries.blocks_label_render)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(properties)
+        rdfFactory.register(properties)
                   .label(Entries.blocks_label_properties)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);

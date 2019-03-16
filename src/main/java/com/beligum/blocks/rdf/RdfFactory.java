@@ -479,7 +479,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfClassImpl.Builder build(RdfClass rdfProxyClass) throws RdfInitializationException
+    public RdfClassImpl.Builder register(RdfClass rdfProxyClass) throws RdfInitializationException
     {
         if (rdfProxyClass.isProxy()) {
             if(!this.registry.containsKey(rdfProxyClass)) {
@@ -498,7 +498,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfPropertyImpl.Builder build(RdfProperty rdfProxyProperty) throws RdfInitializationException
+    public RdfPropertyImpl.Builder register(RdfProperty rdfProxyProperty) throws RdfInitializationException
     {
         if (rdfProxyProperty.isProxy()) {
             if (!this.registry.containsKey(rdfProxyProperty)) {
@@ -516,7 +516,7 @@ public class RdfFactory
      * Call this method to start the un-proxy process to convert a proxy instance to a valid instance.
      * Note that you can't pass already created classes.
      */
-    public RdfDatatypeImpl.Builder build(RdfDatatype rdfProxyDatatype) throws RdfInitializationException
+    public RdfDatatypeImpl.Builder register(RdfDatatype rdfProxyDatatype) throws RdfInitializationException
     {
         if (rdfProxyDatatype.isProxy()) {
             if (!this.registry.containsKey(rdfProxyDatatype)) {

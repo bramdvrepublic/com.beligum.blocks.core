@@ -54,27 +54,27 @@ public class Local extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(title)
+        rdfFactory.register(title)
                   .label(Entries.main_label_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(text)
+        rdfFactory.register(text)
                   .label(Entries.main_label_text)
                   .dataType(RDF.HTML)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.build(description)
+        rdfFactory.register(description)
                   .label(Entries.main_label_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.build(image)
+        rdfFactory.register(image)
                   .label(Entries.main_label_image)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Uri);
 
-        rdfFactory.build(Page)
+        rdfFactory.register(Page)
                   .label(Entries.main_label_Page)
                   .isPublic(true)
                   .endpoint(new LocalQueryEndpoint());

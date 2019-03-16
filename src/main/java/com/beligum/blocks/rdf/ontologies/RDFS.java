@@ -113,32 +113,32 @@ public final class RDFS extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(Resource)
+        rdfFactory.register(Resource)
                   .label(Entries.RDFS_label_Resource);
 
-        rdfFactory.build(Literal)
+        rdfFactory.register(Literal)
                   .label(Entries.RDFS_label_Literal);
 
-        rdfFactory.build(Class)
+        rdfFactory.register(Class)
                   .label(Entries.RDFS_label_Class);
 
-        rdfFactory.build(subClassOf)
+        rdfFactory.register(subClassOf)
                   .label(Entries.RDFS_label_subClassOf)
                   .dataType(RDFS.Class);
 
-        rdfFactory.build(subPropertyOf)
+        rdfFactory.register(subPropertyOf)
                   .label(Entries.RDFS_label_subPropertyOf)
                   .dataType(RDF.Property);
 
-        rdfFactory.build(domain)
+        rdfFactory.register(domain)
                   .label(Entries.RDFS_label_domain)
                   .dataType(RDFS.Class);
 
-        rdfFactory.build(range)
+        rdfFactory.register(range)
                   .label(Entries.RDFS_label_range)
                   .dataType(RDFS.Class);
 
-        rdfFactory.build(comment)
+        rdfFactory.register(comment)
                   .label(Entries.RDFS_label_comment)
                   // according to the spec, this should be a RDFS.Literal,
                   // but that's only a general superclass and isn't really usable
@@ -146,7 +146,7 @@ public final class RDFS extends RdfOntologyImpl
                   // (that's a subclass of RDFS.Literal)
                   .dataType(RDF.langString);
 
-        rdfFactory.build(label)
+        rdfFactory.register(label)
                   .label(Entries.RDFS_label_label)
                   // according to the spec, this should be a RDFS.Literal,
                   // but that's only a general superclass and isn't really usable
@@ -154,25 +154,25 @@ public final class RDFS extends RdfOntologyImpl
                   // (that's a subclass of RDFS.Literal)
                   .dataType(RDF.langString);
 
-        rdfFactory.build(Datatype)
+        rdfFactory.register(Datatype)
                   .label(Entries.RDFS_label_Datatype);
 
-        rdfFactory.build(Container)
+        rdfFactory.register(Container)
                   .label(Entries.RDFS_label_Container);
 
-        rdfFactory.build(member)
+        rdfFactory.register(member)
                   .label(Entries.RDFS_label_member)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.build(isDefinedBy)
+        rdfFactory.register(isDefinedBy)
                   .label(Entries.RDFS_label_isDefinedBy)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.build(seeAlso)
+        rdfFactory.register(seeAlso)
                   .label(Entries.RDFS_label_seeAlso)
                   .dataType(RDFS.Resource);
 
-        rdfFactory.build(ContainerMembershipProperty)
+        rdfFactory.register(ContainerMembershipProperty)
                   .label(Entries.RDFS_label_ContainerMembershipProperty);
     }
 

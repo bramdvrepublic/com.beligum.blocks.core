@@ -232,112 +232,112 @@ public final class XSD extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(anyURI)
+        rdfFactory.register(anyURI)
                   .label(Entries.XSD_label_anyUri);
 
-        rdfFactory.build(base64Binary)
+        rdfFactory.register(base64Binary)
                   .label(Entries.XSD_label_base64Binary);
 
-        rdfFactory.build(date)
+        rdfFactory.register(date)
                   .label(Entries.XSD_label_date);
 
-        rdfFactory.build(dateTime)
+        rdfFactory.register(dateTime)
                   .label(Entries.XSD_label_dateTime);
 
-        rdfFactory.build(decimal)
+        rdfFactory.register(decimal)
                   .label(Entries.XSD_label_decimal);
 
-        rdfFactory.build(duration)
+        rdfFactory.register(duration)
                   .label(Entries.XSD_label_duration);
 
-        rdfFactory.build(gDay)
+        rdfFactory.register(gDay)
                   .label(Entries.XSD_label_gDay);
 
-        rdfFactory.build(gMonth)
+        rdfFactory.register(gMonth)
                   .label(Entries.XSD_label_gMonth);
 
-        rdfFactory.build(gMonthDay)
+        rdfFactory.register(gMonthDay)
                   .label(Entries.XSD_label_gMonthDay);
 
-        rdfFactory.build(gYear)
+        rdfFactory.register(gYear)
                   .label(Entries.XSD_label_gYear);
 
-        rdfFactory.build(gYearMonth)
+        rdfFactory.register(gYearMonth)
                   .label(Entries.XSD_label_gYearMonth);
 
-        rdfFactory.build(hexBinary)
+        rdfFactory.register(hexBinary)
                   .label(Entries.XSD_label_hexBinary);
 
-        rdfFactory.build(integer)
+        rdfFactory.register(integer)
                   .label(Entries.XSD_label_integer);
 
-        rdfFactory.build(language)
+        rdfFactory.register(language)
                   .label(Entries.XSD_label_language);
 
-        rdfFactory.build(Name)
+        rdfFactory.register(Name)
                   .label(Entries.XSD_label_Name);
 
-        rdfFactory.build(NCName)
+        rdfFactory.register(NCName)
                   .label(Entries.XSD_label_NCName);
 
-        rdfFactory.build(negativeInteger)
+        rdfFactory.register(negativeInteger)
                   .label(Entries.XSD_label_negativeInteger);
 
-        rdfFactory.build(NMTOKEN)
+        rdfFactory.register(NMTOKEN)
                   .label(Entries.XSD_label_NMTOKEN);
 
-        rdfFactory.build(nonNegativeInteger)
+        rdfFactory.register(nonNegativeInteger)
                   .label(Entries.XSD_label_nonNegativeInteger);
 
-        rdfFactory.build(nonPositiveInteger)
+        rdfFactory.register(nonPositiveInteger)
                   .label(Entries.XSD_label_nonPositiveInteger);
 
-        rdfFactory.build(normalizedString)
+        rdfFactory.register(normalizedString)
                   .label(Entries.XSD_label_normalizedString);
 
-        rdfFactory.build(positiveInteger)
+        rdfFactory.register(positiveInteger)
                   .label(Entries.XSD_label_positiveInteger);
 
-        rdfFactory.build(time)
+        rdfFactory.register(time)
                   .label(Entries.XSD_label_time);
 
-        rdfFactory.build(token)
+        rdfFactory.register(token)
                   .label(Entries.XSD_label_token);
 
-        rdfFactory.build(unsignedByte)
+        rdfFactory.register(unsignedByte)
                   .label(Entries.XSD_label_unsignedByte);
 
-        rdfFactory.build(unsignedInt)
+        rdfFactory.register(unsignedInt)
                   .label(Entries.XSD_label_unsignedInt);
 
-        rdfFactory.build(unsignedLong)
+        rdfFactory.register(unsignedLong)
                   .label(Entries.XSD_label_unsignedLong);
 
-        rdfFactory.build(unsignedShort)
+        rdfFactory.register(unsignedShort)
                   .label(Entries.XSD_label_unsignedShort);
 
-        rdfFactory.build(boolean_)
+        rdfFactory.register(boolean_)
                   .label(Entries.XSD_label_boolean);
 
-        rdfFactory.build(byte_)
+        rdfFactory.register(byte_)
                   .label(Entries.XSD_label_byte);
 
-        rdfFactory.build(double_)
+        rdfFactory.register(double_)
                   .label(Entries.XSD_label_double);
 
-        rdfFactory.build(float_)
+        rdfFactory.register(float_)
                   .label(Entries.XSD_label_float);
 
-        rdfFactory.build(int_)
+        rdfFactory.register(int_)
                   .label(Entries.XSD_label_int);
 
-        rdfFactory.build(long_)
+        rdfFactory.register(long_)
                   .label(Entries.XSD_label_long);
 
-        rdfFactory.build(short_)
+        rdfFactory.register(short_)
                   .label(Entries.XSD_label_short);
 
-        rdfFactory.build(string)
+        rdfFactory.register(string)
                   .label(Entries.XSD_label_string);
     }
 

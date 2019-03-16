@@ -80,13 +80,13 @@ public final class OWL extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(Class)
+        rdfFactory.register(Class)
                   .label(Entries.OWL_label_Class);
 
-        rdfFactory.build(Thing)
+        rdfFactory.register(Thing)
                   .label(Entries.OWL_label_Thing);
 
-        rdfFactory.build(sameAs)
+        rdfFactory.register(sameAs)
                   .label(Entries.OWL_label_sameAs)
                   .dataType(Thing);
     }

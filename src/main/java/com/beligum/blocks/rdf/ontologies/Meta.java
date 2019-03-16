@@ -59,47 +59,47 @@ public class Meta extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(sameAs)
+        rdfFactory.register(sameAs)
                   .label(Entries.meta_label_sameAs)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(created)
+        rdfFactory.register(created)
                   .label(Entries.meta_label_created)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.build(creator)
+        rdfFactory.register(creator)
                   .label(Entries.meta_label_creator)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.build(modified)
+        rdfFactory.register(modified)
                   .label(Entries.meta_label_modified)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.build(contributor)
+        rdfFactory.register(contributor)
                   .label(Entries.meta_label_contributor)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.build(aclRead)
+        rdfFactory.register(aclRead)
                   .label(Entries.meta_label_aclRead)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.build(aclUpdate)
+        rdfFactory.register(aclUpdate)
                   .label(Entries.meta_label_aclUpdate)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.build(aclDelete)
+        rdfFactory.register(aclDelete)
                   .label(Entries.meta_label_aclDelete)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);
 
-        rdfFactory.build(aclManage)
+        rdfFactory.register(aclManage)
                   .label(Entries.meta_label_aclManage)
                   .dataType(XSD.int_)
                   .widgetType(InputType.Number);

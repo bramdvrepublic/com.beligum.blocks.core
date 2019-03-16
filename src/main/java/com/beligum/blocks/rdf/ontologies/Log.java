@@ -53,47 +53,47 @@ public class Log extends RdfOntologyImpl
     @Override
     protected void create(RdfFactory rdfFactory) throws RdfInitializationException
     {
-        rdfFactory.build(type)
+        rdfFactory.register(type)
                   .label(Entries.log_label_type)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(subject)
+        rdfFactory.register(subject)
                   .label(Entries.log_label_subject)
                   .dataType(XSD.anyURI)
                   .widgetType(InputType.Resource);
 
-        rdfFactory.build(title)
+        rdfFactory.register(title)
                   .label(Entries.log_label_title)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(description)
+        rdfFactory.register(description)
                   .label(Entries.log_label_description)
                   .dataType(RDF.langString)
                   .widgetType(InputType.Editor);
 
-        rdfFactory.build(createdAt)
+        rdfFactory.register(createdAt)
                   .label(Entries.log_label_createdAt)
                   .dataType(XSD.dateTime)
                   .widgetType(InputType.DateTime);
 
-        rdfFactory.build(username)
+        rdfFactory.register(username)
                   .label(Entries.log_label_username)
                   .dataType(XSD.string)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(software)
+        rdfFactory.register(software)
                   .label(Entries.log_label_software)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(softwareVersion)
+        rdfFactory.register(softwareVersion)
                   .label(Entries.log_label_softwareVersion)
                   .dataType(RDF.langString)
                   .widgetType(InputType.InlineEditor);
 
-        rdfFactory.build(LogEntry)
+        rdfFactory.register(LogEntry)
                   .label(Entries.log_label_LogEntry)
                   .properties(type,
                               subject,

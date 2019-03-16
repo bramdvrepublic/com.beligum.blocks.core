@@ -173,12 +173,14 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         protected RdfFactory rdfFactory;
         protected V rdfResource;
         private B builder;
+        private Set<T> sameAs;
 
         //-----CONSTRUCTORS-----
         protected Builder(RdfFactory rdfFactory, V rdfResource)
         {
             //by keeping it in a variable, we only need to cast once, see below
             this.builder = (B) this;
+            this.sameAs = new LinkedHashSet<>();
 
             this.rdfFactory = rdfFactory;
             this.rdfResource = rdfResource;
@@ -201,9 +203,9 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             return this.builder;
         }
-        public B isSameAs(URI[] isSameAs)
+        public B isSameAs(T isSameAs)
         {
-            this.rdfResource.isSameAs = isSameAs;
+            this.sameAs.add(isSameAs);
 
             return this.builder;
         }
@@ -222,8 +224,11 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
                 throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
             }
 
-            if (this.rdfResource.label == null) {
-                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without label, can't continue because too much depends on this.");
+            //convert the RdfOntologyMember set to URI[]
+            int i = 0;
+            this.rdfResource.isSameAs = new URI[this.sameAs.size()];
+            for (T m : this.sameAs) {
+                this.rdfResource.isSameAs[i++] = m.getFullName();
             }
 
             // --- here, we all done initializing/checking the resource ---
