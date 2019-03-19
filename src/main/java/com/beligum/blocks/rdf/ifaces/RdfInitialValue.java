@@ -17,5 +17,5 @@ public interface RdfInitialValue
      *
      * @return the default rdf value
      */
-    String getValue() throws URISyntaxException, IOException;
+    String getValue() throws IOException;
 }

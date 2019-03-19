@@ -36,13 +36,16 @@ public class PageSourceCopy extends PageSource
 
     //-----VARIABLES-----
     private final boolean linkToSource;
+    private final URI requestedUri;
+
 
     //-----CONSTRUCTORS-----
-    public PageSourceCopy(Source source, boolean linkToSource) throws IOException
+    public PageSourceCopy(Source source, boolean linkToSource, URI requestedUri) throws IOException
     {
         super(source.getUri());
 
         this.linkToSource = linkToSource;
+        this.requestedUri = requestedUri;
 
         try (InputStream is = source.newInputStream()) {
             this.parseHtml(is);
@@ -78,7 +81,10 @@ public class PageSourceCopy extends PageSource
                     throw new IOException("Unable to parse the html @typeof attribute to a valid RDF class; " + this.document);
                 }
                 else {
-                    this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, RdfTools.createRelativeResourceId(typeOf).toString());
+                    //FIXME needs the about of the target page resource id.
+                    this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
+
+//                    this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, RdfTools.createRelativeResourceId(typeOf).toString());
                 }
             }
         }

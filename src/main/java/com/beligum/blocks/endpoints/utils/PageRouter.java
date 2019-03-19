@@ -655,7 +655,7 @@ public class PageRouter
                         source = HtmlTemplate.prepareForCopy(source, this.requestedUri, this.locale);
 
                         //effectively make a copy
-                        PageSource html = new PageSourceCopy(source, this.newPageCopyLink);
+                        PageSource html = new PageSourceCopy(source, this.newPageCopyLink, this.requestedUri);
 
                         try (InputStream is = html.newInputStream()) {
                             this.adminTemplate = R.resourceManager().newTemplate(new StringSource(this.requestedUri, IOUtils.toString(is), MimeTypes.HTML, this.locale));

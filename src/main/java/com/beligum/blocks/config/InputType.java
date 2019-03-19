@@ -38,6 +38,7 @@ public enum InputType
     Boolean(core.Entries.INPUT_TYPE_BOOLEAN),
     Number(core.Entries.INPUT_TYPE_NUMBER),
     Date(core.Entries.INPUT_TYPE_DATE),
+    Duration(core.Entries.INPUT_TYPE_DURATION),
     Time(core.Entries.INPUT_TYPE_TIME),
     DateTime(core.Entries.INPUT_TYPE_DATETIME),
     Color(core.Entries.INPUT_TYPE_COLOR),

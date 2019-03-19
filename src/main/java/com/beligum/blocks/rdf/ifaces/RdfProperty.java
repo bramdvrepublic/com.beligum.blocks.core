@@ -93,5 +93,5 @@ public interface RdfProperty extends RdfClass
      *
      * @return the generated value as a String
      */
-    String getInitialValue() throws IOException, URISyntaxException;
+    String getInitialValue() throws IOException;
 }

@@ -185,7 +185,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     }
 
     @Override
-    public String getInitialValue() throws IOException, URISyntaxException
+    public String getInitialValue() throws IOException
     {
         return this.initialValue == null ? null : this.initialValue.getValue();
     }
