@@ -136,24 +136,13 @@ public class RdfTools
         URI retVal = null;
 
         if (fullUri != null) {
-            String fullUriStr = fullUri.toString();
-
-            for (RdfOntology o : RdfFactory.getPublicOntologies()) {
-
-                String ontologyUriStr = o.getNamespace().getUri().toString();
-                if (fullUriStr.startsWith(ontologyUriStr)) {
-                    retVal = o.resolveCurie(fullUriStr.substring(ontologyUriStr.length()));
+            try {
+                RdfResource resource = RdfFactory.lookup(fullUri);
+                if (resource != null) {
+                    retVal = resource.getCurie();
                 }
-                // Note: this is the "old" way, but it doesn't work with anchor-based ontology member uri's (eg. http://www.w3.org/1999/02/22-rdf-syntax-ns#type)
-                //                URI relative = o.getNamespace().getUri().relativize(fullUri);
-                //                //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
-                //                if (!relative.isAbsolute()) {
-                //                    retVal = o.resolveCurie(relative.toString());
-                //                }
-
-                if (retVal != null) {
-                    break;
-                }
+            }
+            catch (IOException e) {
             }
         }
 
@@ -162,6 +151,14 @@ public class RdfTools
         }
 
         return retVal;
+    }
+
+    /**
+     * Convenience wrapper for IRI
+     */
+    public static URI fullToCurie(IRI fullIri)
+    {
+        return RdfTools.fullToCurie(RdfTools.iriToUri(fullIri));
     }
 
     /**
@@ -181,6 +178,14 @@ public class RdfTools
         }
 
         return retVal;
+    }
+
+    /**
+     * Convenience wrapper for IRI
+     */
+    public static URI curieToFull(IRI fullIri)
+    {
+        return RdfTools.curieToFull(RdfTools.iriToUri(fullIri));
     }
 
     /**
@@ -343,7 +348,7 @@ public class RdfTools
             //and the checking of a type seems to be a good measure
             if (typeOfIRI.isPresent()) {
 
-                RdfClass subType = RdfFactory.getClass(RdfTools.fullToCurie(RdfTools.iriToUri(typeOfIRI.get())));
+                RdfClass subType = RdfFactory.getClass(RdfTools.fullToCurie(typeOfIRI.get()));
 
                 PageModel modelInfo = new PageModel(page, mainResource, subResource, subType, subModel);
 

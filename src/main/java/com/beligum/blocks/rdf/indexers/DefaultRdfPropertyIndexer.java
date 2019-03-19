@@ -125,7 +125,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      || property.getDataType().equals(XSD.unsignedShort)
                      || property.getDataType().equals(XSD.byte_)
                      || property.getDataType().equals(XSD.unsignedByte)) {
-                Integer val = objLiteral.intValue();
+                int val = objLiteral.intValue();
                 indexer.indexIntegerField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -136,12 +136,12 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else if (property.getDataType().equals(XSD.long_)
                      || property.getDataType().equals(XSD.unsignedLong)) {
-                Long val = objLiteral.longValue();
+                long val = objLiteral.longValue();
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.float_)) {
-                Float val = objLiteral.floatValue();
+                float val = objLiteral.floatValue();
                 indexer.indexFloatField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -149,7 +149,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      //this is doubtful, but let's take the largest one
                      // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
                      || property.getDataType().equals(XSD.decimal)) {
-                Double val = objLiteral.doubleValue();
+                double val = objLiteral.doubleValue();
                 indexer.indexDoubleField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }

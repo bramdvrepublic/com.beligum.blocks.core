@@ -153,12 +153,16 @@ public abstract class AbstractImporter implements Importer
                     //However, when dealing with custom html tags (eg. <meta datatype="xsd:anyURI"> tags), this doesn't happen
                     //automatically, so let's do it manually.
                     if (literal.getDatatype().equals(XMLSchema.ANYURI)) {
-                        URI objectUri = URI.create(objectValue);
-                        if (!objectUri.isAbsolute()) {
-                            objectUri = documentBaseUri.resolve(objectUri);
+                        //this is important: blank URIs (and this happens; eg. a tag <meta property="sameAs" datatype="xsd:anyURI" /> will yield a blank value for "sameAs"!)
+                        // would get filled in without this check; eg. a "" value would become "http://localhost:8080/en/" by default and this is bad! (eg. for sameAs properties)
+                        if (!StringUtils.isBlank(objectValue)) {
+                            URI objectUri = URI.create(objectValue);
+                            if (!objectUri.isAbsolute()) {
+                                objectUri = documentBaseUri.resolve(objectUri);
+                            }
+                            //it makes sense to convert the data type to IRI as well
+                            newObject = factory.createIRI(objectUri.toString());
                         }
-                        //it makes sense to convert the data type to IRI as well
-                        newObject = factory.createIRI(objectUri.toString());
                     }
                     //this means it's a 'true' literal -> check if we can trim
                     else {

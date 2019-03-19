@@ -55,6 +55,16 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         return name;
     }
     @Override
+    public URI getUri()
+    {
+        return this.getFullName();
+    }
+    @Override
+    public URI getCurie()
+    {
+        return this.getCurieName();
+    }
+    @Override
     public boolean isPublic()
     {
         return isPublic;

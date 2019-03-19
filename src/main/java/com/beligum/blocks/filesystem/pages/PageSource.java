@@ -285,6 +285,17 @@ public abstract class PageSource extends AbstractSource implements Source
                 this.deletePropertyElements(Meta.aclManage);
             }
 
+            // This is subtle: when the sameAs property element is left alone, it will get serialized to RDF as a blank value since it's dataType is anyURI.
+            // But this clouds further processing because if we're not careful, the "blank URI" will expand to eg. the base URI when converting relative to absolute.
+            // It's better to delete those blank sameAs tags here, while we're processing the meta tags anyway
+            Elements sameAsEls = this.getPropertyElements(Meta.sameAs);
+            for (Element sameAsEl : sameAsEls) {
+                //we delete the blanks while we iterate
+                if (StringUtils.isBlank(sameAsEl.attr(HtmlParser.RDF_CONTENT_ATTR))) {
+                    //note: this doesn't change the list
+                    sameAsEl.remove();
+                }
+            }
         }
         catch (Exception e) {
             throw new IOException("Error while updating the html with the new metadata values; " + this.getUri(), e);

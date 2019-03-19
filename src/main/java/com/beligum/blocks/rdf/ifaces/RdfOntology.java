@@ -53,7 +53,8 @@ public interface RdfOntology extends RdfResource
     Iterable<RdfOntologyMember> getAllMembers();
 
     /**
-     * Returns the member with the specified name in this ontology or null if nothing was found
+     * Returns the member with the specified name in this ontology or null if nothing was found.
+     * Note that if the supplied name doesn't look like a CURIE, the prefix will be added automatically.
      */
     //avoids infinite recursion
     @JsonIgnore

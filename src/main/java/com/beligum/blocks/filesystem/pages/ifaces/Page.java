@@ -61,6 +61,12 @@ public interface Page extends BlocksResource
     URI getPublicRelativeAddress();
 
     /**
+     * returns the absolute (domain-prefixed) URL of the resource (the RDF subject) this page describes.
+     * Note: for now, this is a convenience method around the page analyzer and that analyzer is loaded every time again, so beware of performance issues!
+     */
+    URI getAbsoluteResourceAddress() throws IOException;
+
+    /**
      * Creates the semantic importer for this kind of page (currently an RDFa processor)
      * @return
      * @throws IOException

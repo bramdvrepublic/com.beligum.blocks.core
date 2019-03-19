@@ -29,6 +29,7 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
 import javax.validation.OverridesAttribute;
+import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Set;
 

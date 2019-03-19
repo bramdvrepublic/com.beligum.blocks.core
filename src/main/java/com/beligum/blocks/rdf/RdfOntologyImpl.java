@@ -20,6 +20,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.Iterables;
 
 import java.lang.reflect.Field;
@@ -80,6 +81,18 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
         return this.getNamespace().getUri().toString();
     }
     @Override
+    public URI getUri()
+    {
+        return this.getNamespace().getUri();
+    }
+    @Override
+    public URI getCurie()
+    {
+        //don't really know what to return here because it doesn't really make sense...
+        //might change in the future
+        return null;
+    }
+    @Override
     public boolean isPublic()
     {
         return this.isPublic;
@@ -94,7 +107,7 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     @Override
     public URI resolveCurie(String suffix)
     {
-        return URI.create(this.getNamespace().getPrefix() + ":" + suffix);
+        return URI.create(this.resolveCurieString(suffix));
     }
     @Override
     public Iterable<RdfOntologyMember> getAllMembers()
@@ -232,5 +245,8 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     }
 
     //-----PRIVATE METHODS-----
-
+    private String resolveCurieString(String suffix)
+    {
+        return this.getNamespace().getPrefix() + ":" + suffix;
+    }
 }

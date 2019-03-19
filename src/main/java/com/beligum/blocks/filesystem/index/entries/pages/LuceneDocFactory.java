@@ -17,15 +17,19 @@
 package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
 import com.beligum.blocks.filesystem.pages.PageModel;
+import com.beligum.blocks.rdf.ifaces.RdfMapper;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.mappers.DefaultRdfMapper;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.protobuf.ProtobufMapper;
 import com.fasterxml.jackson.dataformat.protobuf.schema.NativeProtobufSchema;
@@ -182,6 +186,10 @@ public class LuceneDocFactory
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
+
+        RdfMapper rdfMapper = new DefaultRdfMapper();
+        JsonNode json = rdfMapper.toJson(subModel.getPage());
+        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
 
         for (Statement stmt : subModel.getSubModel()) {
 

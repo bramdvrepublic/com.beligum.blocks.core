@@ -30,9 +30,6 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //this is private because it's only accessible through the constructor
-    private String name;
-
     //protected because of the builder, see below
     protected boolean isPublic;
 

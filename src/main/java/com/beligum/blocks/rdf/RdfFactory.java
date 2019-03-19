@@ -28,6 +28,7 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.rdf4j.model.IRI;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -169,34 +170,8 @@ public class RdfFactory
 
                 //here we must try to expand a CURIE
                 if (uri != null) {
-
-                    if (RdfTools.isCurie(uri)) {
-                        RdfOntology ontology = getPublicOntologyPrefixMap().get(uri.getScheme());
-                        if (ontology != null) {
-                            //this will return null when no such member was found, which is what we want
-                            retVal = ontology.getMember(uri.getSchemeSpecificPart());
-                        }
-                        else {
-                            throw new IOException("Encountered a CURIE with an unknown ontology prefix '" + uri.getScheme() + "'; " + value);
-                        }
-                    }
-                    //here, the URI is a full-blown uri
-                    else {
-                        //first, check if the uri is the namespace of an ontology
-                        retVal = getPublicOntologyUriMap().get(uri);
-
-                        //if it's not an ontology, we'll try to cut off the name and split the uri in an ontology uri and a name string;
-                        //RDF ontologies either use anchor based names or real endpoints, so search for the pound sign or use the last part of the path as the name
-                        if (retVal == null) {
-
-                            retVal = parseOntologyMemberUri(value, "#");
-
-                            //if anchor-splitting didn't result anything, try the last slash
-                            if (retVal == null) {
-                                retVal = parseOntologyMemberUri(value, "/");
-                            }
-                        }
-                    }
+                    //here we have a valid URI; switch to the other lookup()
+                    retVal = RdfFactory.lookup(uri);
                 }
                 else {
                     throw new IOException("Encountered a value with a colon (:), but it didn't parse to a valid URI; " + value);
@@ -209,6 +184,75 @@ public class RdfFactory
         }
 
         return retVal;
+    }
+    /**
+     * Same as lookup(String), but generic with a filter type (returns null when the type doesn't match)
+     */
+    public static <T extends RdfResource> T lookup(String unsafeValue, Class<T> type) throws IOException
+    {
+        return RdfFactory.lookupCast(RdfFactory.lookup(unsafeValue == null ? null : unsafeValue), type);
+    }
+    /**
+     * Same as lookup(String), but the value is known to be a URI
+     */
+    public static RdfResource lookup(URI uri) throws IOException
+    {
+        RdfResource retVal = null;
+
+        if (uri != null) {
+            if (RdfTools.isCurie(uri)) {
+                RdfOntology ontology = getPublicOntologyPrefixMap().get(uri.getScheme());
+                if (ontology != null) {
+                    //this will return null when no such member was found, which is what we want
+                    retVal = ontology.getMember(uri.getSchemeSpecificPart());
+                }
+                else {
+                    throw new IOException("Encountered a CURIE with an unknown ontology prefix '" + uri.getScheme() + "'; " + uri);
+                }
+            }
+            //here, the URI is a full-blown uri
+            else {
+                //first, check if the uri is the namespace of an ontology
+                retVal = getPublicOntologyUriMap().get(uri);
+
+                //if it's not an ontology, we'll try to cut off the name and split the uri in an ontology uri and a name string;
+                //RDF ontologies either use anchor based names or real endpoints, so search for the pound sign or use the last part of the path as the name
+                if (retVal == null) {
+
+                    String uriStr = uri.toString();
+
+                    retVal = parsePublicOntologyMemberUri(uriStr, "#");
+
+                    //if anchor-splitting didn't result anything, try the last slash
+                    if (retVal == null) {
+                        retVal = parsePublicOntologyMemberUri(uriStr, "/");
+                    }
+                }
+            }
+        }
+
+        return retVal;
+    }
+    /**
+     * Same as lookup(URI), but generic with a filter type (returns null when the type doesn't match)
+     */
+    public static <T extends RdfResource> T lookup(URI uri, Class<T> type) throws IOException
+    {
+        return RdfFactory.lookupCast(RdfFactory.lookup(uri), type);
+    }
+    /**
+     * Same as lookup(String), but the value is known to be a IRI
+     */
+    public static RdfResource lookup(IRI iri) throws IOException
+    {
+        return RdfFactory.lookup(iri == null ? null : iri.toString());
+    }
+    /**
+     * Same as lookup(IRI), but generic with a filter type (returns null when the type doesn't match)
+     */
+    public static <T extends RdfResource> T lookup(IRI iri, Class<T> type) throws IOException
+    {
+        return RdfFactory.lookupCast(RdfFactory.lookup(iri), type);
     }
     /**
      * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfClass instance
@@ -482,7 +526,7 @@ public class RdfFactory
     public RdfClassImpl.Builder register(RdfClass rdfProxyClass) throws RdfInitializationException
     {
         if (rdfProxyClass.isProxy()) {
-            if(!this.registry.containsKey(rdfProxyClass)) {
+            if (!this.registry.containsKey(rdfProxyClass)) {
                 //note: this cast is safe because in sync with the factory method above (and a private constructor)
                 this.registry.put(rdfProxyClass, new RdfClassImpl.Builder(this, ((RdfClassImpl) rdfProxyClass)));
             }
@@ -601,7 +645,7 @@ public class RdfFactory
             throw new RuntimeException("Error while initializing RDF ontology prefix map; this shouldn't happen", e);
         }
     }
-    private static RdfOntologyMember parseOntologyMemberUri(String uriStr, String separator)
+    private static RdfOntologyMember parsePublicOntologyMemberUri(String uriStr, String separator)
     {
         RdfOntologyMember retVal = null;
 
@@ -643,6 +687,15 @@ public class RdfFactory
                                                          " this shouldn't happen; " + rdfOntologyImpl);
                 }
             }
+        }
+    }
+    private static <T extends RdfResource> T lookupCast(RdfResource resource, Class<T> type)
+    {
+        if (resource != null && type.isAssignableFrom(resource.getClass())) {
+            return (T) resource;
+        }
+        else {
+            return null;
         }
     }
 }

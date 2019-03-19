@@ -85,7 +85,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     "meta", "metadata",
                     //the special resources url prefix; sync this with com.beligum.blocks.config.Settings.RESOURCE_ENDPOINT
                     StringUtils.strip(RESOURCE_ENDPOINT, "/"),
-    };
+                    };
 
     //-----VARIABLES-----
     protected URI canonicalAddress;
@@ -260,6 +260,21 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         }
 
         return this.cachedRelativeAddress;
+    }
+    @Override
+    public URI getAbsoluteResourceAddress() throws IOException
+    {
+        URI retVal = null;
+
+        HtmlAnalyzer.AttributeRef aboutAttr = this.createAnalyzer().getHtmlAbout();
+        if (aboutAttr != null && !StringUtils.isBlank(aboutAttr.value)) {
+            retVal = URI.create(aboutAttr.value.trim());
+            if (!retVal.isAbsolute()) {
+                retVal = R.configuration().getSiteDomain().resolve(retVal);
+            }
+        }
+
+        return retVal;
     }
     @Override
     public Model readRdfModel() throws IOException
