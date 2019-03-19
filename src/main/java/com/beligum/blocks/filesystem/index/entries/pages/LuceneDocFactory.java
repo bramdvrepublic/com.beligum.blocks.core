@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -177,10 +178,8 @@ public class LuceneDocFactory
      */
     public Document indexRdfModel(Document document, PageModel subModel, RdfQueryEndpoint.SearchOption... options) throws IOException
     {
-        //makes sense to eliminate double values for the sort list as well, I think
+        //makes sense to eliminate double values for the sort list, I think
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
-        //no need to index double values, so let's use a set
-        Set<String> allField = new LinkedHashSet<>();
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
 
@@ -191,17 +190,15 @@ public class LuceneDocFactory
                 RdfProperty predicate = RdfFactory.getProperty(predicateCurie);
                 if (predicate != null) {
 
-                    //ask the RDF property to index itself to the lucene index
+                    //This performs the main indexing operation:
+                    // ask the RDF property to index itself to the lucene index
                     RdfIndexer.IndexResult value = predicate.indexValue(rdfIndexer, subModel.getSubResource(), stmt.getObject(), subModel.getPage().getLanguage(), options);
 
                     //index it with the default analyzer so we can search it lowercase, without punctuation, etc...
-                    allField.add(value.stringValue);
                     rdfIndexer.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
 
                     //also index the raw value to the constant all field
-                    String indexValueStr = value.indexValue.toString();
-                    allField.add(indexValueStr);
-                    rdfIndexer.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL_VERBATIM, indexValueStr);
+                    rdfIndexer.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL_VERBATIM, value.indexValue.toString());
 
                     Set<String> sortField = sortFieldMapping.get(predicate);
                     if (sortField == null) {
@@ -218,6 +215,12 @@ public class LuceneDocFactory
                     }
                     sortField.add(sortValue);
                 }
+                else {
+                    Logger.error("Encountered unknown RDF predicate (" + predicateCurie + "); this probably means something is wrong or something won't get indexed; " + stmt);
+                }
+            }
+            else {
+                Logger.error("Unable to build RDF curie from predicate (" + stmt.getPredicate() + "); this probably means something is wrong or something won't get indexed; " + stmt);
             }
         }
 
@@ -228,11 +231,11 @@ public class LuceneDocFactory
         //found this here: SortedDocValuesWriter.addValue()
         final int MAX_FIELD_SIZE = BYTE_BLOCK_SIZE - 2;
         while (fieldIter.hasNext()) {
-            IndexableField f = fieldIter.next();
-            String stringVal = f.stringValue();
+            IndexableField docField = fieldIter.next();
+            String stringVal = docField.stringValue();
             //non-string values are probably not too large?
             if (stringVal != null && stringVal.length() > MAX_FIELD_SIZE) {
-                Logger.warn("Removing field '" + f.name() + "' from the lucene document we're indexing because it's too large. Value is " + stringVal.length() + " and starts with '" +
+                Logger.warn("Removing field '" + docField.name() + "' from the lucene document we're indexing because it's too large. Value is " + stringVal.length() + " and starts with '" +
                             stringVal.substring(0, 20) + "...' (max " + MAX_FIELD_SIZE + " bytes allowed). Note that this means the content of this value won't be searchable (!)");
                 fieldIter.remove();
             }

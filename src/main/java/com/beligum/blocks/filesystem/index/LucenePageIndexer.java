@@ -95,9 +95,9 @@ public class LucenePageIndexer implements PageIndexer
     //keeps a list of all fields in this doc, to be able to search for non-existence of a field
     public static final String CUSTOM_FIELD_FIELDS = CUSTOM_FIELD_PREFIX + "fields";
 
-    protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
-    protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
+//    protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
+//    protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
+//    protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
 
     /**
      * We switched to using this analyzer instead of the standard one because of better support for french words.

@@ -84,7 +84,7 @@ public interface RdfClass extends RdfOntologyMember
      * If this is null, a generic SimpleResourceSummarizer is used.
      */
     @JsonIgnore
-    ResourceSummarizer getResourceSummarizer();
+    ResourceSummarizer getSummarizer();
 
     /**
      * Added for inline object (rdf subclasses) main property support: a main property of an inline object is

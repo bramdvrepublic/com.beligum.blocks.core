@@ -77,12 +77,8 @@ public class Local extends RdfOntologyImpl
         rdfFactory.register(Page)
                   .label(Entries.main_label_Page)
                   .isPublic(true)
-                  .endpoint(new LocalQueryEndpoint());
-
-        //Note: these two are commented out because we moved the vocabularies to a separate project,
-        // we might want to implement a setter to add sameAs URIs later on from that project
-        //.sameAs(DBR.INSTANCE.resolve("Web_page"),
-        //        SCHEMA.INSTANCE.resolve("WebPage"));
+                  .endpoint(new LocalQueryEndpoint())
+                  .properties(Settings.instance().getRdfLabelProperty());
 
     }
 

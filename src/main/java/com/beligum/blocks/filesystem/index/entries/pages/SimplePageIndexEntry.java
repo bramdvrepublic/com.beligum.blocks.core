@@ -71,31 +71,6 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         this.setDescription(description);
         this.setImage(image);
     }
-    //    protected SimplePageIndexEntry(String documentId, Resource subject, Model rdfModel, String language) throws IOException
-    //    {
-    //        super(documentId);
-    //
-    //        Optional<IRI> typeOfIRI = Models.objectIRI(rdfModel.filter(subject, RDF.TYPE, null));
-    //        RdfClass typeOf = !typeOfIRI.isPresent() ? null : RdfFactory.getClassForResourceType(RdfTools.fullToCurie(URI.create(typeOfIRI.get().toString())));
-    //        if (typeOf == null) {
-    //            throw new IOException("Trying to instance an index entry from an RDF model without a type, this shouldn't happen; " + subject);
-    //        }
-    //        else {
-    //            //TODO check this
-    //            this.setResource(documentId == null ? null : documentId);
-    //            this.setTypeOf(typeOf.getCurieName().toString());
-    //            this.setLanguage(language);
-    //            //TODO check this
-    //            this.setCanonicalAddress(documentId);
-    //
-    //            //note: the getResourceSummarizer() never returns null (has a SimpleResourceIndexer as fallback)
-    //            ResourceSummarizer.SummarizedResource indexEntry = typeOf.getResourceSummarizer().summarize(rdfModel);
-    //            this.setTitle(indexEntry.getTitle());
-    //            this.setDescription(indexEntry.getDescription());
-    //            this.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
-    //
-    //        }
-    //    }
 
     //-----STATIC METHODS-----
     //These are a couple of ID factory methods, grouped for overview

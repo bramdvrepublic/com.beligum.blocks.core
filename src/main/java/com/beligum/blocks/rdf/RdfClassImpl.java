@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf;
 
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
@@ -27,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import java.util.Collections;
+import javax.validation.OverridesAttribute;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -45,7 +46,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     private Set<RdfClass> subClasses;
     private Set<RdfProperty> properties;
     private RdfQueryEndpoint endpoint;
-    private ResourceSummarizer resourceSummarizer;
+    private ResourceSummarizer summarizer;
     private RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
@@ -117,21 +118,14 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     {
         this.assertNoProxy();
 
-        //by constructing it this way, we can keep using the references to the (proxy) superclasses
-        //until this method is really called.
-        Iterable<RdfProperty> retVal = this.properties;
-        for (RdfClass c : this.superClasses) {
-            retVal = Iterables.concat(retVal, c.getProperties());
-        }
-
-        return retVal;
+        return _getProperties();
     }
-    @JsonIgnore
+    @Override
     public boolean hasProperty(RdfProperty property)
     {
         this.assertNoProxy();
 
-        return Iterables.tryFind(this.getProperties(), Predicates.equalTo(property)).isPresent();
+        return _hasProperty(property);
     }
     @Override
     public RdfQueryEndpoint getEndpoint()
@@ -141,11 +135,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return endpoint;
     }
     @Override
-    public ResourceSummarizer getResourceSummarizer()
+    public ResourceSummarizer getSummarizer()
     {
         this.assertNoProxy();
 
-        return resourceSummarizer;
+        return summarizer;
     }
     @Override
     public RdfProperty getMainProperty()
@@ -158,6 +152,27 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * The same as getProperties(), but without the proxy check
+     */
+    private Iterable<RdfProperty> _getProperties()
+    {
+        //by constructing it this way, we can keep using the references to the (proxy) superclasses
+        //until this method is really called.
+        Iterable<RdfProperty> retVal = this.properties;
+        for (RdfClass c : this.superClasses) {
+            retVal = Iterables.concat(retVal, ((RdfClassImpl)c)._getProperties());
+        }
+
+        return retVal;
+    }
+    /**
+     * The same as hasProperty(), but without the proxy check
+     */
+    private boolean _hasProperty(RdfProperty property)
+    {
+        return Iterables.tryFind(this._getProperties(), Predicates.equalTo(property)).isPresent();
+    }
 
     //-----INNER CLASSES-----
     public static class Builder extends AbstractRdfOntologyMember.Builder<RdfClass, RdfClassImpl, RdfClassImpl.Builder>
@@ -212,7 +227,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         }
         public Builder summarizer(ResourceSummarizer resourceSummarizer)
         {
-            this.rdfResource.resourceSummarizer = resourceSummarizer;
+            this.rdfResource.summarizer = resourceSummarizer;
 
             return this;
         }
@@ -231,9 +246,15 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         @Override
         RdfClass create() throws RdfInitializationException
         {
+            //every public class should at least have the label property, otherwise we can't set it's <title>
+            if (this.rdfResource.isPublic && !this.rdfResource._hasProperty(Settings.instance().getRdfLabelProperty())) {
+                throw new RdfInitializationException("Trying to create a public RDF class '" + this.rdfResource.getName() + "' without the main label property '" + Settings.instance().getRdfLabelProperty() + "'," +
+                                                     " please fix this.");
+            }
+
             //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
-            if (this.rdfResource.resourceSummarizer == null) {
-                this.rdfResource.resourceSummarizer = new SimpleResourceSummarizer();
+            if (this.rdfResource.summarizer == null) {
+                this.rdfResource.summarizer = new SimpleResourceSummarizer();
             }
 
             //note: instead of iterating the properties of the superclasses and adding them to this class,

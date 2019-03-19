@@ -129,9 +129,9 @@ public class PageModel
             String description = null;
             URI image = null;
 
-            //note: the getResourceSummarizer() never returns null (has a SimpleResourceIndexer as fallback),
+            //note: the getSummarizer() never returns null (has a SimpleResourceIndexer as fallback),
             //but let's play safe
-            ResourceSummarizer summarizer = type.getResourceSummarizer();
+            ResourceSummarizer summarizer = type.getSummarizer();
             if (summarizer != null) {
                 ResourceSummarizer.SummarizedResource summary = summarizer.summarize(type, this.getSubModel());
                 if (summary != null) {
@@ -139,6 +139,12 @@ public class PageModel
                     description = summary.getDescription();
                     image = summary.getImage();
                 }
+                else {
+                    throw new IOException("RDF class summarizer returned a null summary; this shouldn't happen; " + type);
+                }
+            }
+            else {
+                throw new IOException("Encountered an RDF class with a null summarizer; this shouldn't happen; " + type);
             }
 
             retVal = new SimplePageIndexEntry(id, parentId, resource, type, title, lang, canonicalAddress, description, image);

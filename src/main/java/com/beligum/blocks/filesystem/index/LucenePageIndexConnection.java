@@ -139,17 +139,17 @@ public class LucenePageIndexConnection extends AbstractIndexConnection implement
             //first of all, we convert all sub-models of a page to a serializable index entry
             PageIndexEntry indexEntry = subModel.toPageIndexEntry();
 
-            //now convert that index entry to a lucene-implementation specific
-            Term luceneId = luceneDocFactory.toLuceneId(indexEntry.getId());
-
             //this will convert the index entry to a lucene doc, providing a number of fields we can expect,
-            //serialize and store the indexEntry in the index
+            //plus serialize and store the complete indexEntry in the index as the 'object' property
             Document luceneDoc = luceneDocFactory.toLuceneDoc(indexEntry);
 
             //this will iterate the rdf model and additionally index individual statements
             //trying to convert between RDF and lucene as good as possible.
             //It will also add custom sorting and search-all fields.
             luceneDocFactory.indexRdfModel(luceneDoc, subModel, intermediateStore);
+
+            //convert a general purpose string ID to a lucene-implementation specific ID-term
+            Term luceneId = luceneDocFactory.toLuceneId(indexEntry.getId());
 
             //now write our document to the index
             indexWriter.updateDocument(luceneId, luceneDoc);

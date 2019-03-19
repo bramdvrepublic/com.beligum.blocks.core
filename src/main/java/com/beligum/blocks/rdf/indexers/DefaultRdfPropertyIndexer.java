@@ -58,8 +58,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
     //Analogue to org.elasticsearch.index.mapper.core.BooleanFieldMapper.Values
     //also see http://stackoverflow.com/questions/9661489/which-is-the-best-choice-to-indexing-a-boolean-value-in-lucene
-    private static final String BOOLEAN_TRUE_STRING = "T";
-    private static final String BOOLEAN_FALSE_STRING = "F";
+    //Update: switched "T" and "F" to "true" and "false" in Stralo v1.0 to sync the indexing behavior with RDF serialization;
+    //see https://www.w3.org/TR/turtle/#booleans
+    private static final String BOOLEAN_TRUE_STRING = "true";
+    private static final String BOOLEAN_FALSE_STRING = "false";
 
     //This is the maximum length of a string value that will (also) be indexed as a constant value
     private static final int MAX_CONSTANT_STRING_FIELD_SIZE = 1024;
@@ -108,7 +110,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 cal.setTimeZone(TimeZone.getTimeZone(UTC));
 
                 //millis since midnight
-                Long val = cal.toZonedDateTime().toLocalTime().toNanoOfDay()/1000000;
+                Long val = cal.toZonedDateTime().toLocalTime().toNanoOfDay() / 1000000;
                 indexer.indexLongField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
@@ -212,7 +214,8 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     }
                     catch (Exception e) {
                         throw new IOException("Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource +
-                                              "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() + ";", e);
+                                              "' because there was an setRollbackOnly while parsing the information coming back from the resource endpoint for datatype " + property.getDataType() +
+                                              ";", e);
                     }
                 }
                 //we didn't get a resource value from the endpoint and need to crash, but let's add some nice info to the stacktrace
@@ -226,7 +229,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     }
 
                     throw new NotIndexedException(resource, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " (value is '" + value.stringValue() + "') of '" + resource +
-                                                                                      "' because it's resource endpoint returned null");
+                                                                                       "' because it's resource endpoint returned null");
                 }
             }
         }
@@ -262,10 +265,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     else if (property.getDataType().equals(XSD.time)) {
                         LocalTime localTime = LocalTime.from(DateTimeFormatter.ISO_LOCAL_TIME.parse(value));
                         //we return the millis since midnight
-                        retVal = localTime.toNanoOfDay()/1000000;
+                        retVal = localTime.toNanoOfDay() / 1000000;
                     }
                     else {
-                        throw new IOException("Unsupported datatype; this shouldn't happen; "+property.getDataType());
+                        throw new IOException("Unsupported datatype; this shouldn't happen; " + property.getDataType());
                     }
                 }
             }
