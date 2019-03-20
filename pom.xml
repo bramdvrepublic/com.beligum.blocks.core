@@ -48,6 +48,9 @@
         <!--sync this with sesame -->
         <lucene.version>5.1.0</lucene.version>
 
+        <!-- sync this with the jetty version of base-core -->
+        <solr.version>8.0.0</solr.version>
+
         <!-- Sync these two using https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
         <version.infinispan>8.1.1.Final</version.infinispan>
         
@@ -61,12 +64,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.8.0</version>
+            <version>0.8.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.5.5</version>
+            <version>0.5.6-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -180,6 +183,7 @@
             <artifactId>lucene-grouping</artifactId>
             <version>${lucene.version}</version>
         </dependency>
+
         <!--<dependency>-->
         <!--<groupId>org.apache.lucene</groupId>-->
         <!--<artifactId>lucene-codecs</artifactId>-->
@@ -600,6 +604,29 @@
             <groupId>com.ibm.icu</groupId>
             <artifactId>icu4j</artifactId>
             <version>60.2</version>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.apache.solr</groupId>-->
+            <!--<artifactId>solr-core</artifactId>-->
+            <!--<version>${solr.version}</version>-->
+
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>com.google.guava</groupId>-->
+                    <!--<artifactId>guava</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.apache.hadoop</groupId>-->
+                    <!--<artifactId>hadoop-hdfs-client</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
+
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+            <version>${solr.version}</version>
         </dependency>
 
     </dependencies>
