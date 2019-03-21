@@ -21,11 +21,13 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.rdf.ifaces.*;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Created by bram on 2/28/16.
@@ -35,7 +37,7 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Map<String, RdfOntologyMember> allMembers;
+    private Map<String, AbstractRdfOntologyMember> allMembers;
     private Map<URI, RdfClass> allClasses;
     private Map<URI, RdfClass> publicClasses;
     private Map<URI, RdfProperty> allProperties;
@@ -112,7 +114,17 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     @Override
     public Iterable<RdfOntologyMember> getAllMembers()
     {
-        return allMembers.values();
+        //this does nothing more than restrict the member values to the interface
+        return Iterables.transform(this.allMembers.values(),
+                                   new Function<AbstractRdfOntologyMember, RdfOntologyMember>()
+                                   {
+                                       @Override
+                                       public RdfOntologyMember apply(AbstractRdfOntologyMember member)
+                                       {
+                                           return member;
+                                       }
+                                   }
+        );
     }
     @Override
     public RdfOntologyMember getMember(String name)
@@ -149,28 +161,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     {
         return publicProperties.values();
     }
-    @Override
-    public Iterable<RdfOntology> getOntologyReferences()
-    {
-        Set<RdfOntology> retVal = new LinkedHashSet<>();
-
-        retVal.add(this);
-
-        for (RdfOntologyMember m : this.getAllMembers()) {
-            m.getOntologyReferences().forEach(retVal::add);
-        }
-
-        return retVal;
-
-        // this is the same (more performing) implementation but doesn't eliminate doubles...
-        //        Iterable<RdfOntology> retVal = Collections.singleton(this);
-        //
-        //        for (RdfOntologyMember m : this.getAllMembers().values()) {
-        //            retVal = Iterables.concat(retVal, m.getOntologyReferences());
-        //        }
-        //
-        //        return retVal;
-    }
 
     //-----PROTECTED METHODS-----
     /**
@@ -187,6 +177,21 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
      * or used directly (like the Log ontology)
      */
     protected abstract boolean isPublicOntology();
+
+    /**
+     * Iterates all members of this ontology and finds references to other ontologies in all of them.
+     * @param ontologyVisitor
+     */
+    void _findOntologyReferences(Visitor ontologyVisitor)
+    {
+        //first of all, add ourself
+        ontologyVisitor.add(this);
+
+        //now iterate all members and request them to add their ontologies too
+        for (AbstractRdfOntologyMember m : this.allMembers.values()) {
+            m._findOntologyReferences(ontologyVisitor);
+        }
+    }
 
     /**
      * Register an ontology member into this ontology, putting it into the relevant maps.
@@ -248,5 +253,28 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     private String resolveCurieString(String suffix)
     {
         return this.getNamespace().getPrefix() + ":" + suffix;
+    }
+
+    //-----PRIVATE CLASSES-----
+    static abstract class Visitor
+    {
+        private Set<RdfResource> visitedResources;
+
+        Visitor()
+        {
+            this.visitedResources = new HashSet<>();
+        }
+
+        abstract void foundNew(RdfOntology rdfOntology);
+
+        void add(RdfResource rdfResource)
+        {
+            if (!this.visitedResources.contains(rdfResource)) {
+                this.visitedResources.add(rdfResource);
+                if (rdfResource instanceof RdfOntology) {
+                    this.foundNew((RdfOntology) rdfResource);
+                }
+            }
+        }
     }
 }

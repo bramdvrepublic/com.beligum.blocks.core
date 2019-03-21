@@ -44,7 +44,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private RdfClass dataType;
+    private RdfClassImpl dataType;
     private RdfQueryEndpoint endpoint;
     private InputType widgetType;
     private InputTypeConfig widgetConfig;
@@ -61,23 +61,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     public Type getType()
     {
         return Type.PROPERTY;
-    }
-    /**
-     * We need to overload this method for a RdfProperty to also add all the referenced ontologies
-     * of the datatypes
-     */
-    @Override
-    public Iterable<RdfOntology> getOntologyReferences()
-    {
-        this.assertNoProxy();
-
-        Set<RdfOntology> retVal = new LinkedHashSet<>();
-        super.getOntologyReferences().forEach(retVal::add);
-        this.getDataType().getOntologyReferences().forEach(retVal::add);
-        return retVal;
-
-        // this is the same (more performing) implementation but doesn't eliminate doubles...
-        //return Iterables.concat(super.getOntologyReferences(), this.getDataType().getOntologyReferences());
     }
     @Override
     public RdfClass getDataType()
@@ -123,6 +106,17 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     }
 
     //-----PROTECTED METHODS-----
+    /**
+     * We need to overload this method for a RdfProperty to also add all the referenced ontologies
+     * of the datatypes
+     */
+    @Override
+    protected void _findOntologyReferences(RdfOntologyImpl.Visitor ontologyVisitor)
+    {
+        super._findOntologyReferences(ontologyVisitor);
+
+        this.dataType._findOntologyReferences(ontologyVisitor);
+    }
 
     //-----PRIVATE METHODS-----
 
@@ -136,7 +130,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         public Builder dataType(RdfClass dataType)
         {
-            this.rdfResource.dataType = dataType;
+            this.rdfResource.dataType = (RdfClassImpl) dataType;
 
             return this;
         }

@@ -118,13 +118,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
         return isSameAs;
     }
-    @Override
-    public Iterable<RdfOntology> getOntologyReferences()
-    {
-        this.assertNoProxy();
-
-        return Collections.singleton(this.ontology);
-    }
 
     //-----PROTECTED METHODS-----
     protected void assertNoProxy()
@@ -132,6 +125,16 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         if (this.isProxy()) {
             throw new RdfProxyException("A core functionality method of an RDF ontology member was called without properly initializing it; please see RdfFactory comments for details; " + this);
         }
+    }
+    protected void _findOntologyReferences(RdfOntologyImpl.Visitor ontologyVisitor)
+    {
+        this.assertNoProxy();
+
+        //don't forget to add ourself: this will block future recursive calls in cyclic dependencies
+        ontologyVisitor.add(this);
+
+        //this is actually why we're here
+        ontologyVisitor.add(this.ontology);
     }
 
     //-----PRIVATE METHODS-----

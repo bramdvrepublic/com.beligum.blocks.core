@@ -187,9 +187,9 @@ public class LuceneDocFactory
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
 
-        RdfMapper rdfMapper = new DefaultRdfMapper();
-        JsonNode json = rdfMapper.toJson(subModel.getPage());
-        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
+//        RdfMapper rdfMapper = new DefaultRdfMapper();
+//        JsonNode json = rdfMapper.toJson(subModel.getPage());
+//        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
 
         for (Statement stmt : subModel.getSubModel()) {
 

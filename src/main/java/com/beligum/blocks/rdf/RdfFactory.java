@@ -435,25 +435,31 @@ public class RdfFactory
                         }
                     }
 
+                    Set<RdfOntology> checkedOntologyRefs = new LinkedHashSet<>();
                     for (Map.Entry<RdfNamespace, RdfOntologyImpl> entry : allOntologies.entrySet()) {
 
                         try {
 
-                            RdfOntologyImpl mainOntology = entry.getValue();
+                            RdfOntologyImpl ontology = entry.getValue();
 
                             //check if all members of this ontology are initialized by the loop above
-                            checkOntologyMembers(mainOntology);
+                            checkOntologyMembers(ontology);
 
                             //only public ontologies are saved to the lookup maps; the rest are just initialized and referenced from other public ontologies
-                            if (mainOntology.isPublic()) {
+                            if (ontology.isPublic()) {
                                 //store the ontology in a lookup map
-                                addPublicOntology(mainOntology);
+                                addPublicOntology(ontology);
 
                                 // if a public ontology references another ontology, regardless of being public or not,
                                 // we'll also save it in the lookup map, because we'll encounter it sooner or later
-                                for (RdfOntology ref : mainOntology.getOntologyReferences()) {
-                                    addPublicOntology(ref);
-                                }
+                                ontology._findOntologyReferences(new RdfOntologyImpl.Visitor()
+                                {
+                                    @Override
+                                    protected void foundNew(RdfOntology rdfOntology)
+                                    {
+                                        addPublicOntology(rdfOntology);
+                                    }
+                                });
                             }
                         }
                         catch (Throwable e) {

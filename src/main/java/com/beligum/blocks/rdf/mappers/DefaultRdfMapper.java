@@ -145,11 +145,9 @@ public class DefaultRdfMapper implements RdfMapper
             //see https://lucene.apache.org/solr/guide/7_0/major-changes-in-solr-7.html#schemaless-improvements
             if (newCore) {
                 // Solrj does not support the config API yet.
-                String command = "{\"set-user-property\": {" +
-                                 "\"update.autoCreateFields\": \"false\"" +
-                                 "}}";
                 GenericSolrRequest rq = new GenericSolrRequest(SolrRequest.METHOD.POST, "/config",  new ModifiableSolrParams());
-                rq.setContentWriter(new RequestWriter.StringPayloadContentWriter(command, CommonParams.JSON_MIME));
+                rq.setContentWriter(new RequestWriter.StringPayloadContentWriter("{ \"set-user-property\": { \"update.autoCreateFields\": \"false\" } }",
+                                                                                 CommonParams.JSON_MIME));
                 rq.process(this.solrClient);
             }
 
