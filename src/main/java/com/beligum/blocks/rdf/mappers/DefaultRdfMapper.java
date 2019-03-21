@@ -17,19 +17,28 @@ import com.fasterxml.jackson.jaxrs.json.annotation.JSONP;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.eclipse.rdf4j.model.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -65,7 +74,8 @@ public class DefaultRdfMapper implements RdfMapper
                 coreList.add(cores.getCoreStatus().getName(i));
             }
 
-            if (!coreList.contains(coreName)) {
+            boolean newCore = !coreList.contains(coreName);
+            if (newCore) {
 
                 Path solrFolder = Paths.get("/home/bram/Programs/solr-8.0.0/server/solr/");
                 Path coreFolder = solrFolder.resolve("configsets/" + coreName);
@@ -131,6 +141,17 @@ public class DefaultRdfMapper implements RdfMapper
             }
 
             this.solrClient = new HttpSolrClient.Builder("http://localhost:8983/solr/" + coreName).build();
+
+            //see https://lucene.apache.org/solr/guide/7_0/major-changes-in-solr-7.html#schemaless-improvements
+            if (newCore) {
+                // Solrj does not support the config API yet.
+                String command = "{\"set-user-property\": {" +
+                                 "\"update.autoCreateFields\": \"false\"" +
+                                 "}}";
+                GenericSolrRequest rq = new GenericSolrRequest(SolrRequest.METHOD.POST, "/config",  new ModifiableSolrParams());
+                rq.setContentWriter(new RequestWriter.StringPayloadContentWriter(command, CommonParams.JSON_MIME));
+                rq.process(this.solrClient);
+            }
 
             SchemaResponse.FieldsResponse fieldsResponse = new SchemaRequest.Fields().process(this.solrClient);
             for (Map<String, Object> f : fieldsResponse.getFields()) {
@@ -223,11 +244,12 @@ public class DefaultRdfMapper implements RdfMapper
             }
         }
 
+        //TODO this is not right, just a DEBUG impl
+        retVal.put("id", pageResource.toString());
+
         String jsonStr = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(retVal);
 
-        Logger.info(jsonStr);
-
-        //        this.saveToSolr(retVal);
+        this.saveToSolr(retVal);
         //
         //        this.querySolr(retVal);
 
@@ -264,16 +286,12 @@ public class DefaultRdfMapper implements RdfMapper
     private void saveToSolr(JsonNode json) throws IOException
     {
         try {
-            this.solrClient.add(this.makeSolrDoc(json));
+            byte[] jsonBytes = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(json);
+            JSONUpdateRequest request = new JSONUpdateRequest(new ByteArrayInputStream(jsonBytes));
+            UpdateResponse response = request.process(this.solrClient);
 
-            //            for (int i = 0; i < 1000; ++i) {
-            //                SolrInputDocument doc = new SolrInputDocument();
-            //                doc.addField("cat", "book");
-            //                doc.addField("id", "book-" + i);
-            //                doc.addField("name", "The Legend of the Hobbit part " + i);
-            //                client.add(doc);
-            //                if (i % 100 == 0) client.commit();  // periodically flush
-            //            }
+            //v1
+            //this.solrClient.add(this.makeSolrDoc(json));
 
             this.solrClient.commit();
         }
