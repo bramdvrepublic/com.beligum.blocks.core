@@ -36,7 +36,6 @@ import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
-import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
@@ -59,8 +58,8 @@ import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
-import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
+import static com.beligum.blocks.config.StorageFactory.getJsonIndexer;
+import static com.beligum.blocks.config.StorageFactory.getSparqlIndexer;
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
@@ -415,8 +414,8 @@ public class PageAdminEndpoint
 
                 //Note: transaction handling is done through the global XA transaction
                 //Note: the page index must be indexed first, because it's used to search the translations during triplestore indexing!
-                getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
-                getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
+                getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
+                getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
 
                 retVal = Response.ok("Index of item successfull; " + uri);
             }
@@ -547,8 +546,8 @@ public class PageAdminEndpoint
     //        synchronized (currentIndexAllLock) {
     //        if (currentIndexAllThread == null) {
     //            try {
-    //                StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
-    //                StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
+    //                StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
+    //                StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
     //            }
     //            finally {
     //                //simulate a transaction commit for each action or we'll end up with errors.

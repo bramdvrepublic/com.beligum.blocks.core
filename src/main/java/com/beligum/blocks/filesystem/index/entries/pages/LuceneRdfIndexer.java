@@ -16,8 +16,12 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
-import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import org.apache.lucene.document.*;
+import org.apache.solr.legacy.LegacyDoubleField;
+import org.apache.solr.legacy.LegacyFloatField;
+import org.apache.solr.legacy.LegacyIntField;
+import org.apache.solr.legacy.LegacyLongField;
 
 public class LuceneRdfIndexer implements RdfIndexer
 {
@@ -36,22 +40,22 @@ public class LuceneRdfIndexer implements RdfIndexer
     @Override
     public void indexIntegerField(String fieldName, int value)
     {
-        this.document.add(new IntField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+        this.document.add(new LegacyIntField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
     }
     @Override
     public void indexLongField(String fieldName, long value)
     {
-        this.document.add(new LongField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+        this.document.add(new LegacyLongField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
     }
     @Override
     public void indexFloatField(String fieldName, float value)
     {
-        this.document.add(new FloatField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+        this.document.add(new LegacyFloatField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
     }
     @Override
     public void indexDoubleField(String fieldName, double value)
     {
-        this.document.add(new DoubleField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+        this.document.add(new LegacyDoubleField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
     }
     @Override
     public void indexStringField(String fieldName, String value)

@@ -17,8 +17,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;

@@ -21,6 +21,10 @@ import com.beligum.blocks.filesystem.hdfs.TX;
 import java.io.IOException;
 
 /**
+ * In Stralo, an 'indexer' is a sub-system that extracts data from the main storage (HDFS-based)
+ * and stores it in a different manner; eg. a triple store, a full-text-search index, etc.
+ * Connections to an indexer are transactional and are attached to the request-scoped TX transactions.
+ *
  * Created by bram on 1/26/16.
  */
 public interface Indexer

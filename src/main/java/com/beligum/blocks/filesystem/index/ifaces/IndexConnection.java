@@ -17,7 +17,6 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +38,16 @@ public interface IndexConnection extends XAClosableResource
      * Fetch the index entry for the supplied URI from the underlying index store
      */
     IndexEntry get(URI key) throws IOException;
+
+    /**
+     * Search the index using the supplied query, filters and options
+     */
+    IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException;
+
+    /**
+     * Low-level search request with implementation-specific query string
+     */
+    IndexSearchResult search(String query) throws IOException;
 
     /**
      * (re-)index the supplied resource into the underlying index store

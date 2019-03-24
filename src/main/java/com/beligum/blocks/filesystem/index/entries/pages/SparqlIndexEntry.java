@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;

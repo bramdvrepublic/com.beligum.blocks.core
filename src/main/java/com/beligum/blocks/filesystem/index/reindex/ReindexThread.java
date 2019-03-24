@@ -758,8 +758,8 @@ public class ReindexThread extends Thread implements LongRunningThread
                     // that will get passed to the reindex() method to re-use our general transaction
                     //Note that the connections get released when the transaction is released (see below)
                     //Also note this means we'll have a transaction per rdf class
-                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getMainPageIndexer().connect(transaction),
-                                                                                                                         StorageFactory.getTriplestoreIndexer().connect(transaction));
+                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
+                                                                                                                         StorageFactory.getSparqlIndexer().connect(transaction));
 
                     try (Statement stmt = dbConnection.createStatement()) {
 
@@ -822,8 +822,8 @@ public class ReindexThread extends Thread implements LongRunningThread
 
                                 //start a new transaction
                                 transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
-                                indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getMainPageIndexer().connect(transaction),
-                                                                                                      StorageFactory.getTriplestoreIndexer().connect(transaction));
+                                indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
+                                                                                                      StorageFactory.getSparqlIndexer().connect(transaction));
                             }
 
                             //Logger.info("Submitting reindexation of " + publicUri);

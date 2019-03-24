@@ -37,22 +37,12 @@
         <github.url.repo.name>${github.url.repo.prefix}blocks.core</github.url.repo.name>
 
         <hadoop.hdfs.version>2.7.1</hadoop.hdfs.version>
-        <avro.version>1.7.7</avro.version>
-        <jena.version>3.0.1</jena.version>
         <rdf4j.version>2.2.1</rdf4j.version>
         <semargl.version>0.6.1</semargl.version>
-        <!-- Sync this with base-core -->
-        <jackson.version>2.7.1</jackson.version>
-        <kryo.version>3.0.3</kryo.version>
-
-        <!--sync this with sesame -->
-        <lucene.version>5.1.0</lucene.version>
-
+        <!-- Sync this with base-core and solr -->
+        <jackson.version>2.9.6</jackson.version>
         <!-- sync this with the jetty version of base-core -->
         <solr.version>8.0.0</solr.version>
-
-        <!-- Sync these two using https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
-        <version.infinispan>8.1.1.Final</version.infinispan>
         
     </properties>
 
@@ -70,6 +60,12 @@
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
             <version>0.5.6-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.beligum.base</groupId>
+                    <artifactId>base-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -162,68 +158,48 @@
             <version>1.1.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-smile</artifactId>
-            <version>2.5.0</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.solr</groupId>-->
+            <!--<artifactId>solr-solrj</artifactId>-->
+            <!--<version>${solr.version}</version>-->
+        <!--</dependency>-->
 
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-grouping</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>${solr.version}</version>
 
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-codecs</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-queries</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-memory</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-highlighter</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-queryparser</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-suggest</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-join</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.lucene</groupId>-->
-        <!--<artifactId>lucene-spatial</artifactId>-->
-        <!--<version>${lucene.version}</version>-->
-        <!--</dependency>-->
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-1.2-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-hdfs-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
@@ -558,12 +534,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>${avro.version}</version>
-        </dependency>
-
-        <dependency>
             <!--
               Main reason for this fork:
               https://groups.google.com/forum/#!topic/xadisk/hlj0YlO5qDg
@@ -606,28 +576,7 @@
             <version>60.2</version>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.apache.solr</groupId>-->
-            <!--<artifactId>solr-core</artifactId>-->
-            <!--<version>${solr.version}</version>-->
 
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>com.google.guava</groupId>-->
-                    <!--<artifactId>guava</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.apache.hadoop</groupId>-->
-                    <!--<artifactId>hadoop-hdfs-client</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
-        <!--</dependency>-->
-
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-            <version>${solr.version}</version>
-        </dependency>
 
     </dependencies>
 

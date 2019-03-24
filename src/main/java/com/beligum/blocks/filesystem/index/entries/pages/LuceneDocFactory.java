@@ -18,11 +18,12 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
-import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.filesystem.pages.PageModel;
 import com.beligum.blocks.rdf.ifaces.RdfMapper;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -42,7 +43,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -187,9 +187,9 @@ public class LuceneDocFactory
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
 
-//        RdfMapper rdfMapper = new DefaultRdfMapper();
-//        JsonNode json = rdfMapper.toJson(subModel.getPage());
-//        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
+        RdfMapper rdfMapper = new DefaultRdfMapper();
+        JsonNode json = rdfMapper.toJson(subModel.getPage());
+        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
 
         for (Statement stmt : subModel.getSubModel()) {
 

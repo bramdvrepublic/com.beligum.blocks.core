@@ -21,10 +21,8 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
+import com.beligum.blocks.filesystem.index.ifaces.*;
+import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -33,10 +31,6 @@ import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontologies.local.WrappedPageResourceInfo;
 import com.beligum.blocks.utils.RdfTools;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.TermQuery;
 import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
@@ -107,19 +101,21 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
-        LuceneQueryConnection mainIndexer = StorageFactory.getMainPageQueryConnection();
+        PageIndexConnection mainIndexer = StorageFactory.getJsonQueryConnection();
 
-        BooleanQuery mainQuery = new BooleanQuery();
+        DefaultIndexSearchRequest mainQuery = DefaultIndexSearchRequest.create();
 
         //let's support search-all-type queries when this is null
         if (resourceType != null) {
-            mainQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), resourceType.getCurieName().toString())), BooleanClause.Occur.FILTER);
+            mainQuery.filter(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), IndexSearchRequest.FilterBoolean.AND);
         }
 
-        BooleanQuery subQuery = new BooleanQuery();
-        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.tokenisedId.name(), query), BooleanClause.Occur.SHOULD);
-        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.title.name(), query), BooleanClause.Occur.SHOULD);
-        mainQuery.add(subQuery, BooleanClause.Occur.FILTER);
+        DefaultIndexSearchRequest subQuery = DefaultIndexSearchRequest.create();
+        subQuery.wildcard(IndexEntry.Field.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.Field.title, query, IndexSearchRequest.FilterBoolean.OR);
+        mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
+
+        mainQuery.maxResults(maxResults);
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
@@ -127,7 +123,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         //        StringBuilder luceneQuery = new StringBuilder();
         //        luceneQuery/*.append("#")*/.append(PageIndexEntry.Field.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
 
-        IndexSearchResult matchingPages = mainIndexer.search(mainQuery, maxResults);
+        IndexSearchResult matchingPages = mainIndexer.search(mainQuery);
 
         /*
          * Note that this is not the best way to do this: it should actually be implemented with the grouping functionality of Lucene
@@ -206,12 +202,11 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         }
 
         if (selectedEntry == null) {
-            org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
-            //at least one of the id or resource should match (or both)
-            pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
-            pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), relResourceIdStr)), BooleanClause.Occur.SHOULD);
-
-            IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
+            IndexSearchResult matchingPages = StorageFactory.getJsonQueryConnection().search(DefaultIndexSearchRequest.create()
+                                                                                                                      //at least one of the id or resource should match (or both)
+                                                                                                                      .filter(IndexEntry.Field.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                                      .filter(PageIndexEntry.Field.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                                      .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }
 

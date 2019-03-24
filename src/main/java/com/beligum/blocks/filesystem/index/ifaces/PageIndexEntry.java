@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
+package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.server.R;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
 
 import java.util.Locale;
 

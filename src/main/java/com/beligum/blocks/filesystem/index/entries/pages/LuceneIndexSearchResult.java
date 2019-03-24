@@ -17,7 +17,8 @@
 package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.google.common.collect.Sets;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -67,9 +68,9 @@ public class LuceneIndexSearchResult extends AbstractIndexSearchResult
         return this.results != null && this.results.scoreDocs != null ? this.results.scoreDocs.length : 0;
     }
     @Override
-    public Integer getTotalHits()
+    public Long getTotalHits()
     {
-        return this.results != null ? this.results.totalHits : 0;
+        return this.results != null ? this.results.totalHits.value : 0;
     }
     @Override
     public Iterator<IndexEntry> iterator()

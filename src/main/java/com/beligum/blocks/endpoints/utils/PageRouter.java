@@ -11,20 +11,20 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexSearchResult;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
-import com.beligum.blocks.config.Permissions;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
@@ -37,10 +37,6 @@ import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.new_page;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.TermQuery;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.MediaType;
@@ -150,7 +146,7 @@ public class PageRouter
     /**
      * Just a cached index connection
      */
-    private LuceneQueryConnection cachedQueryConnection;
+    private PageIndexConnection cachedQueryConnection;
 
     //-----CONSTRUCTORS-----
     /**
@@ -363,13 +359,17 @@ public class PageRouter
                 //but let's start with this (eg. no query params like languages included) and see where we end up...
                 String searchUri = this.requestedUri.getPath();
 
-                BooleanQuery pageQuery = new BooleanQuery();
-                //we'll search for pages that have an alias (possibly/probably non-existent)
-                pageQuery.add(new TermQuery(new Term(Meta.sameAs.getCurieName().toString(), searchUri)), BooleanClause.Occur.SHOULD);
-                //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
-                pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), searchUri)), BooleanClause.Occur.SHOULD);
+                DefaultIndexSearchRequest searchRequest = DefaultIndexSearchRequest.create()
+                                                                                   //we'll search for pages that have an alias (possibly/probably non-existent)
+                                                                                   .filter(Meta.sameAs, searchUri, DefaultIndexSearchRequest.FilterBoolean.OR)
+                                                                                   //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
+                                                                                   .filter(PageIndexEntry.Field.resource, searchUri, DefaultIndexSearchRequest.FilterBoolean.OR);
+
                 //makes sense to make room for as much language-triples as we have clauses
-                IndexSearchResult results = this.getMainPageQueryConnection().search(pageQuery, pageQuery.clauses().size() * R.configuration().getLanguages().size());
+                searchRequest.maxResults(searchRequest.filters().size() * R.configuration().getLanguages().size());
+
+                IndexSearchResult results = this.getMainPageQueryConnection().search(searchRequest);
+
                 PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, this.locale);
 
                 //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
@@ -426,7 +426,8 @@ public class PageRouter
                 //more or less the same remark here as with doDetectAliases()
                 String searchUri = this.requestedUri.getPath();
 
-                BooleanQuery pageQuery = new BooleanQuery();
+                DefaultIndexSearchRequest pageQuery = DefaultIndexSearchRequest.create();
+
                 //part a: first, we go hunting for the uri that _does_ exist
                 Collection<Locale> allLanguages = R.configuration().getLanguages().values();
                 for (Locale locale : allLanguages) {
@@ -435,20 +436,22 @@ public class PageRouter
                         UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                         R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
                         //we'll search for a page that has the translated request uri as it's address
-                        pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), StringFunctions.getRightOfDomain(uriBuilder.build()).toString())), BooleanClause.Occur.SHOULD);
+                        pageQuery.filter(IndexEntry.Field.id, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), DefaultIndexSearchRequest.FilterBoolean.OR);
                     }
                 }
 
-                LuceneQueryConnection queryConnection = this.getMainPageQueryConnection();
-                IndexSearchResult results = queryConnection.search(pageQuery, allLanguages.size());
+                pageQuery.maxResults(allLanguages.size());
+
+                PageIndexConnection queryConnection = this.getMainPageQueryConnection();
+                IndexSearchResult results = queryConnection.search(pageQuery);
                 //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
                 if (!results.isEmpty()) {
                     //since all resources should be the same, we take the first match
                     String resourceUri = ((PageIndexEntry) results.iterator().next()).getResource();
-                    pageQuery = new BooleanQuery();
-                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), resourceUri)), BooleanClause.Occur.FILTER);
-                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), this.locale.getLanguage())), BooleanClause.Occur.FILTER);
-                    results = queryConnection.search(pageQuery, -1);
+                    pageQuery = DefaultIndexSearchRequest.create();
+                    pageQuery.filter(PageIndexEntry.Field.resource, resourceUri, DefaultIndexSearchRequest.FilterBoolean.AND);
+                    pageQuery.filter(PageIndexEntry.Field.language, this.locale.getLanguage(), DefaultIndexSearchRequest.FilterBoolean.AND);
+                    results = queryConnection.search(pageQuery);
 
                     PageIndexEntry selectedEntry2 = PageIndexEntry.selectBestForLanguage(results, this.locale);
 
@@ -736,11 +739,11 @@ public class PageRouter
     {
         return this.adminTemplate != null;
     }
-    private LuceneQueryConnection getMainPageQueryConnection() throws IOException
+    private PageIndexConnection getMainPageQueryConnection() throws IOException
     {
         //note: no synchronization needed, this is assumed to be all one thread
         if (this.cachedQueryConnection == null) {
-            this.cachedQueryConnection = StorageFactory.getMainPageQueryConnection();
+            this.cachedQueryConnection = StorageFactory.getJsonQueryConnection();
         }
 
         return this.cachedQueryConnection;

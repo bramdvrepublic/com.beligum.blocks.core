@@ -16,20 +16,11 @@
 
 package com.beligum.blocks.controllers;
 
-import com.beligum.base.cache.CacheKey;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
-import com.beligum.blocks.templating.blocks.TemplateConfig;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Created by bram on 6/6/16.

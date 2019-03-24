@@ -5,8 +5,10 @@ import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfMapper;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
+import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
@@ -14,7 +16,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.jaxrs.json.annotation.JSONP;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -145,17 +149,41 @@ public class DefaultRdfMapper implements RdfMapper
             //see https://lucene.apache.org/solr/guide/7_0/major-changes-in-solr-7.html#schemaless-improvements
             if (newCore) {
                 // Solrj does not support the config API yet.
-                GenericSolrRequest rq = new GenericSolrRequest(SolrRequest.METHOD.POST, "/config",  new ModifiableSolrParams());
+                GenericSolrRequest rq = new GenericSolrRequest(SolrRequest.METHOD.POST, "/config", new ModifiableSolrParams());
                 rq.setContentWriter(new RequestWriter.StringPayloadContentWriter("{ \"set-user-property\": { \"update.autoCreateFields\": \"false\" } }",
                                                                                  CommonParams.JSON_MIME));
                 rq.process(this.solrClient);
             }
 
             SchemaResponse.FieldsResponse fieldsResponse = new SchemaRequest.Fields().process(this.solrClient);
+            Map<String, String> allFields = new LinkedHashMap<>();
             for (Map<String, Object> f : fieldsResponse.getFields()) {
                 String name = f.get("name").toString();
                 String type = f.get("type").toString();
-                Logger.info(name);
+                allFields.put(name, type);
+            }
+
+            for (RdfOntology o : RdfFactory.getPublicOntologies()) {
+                for (RdfProperty p : o.getAllProperties()) {
+                    String propField = toSolrField(p);
+                    String propType = toSolrFieldType(p);
+
+                    if (propType != null) {
+                        if (allFields.containsKey(propField)) {
+                            //TODO update it
+                        }
+                        else {
+                            new SchemaRequest.AddField(new ImmutableMap.Builder<String, Object>()
+                                                                       .put("name", propField)
+                                                                       .put("type", propType)
+                                                                       .build())
+                                            .process(this.solrClient);
+                        }
+                    }
+                    else {
+                        //TODO delete if it exists
+                    }
+                }
             }
 
             Logger.info("");
@@ -248,8 +276,8 @@ public class DefaultRdfMapper implements RdfMapper
         String jsonStr = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(retVal);
 
         this.saveToSolr(retVal);
-        //
-        //        this.querySolr(retVal);
+
+        this.querySolr(retVal);
 
         if (true) throw new RuntimeException("DEBUG");
 
@@ -261,15 +289,17 @@ public class DefaultRdfMapper implements RdfMapper
 
             SolrQuery query = new SolrQuery();
             //query.setQuery("*:*");
-            query.set("q", toSolrField(RDFS.label) + ":*");
+            query.set("q", QueryParser.escape(toSolrField(RDFS.label)) + ":*");
             QueryResponse response = this.solrClient.query(query);
 
             SolrDocumentList docList = response.getResults();
 
+            Logger.info("Found " + docList.getNumFound() + " docs");
+
             for (SolrDocument doc : docList) {
                 for (String fieldName : doc.getFieldNames()) {
                     Object fieldValue = doc.getFieldValue(fieldName);
-                    Logger.info(fromSolrField(fieldName) + " - " + fieldValue);
+                    Logger.info(fieldName + " - " + fromSolrField(fieldName) + " - " + fieldValue);
                 }
                 //Logger.info((String) doc.getFieldValue("id"), "123456");
             }
@@ -347,17 +377,85 @@ public class DefaultRdfMapper implements RdfMapper
     }
     private static String toSolrField(String property)
     {
-        return property.replace(":", ".");
+        return property/*.replace(":", "_")*/;
     }
     private static RdfProperty fromSolrField(String field) throws IOException
     {
         //see https://lucene.apache.org/solr/guide/7_4/defining-fields.html
         if (!field.startsWith("_")) {
-            return RdfFactory.lookup(field.replaceFirst(".", ":"), RdfProperty.class);
+            return RdfFactory.lookup(field.replaceFirst("_", ":"), RdfProperty.class);
         }
         else {
             return null;
         }
+    }
+    private static String toSolrFieldType(RdfProperty property) throws IOException
+    {
+        String retVal = null;
+
+        if (property.getDataType() != null) {
+
+            //Note: for an overview possible values, check com.beligum.blocks.config.InputType
+            if (property.getDataType().equals(XSD.boolean_)) {
+                retVal = "boolean";
+            }
+            //because both date and time are strict dates, we'll use the millis (long) since epoch as the index value
+            else if (property.getDataType().equals(XSD.date) || property.getDataType().equals(XSD.dateTime)) {
+                retVal = "pdate";
+            }
+            //we don't have a date for time, so we'll use the millis since midnight as the index value
+            else if (property.getDataType().equals(XSD.time)) {
+                retVal = "plong";
+            }
+            else if (property.getDataType().equals(XSD.int_)
+                     || property.getDataType().equals(XSD.integer)
+                     || property.getDataType().equals(XSD.negativeInteger)
+                     || property.getDataType().equals(XSD.unsignedInt)
+                     || property.getDataType().equals(XSD.nonNegativeInteger)
+                     || property.getDataType().equals(XSD.nonPositiveInteger)
+                     || property.getDataType().equals(XSD.positiveInteger)
+                     || property.getDataType().equals(XSD.short_)
+                     || property.getDataType().equals(XSD.unsignedShort)
+                     || property.getDataType().equals(XSD.byte_)
+                     || property.getDataType().equals(XSD.unsignedByte)) {
+                retVal = "pint";
+            }
+            else if (property.getDataType().equals(XSD.language)) {
+                retVal = "string";
+            }
+            else if (property.getDataType().equals(XSD.long_)
+                     || property.getDataType().equals(XSD.unsignedLong)) {
+                retVal = "plong";
+            }
+            else if (property.getDataType().equals(XSD.float_)) {
+                retVal = "pfloat";
+            }
+            else if (property.getDataType().equals(XSD.double_)
+                     //this is doubtful, but let's take the largest one
+                     // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
+                     || property.getDataType().equals(XSD.decimal)) {
+                retVal = "pdouble";
+            }
+            else if (property.getDataType().equals(XSD.string)
+                     || property.getDataType().equals(XSD.normalizedString)
+                     || property.getDataType().equals(RDF.langString)
+                     //this is a little tricky, but in the end it's just a string, right?
+                     || property.getDataType().equals(XSD.base64Binary)) {
+                retVal = "string";
+            }
+            else if (property.getDataType().equals(RDF.HTML)) {
+                retVal = "string";
+            }
+            else if (property.getDataType().equals(XSD.anyURI)) {
+                retVal = "string";
+            }
+            else {
+                //TODO
+                //throw new IOException("Encountered RDF property '" + property + "' with unsupported datatype; " + property.getDataType());
+            }
+        }
+
+        return retVal;
     }
 
     //    https://github.com/bbende/embeddedsolrserver-example/blob/master/src/test/java/org/apache/solr/EmbeddedSolrServerFactory.java

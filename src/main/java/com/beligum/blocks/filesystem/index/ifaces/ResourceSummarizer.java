@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.resources;
+package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.eclipse.rdf4j.model.Model;

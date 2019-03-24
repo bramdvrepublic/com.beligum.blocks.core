@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 
 /**
  * Created by bram on 2/14/16.

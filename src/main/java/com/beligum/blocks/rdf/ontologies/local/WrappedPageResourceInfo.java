@@ -18,7 +18,7 @@ package com.beligum.blocks.rdf.ontologies.local;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 
 import java.net.URI;
 import java.util.Locale;

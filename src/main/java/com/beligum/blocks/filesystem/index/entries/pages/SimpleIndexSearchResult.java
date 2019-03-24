@@ -16,7 +16,8 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexSearchResult;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -60,9 +61,9 @@ public class SimpleIndexSearchResult extends AbstractIndexSearchResult
         return this.results.size();
     }
     @Override
-    public Integer getTotalHits()
+    public Long getTotalHits()
     {
-        return this.size();
+        return Long.valueOf(this.size());
     }
     @Override
     public Iterator<IndexEntry> iterator()

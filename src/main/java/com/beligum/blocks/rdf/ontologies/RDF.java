@@ -218,7 +218,10 @@ public final class RDF extends RdfOntologyImpl
     {
         rdfFactory.register(type)
                   .label(Entries.RDF_label_type)
-                  .dataType(RDFS.Class);
+                  //this is the datatype in the ontology, but it doesn't make sense for our uses
+                  //because we use it as the default for page <title> tags
+                  //.dataType(RDFS.Class);
+                  .dataType(RDF.langString);
 
         rdfFactory.register(Property)
                   .label(Entries.RDF_label_Property);

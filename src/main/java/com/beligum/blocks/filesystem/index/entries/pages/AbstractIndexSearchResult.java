@@ -16,7 +16,8 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexSearchResult;
 import com.google.common.collect.Lists;
 
 import java.util.Collections;

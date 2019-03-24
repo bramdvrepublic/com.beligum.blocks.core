@@ -21,9 +21,8 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;
@@ -32,9 +31,7 @@ import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -44,11 +41,11 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private RdfClassImpl dataType;
-    private RdfQueryEndpoint endpoint;
-    private InputType widgetType;
-    private InputTypeConfig widgetConfig;
-    private RdfPropertyIndexer indexer;
+    protected RdfClassImpl dataType;
+    protected RdfQueryEndpoint endpoint;
+    protected InputType widgetType;
+    protected InputTypeConfig widgetConfig;
+    protected RdfPropertyIndexer indexer;
 
     //-----CONSTRUCTORS-----
     RdfPropertyImpl(RdfOntologyImpl ontology, String name)
@@ -106,17 +103,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     }
 
     //-----PROTECTED METHODS-----
-    /**
-     * We need to overload this method for a RdfProperty to also add all the referenced ontologies
-     * of the datatypes
-     */
-    @Override
-    protected void _findOntologyReferences(RdfOntologyImpl.Visitor ontologyVisitor)
-    {
-        super._findOntologyReferences(ontologyVisitor);
-
-        this.dataType._findOntologyReferences(ontologyVisitor);
-    }
 
     //-----PRIVATE METHODS-----
 

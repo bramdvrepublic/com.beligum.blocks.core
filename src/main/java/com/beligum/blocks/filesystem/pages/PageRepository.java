@@ -288,8 +288,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //we need to reuse the connection or we'll run into trouble when deleting multiple translations
-        PageIndexConnection mainPageIndexer = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx());
-        PageIndexConnection triplestoreIndexer = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx());
+        PageIndexConnection mainPageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
+        PageIndexConnection triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
 
         //first, delete the translations, then delete the first one
         if (deleteAllTranslations) {
@@ -328,10 +328,10 @@ public class PageRepository extends AbstractResourceRepository
 
         //fallback to regular request-scoped transactions if nothing special was passed
         if (mainPageConnection == null) {
-            mainPageConnection = StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx());
+            mainPageConnection = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
         }
         if (triplestoreConnection == null) {
-            triplestoreConnection = StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx());
+            triplestoreConnection = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
         }
 
         Page page = resource.unwrap(Page.class);
@@ -448,7 +448,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void index(Page page) throws IOException
     {
-        this.index(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()));
+        this.index(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
     private void index(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {
@@ -459,7 +459,7 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void unindex(Page page) throws IOException
     {
-        this.unindex(page, StorageFactory.getMainPageIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getTriplestoreIndexer().connect(StorageFactory.getCurrentScopeTx()));
+        this.unindex(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
     private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
     {

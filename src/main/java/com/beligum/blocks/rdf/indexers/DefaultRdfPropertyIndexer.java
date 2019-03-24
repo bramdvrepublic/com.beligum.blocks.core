@@ -23,7 +23,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.exceptions.NotIndexedException;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
-import com.beligum.blocks.filesystem.index.entries.RdfIndexer;
+import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;

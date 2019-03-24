@@ -39,9 +39,9 @@ import com.beligum.blocks.filesystem.ifaces.XAttrFS;
 import com.beligum.blocks.filesystem.index.LucenePageIndexer;
 import com.beligum.blocks.filesystem.index.SesamePageIndexer;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
-import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
-import com.beligum.blocks.filesystem.index.ifaces.SparqlQueryConnection;
+import com.beligum.blocks.filesystem.index.solr.SolrPageIndexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
@@ -53,7 +53,6 @@ import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
 import javax.transaction.TransactionManager;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -86,6 +85,8 @@ public class StorageFactory
      */
     private static final ThreadLocal<TX> currentThreadTx = new InheritableThreadLocal();
 
+    private static final Lock lock = new Lock();
+
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
@@ -99,43 +100,46 @@ public class StorageFactory
 
         return fileContext;
     }
-    public static PageIndexer getMainPageIndexer() throws IOException
+    public static PageIndexer getJsonIndexer() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.MAIN_PAGE_INDEX, new CacheFunction<CacheKey, PageIndexer>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.JSON_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new LucenePageIndexer();
+                //TODO decide if we change to Solr or implement a switch
+//                PageIndexer indexer = new LucenePageIndexer(lock);
+                PageIndexer indexer = new SolrPageIndexer(lock);
+
                 getIndexerRegistry().add(indexer);
 
                 return indexer;
             }
         });
     }
-    public static LuceneQueryConnection getMainPageQueryConnection() throws IOException
+    public static PageIndexConnection getJsonQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
-        return (LuceneQueryConnection) getMainPageIndexer().connect(null);
+        return getJsonIndexer().connect(null);
     }
-    public static PageIndexer getTriplestoreIndexer() throws IOException
+    public static PageIndexer getSparqlIndexer() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRIPLESTORE_PAGE_INDEX, new CacheFunction<CacheKey, PageIndexer>()
+        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.SPARQL_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new SesamePageIndexer();
+                PageIndexer indexer = new SesamePageIndexer(lock);
                 getIndexerRegistry().add(indexer);
 
                 return indexer;
             }
         });
     }
-    public static SparqlQueryConnection getTriplestoreQueryConnection() throws IOException
+    public static PageIndexConnection getSparqlQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
-        return (SparqlQueryConnection) getTriplestoreIndexer().connect(null);
+        return getSparqlIndexer().connect(null);
     }
     public static TransactionManager getTransactionManager() throws IOException
     {
@@ -527,5 +531,17 @@ public class StorageFactory
     }
 
     //-----PRIVATE METHODS-----
+
+    //-----INNER CLASSES-----
+    /**
+     * Special lock class that can only be instantiated here to pass to external constructors
+     * so we're sure they can't be created manually elsewhere, circumventing our checks and registers.
+     */
+    public static class Lock
+    {
+        private Lock()
+        {
+        }
+    }
 
 }

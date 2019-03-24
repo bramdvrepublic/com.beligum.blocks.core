@@ -20,6 +20,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
@@ -135,7 +136,7 @@ public class LucenePageIndexer implements PageIndexer
     private Object writerLock;
 
     //-----CONSTRUCTORS-----
-    public LucenePageIndexer() throws IOException
+    public LucenePageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
     {
         this.searcherLock = new Object();
         this.writerLock = new Object();
@@ -175,7 +176,9 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
-        return new LucenePageIndexConnection(this, tx);
+        //TODO
+        //return new LucenePageIndexConnection(this, tx);
+        return null;
     }
     @Override
     public synchronized void reboot() throws IOException

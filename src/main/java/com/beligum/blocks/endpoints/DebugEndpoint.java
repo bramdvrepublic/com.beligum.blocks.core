@@ -50,7 +50,7 @@
 //        @Path("sparql")
 //        public Response testSparql() throws IOException
 //        {
-//            PageIndexer<SelectBuilder, Query, QueryExecution> tripleStore = StorageFactory.getTriplestoreIndexer();
+//            PageIndexer<SelectBuilder, Query, QueryExecution> tripleStore = StorageFactory.getSparqlIndexer();
 //
 //            boolean success = false;
 //            try {

@@ -435,7 +435,17 @@ public class RdfFactory
                         }
                     }
 
-                    Set<RdfOntology> checkedOntologyRefs = new LinkedHashSet<>();
+                    // if a public ontology references another ontology, regardless of being public or not,
+                    // we'll also save it in the lookup map, because we'll encounter it sooner or later
+                    RdfOntologyImpl.Visitor ontologyVisitor = new RdfOntologyImpl.Visitor()
+                    {
+                        @Override
+                        protected void foundNew(RdfOntology rdfOntology)
+                        {
+                            addPublicOntology(rdfOntology);
+                        }
+                    };
+
                     for (Map.Entry<RdfNamespace, RdfOntologyImpl> entry : allOntologies.entrySet()) {
 
                         try {
@@ -447,19 +457,7 @@ public class RdfFactory
 
                             //only public ontologies are saved to the lookup maps; the rest are just initialized and referenced from other public ontologies
                             if (ontology.isPublic()) {
-                                //store the ontology in a lookup map
-                                addPublicOntology(ontology);
-
-                                // if a public ontology references another ontology, regardless of being public or not,
-                                // we'll also save it in the lookup map, because we'll encounter it sooner or later
-                                ontology._findOntologyReferences(new RdfOntologyImpl.Visitor()
-                                {
-                                    @Override
-                                    protected void foundNew(RdfOntology rdfOntology)
-                                    {
-                                        addPublicOntology(rdfOntology);
-                                    }
-                                });
+                                ontologyVisitor.processOntology(ontology);
                             }
                         }
                         catch (Throwable e) {
@@ -467,7 +465,7 @@ public class RdfFactory
                         }
                     }
 
-                    //make sure we also include the ontology of the configured label property to the public set of ontologies
+                    //make sure we always include the ontology of the configured label property to the public set of ontologies
                     addPublicOntology(Settings.instance().getRdfLabelProperty().getOntology());
 
                     //if we reach this point, we iterated all ontologies and put them in our map above,

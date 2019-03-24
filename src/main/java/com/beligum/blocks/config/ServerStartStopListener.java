@@ -79,6 +79,14 @@ public class ServerStartStopListener implements ServerLifecycleListener
 
             //boot up all the static RDF fields
             RdfFactory.assertInitialized();
+
+            //TODO only for debug
+            try {
+                StorageFactory.getJsonIndexer();
+            }
+            catch (Throwable e) {
+               Logger.error(e);
+            }
         }
     }
     @Override

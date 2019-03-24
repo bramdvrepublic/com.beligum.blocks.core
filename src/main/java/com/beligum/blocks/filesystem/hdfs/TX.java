@@ -83,6 +83,10 @@ public class TX implements AutoCloseable
 
             if (this.jtaTransaction instanceof BitronixTransaction) {
                 BitronixTransaction btxTx = (BitronixTransaction) this.jtaTransaction;
+
+                //this can be used to identify this transaction
+                //Logger.info(btxTx.getResourceManager().getGtrid());
+
                 btxTx.addTransactionStatusChangeListener(new TransactionStatusChangeListener()
                 {
                     @Override

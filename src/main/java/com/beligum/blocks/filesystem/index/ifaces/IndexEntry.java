@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries;
+package com.beligum.blocks.filesystem.index.ifaces;
 
 import java.io.Serializable;
 

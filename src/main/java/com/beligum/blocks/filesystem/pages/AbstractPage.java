@@ -31,10 +31,8 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.LuceneQueryConnection;
+import com.beligum.blocks.filesystem.index.ifaces.*;
+import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
@@ -308,10 +306,11 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //     different URIs (eg. for SEO purposes).
         //Note that this also means the lucene index needs to be up-to-date (eg. this is important during reindexing;
         // see the notes in the delete() method of the triple store index connection)
-        LuceneQueryConnection queryConnection = StorageFactory.getMainPageQueryConnection();
-        BooleanQuery pageQuery = new BooleanQuery();
-        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), StringFunctions.getRightOfDomain(resourceNoLangUri).toString())), BooleanClause.Occur.FILTER);
-        IndexSearchResult searchResult = queryConnection.search(pageQuery, siteLanguages.size());
+        PageIndexConnection queryConnection = StorageFactory.getJsonQueryConnection();
+        DefaultIndexSearchRequest pageQuery = DefaultIndexSearchRequest.create();
+        pageQuery.filter(PageIndexEntry.Field.resource, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
+        pageQuery.maxResults(siteLanguages.size());
+        IndexSearchResult searchResult = queryConnection.search(pageQuery);
         for (IndexEntry entry : searchResult) {
             Page transPage = R.resourceManager().get(URI.create(entry.getId()), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {

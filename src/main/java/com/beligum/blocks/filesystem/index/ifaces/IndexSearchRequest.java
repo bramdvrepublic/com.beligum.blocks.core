@@ -16,21 +16,20 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import java.io.Serializable;
+
 /**
- * Created by bram on 4/7/16.
+ * Created by bram on 6/3/17.
  */
-public interface QueryConnection extends IndexConnection
+public interface IndexSearchRequest extends Serializable
 {
-    //-----CONSTANTS-----
+    enum FilterBoolean
+    {
+        AND,
+        OR
+    }
 
-    //-----VARIABLES-----
+    //Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset
 
-    //-----CONSTRUCTORS-----
-
-    //-----PUBLIC METHODS-----
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-
+    //IndexSearchResult search(RdfClass type, String luceneQuery, Map<RdfProperty, String> fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
 }

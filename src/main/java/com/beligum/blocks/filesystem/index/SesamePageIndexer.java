@@ -19,6 +19,7 @@ package com.beligum.blocks.filesystem.index;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
@@ -47,7 +48,7 @@ public class SesamePageIndexer implements PageIndexer
     private Object repositoryLock;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexer()
+    public SesamePageIndexer(StorageFactory.Lock storageFactoryLock)
     {
         this.repositoryLock = new Object();
 
@@ -58,7 +59,9 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
-        return new SesamePageIndexConnection(this, tx);
+        //TODO
+        //return new SesamePageIndexConnection(this, tx);
+        return null;
     }
     @Override
     public synchronized void reboot() throws IOException

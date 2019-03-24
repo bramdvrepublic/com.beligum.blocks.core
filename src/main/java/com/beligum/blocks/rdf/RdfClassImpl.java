@@ -19,18 +19,14 @@ package com.beligum.blocks.rdf;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
+import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import javax.validation.OverridesAttribute;
-import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -44,12 +40,12 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Set<RdfClassImpl> superClasses;
-    private Set<RdfClassImpl> subClasses;
-    private Set<RdfPropertyImpl> properties;
-    private RdfQueryEndpoint endpoint;
-    private ResourceSummarizer summarizer;
-    private RdfProperty mainProperty;
+    protected Set<RdfClassImpl> superClasses;
+    protected Set<RdfClassImpl> subClasses;
+    protected Set<RdfPropertyImpl> properties;
+    protected RdfQueryEndpoint endpoint;
+    protected ResourceSummarizer summarizer;
+    protected RdfProperty mainProperty;
 
     //-----CONSTRUCTORS-----
     RdfClassImpl(RdfOntologyImpl ontology, String name)
@@ -149,22 +145,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     }
 
     //-----PROTECTED METHODS-----
-    /**
-     * We need to overload this method for a RdfClass to also add all the referenced ontologies
-     * of all superclasses and properties.
-     */
-    @Override
-    protected void _findOntologyReferences(RdfOntologyImpl.Visitor ontologyVisitor)
-    {
-        super._findOntologyReferences(ontologyVisitor);
-
-        for (RdfClassImpl c : this.superClasses) {
-            c._findOntologyReferences(ontologyVisitor);
-        }
-        for (RdfPropertyImpl p : this.properties) {
-            p._findOntologyReferences(ontologyVisitor);
-        }
-    }
 
     //-----PRIVATE METHODS-----
     /**

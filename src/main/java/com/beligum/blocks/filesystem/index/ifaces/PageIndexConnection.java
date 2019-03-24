@@ -16,8 +16,6 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
-
 import java.io.IOException;
 import java.net.URI;
 

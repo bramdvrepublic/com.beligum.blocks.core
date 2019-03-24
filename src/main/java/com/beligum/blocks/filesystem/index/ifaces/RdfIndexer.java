@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries;
+package com.beligum.blocks.filesystem.index.ifaces;
 
 /**
  * Created by bram on 5/31/16.

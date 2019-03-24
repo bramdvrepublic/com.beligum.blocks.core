@@ -18,6 +18,7 @@ package com.beligum.blocks.filesystem.index.entries.resources;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.Local;

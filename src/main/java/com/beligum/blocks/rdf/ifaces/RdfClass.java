@@ -16,10 +16,9 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
+import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -30,7 +29,6 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Set;
 
 /**
  * This is more or less the OO representation of the RDFS:Class

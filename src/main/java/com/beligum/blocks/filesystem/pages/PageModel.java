@@ -17,9 +17,9 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.filesystem.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
-import com.beligum.blocks.filesystem.index.entries.resources.ResourceSummarizer;
+import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.eclipse.rdf4j.model.Model;

@@ -16,18 +16,14 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.rdf.ifaces.*;
-import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  * Created by bram on 2/28/16.
@@ -37,13 +33,13 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Map<String, AbstractRdfOntologyMember> allMembers;
-    private Map<URI, RdfClass> allClasses;
-    private Map<URI, RdfClass> publicClasses;
-    private Map<URI, RdfProperty> allProperties;
-    private Map<URI, RdfProperty> publicProperties;
-    private Map<URI, RdfProperty> allClassProperties;
-    private Map<URI, RdfProperty> publicClassProperties;
+    protected Map<String, AbstractRdfOntologyMember> allMembers;
+    protected Map<URI, RdfClass> allClasses;
+    protected Map<URI, RdfClass> publicClasses;
+    protected Map<URI, RdfProperty> allProperties;
+    protected Map<URI, RdfProperty> publicProperties;
+    protected Map<URI, RdfProperty> allClassProperties;
+    protected Map<URI, RdfProperty> publicClassProperties;
 
     //-----CONSTRUCTORS-----
     /**
@@ -179,21 +175,6 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     protected abstract boolean isPublicOntology();
 
     /**
-     * Iterates all members of this ontology and finds references to other ontologies in all of them.
-     * @param ontologyVisitor
-     */
-    void _findOntologyReferences(Visitor ontologyVisitor)
-    {
-        //first of all, add ourself
-        ontologyVisitor.add(this);
-
-        //now iterate all members and request them to add their ontologies too
-        for (AbstractRdfOntologyMember m : this.allMembers.values()) {
-            m._findOntologyReferences(ontologyVisitor);
-        }
-    }
-
-    /**
      * Register an ontology member into this ontology, putting it into the relevant maps.
      * Note that this method is also used to merge another duplicate ontology into this one.
      */
@@ -265,14 +246,79 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
             this.visitedResources = new HashSet<>();
         }
 
-        abstract void foundNew(RdfOntology rdfOntology);
-
-        void add(RdfResource rdfResource)
+        public void processOntology(RdfOntologyImpl ontology) throws RdfInitializationException
         {
-            if (!this.visitedResources.contains(rdfResource)) {
-                this.visitedResources.add(rdfResource);
-                if (rdfResource instanceof RdfOntology) {
-                    this.foundNew((RdfOntology) rdfResource);
+            if (!this.visitedResources.contains(ontology)) {
+                //first of all, register the ontology itself
+                this.register(ontology);
+
+                //now iterate all ontology members and request them to register their ontologies too
+                for (AbstractRdfOntologyMember m : ontology.allMembers.values()) {
+                    //note: we could have implemented this as a polymorphic method in the classes,
+                    //but this way, we centralize everything here, which is clearer
+                    switch (m.getType()) {
+                        case CLASS:
+                            this.processClass((RdfClassImpl) m);
+                            break;
+                        case DATATYPE:
+                            this.processDatatype((RdfDatatypeImpl) m);
+                            break;
+                        case PROPERTY:
+                            this.processProperty((RdfPropertyImpl) m);
+                            break;
+                        default:
+                            throw new RdfInitializationException("Encountered unimplemented ontology member type; " + m);
+                    }
+                }
+            }
+        }
+
+        protected abstract void foundNew(RdfOntology rdfOntology);
+
+        private void processMember(AbstractRdfOntologyMember member) throws RdfInitializationException
+        {
+            if (!this.visitedResources.contains(member)) {
+
+                //don't forget to register the member itself, it will avoid recursive calls in cyclic dependencies
+                this.register(member);
+
+                //now processClass the ontology of the member
+                this.processOntology(member.ontology);
+            }
+        }
+        private void processClass(RdfClassImpl clazz) throws RdfInitializationException
+        {
+            if (!this.visitedResources.contains(clazz)) {
+
+                this.processMember(clazz);
+
+                for (RdfClassImpl c : clazz.superClasses) {
+                    this.processClass(c);
+                }
+                for (RdfPropertyImpl p : clazz.properties) {
+                    this.processProperty(p);
+                }
+            }
+        }
+        private void processDatatype(RdfDatatypeImpl datatype) throws RdfInitializationException
+        {
+            this.processClass(datatype);
+        }
+        private void processProperty(RdfPropertyImpl property) throws RdfInitializationException
+        {
+            if (!this.visitedResources.contains(property)) {
+                this.processMember(property);
+                this.processClass(property.dataType);
+            }
+        }
+        private void register(RdfResource resource)
+        {
+            if (!this.visitedResources.contains(resource)) {
+
+                this.visitedResources.add(resource);
+
+                if (resource instanceof RdfOntology) {
+                    this.foundNew((RdfOntology) resource);
                 }
             }
         }

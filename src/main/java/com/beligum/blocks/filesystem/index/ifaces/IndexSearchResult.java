@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
-
-import com.beligum.blocks.filesystem.index.entries.IndexEntry;
+package com.beligum.blocks.filesystem.index.ifaces;
 
 /**
  * Created by bram on 6/3/17.
@@ -36,8 +34,7 @@ public interface IndexSearchResult extends Iterable<IndexEntry>
     /**
      * @return the total number of hits for this query (regardless of paging)
      */
-    Integer getTotalHits();
-
+    Long getTotalHits();
 
     /**
      * @return the zero-based page index for this result set
