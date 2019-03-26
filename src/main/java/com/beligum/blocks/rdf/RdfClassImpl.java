@@ -23,6 +23,7 @@ import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontologies.RDF;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -247,10 +248,23 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         @Override
         RdfClass create() throws RdfInitializationException
         {
-            //every public class should at least have the label property, otherwise we can't set it's <title>
-            if (this.rdfResource.isPublic && !this.rdfResource._hasProperty(Settings.instance().getRdfLabelProperty())) {
-                throw new RdfInitializationException("Trying to create a public RDF class '" + this.rdfResource.getName() + "' without the main label property '" + Settings.instance().getRdfLabelProperty() + "'," +
-                                                     " please fix this.");
+            //enforce a naming policy on the classes of our local public ontologies
+            if (this.rdfResource.ontology.isPublic && Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                throw new RdfInitializationException("Encountered RDF class with lowercase name; our policy enforces all RDF classes should start with an uppercase letter; " + this);
+            }
+
+            //every public class should at least have a few standard properties, so auto-add them if they're missing
+            if (this.rdfResource.isPublic) {
+
+                // the rdf:type property to say what kind of class this instance has
+                if (!this.rdfResource._hasProperty(RDF.type)) {
+                    this.property(RDF.type);
+                }
+
+                // the label property, otherwise we can't set it's <title>
+                if (!this.rdfResource._hasProperty(Settings.instance().getRdfLabelProperty())) {
+                    this.property(Settings.instance().getRdfLabelProperty());
+                }
             }
 
             //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)

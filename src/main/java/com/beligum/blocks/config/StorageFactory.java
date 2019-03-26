@@ -36,11 +36,10 @@ import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProduce
 import com.beligum.blocks.filesystem.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
-import com.beligum.blocks.filesystem.index.LucenePageIndexer;
-import com.beligum.blocks.filesystem.index.SesamePageIndexer;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
+import com.beligum.blocks.filesystem.index.sesame.SesamePageIndexer;
 import com.beligum.blocks.filesystem.index.solr.SolrPageIndexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;

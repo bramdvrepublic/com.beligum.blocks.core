@@ -154,11 +154,16 @@ public final class RDFA extends RdfOntologyImpl
         rdfFactory.register(PrefixMapping);
         rdfFactory.register(TermMapping);
         rdfFactory.register(Warning);
-        rdfFactory.register(context);
+
+        rdfFactory.register(context)
+                  .dataType(PGClass);
         rdfFactory.register(copy);
-        rdfFactory.register(prefix);
-        rdfFactory.register(term);
-        rdfFactory.register(uri);
+        rdfFactory.register(prefix)
+                  .dataType(PrefixMapping);
+        rdfFactory.register(term)
+                  .dataType(TermMapping);
+        rdfFactory.register(uri)
+                  .dataType(PrefixOrTermMapping);
         rdfFactory.register(usesVocabulary);
         rdfFactory.register(vocabulary);
     }

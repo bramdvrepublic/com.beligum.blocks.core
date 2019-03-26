@@ -16,86 +16,109 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import org.eclipse.rdf4j.model.IRI;
+
+import java.net.URI;
 
 /**
+ * Simple implementation that provides accessors to all the required fields and offers a basic equals() implementation
+ *
  * Created by bram on 2/14/16.
  */
-public abstract class AbstractPageIndexEntry implements IndexEntry
+public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected String id;
-    protected String title;
-    protected String description;
-    protected String image;
+    protected String parentId;
+    protected String resource;
+    protected String typeOf;
+    protected String language;
+    protected String canonicalAddress;
 
     //-----CONSTRUCTORS-----
     protected AbstractPageIndexEntry(String id)
     {
-        this.id = id;
+        super(id);
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getId()
+    public String getParentId()
     {
-        return id;
+        return parentId;
     }
     @Override
-    public String getTitle()
+    public String getResource()
     {
-        return title;
+        return resource;
     }
     @Override
-    public String getDescription()
+    public String getTypeOf()
     {
-        return description;
+        return typeOf;
     }
     @Override
-    public String getImage()
+    public String getLanguage()
     {
-        return image;
+        return language;
+    }
+    @Override
+    public String getCanonicalAddress()
+    {
+        return canonicalAddress;
     }
 
     //-----PROTECTED METHODS-----
-    protected void setId(String id)
+    protected void setParentId(String parentId)
     {
-        this.id = id;
+        this.parentId = parentId;
     }
-    protected void setTitle(String title)
+    protected void setResource(String resource)
     {
-        this.title = title;
+        this.resource = resource;
     }
-    protected void setDescription(String description)
+    protected void setTypeOf(String typeOf)
     {
-        this.description = description;
+        this.typeOf = typeOf;
     }
-    protected void setImage(String image)
+    protected void setLanguage(String language)
     {
-        this.image = image;
+        this.language = language;
+    }
+    protected void setCanonicalAddress(String canonicalAddress)
+    {
+        this.canonicalAddress = canonicalAddress;
+    }
+
+    //-----STATIC METHODS-----
+    /**
+     * These are a couple of ID factory methods, grouped for overview
+     * and make static so they can be used from the constructors
+     */
+    protected static String generateId(IRI iri)
+    {
+        return generateId(URI.create(iri.toString()));
+    }
+    protected static String generateId(Page page)
+    {
+        return generateId(page.getPublicRelativeAddress());
+    }
+    protected static String generateId(URI id)
+    {
+        //since we treat all URIs as relative, we only take the path into account
+        return StringFunctions.getRightOfDomain(id).toString();
+    }
+    protected static String generateId(IndexEntry indexEntry)
+    {
+        return indexEntry.getId();
     }
 
     //-----PRIVATE METHODS-----
 
     //-----MANAGEMENT METHODS-----
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (!(o instanceof AbstractPageIndexEntry))
-            return false;
-
-        AbstractPageIndexEntry that = (AbstractPageIndexEntry) o;
-
-        return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
-
-    }
-    @Override
-    public int hashCode()
-    {
-        return getId() != null ? getId().hashCode() : 0;
-    }
 }

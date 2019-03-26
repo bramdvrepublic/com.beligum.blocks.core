@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * Created by bram on 2/13/16.
  */
-public class SparqlIndexEntry extends AbstractPageIndexEntry implements PageIndexEntry
+public class SparqlIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
 

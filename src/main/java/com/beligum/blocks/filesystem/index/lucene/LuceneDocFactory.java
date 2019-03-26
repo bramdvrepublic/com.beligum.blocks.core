@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
+package com.beligum.blocks.filesystem.index.lucene;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.base.utils.json.Json;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
-import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.LucenePageIndexer;
+import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.filesystem.pages.PageModel;
-import com.beligum.blocks.rdf.ifaces.RdfMapper;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.mappers.DefaultRdfMapper;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.protobuf.ProtobufMapper;
 import com.fasterxml.jackson.dataformat.protobuf.schema.NativeProtobufSchema;
@@ -52,8 +48,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-import static com.beligum.blocks.filesystem.index.LucenePageIndexer.CUSTOM_FIELD_FIELDS;
-import static com.beligum.blocks.filesystem.index.LucenePageIndexer.DEFAULT_FIELD_JOINER;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 public class LuceneDocFactory
@@ -148,8 +142,8 @@ public class LuceneDocFactory
                                    indexEntry.getTypeOf() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getTypeOf(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new TextField(IndexEntry.Field.title.name(),
-                                 indexEntry.getTitle() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getTitle(),
+        retVal.add(new TextField(IndexEntry.Field.label.name(),
+                                 indexEntry.getLabel() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getLabel(),
                                  org.apache.lucene.document.Field.Store.NO));
 
         retVal.add(new StringField(PageIndexEntry.Field.language.name(),
@@ -186,10 +180,6 @@ public class LuceneDocFactory
         Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
 
         RdfIndexer rdfIndexer = new LuceneRdfIndexer(document);
-
-        RdfMapper rdfMapper = new DefaultRdfMapper();
-        JsonNode json = rdfMapper.toJson(subModel.getPage());
-        Logger.info("DEBUG ########### --> "+Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(json));
 
         for (Statement stmt : subModel.getSubModel()) {
 
@@ -266,7 +256,7 @@ public class LuceneDocFactory
             }
 
             //index all field names so we can search for documents that do/don't have a certain field set
-            document.add(new StringField(CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
+            document.add(new StringField(LucenePageIndexer.CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
         }
 
         return document;
@@ -308,7 +298,7 @@ public class LuceneDocFactory
                 ts.reset();
                 while (ts.incrementToken()) {
                     if (sb.length() > 0) {
-                        sb.append(DEFAULT_FIELD_JOINER);
+                        sb.append(LucenePageIndexer.DEFAULT_FIELD_JOINER);
                     }
                     sb.append(term.toString());
                 }

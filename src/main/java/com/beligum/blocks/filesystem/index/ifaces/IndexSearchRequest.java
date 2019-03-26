@@ -28,8 +28,4 @@ public interface IndexSearchRequest extends Serializable
         AND,
         OR
     }
-
-    //Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset
-
-    //IndexSearchResult search(RdfClass type, String luceneQuery, Map<RdfProperty, String> fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
 }

@@ -6,7 +6,6 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.collect.Iterables;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class DefaultIndexSearchRequest implements IndexSearchRequest
 {

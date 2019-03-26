@@ -27,6 +27,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
@@ -142,21 +143,29 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         @Override
         RdfProperty create() throws RdfInitializationException
         {
+            //enforce a naming policy on the properties of our local public ontologies
+            if (this.rdfResource.ontology.isPublic && !Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
+            }
+
+            //enforces the properties in our local public ontologies to have valid datatypes
+            if (this.rdfResource.ontology.isPublic) {
+                if (this.rdfResource.dataType == null) {
+                    throw new RdfInitializationException("Datatype of RDF property " + this.rdfResource.getName() + " (" + this.rdfResource.getFullName() + ") is null. This is not allowed; " + this);
+                }
+                else {
+                    //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
+                    if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(InputType.Date))
+                        || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(InputType.Time))
+                        || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
+                        throw new RdfInitializationException("Encountered RDF property with a datatype-widgetType mismatch; " + this);
+                    }
+                }
+            }
+
             //make it uniform; no nulls
             if (this.rdfResource.widgetConfig == null) {
                 this.rdfResource.widgetConfig = new InputTypeConfig();
-            }
-
-            if (this.rdfResource.dataType == null) {
-                Logger.error("Datatype of " + this.rdfResource.getName() + " (" + this.rdfResource.getFullName() + ") is null! This is a static-initializer bug and should be fixed");
-            }
-            else {
-                //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
-                if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(InputType.Date))
-                    || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(InputType.Time))
-                    || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
-                    throw new RdfInitializationException("Encountered RDF property with datatype-inputtype mismatch; " + this);
-                }
             }
 
             if (this.rdfResource.indexer == null) {

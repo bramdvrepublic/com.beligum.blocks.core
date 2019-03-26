@@ -87,7 +87,7 @@ public class HtmlRdfContext
             //note: RdfFactory considers all 'public ontologies' the ones that are marked public,
             // but also those that are referenced from any public ontologies; eg. all ontologies that are 'accessible'
             // from our local public ontologies.
-            for (RdfOntology o : RdfFactory.getPublicOntologies()) {
+            for (RdfOntology o : RdfFactory.getRelevantOntologies()) {
                 builder.put(o.getNamespace().getPrefix(), o.getNamespace().getUri());
             }
             cachedDefaultRdfPrefixAttr = builder.build();

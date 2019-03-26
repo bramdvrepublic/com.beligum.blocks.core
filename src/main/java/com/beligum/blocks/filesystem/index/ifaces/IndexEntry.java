@@ -41,7 +41,7 @@ public interface IndexEntry extends Serializable
     {
         id,
         tokenisedId,
-        title,
+        label,
         description,
         image,
     }
@@ -59,11 +59,11 @@ public interface IndexEntry extends Serializable
     String getId();
 
     /**
-     * The title of this resource, to be used directly in the HTML that is returned to the client.
+     * The label of this resource, to be used directly in the HTML that is returned to the client.
      * So, in the right language and format. Mainly used to build eg. search result lists.
      * Try not to return null or "".
      */
-    String getTitle();
+    String getLabel();
 
     /**
      * The description of this resource, to be used directly in the HTML that is returned to the client.
@@ -77,9 +77,5 @@ public interface IndexEntry extends Serializable
      * Might be null.
      */
     String getImage();
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
 
 }

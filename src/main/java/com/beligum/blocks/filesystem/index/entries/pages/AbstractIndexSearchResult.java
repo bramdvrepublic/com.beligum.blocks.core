@@ -98,14 +98,14 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
                 @Override
                 public int compare(IndexEntry o1, IndexEntry o2)
                 {
-                    if (o1.getTitle() == null) {
+                    if (o1.getLabel() == null) {
                         return -1;
                     }
-                    if (o2.getTitle() == null) {
+                    if (o2.getLabel() == null) {
                         return 1;
                     }
 
-                    return o1.getTitle().compareTo(o2.getTitle());
+                    return o1.getLabel().compareTo(o2.getLabel());
                 }
             });
         }

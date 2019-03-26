@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index;
+package com.beligum.blocks.filesystem.index.lucene;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;

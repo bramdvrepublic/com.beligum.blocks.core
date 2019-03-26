@@ -112,7 +112,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
 
         DefaultIndexSearchRequest subQuery = DefaultIndexSearchRequest.create();
         subQuery.wildcard(IndexEntry.Field.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
-        subQuery.wildcard(IndexEntry.Field.title, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.Field.label, query, IndexSearchRequest.FilterBoolean.OR);
         mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
 
         mainQuery.maxResults(maxResults);
@@ -149,14 +149,14 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
                 int selectedLangScore = PageIndexEntry.getLanguageScore(selectedEntry.entry, language);
                 if (entryLangScore > selectedLangScore) {
                     //replace the entry in the result list
-                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getTitle(), pageId.toString()));
+                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getLabel(), pageId.toString()));
                     //replace the entry in the lang mapping
                     langMapping.replace(resourceUri, new EntryWithIndex(page, selectedEntry.index));
                 }
             }
             else {
                 //Note: the ID of a page is also it's public address, but for the returned ID, we use the resource URI, which is the base ID that describes the 'concept' behind the page
-                retVal.add(new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getTitle(), pageId.toString()));
+                retVal.add(new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getLabel(), pageId.toString()));
                 langMapping.put(resourceUri, new EntryWithIndex(page, retVal.size() - 1));
             }
         }

@@ -14,14 +14,16 @@
 // * limitations under the License.
 // */
 //
-//package com.beligum.blocks.filesystem.index;
+//package com.beligum.blocks.filesystem.index.lucene;
 //
 //import com.beligum.base.resources.ifaces.Resource;
 //import com.beligum.blocks.filesystem.hdfs.TX;
+//import com.beligum.blocks.filesystem.index.AbstractIndexConnection;
 //import com.beligum.blocks.filesystem.index.entries.pages.LuceneDocFactory;
 //import com.beligum.blocks.filesystem.index.entries.pages.LuceneIndexSearchResult;
 //import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 //import com.beligum.blocks.filesystem.index.ifaces.*;
+//import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 //import com.beligum.blocks.filesystem.pages.PageModel;
 //import com.beligum.blocks.filesystem.pages.ifaces.Page;
 //import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -72,8 +74,7 @@
 //    {
 //        this.assertActive();
 //
-//        TermQuery query = new TermQuery(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(key)));
-//        TopDocs topdocs = this.pageIndexer.getIndexSearcher().search(query, 1);
+//        TopDocs topdocs = this.pageIndexer.getIndexSearcher().search(new TermQuery(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(key))), 1);
 //
 //        if (topdocs.scoreDocs.length == 0) {
 //            return null;
@@ -81,27 +82,6 @@
 //        else {
 //            return LuceneDocFactory.INSTANCE.fromLuceneDoc(this.pageIndexer.getIndexSearcher().doc(topdocs.scoreDocs[0].doc));
 //        }
-//    }
-//    @Override
-//    public synchronized void delete(Resource resource) throws IOException
-//    {
-//        this.assertActive();
-//        this.assertTransaction();
-//
-//        Page page = resource.unwrap(Page.class);
-//
-//        IndexWriter indexWriter = this.pageIndexer.getIndexWriter();
-//
-//        //first, delete all existing sub-resources
-//        for (IndexEntry existingSubResource : this.getIndexedSubresourcesOf(page)) {
-//            indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(existingSubResource.getId()));
-//        }
-//
-//        //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-//        indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(page)));
-//
-//        //for debug
-//        //this.printLuceneIndex();
 //    }
 //    @Override
 //    public synchronized void update(Resource resource) throws IOException
@@ -165,6 +145,27 @@
 //        //this.printLuceneIndex();
 //    }
 //    @Override
+//    public synchronized void delete(Resource resource) throws IOException
+//    {
+//        this.assertActive();
+//        this.assertTransaction();
+//
+//        Page page = resource.unwrap(Page.class);
+//
+//        IndexWriter indexWriter = this.pageIndexer.getIndexWriter();
+//
+//        //first, delete all existing sub-resources
+//        for (IndexEntry existingSubResource : this.getIndexedSubresourcesOf(page)) {
+//            indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(existingSubResource.getId()));
+//        }
+//
+//        //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
+//        indexWriter.deleteDocuments(LuceneDocFactory.INSTANCE.toLuceneId(SimplePageIndexEntry.generateId(page)));
+//
+//        //for debug
+//        //this.printLuceneIndex();
+//    }
+//    @Override
 //    public synchronized void deleteAll() throws IOException
 //    {
 //        this.assertActive();
@@ -185,6 +186,11 @@
 //        this.pageIndexer = null;
 //        this.transaction = null;
 //        this.active = false;
+//    }
+//    @Override
+//    public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
+//    {
+//        return null;
 //    }
 //    @Override
 //    public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortReversed, int pageSize, int pageOffset) throws IOException
@@ -275,6 +281,11 @@
 //        }
 //
 //        return new LuceneIndexSearchResult(indexSearcher, results, validPageOffset, validPageSize, System.currentTimeMillis() - searchStart);
+//    }
+//    @Override
+//    public IndexSearchResult search(String query) throws IOException
+//    {
+//        return null;
 //    }
 //    @Override
 //    public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
@@ -414,11 +425,11 @@
 //    {
 //        //First, we will check if we need to delete existing index sub-resources
 //        // (because the some existing fact-entry could have been deleted from the page)
-//        BooleanQuery query = new BooleanQuery();
+//        DefaultIndexSearchRequest query = DefaultIndexSearchRequest.create();
 //        //Note: the main page index entry doesn't have a parentId, so this will only select sub-resources
-//        query.add(new TermQuery(new Term(PageIndexEntry.Field.parentId.name(), SimplePageIndexEntry.generateId(page))), BooleanClause.Occur.MUST);
+//        query.filter(PageIndexEntry.Field.parentId, SimplePageIndexEntry.generateId(page), IndexSearchRequest.FilterBoolean.AND);
 //        //this one is probably not necessary since the id of the parent should be unique, but let's add it to be sure.
-//        query.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), page.getLanguage().getLanguage())), BooleanClause.Occur.MUST);
+//        query.filter(PageIndexEntry.Field.language, page.getLanguage().getLanguage(), IndexSearchRequest.FilterBoolean.AND);
 //
 //        return this.search(query, DEFAULT_MAX_SEARCH_RESULTS);
 //    }

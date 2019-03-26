@@ -63,7 +63,7 @@ public class WrappedPageResourceInfo implements ResourceInfo
     @Override
     public String getLabel()
     {
-        return this.indexEntry.getTitle();
+        return this.indexEntry.getLabel();
     }
     @Override
     public URI getLink()
@@ -85,7 +85,7 @@ public class WrappedPageResourceInfo implements ResourceInfo
     @Override
     public String getName()
     {
-        return this.indexEntry.getTitle() == null ? null : this.indexEntry.getTitle();
+        return this.indexEntry.getLabel() == null ? null : this.indexEntry.getLabel();
     }
     @Override
     public Locale getLanguage()

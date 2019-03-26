@@ -17,12 +17,15 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import org.eclipse.rdf4j.model.IRI;
 
+import java.net.URI;
 import java.util.Locale;
 
 /**
- * Instances of this class are the only values that get written to the index (in protobuf format),
- * all the rest should be fetched from the triple store.
+ * Instances of this class are the only values that are guaranteed to get written to the index.
  *
  * Created by bram on 2/23/16.
  */
@@ -62,7 +65,7 @@ public interface PageIndexEntry extends IndexEntry
     String getTypeOf();
 
     /**
-     * What get's returned by the Locale.getLanguage() method of the page's language locale.
+     * What gets returned by the Locale.getLanguage() method of the page's language locale.
      */
     String getLanguage();
 
@@ -109,6 +112,8 @@ public interface PageIndexEntry extends IndexEntry
      * 1) entry language = no special language
      * 2) entry language = default language
      * 3) entry language = requested language
+     *
+     * --> higher means better
      */
     static int getLanguageScore(PageIndexEntry entry, Locale requestLanguage)
     {

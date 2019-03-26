@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
+package com.beligum.blocks.filesystem.index.lucene;
 
 import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import org.apache.lucene.document.*;

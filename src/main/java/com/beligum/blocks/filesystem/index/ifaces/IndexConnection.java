@@ -40,16 +40,6 @@ public interface IndexConnection extends XAClosableResource
     IndexEntry get(URI key) throws IOException;
 
     /**
-     * Search the index using the supplied query, filters and options
-     */
-    IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException;
-
-    /**
-     * Low-level search request with implementation-specific query string
-     */
-    IndexSearchResult search(String query) throws IOException;
-
-    /**
      * (re-)index the supplied resource into the underlying index store
      */
     void update(Resource resource) throws IOException;
@@ -63,6 +53,16 @@ public interface IndexConnection extends XAClosableResource
      * Remove all entries from the underlying index store and start over
      */
     void deleteAll() throws IOException;
+
+    /**
+     * Search the index using the supplied query, filters and options
+     */
+    IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException;
+
+    /**
+     * Low-level search request with implementation-specific query string
+     */
+    IndexSearchResult search(String query) throws IOException;
 
     //-----PROTECTED METHODS-----
 

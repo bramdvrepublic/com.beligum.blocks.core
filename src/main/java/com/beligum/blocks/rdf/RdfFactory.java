@@ -101,17 +101,17 @@ public class RdfFactory
 
     //-----STATIC METHODS-----
     /**
-     * Returns a collection of all registered public ontologies.
+     * Returns a collection of all registered ontologies.
      * Note that this list consists of all ontologies that were marked public explicitly,
      * but also those that are referenced from any public ontologies; eg. all ontologies that are 'accessible'
      * from our explicit public ontologies (or it's members, properties, classes, datatypes, ...).
      */
-    public static Iterable<RdfOntology> getPublicOntologies()
+    public static Iterable<RdfOntology> getRelevantOntologies()
     {
         //make sure we booted the static members at least once
         assertInitialized();
 
-        return getPublicOntologyUriMap().values();
+        return getRelevantOntologyUriMap().values();
     }
     /**
      * Looks up the ontology in the public ontologies for the supplied URI
@@ -121,7 +121,7 @@ public class RdfFactory
         //make sure we booted the static members at least once
         assertInitialized();
 
-        return getPublicOntologyUriMap().get(uri);
+        return getRelevantOntologyUriMap().get(uri);
     }
     /**
      * Looks up the ontology in the public ontologies for the supplied prefix
@@ -131,7 +131,7 @@ public class RdfFactory
         //make sure we booted the static members at least once
         assertInitialized();
 
-        return getPublicOntologyPrefixMap().get(prefix);
+        return getRelevantOntologyPrefixMap().get(prefix);
     }
     /**
      * This is the most general find-method to translate a random name to a RDF resource,
@@ -201,7 +201,7 @@ public class RdfFactory
 
         if (uri != null) {
             if (RdfTools.isCurie(uri)) {
-                RdfOntology ontology = getPublicOntologyPrefixMap().get(uri.getScheme());
+                RdfOntology ontology = getRelevantOntologyPrefixMap().get(uri.getScheme());
                 if (ontology != null) {
                     //this will return null when no such member was found, which is what we want
                     retVal = ontology.getMember(uri.getSchemeSpecificPart());
@@ -213,7 +213,7 @@ public class RdfFactory
             //here, the URI is a full-blown uri
             else {
                 //first, check if the uri is the namespace of an ontology
-                retVal = getPublicOntologyUriMap().get(uri);
+                retVal = getRelevantOntologyUriMap().get(uri);
 
                 //if it's not an ontology, we'll try to cut off the name and split the uri in an ontology uri and a name string;
                 //RDF ontologies either use anchor based names or real endpoints, so search for the pound sign or use the last part of the path as the name
@@ -615,10 +615,10 @@ public class RdfFactory
 
         return ontologyInstances.get(clazz);
     }
-    private static Map<URI, RdfOntology> getPublicOntologyUriMap()
+    private static Map<URI, RdfOntology> getRelevantOntologyUriMap()
     {
         try {
-            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_PUBLIC_ONTOLOGIES, new CacheFunction<CacheKey, Map<URI, RdfOntology>>()
+            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_RELEVANT_ONTOLOGIES, new CacheFunction<CacheKey, Map<URI, RdfOntology>>()
             {
                 @Override
                 public Map<URI, RdfOntology> apply(CacheKey cacheKey)
@@ -632,10 +632,10 @@ public class RdfFactory
             throw new RuntimeException("Error while initializing RDF ontology URI map; this shouldn't happen", e);
         }
     }
-    private static Map<String, RdfOntology> getPublicOntologyPrefixMap()
+    private static Map<String, RdfOntology> getRelevantOntologyPrefixMap()
     {
         try {
-            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_PUBLIC_ONTOLOGY_PREFIXES, new CacheFunction<CacheKey, Map<String, RdfOntology>>()
+            return R.cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.RDF_RELEVANT_ONTOLOGY_PREFIXES, new CacheFunction<CacheKey, Map<String, RdfOntology>>()
             {
                 @Override
                 public Map<String, RdfOntology> apply(CacheKey cacheKey)
@@ -655,7 +655,7 @@ public class RdfFactory
 
         int sepIdx = uriStr.lastIndexOf(separator);
         if (sepIdx >= 0 && sepIdx < uriStr.length() - separator.length()) {
-            RdfOntology ontology = getPublicOntologyUriMap().get(URI.create(uriStr.substring(0, sepIdx + separator.length())));
+            RdfOntology ontology = getRelevantOntologyUriMap().get(URI.create(uriStr.substring(0, sepIdx + separator.length())));
             if (ontology != null) {
                 retVal = ontology.getMember(uriStr.substring(sepIdx + separator.length()));
             }
@@ -668,9 +668,9 @@ public class RdfFactory
      */
     private static void addPublicOntology(RdfOntology ontology)
     {
-        if (!RdfFactory.getPublicOntologyUriMap().containsKey(ontology.getNamespace().getUri())) {
-            RdfFactory.getPublicOntologyUriMap().put(ontology.getNamespace().getUri(), ontology);
-            RdfFactory.getPublicOntologyPrefixMap().put(ontology.getNamespace().getPrefix(), ontology);
+        if (!RdfFactory.getRelevantOntologyUriMap().containsKey(ontology.getNamespace().getUri())) {
+            RdfFactory.getRelevantOntologyUriMap().put(ontology.getNamespace().getUri(), ontology);
+            RdfFactory.getRelevantOntologyPrefixMap().put(ontology.getNamespace().getPrefix(), ontology);
         }
     }
     private static void checkOntologyMembers(RdfOntologyImpl rdfOntologyImpl) throws IllegalAccessException, RdfInitializationException

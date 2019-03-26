@@ -30,7 +30,7 @@ import java.util.Locale;
 /**
  * Created by bram on 2/13/16.
  */
-public class SimplePageIndexEntry extends AbstractPageIndexEntry implements PageIndexEntry
+public class SimplePageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
 
@@ -42,55 +42,33 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private String canonicalAddress;
 
     //-----CONSTRUCTORS-----
-    public SimplePageIndexEntry(String id, String parentId, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
-    {
-        this(id,
-             parentId,
-             resource == null ? null : resource.toString(),
-             typeOf == null ? null : typeOf.getCurieName().toString(),
-             title,
-             language == null ? null : language.getLanguage(),
-             canonicalAddress == null ? null : canonicalAddress.toString(),
-             description,
-             image == null ? null : image.toString());
-    }
-    //for serialization
+    // private, only for serialization
     private SimplePageIndexEntry() throws IOException
     {
         this((String) null, (String) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null);
     }
-    private SimplePageIndexEntry(String id, String parentId, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
+    public SimplePageIndexEntry(String id, String parentId, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
     {
         super(id);
 
-        this.setResource(resource);
         this.setParentId(parentId);
-        this.setTypeOf(typeOfCurie);
-        this.setTitle(title);
-        this.setLanguage(language);
-        this.setCanonicalAddress(canonicalAddress);
+        this.setResource(resource == null ? null : resource.toString());
+        this.setTypeOf(typeOf == null ? null : typeOf.getCurieName().toString());
+        this.setLabel(title);
+        this.setLanguage(language == null ? null : language.getLanguage());
+        this.setCanonicalAddress(canonicalAddress == null ? null : canonicalAddress.toString());
         this.setDescription(description);
-        this.setImage(image);
+        this.setImage(image == null ? null : image.toString());
     }
 
-    //-----STATIC METHODS-----
-    //These are a couple of ID factory methods, grouped for overview
-    public static String generateId(IRI iri)
-    {
-        return generateId(URI.create(iri.toString()));
-    }
+    //TODO to be deleted
     public static String generateId(Page page)
     {
-        return generateId(page.getPublicRelativeAddress());
+        return AbstractPageIndexEntry.generateId(page);
     }
-    public static String generateId(URI id)
+    public static String generateId(URI subResource)
     {
-        //since we treat all URIs as relative, we only take the path into account
-        return StringFunctions.getRightOfDomain(id).toString();
-    }
-    public static String generateId(IndexEntry indexEntry)
-    {
-        return indexEntry.getId();
+        return AbstractPageIndexEntry.generateId(subResource);
     }
 
     //-----PUBLIC METHODS-----
@@ -150,7 +128,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     {
         return "PageIndexEntry{" +
                "id='" + id + '\'' +
-               ", title='" + title + '\'' +
+               ", title='" + label + '\'' +
                ", language='" + language + '\'' +
                ", resource='" + resource + '\'' +
                ", parentId='" + parentId + '\'' +
