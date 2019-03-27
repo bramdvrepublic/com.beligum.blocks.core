@@ -2,17 +2,16 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
-import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.solr.SolrConfigs;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -22,16 +21,22 @@ import org.eclipse.rdf4j.model.Value;
 import java.io.IOException;
 import java.net.URI;
 import java.util.AbstractMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JsonPageIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
+    interface JsonNodeVisitor
+    {
+        void visit(String fieldName, JsonNode fieldValue, String path, String pathDelim);
+    }
 
     //-----VARIABLES-----
     private ObjectMapper jsonMapper;
     private ObjectNode rootNode;
+    private String solrSplit;
 
     //-----CONSTRUCTORS-----
     public JsonPageIndexEntry(Page page) throws IOException
@@ -79,11 +84,10 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         Model pageRdfModel = page.readRdfModel();
 
         //for now, this is implemented rather inefficient, so make sure we cache it
+        //Also, note that URIs in an RDF model are always absolute
         URI pageResource = page.getAbsoluteResourceAddress();
 
-        String pageId = page.getPublicRelativeAddress().toString();
-
-        //this will hold a reference to the json-object for all different subjects in the model
+        //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, ObjectNode> subObjects = new LinkedHashMap<>();
         //this will hold URIs that are values in the ObjectNode, for the RdfProperty
         Map<URI, Map.Entry<ObjectNode, RdfProperty>> subObjectMapping = new LinkedHashMap<>();
@@ -94,24 +98,20 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
                 URI subject = RdfTools.iriToUri((IRI) triple.getSubject());
 
-                //check if this statement is about the main resource of the page
-                boolean isMain = subject.equals(pageResource);
-
                 //create a new sub-object if we need to
                 ObjectNode node = subObjects.get(subject);
                 if (!subObjects.containsKey(subject)) {
 
-                    // The id of the Solr doc is the relative main URI of the resource.
-                    // Note: for pages, it's the public SEO-friendly URI, not the subject!
-                    String id = isMain ? pageId : StringFunctions.getRightOfDomain(subject).toString();
+                    //check if this statement is about the main resource of the page
+                    boolean isMainSubject = subject.equals(pageResource);
 
                     //create a new object and fill it with the first internal fields like id, etc
-                    node = this.initializeObjectFields(this.jsonMapper.createObjectNode(), id);
+                    node = this.initializeObjectFields(this.jsonMapper.createObjectNode(), page, subject, isMainSubject);
 
                     //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
                     subObjects.put(subject, node);
 
-                    if (isMain) {
+                    if (isMainSubject) {
                         if (this.rootNode == null) {
                             this.rootNode = node;
                         }
@@ -145,7 +145,16 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             }
         }
 
-        //now branch sub-objects into other objects where possible
+        //do some validation, the root node should be initialized now, otherwise we have nothing to return
+        if (this.rootNode == null) {
+            throw new IOException("Encountered an RDF model without a main subject; this shouldn't happen; " + page);
+        }
+
+        // Now branch sub-objects into other parent objects where possible
+        // Note that, conceptually, this (in theory) doesn't necessarily means we're attaching to the root node
+        // We might be branching deeper sub-objects into each other as well.
+        // but note that deeper sub-objects that are not "attached" to the root node will be lost, cause that's the only
+        // one we're saving as a class field
         for (Map.Entry<URI, ObjectNode> m : subObjects.entrySet()) {
 
             URI subObjectSubject = m.getKey();
@@ -161,27 +170,124 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 Map.Entry<ObjectNode, RdfProperty> mapping = subObjectMapping.get(subObjectSubject);
 
                 //this attaches the subObject to the object in the mapping, using the property in the mapping
-                this.putProperty(mapping.getKey(), mapping.getValue(), subObject);
+                //Note that it supports both single values and array values, depending on the multiplicity of the field
+                this.addProperty(mapping.getKey(), mapping.getValue(), subObject);
             }
         }
 
-        this.rootNode.put("isParent", true);
-        ObjectNode childNode = this.jsonMapper.createObjectNode();
-        childNode.put("id", "/en/blah/child");
-        this.putProperty(childNode, RDFS.label, "subdoc test 1");
-        this.rootNode.set("child", childNode);
+        // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
+        // the sub-objects, so we can report to Solr where to split its children
+        StringBuilder sb = new StringBuilder();
+        this.findChildBoundaries(this.rootNode, "/", new JsonNodeVisitor()
+        {
+            @Override
+            public void visit(String fieldName, JsonNode fieldValue, String path, String pathDelim)
+            {
+                if (sb.length() > 0) {
+                    sb.append("|");
+                }
+                sb.append(path);
+            }
+        });
+        this.solrSplit = sb.toString();
     }
-    private void putProperty(ObjectNode node, RdfProperty predicate, String value)
+    private void findChildBoundaries(JsonNode fieldValue, final String pathDelim, JsonNodeVisitor visitor) throws IOException
     {
-        node.put(predicate.getCurie().toString(), value);
+        //standardized initial values so the method below works as expected
+        this.findChildBoundaries("", fieldValue, "", pathDelim, visitor);
     }
-    private void putProperty(ObjectNode node, RdfProperty predicate, JsonNode object)
+    private void findChildBoundaries(String fieldName, JsonNode fieldValue, String currentPath, final String pathDelim, JsonNodeVisitor visitor) throws IOException
     {
-        node.set(predicate.getCurie().toString(), object);
+        if (fieldValue.isContainerNode()) {
+
+            if (fieldValue.isObject()) {
+
+                //we discovered an object; update the path using the field name of this object
+                if (!currentPath.endsWith(pathDelim)) {
+                    currentPath += pathDelim;
+                }
+                currentPath += fieldName;
+
+                visitor.visit(fieldName, fieldValue, currentPath, pathDelim);
+
+                Iterator<Map.Entry<String, JsonNode>> fields = fieldValue.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> field = fields.next();
+                    findChildBoundaries(field.getKey(), field.getValue(), currentPath, pathDelim, visitor);
+                }
+            }
+            else if (fieldValue.isArray()) {
+
+                Iterator<JsonNode> elements = fieldValue.elements();
+                while (elements.hasNext()) {
+                    findChildBoundaries(fieldName, elements.next(), currentPath, pathDelim, visitor);
+                }
+            }
+            else {
+                throw new IOException("Encountered JSON container node that's not an object, nor an array; this shouldn't happen; " + fieldValue);
+            }
+        }
+        else {
+            //NOOP: no need to go down, the node is not a container (object or array)
+        }
     }
-    private ObjectNode initializeObjectFields(ObjectNode object, String id)
+    private String putProperty(ObjectNode node, RdfProperty predicate, String value)
     {
-        object.put(SolrConfigs.CORE_SCHEMA_FIELD_ID, id);
+        String fieldName = this.toFieldName(predicate);
+
+        node.put(fieldName, value);
+
+        return fieldName;
+    }
+    private String putProperty(ObjectNode node, RdfProperty predicate, JsonNode object)
+    {
+        String fieldName = this.toFieldName(predicate);
+
+        node.set(fieldName, object);
+
+        return fieldName;
+    }
+    private String addProperty(ObjectNode node, RdfProperty predicate, JsonNode object)
+    {
+        String fieldName = this.toFieldName(predicate);
+
+        // this will support both array-based subObjects when there are multiple objects mapped on the same field
+        // and standard subnode (not in an array) when there's only one.
+        JsonNode existingField = node.get(fieldName);
+        if (existingField == null) {
+            node.set(fieldName, object);
+        }
+        else {
+            //if the existing field is not an array, convert it
+            if (!existingField.isArray()) {
+                node.remove(fieldName);
+                node.putArray(fieldName).add(existingField);
+            }
+
+            //note: withArray() will create the array field if it doesn't exist (but that should never happen)
+            node.withArray(fieldName).add(object);
+        }
+
+        return fieldName;
+    }
+    private JsonNode getProperty(ObjectNode node, RdfProperty predicate)
+    {
+        String fieldName = this.toFieldName(predicate);
+
+        //this returns null if no such field exists
+        return node.get(fieldName);
+    }
+    private String toFieldName(RdfProperty predicate)
+    {
+        return predicate.getCurie().toString();
+    }
+    private ObjectNode initializeObjectFields(ObjectNode object, Page page, URI subject, boolean mainSubject)
+    {
+        // The id of the Solr doc is the relative main URI of the resource.
+        // Note: for pages, it's the public SEO-friendly URI, not the subject!
+        object.put(SolrConfigs.CORE_SCHEMA_FIELD_ID, mainSubject ? AbstractPageIndexEntry.generateId(page) : AbstractPageIndexEntry.generateId(subject));
+
+        //TODO add the others
 
         return object;
     }

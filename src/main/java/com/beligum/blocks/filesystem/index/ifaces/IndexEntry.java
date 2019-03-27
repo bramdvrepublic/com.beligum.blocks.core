@@ -24,7 +24,6 @@ import java.io.Serializable;
 public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
-
     interface IndexEntryField
     {
         /**

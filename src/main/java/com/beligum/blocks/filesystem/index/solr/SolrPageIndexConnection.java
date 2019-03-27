@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -125,29 +126,52 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
             JsonPageIndexEntry indexEntry = new JsonPageIndexEntry(page);
 
-            this.solrClient.deleteById("1");
-            this.solrClient.deleteById("2");
-
-            SolrInputDocument parent = new SolrInputDocument();
-            parent.addField("id", "1");
-            parent.addField("isParent", true);
-            parent.addField("hehe", "parentValue");
-            SolrInputDocument child = new SolrInputDocument();
-            child.addField("id", "2");
-            child.addField("hehe", "childValue");
-            parent.addChildDocument(child);
-            String res = parent.jsonStr();
-            this.solrClient.add(parent);
-
-            Logger.info("Writing index entry: " + indexEntry.toString());
+//            this.solrClient.deleteById("1");
+//            this.solrClient.deleteById("2");
+//
+//            SolrInputDocument parent = new SolrInputDocument();
+//            parent.addField("id", "1");
+//            parent.addField("isParent", true);
+//            parent.addField("hehe", "parentValue");
+//            SolrInputDocument child = new SolrInputDocument();
+//            child.addField("id", "2");
+//            child.addField("hehe", "childValue");
+//            parent.addChildDocument(child);
+//            String res = parent.jsonStr();
+//            this.solrClient.add(parent);
+//
+//            Logger.info("Writing index entry: " + indexEntry.toString());
 
             this.solrClient.deleteById("/en/blah");
             this.solrClient.deleteById("/en/blah/child");
             // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
             // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
-            ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(/*UpdateRequestHandler.DOC_PATH*/"/update/json/docs");
-            request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), MediaType.APPLICATION_JSON));
+
+            // Note: the "/update/json/docs" path is a shortcut to "/update" with the contentType and the command=false already set right
+            ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
+            request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
+
+            // Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
+            // If the entire JSON makes a single Solr document, the path must be “/”.
+            // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
+            // If one path is a child of another, they automatically become a child document.
             request.setParam("split", "/|/child");
+
+            // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
+            // Provides multivalued mapping to map document field names to Solr field names.
+            // The format of the parameter is target-field-name:json-path, as in f=first:/first.
+            // The json-path is required. The target-field-name is the Solr document field name, and is optional.
+            // If not specified, it is automatically derived from the input JSON.
+            // The default target field name is the fully qualified name of the field.
+            // Instead of specifying all the field names explicitly, it is possible to specify wildcards to map fields automatically.
+            // There are two restrictions: wildcards can only be used at the end of the json-path, and the split path cannot use wildcards.
+            // A single asterisk * maps only to direct children, and a double asterisk ** maps recursively to all descendants.
+            // The following are example wildcard path mappings:
+            // f=$FQN:/**: maps all fields to the fully qualified name ($FQN) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (.) as a delimiter. This is the default behavior if no f path mappings are specified.
+            // f=/docs/*: maps all the fields under docs and in the name as given in JSON
+            // f=/docs/**: maps all the fields under docs and its children in the name as given in JSON
+            // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
+            // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
             request.setParam("f", "/**");
             this.solrClient.request(request);
 

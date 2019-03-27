@@ -67,6 +67,7 @@ public class SolrPageIndexer implements PageIndexer
 
     //-----VARIABLES-----
     private SolrClient solrClient;
+    private boolean useSchemaless;
 
     //-----CONSTRUCTORS-----
     public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
@@ -76,6 +77,11 @@ public class SolrPageIndexer implements PageIndexer
         if (R.configuration().getProduction()) {
             R.configuration().getLogConfig().setLogLevel("org.apache.solr", Level.WARN);
         }
+
+        // Note that we don't use schemaless mode for now (we want tight control over the fields,
+        // mainly to understand what's happening). This flag is added to easily switch to schemaless
+        // during debugging and for possible future use (eg. it works)
+        this.useSchemaless = false;
 
         this.init();
     }
@@ -153,33 +159,37 @@ public class SolrPageIndexer implements PageIndexer
                 createRequest.setInstanceDir(".");
                 this.solrClient.request(createRequest);
 
+                StringBuilder propertyConfigs = new StringBuilder("{" +
+                                         // So (for now) our strategy is to disable auto soft commit and do a manual soft commit after each update
+                                         // (although the article below says otherwise).
+                                         // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
+                                         // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
+                                         // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+                                         "  \"unset-property\": [" +
+                                         "    \"updateHandler.autoCommit.maxDocs\"," +
+                                         "  ]," +
+                                         "  \"set-property\": {" +
+                                         "    \"updateHandler.autoCommit.maxTime\": \"15000\"," +
+                                         "    \"updateHandler.autoCommit.openSearcher\": \"false\"" +
+                                         "  }," +
+                                         "  \"set-property\": {" +
+                                         "    \"updateHandler.autoSoftCommit.maxDocs\": \"-1\"," +
+                                         "    \"updateHandler.autoSoftCommit.maxTime\": \"-1\"" +
+                                         "  }," +
+                                         "}");
+
+                if (!this.useSchemaless) {
+                    // This disables auto-field-creation of schemaless mode.
+                    // By configuring Solr to not create it's fields automatically, we enforce strict control over which fields are allowed
+                    // and how they're translated to the index.
+                    propertyConfigs.append("  \"set-user-property\": {" +
+                                           "    \"update.autoCreateFields\": \"false\"," +
+                                           "  },");
+                }
+
                 // See https://lucene.apache.org/solr/guide/7_4/config-api.html
                 new GenericSolrRequest(SolrRequest.METHOD.POST, "/config", new ModifiableSolrParams())
-                                .setContentWriter(new RequestWriter.StringPayloadContentWriter("{" +
-                                                                                               // This disables auto-field-creation of schemaless mode.
-                                                                                               // By configuring Solr to not create it's fields automatically, we enforce strict control over which fields are allowed
-                                                                                               // and how they're translated to the index.
-//                                                                                               "  \"set-user-property\": {" +
-//                                                                                               "    \"update.autoCreateFields\": \"false\"," +
-//                                                                                               "  }," +
-
-                                                                                               // So (for now) our strategy is to disable auto soft commit and do a manual soft commit after each update
-                                                                                               // (although the article below says otherwise).
-                                                                                               // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
-                                                                                               // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
-                                                                                               // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
-                                                                                               "  \"unset-property\": [" +
-                                                                                               "    \"updateHandler.autoCommit.maxDocs\"," +
-                                                                                               "  ]," +
-                                                                                               "  \"set-property\": {" +
-                                                                                               "    \"updateHandler.autoCommit.maxTime\": \"15000\"," +
-                                                                                               "    \"updateHandler.autoCommit.openSearcher\": \"false\"" +
-                                                                                               "  }," +
-                                                                                               "  \"set-property\": {" +
-                                                                                               "    \"updateHandler.autoSoftCommit.maxDocs\": \"-1\"," +
-                                                                                               "    \"updateHandler.autoSoftCommit.maxTime\": \"-1\"" +
-                                                                                               "  }," +
-                                                                                               "}", CommonParams.JSON_MIME))
+                                .setContentWriter(new RequestWriter.StringPayloadContentWriter(propertyConfigs.toString(), CommonParams.JSON_MIME))
                                 .process(this.solrClient);
             }
 
@@ -261,13 +271,10 @@ public class SolrPageIndexer implements PageIndexer
             }
         }
 
+        //TODO this is just a test
         new SchemaRequest.AddField(new ImmutableMap.Builder<String, Object>()
                                                    .put("name", "isParent")
                                                    .put("type", "boolean")
-                                                   .build()).process(this.solrClient);
-        new SchemaRequest.AddField(new ImmutableMap.Builder<String, Object>()
-                                                   .put("name", "tests")
-                                                   .put("type", "string")
                                                    .build()).process(this.solrClient);
     }
 
@@ -313,7 +320,12 @@ public class SolrPageIndexer implements PageIndexer
 
         Path coreSchema = coreConfig.resolve("managed-schema");
         if (!Files.exists(coreSchema)) {
-            Files.write(coreSchema, SolrConfigs.DEFAULT_SCHEMA.getBytes(Charsets.UTF_8));
+            if (this.useSchemaless) {
+                Files.write(coreSchema, SolrConfigs.DEFAULT_SCHEMA.getBytes(Charsets.UTF_8));
+            }
+            else {
+                Files.write(coreSchema, SolrConfigs.CORE_SCHEMA.getBytes(Charsets.UTF_8));
+            }
         }
 
         return new EmbeddedSolrServer(solrConfig, coreName);
