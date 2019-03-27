@@ -42,6 +42,10 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     protected String _canonicalAddress;
 
     //-----CONSTRUCTORS-----
+    protected AbstractPageIndexEntry()
+    {
+        super();
+    }
     protected AbstractPageIndexEntry(String id)
     {
         super(id);
@@ -101,22 +105,18 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
      * These are a couple of ID factory methods, grouped for overview
      * and make static so they can be used from the constructors
      */
-    protected static String generateId(IRI iri)
+    protected static URI generateId(IRI iri)
     {
         return generateId(URI.create(iri.toString()));
     }
-    protected static String generateId(Page page)
+    protected static URI generateId(Page page)
     {
         return generateId(page.getPublicRelativeAddress());
     }
-    protected static String generateId(URI id)
+    protected static URI generateId(URI id)
     {
         //since we treat all URIs as relative, we only take the path into account
-        return StringFunctions.getRightOfDomain(id).toString();
-    }
-    protected static String generateId(IndexEntry indexEntry)
-    {
-        return indexEntry.getId();
+        return StringFunctions.getRightOfDomain(id);
     }
 
     //-----PRIVATE METHODS-----

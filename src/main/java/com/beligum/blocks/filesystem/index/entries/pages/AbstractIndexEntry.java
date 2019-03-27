@@ -40,6 +40,9 @@ public abstract class AbstractIndexEntry implements IndexEntry
     protected String _image;
 
     //-----CONSTRUCTORS-----
+    protected AbstractIndexEntry()
+    {
+    }
     protected AbstractIndexEntry(String id)
     {
         this._id = id;

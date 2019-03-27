@@ -32,6 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
@@ -375,6 +376,14 @@ public class RdfTools
     public static URI iriToUri(IRI iri)
     {
         return iri == null ? null : URI.create(iri.toString());
+    }
+
+    /**
+     * Converts an URI to an IRI
+     */
+    public static IRI uriToIri(URI uri)
+    {
+        return uri == null ? null : SimpleValueFactory.getInstance().createIRI(uri.toString());
     }
 
     //-----PROTECTED METHODS-----

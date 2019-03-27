@@ -22,4 +22,9 @@ public interface IndexEntryField
      * Returns the value of the index entry, associated with this field
      */
     String getValue(IndexEntry indexEntry);
+
+    /**
+     * Make sure this just returns the name
+     */
+    String toString();
 }

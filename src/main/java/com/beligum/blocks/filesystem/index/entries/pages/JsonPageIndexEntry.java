@@ -16,10 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -58,14 +55,28 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      */
     protected JsonPageIndexEntry()
     {
-        super(null);
+        super();
     }
     public JsonPageIndexEntry(Page page) throws IOException
     {
-        super(generateId(page));
+        //note that URIs in an RDF model are always absolute
+        this(AbstractPageIndexEntry.generateId(page), page.getAbsoluteResourceAddress(), page.readRdfModel());
+    }
+    /**
+     * To build a JSON node from an RDF model, we also need a root resource URI
+     * so we know which subject to treat as the root node. The other subjects in the model
+     * will be attached to this root node if it references them, otherwise, they are discarded.
+     * Next to a root resource URI, we also need the possibility to set a custom id URI.
+     * This is because, eg. for pages, we use the public page address as it's id, instead
+     * of the resource id (because it might not be unique since multiple pages can be describing it)
+     */
+    public JsonPageIndexEntry(URI id, URI rootResourceUri, Model rdfModel) throws IOException
+    {
+        super();
 
         this.jsonMapper = Json.getObjectMapper();
-        this.parse(page);
+
+        this.parse(id, rootResourceUri, rdfModel);
     }
 
     //-----PUBLIC METHODS-----
@@ -88,6 +99,10 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
         return retVal;
     }
+    public ObjectNode getRootNode()
+    {
+        return rootNode;
+    }
     public byte[] toBytes() throws IOException
     {
         byte[] retVal = null;
@@ -109,75 +124,56 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void parse(Page page) throws IOException
+    private void parse(URI id, URI rootResourceUri, Model rdfModel) throws IOException
     {
-        Model pageRdfModel = page.readRdfModel();
-
-        //for now, this is implemented rather inefficient, so make sure we cache it
-        //Also, note that URIs in an RDF model are always absolute
-        URI pageResource = page.getAbsoluteResourceAddress();
-
         //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, ObjectNode> subObjects = new LinkedHashMap<>();
+
         //this will hold URIs that are values in the ObjectNode, for the RdfProperty
         Map<URI, Map.Entry<ObjectNode, RdfProperty>> subObjectMapping = new LinkedHashMap<>();
 
-        for (Statement triple : pageRdfModel) {
+        IRI rootResourceIri = RdfTools.uriToIri(rootResourceUri);
+        if (!rdfModel.subjects().contains(rootResourceIri)) {
+            throw new IOException("Couldn't find resource URI in RDF model; " + rootResourceUri);
+        }
 
-            if (triple.getSubject() instanceof IRI) {
+        //create a new object and fill it with the first internal fields like id, etc
+        this.rootNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), id, rootResourceUri);
 
-                URI subject = RdfTools.iriToUri((IRI) triple.getSubject());
+        //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
+        subObjects.put(rootResourceUri, this.rootNode);
 
-                //create a new sub-object if we need to
-                ObjectNode node = subObjects.get(subject);
-                if (!subObjects.containsKey(subject)) {
+        // Now "zoom-in" on the subject and add all RDF properties to the node
+        for (Statement triple : rdfModel.filter(rootResourceIri, null, null)) {
 
-                    //check if this statement is about the main resource of the page
-                    boolean isMainSubject = subject.equals(pageResource);
+            RdfProperty predicate = RdfFactory.lookup(triple.getPredicate(), RdfProperty.class);
+            if (predicate != null) {
 
-                    //create a new object and fill it with the first internal fields like id, etc
-                    node = this.initializeInternalFields(this.jsonMapper.createObjectNode(), page, subject, isMainSubject);
+                Value value = triple.getObject();
 
-                    //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
-                    subObjects.put(subject, node);
+                //put the value in the json object
+                this.putProperty(this.rootNode, predicate, value.stringValue());
 
-                    if (isMainSubject) {
-                        if (this.rootNode == null) {
-                            this.rootNode = node;
-                        }
-                        else {
-                            throw new IOException("Encountered a double main subject initialization situation; this shouldn't happen; " + triple);
-                        }
-                    }
-                }
-
-                RdfProperty predicate = RdfFactory.lookup(triple.getPredicate(), RdfProperty.class);
-                if (predicate != null) {
-
-                    Value value = triple.getObject();
-
-                    //put the value in the json object
-                    this.putProperty(node, predicate, value.stringValue());
-
-                    // If the value is a resource, store it, we'll use it later to hook subobjects to their parents
-                    // This means the value of this triple is possibly a reference to (the subject-URI of) another object
-                    // in this model (that might come later) .
-                    if (value instanceof IRI || predicate.getDataType().equals(XSD.anyURI)) {
-                        subObjectMapping.put(URI.create(value.stringValue()), new AbstractMap.SimpleEntry<>(node, predicate));
-                    }
-                }
-                else {
-                    Logger.error("Encountered an unknown RDF predicate while mapping to JSON; " + triple);
+                // If the value is a resource, store it, we'll use it later to hook subobjects to their parents
+                // This means the value of this triple is possibly a reference to (the subject-URI of) another object
+                // in this model (that might come later) .
+                if (value instanceof IRI || predicate.getDataType().equals(XSD.anyURI)) {
+                    subObjectMapping.put(URI.create(value.stringValue()), new AbstractMap.SimpleEntry<>(this.rootNode, predicate));
                 }
             }
             else {
-                throw new IOException("Encountered a subject that's not an IRI; this shouldn't happen; " + triple);
+                Logger.error("Encountered an unknown RDF predicate while mapping to JSON; " + triple);
             }
         }
 
-        //do some validation, the root node should be initialized now, otherwise we have nothing to return
-        if (this.rootNode == null) {
-            throw new IOException("Encountered an RDF model without a main subject; this shouldn't happen; " + page);
+        // The model might have more subjects than just the root resource (eg. sub-objects).
+        // so do a recursive call and parse those other submodels to JSON nodes
+        for (Resource subjectIri : rdfModel.subjects()) {
+            if (!subjectIri.equals(rootResourceIri)) {
+                URI subjectUri = RdfTools.iriToUri((IRI) subjectIri);
+                JsonPageIndexEntry subEntry = new JsonPageIndexEntry(AbstractPageIndexEntry.generateId(subjectUri), subjectUri, rdfModel.filter(subjectIri, null, null));
+                subObjects.put(RdfTools.iriToUri((IRI) subjectIri), subEntry.getRootNode());
+            }
         }
 
         // Now branch sub-objects into other parent objects where possible
@@ -295,15 +291,16 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     {
         return predicate.getCurie().toString();
     }
-    private ObjectNode initializeInternalFields(ObjectNode object, Page page, URI subject, boolean mainSubject)
+    private ObjectNode initializeInternalFields(ObjectNode object, URI id, URI subject)
     {
-        for (IndexEntryField field : this.getInternalFields()) {
-            object.put(field.getName(), field.ge tValue(this));
-        }
+        //TODO
+                for (IndexEntryField field : this.getInternalFields()) {
+                    object.put(field.getName(), field.ge tValue(this));
+                }
 
         // The id of the Solr doc is the relative main URI of the resource.
         // Note: for pages, it's the public SEO-friendly URI, not the subject!
-        object.put(SolrConfigs.CORE_SCHEMA_FIELD_ID, mainSubject ? AbstractPageIndexEntry.generateId(page) : AbstractPageIndexEntry.generateId(subject));
+        object.put(IndexEntry.id.getName(), id.toString());
 
         //TODO add the others
 
