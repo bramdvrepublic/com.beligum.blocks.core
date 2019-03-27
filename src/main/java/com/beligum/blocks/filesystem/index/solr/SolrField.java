@@ -1,5 +1,7 @@
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -13,7 +15,7 @@ import java.io.IOException;
  * This is more or less the same implementation as org.apache.solr.schema.SchemaField
  * but wrapped around our RDF properties instead.
  */
-public class SolrField
+public class SolrField implements IndexEntryField
 {
     //-----CONSTANTS-----
 
@@ -25,10 +27,12 @@ public class SolrField
      * back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., _version_) are reserved. Every field must have a name.
      */
     private String name = null;
+
     /**
      * The name of the fieldType for this field. This will be found in the name attribute on the fieldType definition. Every field must have a type.
      */
     private String type = null;
+
     /**
      * A default value that will be added automatically to any document that does not have a value in this field when it is indexed. If this property is not specified, there is no default.
      */
@@ -138,6 +142,12 @@ public class SolrField
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public String getValue(IndexEntry indexEntry)
+    {
+        //don't really know what to return here, this shouldn't be called anyhow
+        return null;
+    }
     public ImmutableMap<String, Object> toMap()
     {
         ImmutableMap.Builder<String, Object> retVal = new ImmutableMap.Builder<String, Object>()
@@ -201,6 +211,7 @@ public class SolrField
 
         return retVal.build();
     }
+    @Override
     public String getName()
     {
         return name;

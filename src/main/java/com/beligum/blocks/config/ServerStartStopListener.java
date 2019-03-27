@@ -80,12 +80,19 @@ public class ServerStartStopListener implements ServerLifecycleListener
             //boot up all the static RDF fields
             RdfFactory.assertInitialized();
 
-            //TODO only for debug
+            // we boot both indexers here, during startup, because this is more or less the highest chance
+            // the sysadmin will be watching the log (during boot) to spot possible errors
             try {
                 StorageFactory.getJsonIndexer();
             }
             catch (Throwable e) {
-               Logger.error(e);
+               throw new RuntimeException("Error while starting up the JSON indexer", e);
+            }
+            try {
+                StorageFactory.getSparqlIndexer();
+            }
+            catch (Throwable e) {
+                throw new RuntimeException("Error while starting up the SPARQL indexer", e);
             }
         }
     }

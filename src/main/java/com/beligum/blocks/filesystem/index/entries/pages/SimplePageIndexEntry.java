@@ -18,13 +18,16 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.IRI;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Locale;
 
 /**
@@ -33,6 +36,18 @@ import java.util.Locale;
 public class SimplePageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
+    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(IndexEntry.id,
+                                                                                 IndexEntry.tokenisedId,
+                                                                                 IndexEntry.label,
+                                                                                 IndexEntry.description,
+                                                                                 IndexEntry.image,
+                                                                                 PageIndexEntry.parentId,
+                                                                                 PageIndexEntry.resource,
+                                                                                 PageIndexEntry.typeOf,
+                                                                                 PageIndexEntry.language,
+                                                                                 PageIndexEntry.canonicalAddress,
+                                                                                 PageIndexEntry.object
+    );
 
     //-----VARIABLES-----
     private String parentId;
@@ -72,6 +87,11 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Iterable<IndexEntryField> getInternalFields()
+    {
+        return INTERNAL_FIELDS;
+    }
     @Override
     public String getParentId()
     {

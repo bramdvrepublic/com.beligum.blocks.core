@@ -18,6 +18,7 @@ package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.filesystem.index.entries.IndexEntryFieldImpl;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import org.eclipse.rdf4j.model.IRI;
 
@@ -33,15 +34,55 @@ public interface PageIndexEntry extends IndexEntry
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    enum Field implements IndexEntry.IndexEntryField
+    IndexEntryField parentId = new IndexEntryFieldImpl("parentId")
     {
-        parentId,
-        resource,
-        typeOf,
-        language,
-        canonicalAddress,
-        object,
-    }
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).getParentId();
+        }
+    };
+    IndexEntryField resource = new IndexEntryFieldImpl("resource")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).getResource();
+        }
+    };
+    IndexEntryField typeOf = new IndexEntryFieldImpl("typeOf")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).getTypeOf();
+        }
+    };
+    IndexEntryField language = new IndexEntryFieldImpl("language")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).getLanguage();
+        }
+    };
+    IndexEntryField canonicalAddress = new IndexEntryFieldImpl("canonicalAddress")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).getCanonicalAddress();
+        }
+    };
+    IndexEntryField object = new IndexEntryFieldImpl("object")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            //don't really know what to return here...
+            return null;
+        }
+    };
 
     //-----VARIABLES-----
 

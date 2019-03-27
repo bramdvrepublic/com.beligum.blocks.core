@@ -372,7 +372,7 @@
 //
 //        int count = 0;
 //        String siteDomain = R.configuration().getSiteDomain().toString();
-//        String resourceField = PageIndexEntry.Field.resource.name();
+//        String resourceField = PageIndexEntry.resource.name();
 //        String languageStr = language == null ? null : language.getLanguage();
 //        //Connect with the page indexer here so we can re-use the connection for all results
 //        JsonPageIndexerConnection luceneConnection = StorageFactory.getJsonQueryConnection();
@@ -397,7 +397,7 @@
 //
 //                    switch (fetchPageMethod) {
 //                        case BULK_BOOLEAN_QUERY:
-//                            luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
+//                            luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
 //                            break;
 //                        case BULK_BITMAP_QUERY:
 //                            ids.add(new Term(resourceField, subjectStr));
@@ -429,7 +429,7 @@
 //                        break;
 //                }
 //                if (languageStr != null) {
-//                    luceneQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), languageStr)), BooleanClause.Occur.MUST);
+//                    luceneQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), languageStr)), BooleanClause.Occur.MUST);
 //                }
 //
 //                retVal = luceneConnection.search(luceneQuery, count);
@@ -637,9 +637,9 @@
 //        {
 //            try {
 //                org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
-//                pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), this.subject)), BooleanClause.Occur.MUST);
+//                pageQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), this.subject)), BooleanClause.Occur.MUST);
 //                if (this.language != null) {
-//                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), this.language)), BooleanClause.Occur.MUST);
+//                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), this.language)), BooleanClause.Occur.MUST);
 //                }
 //                IndexSearchResult results = luceneConnection.search(pageQuery, 1);
 //                if (results.size() > 0) {

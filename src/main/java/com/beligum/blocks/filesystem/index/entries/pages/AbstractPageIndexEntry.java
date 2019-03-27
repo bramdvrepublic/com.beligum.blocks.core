@@ -34,11 +34,12 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected String parentId;
-    protected String resource;
-    protected String typeOf;
-    protected String language;
-    protected String canonicalAddress;
+    //Note: the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    protected String _parentId;
+    protected String _resource;
+    protected String _typeOf;
+    protected String _language;
+    protected String _canonicalAddress;
 
     //-----CONSTRUCTORS-----
     protected AbstractPageIndexEntry(String id)
@@ -50,49 +51,49 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public String getParentId()
     {
-        return parentId;
+        return _parentId;
     }
     @Override
     public String getResource()
     {
-        return resource;
+        return _resource;
     }
     @Override
     public String getTypeOf()
     {
-        return typeOf;
+        return _typeOf;
     }
     @Override
     public String getLanguage()
     {
-        return language;
+        return _language;
     }
     @Override
     public String getCanonicalAddress()
     {
-        return canonicalAddress;
+        return _canonicalAddress;
     }
 
     //-----PROTECTED METHODS-----
     protected void setParentId(String parentId)
     {
-        this.parentId = parentId;
+        this._parentId = parentId;
     }
     protected void setResource(String resource)
     {
-        this.resource = resource;
+        this._resource = resource;
     }
     protected void setTypeOf(String typeOf)
     {
-        this.typeOf = typeOf;
+        this._typeOf = typeOf;
     }
     protected void setLanguage(String language)
     {
-        this.language = language;
+        this._language = language;
     }
     protected void setCanonicalAddress(String canonicalAddress)
     {
-        this.canonicalAddress = canonicalAddress;
+        this._canonicalAddress = canonicalAddress;
     }
 
     //-----STATIC METHODS-----

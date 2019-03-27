@@ -34,7 +34,7 @@ import java.util.Set;
 public class LuceneIndexSearchResult extends AbstractIndexSearchResult
 {
     //-----CONSTANTS-----
-    private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.Field.object.name());
+    private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.object.getName());
 
     //-----VARIABLES-----
     /**

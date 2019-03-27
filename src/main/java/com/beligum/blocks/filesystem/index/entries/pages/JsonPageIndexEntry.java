@@ -2,6 +2,9 @@ package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.solr.SolrConfigs;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -11,8 +14,8 @@ import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
@@ -20,25 +23,43 @@ import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.AbstractMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class JsonPageIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
-    interface JsonNodeVisitor
+    public interface JsonNodeVisitor
     {
-        void visit(String fieldName, JsonNode fieldValue, String path, String pathDelim);
+        String getPathDelimiter();
+
+        void visit(String fieldName, JsonNode fieldValue, String path);
     }
+
+    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(IndexEntry.id,
+                                                                                 IndexEntry.tokenisedId,
+                                                                                 IndexEntry.label,
+                                                                                 IndexEntry.description,
+                                                                                 IndexEntry.image,
+                                                                                 PageIndexEntry.parentId,
+                                                                                 PageIndexEntry.resource,
+                                                                                 PageIndexEntry.typeOf,
+                                                                                 PageIndexEntry.language,
+                                                                                 PageIndexEntry.canonicalAddress,
+                                                                                 PageIndexEntry.object
+    );
 
     //-----VARIABLES-----
     private ObjectMapper jsonMapper;
     private ObjectNode rootNode;
-    private String solrSplit;
 
     //-----CONSTRUCTORS-----
+    /**
+     * Private constructor: only for serialization
+     */
+    protected JsonPageIndexEntry()
+    {
+        super(null);
+    }
     public JsonPageIndexEntry(Page page) throws IOException
     {
         super(generateId(page));
@@ -48,6 +69,11 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Iterable<IndexEntryField> getInternalFields()
+    {
+        return INTERNAL_FIELDS;
+    }
     @Override
     public String toString()
     {
@@ -74,6 +100,10 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         }
 
         return retVal;
+    }
+    public void iterateObjectNodes(JsonNodeVisitor visitor) throws IOException
+    {
+        this.findChildBoundaries(this.rootNode, visitor);
     }
 
     //-----PROTECTED METHODS-----
@@ -106,7 +136,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                     boolean isMainSubject = subject.equals(pageResource);
 
                     //create a new object and fill it with the first internal fields like id, etc
-                    node = this.initializeObjectFields(this.jsonMapper.createObjectNode(), page, subject, isMainSubject);
+                    node = this.initializeInternalFields(this.jsonMapper.createObjectNode(), page, subject, isMainSubject);
 
                     //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
                     subObjects.put(subject, node);
@@ -174,53 +204,37 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 this.addProperty(mapping.getKey(), mapping.getValue(), subObject);
             }
         }
-
-        // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
-        // the sub-objects, so we can report to Solr where to split its children
-        StringBuilder sb = new StringBuilder();
-        this.findChildBoundaries(this.rootNode, "/", new JsonNodeVisitor()
-        {
-            @Override
-            public void visit(String fieldName, JsonNode fieldValue, String path, String pathDelim)
-            {
-                if (sb.length() > 0) {
-                    sb.append("|");
-                }
-                sb.append(path);
-            }
-        });
-        this.solrSplit = sb.toString();
     }
-    private void findChildBoundaries(JsonNode fieldValue, final String pathDelim, JsonNodeVisitor visitor) throws IOException
+    private void findChildBoundaries(JsonNode fieldValue, JsonNodeVisitor visitor) throws IOException
     {
         //standardized initial values so the method below works as expected
-        this.findChildBoundaries("", fieldValue, "", pathDelim, visitor);
+        this.findChildBoundaries("", fieldValue, "", visitor);
     }
-    private void findChildBoundaries(String fieldName, JsonNode fieldValue, String currentPath, final String pathDelim, JsonNodeVisitor visitor) throws IOException
+    private void findChildBoundaries(String fieldName, JsonNode fieldValue, String currentPath, JsonNodeVisitor visitor) throws IOException
     {
         if (fieldValue.isContainerNode()) {
 
             if (fieldValue.isObject()) {
 
                 //we discovered an object; update the path using the field name of this object
-                if (!currentPath.endsWith(pathDelim)) {
-                    currentPath += pathDelim;
+                if (!currentPath.endsWith(visitor.getPathDelimiter())) {
+                    currentPath += visitor.getPathDelimiter();
                 }
                 currentPath += fieldName;
 
-                visitor.visit(fieldName, fieldValue, currentPath, pathDelim);
+                visitor.visit(fieldName, fieldValue, currentPath);
 
                 Iterator<Map.Entry<String, JsonNode>> fields = fieldValue.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> field = fields.next();
-                    findChildBoundaries(field.getKey(), field.getValue(), currentPath, pathDelim, visitor);
+                    findChildBoundaries(field.getKey(), field.getValue(), currentPath, visitor);
                 }
             }
             else if (fieldValue.isArray()) {
 
                 Iterator<JsonNode> elements = fieldValue.elements();
                 while (elements.hasNext()) {
-                    findChildBoundaries(fieldName, elements.next(), currentPath, pathDelim, visitor);
+                    findChildBoundaries(fieldName, elements.next(), currentPath, visitor);
                 }
             }
             else {
@@ -281,8 +295,12 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     {
         return predicate.getCurie().toString();
     }
-    private ObjectNode initializeObjectFields(ObjectNode object, Page page, URI subject, boolean mainSubject)
+    private ObjectNode initializeInternalFields(ObjectNode object, Page page, URI subject, boolean mainSubject)
     {
+        for (IndexEntryField field : this.getInternalFields()) {
+            object.put(field.getName(), field.ge tValue(this));
+        }
+
         // The id of the Solr doc is the relative main URI of the resource.
         // Note: for pages, it's the public SEO-friendly URI, not the subject!
         object.put(SolrConfigs.CORE_SCHEMA_FIELD_ID, mainSubject ? AbstractPageIndexEntry.generateId(page) : AbstractPageIndexEntry.generateId(subject));

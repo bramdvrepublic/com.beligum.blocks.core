@@ -126,6 +126,26 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
             JsonPageIndexEntry indexEntry = new JsonPageIndexEntry(page);
 
+            // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
+            // the sub-objects, so we can report to Solr where to split its children
+            StringBuilder solrSplit = new StringBuilder();
+            indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
+            {
+                @Override
+                public String getPathDelimiter()
+                {
+                    return "/";
+                }
+                @Override
+                public void visit(String fieldName, JsonNode fieldValue, String path)
+                {
+                    if (solrSplit.length() > 0) {
+                        solrSplit.append("|");
+                    }
+                    solrSplit.append(path);
+                }
+            });
+
 //            this.solrClient.deleteById("1");
 //            this.solrClient.deleteById("2");
 //

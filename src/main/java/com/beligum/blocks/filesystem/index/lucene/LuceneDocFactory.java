@@ -20,6 +20,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.filesystem.pages.PageModel;
@@ -100,14 +101,14 @@ public class LuceneDocFactory
     //-----PUBLIC METHODS-----
     public Term toLuceneId(String id)
     {
-        return new Term(IndexEntry.Field.id.name(), id);
+        return new Term(IndexEntry.id.getName(), id);
     }
     /**
      * This method deserializes the binary object stream data of a Lucene entry back to an instance of this class
      */
     public PageIndexEntry fromLuceneDoc(Document document) throws IOException
     {
-        return getProtobufMapper().readerFor(SimplePageIndexEntry.class).with(getProtobufSchema()).readValue(document.getBinaryValue(PageIndexEntry.Field.object.name()).bytes);
+        return getProtobufMapper().readerFor(SimplePageIndexEntry.class).with(getProtobufSchema()).readValue(document.getBinaryValue(PageIndexEntry.object.getName()).bytes);
     }
     /**
      * This method converts this IndexEntry instance to a Lucene document (and ID)
@@ -125,49 +126,49 @@ public class LuceneDocFactory
         //      StoredField = not indexed at all
 
         //Note: we also need to insert the id of the doc even though it's an index
-        retVal.add(new StringField(IndexEntry.Field.id.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
+        retVal.add(new StringField(IndexEntry.id.getName(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
 
         //don't store it, we just add it to the index to be able to query the URI (again) more naturally
-        retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
+        retVal.add(new TextField(IndexEntry.tokenisedId.getName(), indexEntry.getId(), org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(PageIndexEntry.Field.parentId.name(),
-                                   indexEntry.getParentId() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getParentId(),
+        retVal.add(new StringField(PageIndexEntry.parentId.getName(),
+                                   indexEntry.getParentId() == null ? IndexEntryField.NULL_VALUE : indexEntry.getParentId(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(PageIndexEntry.Field.resource.name(),
-                                   indexEntry.getResource() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getResource(),
+        retVal.add(new StringField(PageIndexEntry.resource.getName(),
+                                   indexEntry.getResource() == null ? IndexEntryField.NULL_VALUE : indexEntry.getResource(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(),
-                                   indexEntry.getTypeOf() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getTypeOf(),
+        retVal.add(new StringField(PageIndexEntry.typeOf.getName(),
+                                   indexEntry.getTypeOf() == null ? IndexEntryField.NULL_VALUE : indexEntry.getTypeOf(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new TextField(IndexEntry.Field.label.name(),
-                                 indexEntry.getLabel() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getLabel(),
+        retVal.add(new TextField(IndexEntry.label.getName(),
+                                 indexEntry.getLabel() == null ? IndexEntryField.NULL_VALUE : indexEntry.getLabel(),
                                  org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(PageIndexEntry.Field.language.name(),
-                                   indexEntry.getLanguage() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getLanguage(),
+        retVal.add(new StringField(PageIndexEntry.language.getName(),
+                                   indexEntry.getLanguage() == null ? IndexEntryField.NULL_VALUE : indexEntry.getLanguage(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(),
-                                   indexEntry.getCanonicalAddress() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getCanonicalAddress(),
+        retVal.add(new StringField(PageIndexEntry.canonicalAddress.getName(),
+                                   indexEntry.getCanonicalAddress() == null ? IndexEntryField.NULL_VALUE : indexEntry.getCanonicalAddress(),
                                    org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new TextField(IndexEntry.Field.description.name(),
-                                 indexEntry.getDescription() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getDescription(),
+        retVal.add(new TextField(IndexEntry.description.getName(),
+                                 indexEntry.getDescription() == null ? IndexEntryField.NULL_VALUE : indexEntry.getDescription(),
                                  org.apache.lucene.document.Field.Store.NO));
 
-        retVal.add(new StringField(IndexEntry.Field.image.name(),
-                                   indexEntry.getImage() == null ? IndexEntry.IndexEntryField.NULL_VALUE : indexEntry.getImage(),
+        retVal.add(new StringField(IndexEntry.image.getName(),
+                                   indexEntry.getImage() == null ? IndexEntryField.NULL_VALUE : indexEntry.getImage(),
                                    org.apache.lucene.document.Field.Store.NO));
 
         //stores this entire object in the index (using Protocol Buffers)
         //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
         byte[] serializedObject = getProtobufMapper().writer(getProtobufSchema()).writeValueAsBytes(indexEntry);
-        retVal.add(new StoredField(PageIndexEntry.Field.object.name(), serializedObject));
+        retVal.add(new StoredField(PageIndexEntry.object.getName(), serializedObject));
         //this is the old JSON-alternative
-        //retVal.add(new StoredField(PageIndexEntry.Field.object.name(), Json.write(indexEntry)));
+        //retVal.add(new StoredField(PageIndexEntry.object.name(), Json.write(indexEntry)));
 
         return retVal;
     }

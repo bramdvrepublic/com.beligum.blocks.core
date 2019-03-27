@@ -1,5 +1,6 @@
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import org.apache.solr.schema.IndexSchema;
 
 public class SolrConfigs
@@ -1417,7 +1418,7 @@ public class SolrConfigs
                                              "</config>\n";
 
     //This is a list of field names that are used below
-    public static final String CORE_SCHEMA_FIELD_ID = "id";
+    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
     public static final String CORE_SCHEMA_FIELD_VERSION = "_version_";
     public static final String CORE_SCHEMA_FIELD_ROOT = "_root_";
     public static final String CORE_SCHEMA_FIELD_NEST_PATH = "_nest_path_";

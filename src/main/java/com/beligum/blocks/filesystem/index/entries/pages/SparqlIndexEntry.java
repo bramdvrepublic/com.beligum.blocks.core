@@ -16,12 +16,16 @@
 
 package com.beligum.blocks.filesystem.index.entries.pages;
 
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Created by bram on 2/13/16.
@@ -29,6 +33,8 @@ import java.io.IOException;
 public class SparqlIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
+    //Note: this doesn't really have internal fields, no?
+    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet();
 
     //-----VARIABLES-----
     private Model model;
@@ -42,6 +48,11 @@ public class SparqlIndexEntry extends AbstractIndexEntry implements PageIndexEnt
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Iterable<IndexEntryField> getInternalFields()
+    {
+        return INTERNAL_FIELDS;
+    }
     @Override
     public String getResource()
     {

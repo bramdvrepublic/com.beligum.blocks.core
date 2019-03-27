@@ -22,6 +22,9 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -139,7 +142,7 @@ public class SolrPageIndexer implements PageIndexer
         final String coreName = SOLR_CORE_NAME;
 
         try {
-            Logger.info("Booting up embedded Solr server");
+            Logger.info("Booting up (embedded) Solr server");
 
             //For now, we'll always work with an embedded server, might change in the future, see initRemote()
             this.solrClient = this.initEmbedded(coreName);
@@ -160,23 +163,23 @@ public class SolrPageIndexer implements PageIndexer
                 this.solrClient.request(createRequest);
 
                 StringBuilder propertyConfigs = new StringBuilder("{" +
-                                         // So (for now) our strategy is to disable auto soft commit and do a manual soft commit after each update
-                                         // (although the article below says otherwise).
-                                         // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
-                                         // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
-                                         // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
-                                         "  \"unset-property\": [" +
-                                         "    \"updateHandler.autoCommit.maxDocs\"," +
-                                         "  ]," +
-                                         "  \"set-property\": {" +
-                                         "    \"updateHandler.autoCommit.maxTime\": \"15000\"," +
-                                         "    \"updateHandler.autoCommit.openSearcher\": \"false\"" +
-                                         "  }," +
-                                         "  \"set-property\": {" +
-                                         "    \"updateHandler.autoSoftCommit.maxDocs\": \"-1\"," +
-                                         "    \"updateHandler.autoSoftCommit.maxTime\": \"-1\"" +
-                                         "  }," +
-                                         "}");
+                                                                  // So (for now) our strategy is to disable auto soft commit and do a manual soft commit after each update
+                                                                  // (although the article below says otherwise).
+                                                                  // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
+                                                                  // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
+                                                                  // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+                                                                  "  \"unset-property\": [" +
+                                                                  "    \"updateHandler.autoCommit.maxDocs\"," +
+                                                                  "  ]," +
+                                                                  "  \"set-property\": {" +
+                                                                  "    \"updateHandler.autoCommit.maxTime\": \"15000\"," +
+                                                                  "    \"updateHandler.autoCommit.openSearcher\": \"false\"" +
+                                                                  "  }," +
+                                                                  "  \"set-property\": {" +
+                                                                  "    \"updateHandler.autoSoftCommit.maxDocs\": \"-1\"," +
+                                                                  "    \"updateHandler.autoSoftCommit.maxTime\": \"-1\"" +
+                                                                  "  }," +
+                                                                  "}");
 
                 if (!this.useSchemaless) {
                     // This disables auto-field-creation of schemaless mode.
@@ -192,26 +195,32 @@ public class SolrPageIndexer implements PageIndexer
                                 .setContentWriter(new RequestWriter.StringPayloadContentWriter(propertyConfigs.toString(), CommonParams.JSON_MIME))
                                 .process(this.solrClient);
             }
-
-            //this.initSchema();
-
-            Logger.info("");
         }
         catch (Exception e) {
-            throw new IOException("Error while initializing/creating embedded Solr server; " + SOLR_CORE_NAME, e);
+            throw new IOException("Error while initializing/creating Solr server; " + SOLR_CORE_NAME, e);
+        }
+
+        // Let's always call this during startup: ontologies may have changed
+        if (!this.useSchemaless) {
+            try {
+                this.initSchema();
+            }
+            catch (Exception e) {
+                throw new IOException("Error while initializing Solr schema; " + SOLR_CORE_NAME, e);
+            }
         }
     }
     private void initSchema() throws IOException, SolrServerException
     {
         //now check if the schema is still correct
         SchemaResponse.FieldsResponse fieldsResponse = new SchemaRequest.Fields().process(this.solrClient);
-        Map<String, Map<String, Object>> existingFieldsInfo = new LinkedHashMap<>();
+        Map<String, Map<String, Object>> existingFields = new LinkedHashMap<>();
         for (Map<String, Object> f : fieldsResponse.getFields()) {
-            existingFieldsInfo.put(f.get("name").toString(), f);
+            existingFields.put(f.get("name").toString(), f);
         }
 
         //we will wipe the fields from this map when they were processed, to iterare when all is done to detect the stale fields to be deleted
-        Set<String> existingFieldsTracker = new HashSet<>(existingFieldsInfo.keySet());
+        Set<String> existingFieldsTracker = new HashSet<>(existingFields.keySet());
 
         //iterate all properties in all public ontologies and check if their field and type is known in the solr schema
         for (RdfOntology o : RdfFactory.getRelevantOntologies()) {
@@ -231,13 +240,13 @@ public class SolrPageIndexer implements PageIndexer
                             ImmutableMap<String, Object> rdfFieldMap = rdfField.toMap();
 
                             //if the field is known, make sure it didn't change
-                            if (existingFieldsInfo.containsKey(rdfField.getName())) {
+                            if (existingFields.containsKey(rdfField.getName())) {
 
                                 //delete it from the set so we can check for stale fields
                                 existingFieldsTracker.remove(rdfField.getName());
 
                                 //now compare the properties of the two
-                                Map<String, Object> existingField = existingFieldsInfo.get(rdfField.getName());
+                                Map<String, Object> existingField = existingFields.get(rdfField.getName());
 
                                 //note: using difference to be able to log what changed
                                 MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
@@ -271,11 +280,14 @@ public class SolrPageIndexer implements PageIndexer
             }
         }
 
-        //TODO this is just a test
-        new SchemaRequest.AddField(new ImmutableMap.Builder<String, Object>()
-                                                   .put("name", "isParent")
-                                                   .put("type", "boolean")
-                                                   .build()).process(this.solrClient);
+        // This is just a failsafe test to see if all internal fields are present in the Solr index.
+        // We're not creating them if they are missing (this is static enough to be implemented in SolrConfigs),
+        // we only throw an exception to tell the user something's wrong.
+        for (IndexEntryField field : new SolrPageIndexEntry().getInternalFields()) {
+            if (!existingFields.containsKey(field.getName())) {
+                throw new IOException("Encountered internal field that's not part of the Solr schema, please fix this; " + field);
+            }
+        }
     }
 
     private SolrClient initEmbedded(String coreName) throws IOException

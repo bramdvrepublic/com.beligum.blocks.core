@@ -427,9 +427,9 @@
 //        // (because the some existing fact-entry could have been deleted from the page)
 //        DefaultIndexSearchRequest query = DefaultIndexSearchRequest.create();
 //        //Note: the main page index entry doesn't have a parentId, so this will only select sub-resources
-//        query.filter(PageIndexEntry.Field.parentId, SimplePageIndexEntry.generateId(page), IndexSearchRequest.FilterBoolean.AND);
+//        query.filter(PageIndexEntry.parentId, SimplePageIndexEntry.generateId(page), IndexSearchRequest.FilterBoolean.AND);
 //        //this one is probably not necessary since the id of the parent should be unique, but let's add it to be sure.
-//        query.filter(PageIndexEntry.Field.language, page.getLanguage().getLanguage(), IndexSearchRequest.FilterBoolean.AND);
+//        query.filter(PageIndexEntry.language, page.getLanguage().getLanguage(), IndexSearchRequest.FilterBoolean.AND);
 //
 //        return this.search(query, DEFAULT_MAX_SEARCH_RESULTS);
 //    }

@@ -1,6 +1,7 @@
 package com.beligum.blocks.filesystem.index.request;
 
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.collect.Iterables;
@@ -45,7 +46,7 @@ public class DefaultIndexSearchRequest implements IndexSearchRequest
 
         return this;
     }
-    public DefaultIndexSearchRequest filter(IndexEntry.IndexEntryField field, String value, FilterBoolean filterBoolean)
+    public DefaultIndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
         this.filters.add(new FieldFilter(field, value, filterBoolean, false));
 
@@ -57,7 +58,7 @@ public class DefaultIndexSearchRequest implements IndexSearchRequest
 
         return this;
     }
-    public DefaultIndexSearchRequest wildcard(IndexEntry.IndexEntryField field, String value, FilterBoolean filterBoolean)
+    public DefaultIndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
         this.filters.add(new FieldFilter(field, value, filterBoolean, true));
 
@@ -148,10 +149,10 @@ public class DefaultIndexSearchRequest implements IndexSearchRequest
     }
     private class FieldFilter extends AbstractFilter
     {
-        private final IndexEntry.IndexEntryField field;
+        private final IndexEntryField field;
         private final boolean isWildcard;
 
-        private FieldFilter(IndexEntry.IndexEntryField field, String value, FilterBoolean filterBoolean, boolean isWildcard)
+        private FieldFilter(IndexEntryField field, String value, FilterBoolean filterBoolean, boolean isWildcard)
         {
             super(value, filterBoolean);
 

@@ -16,6 +16,9 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import com.beligum.blocks.filesystem.index.entries.IndexEntryFieldImpl;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 /**
@@ -24,32 +27,67 @@ import java.io.Serializable;
 public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
-    interface IndexEntryField
+    //note: sync these with the getter names below (and the setters of the implementations)
+    IndexEntryField id = new IndexEntryFieldImpl("id")
     {
-        /**
-         * This value is used to index "core" Fields (eg. the ones explicitly implementing IndexEntryField) to support
-         * an easy means to search for null fields (eg. search for all fields NOT having this field). Analogue to:
-         * https://www.elastic.co/guide/en/elasticsearch/reference/2.1/null-value.html
-         */
-        String NULL_VALUE = "NULL";
-
-        //since all implementations are enums, this will be implemented by the default enum name() method
-        String name();
-    }
-    enum Field implements IndexEntryField
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return indexEntry.getId();
+        }
+    };
+    IndexEntryField tokenisedId = new IndexEntryFieldImpl("tokenisedId")
     {
-        id,
-        tokenisedId,
-        label,
-        description,
-        image,
-    }
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            //is this okay? The value of this field is basically also the id, right?
+            return indexEntry.getId();
+        }
+    };
+    IndexEntryField label = new IndexEntryFieldImpl("label")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return indexEntry.getLabel();
+        }
+    };
+    IndexEntryField description = new IndexEntryFieldImpl("description")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return indexEntry.getDescription();
+        }
+    };
+    IndexEntryField image = new IndexEntryFieldImpl("image")
+    {
+        @Override
+        public String getValue(IndexEntry indexEntry)
+        {
+            return indexEntry.getImage();
+        }
+    };
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * This should return the list of internal fields, that will be added to the public RDF fields, in order
+     * to make this entry function.
+     */
+    @JsonIgnore
+    Iterable<IndexEntryField> getInternalFields();
+
+    /**
+     * This is a generic getter to get the value associated with the internal field key
+     */
+    @JsonIgnore
+    String getFieldValue(IndexEntryField field);
 
     /**
      * The unique ID of this entry. Eg. for a page, this is the public (relative) URI.

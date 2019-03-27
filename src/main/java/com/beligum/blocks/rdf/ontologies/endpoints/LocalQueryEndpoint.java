@@ -107,12 +107,12 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
 
         //let's support search-all-type queries when this is null
         if (resourceType != null) {
-            mainQuery.filter(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), IndexSearchRequest.FilterBoolean.AND);
+            mainQuery.filter(PageIndexEntry.typeOf, resourceType.getCurieName().toString(), IndexSearchRequest.FilterBoolean.AND);
         }
 
         DefaultIndexSearchRequest subQuery = DefaultIndexSearchRequest.create();
-        subQuery.wildcard(IndexEntry.Field.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
-        subQuery.wildcard(IndexEntry.Field.label, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.label, query, IndexSearchRequest.FilterBoolean.OR);
         mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
 
         mainQuery.maxResults(maxResults);
@@ -121,7 +121,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
         //#typeOf:mot:Person #(-language:en language:nl) #(-language:nl language:en) #(tokenisedId:bram* title:bram*)
         //        StringBuilder luceneQuery = new StringBuilder();
-        //        luceneQuery/*.append("#")*/.append(PageIndexEntry.Field.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
+        //        luceneQuery/*.append("#")*/.append(PageIndexEntry.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
 
         IndexSearchResult matchingPages = mainIndexer.search(mainQuery);
 
@@ -204,8 +204,8 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         if (selectedEntry == null) {
             IndexSearchResult matchingPages = StorageFactory.getJsonQueryConnection().search(DefaultIndexSearchRequest.create()
                                                                                                                       //at least one of the id or resource should match (or both)
-                                                                                                                      .filter(IndexEntry.Field.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                                                      .filter(PageIndexEntry.Field.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                                      .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                                      .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
                                                                                                                       .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }

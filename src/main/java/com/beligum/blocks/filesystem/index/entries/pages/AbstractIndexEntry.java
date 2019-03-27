@@ -17,6 +17,11 @@
 package com.beligum.blocks.filesystem.index.entries.pages;
 
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
+import com.google.common.collect.Sets;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Simple implementation that provides accessors to all the required fields and offers a basic equals() implementation
@@ -28,55 +33,61 @@ public abstract class AbstractIndexEntry implements IndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected String id;
-    protected String label;
-    protected String description;
-    protected String image;
+    //Note: the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    protected String _id;
+    protected String _label;
+    protected String _description;
+    protected String _image;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexEntry(String id)
     {
-        this.id = id;
+        this._id = id;
     }
 
     //-----PUBLIC METHODS-----
     @Override
+    public String getFieldValue(IndexEntryField field)
+    {
+        return field.getValue(this);
+    }
+    @Override
     public String getId()
     {
-        return id;
+        return _id;
     }
     @Override
     public String getLabel()
     {
-        return label;
+        return _label;
     }
     @Override
     public String getDescription()
     {
-        return description;
+        return _description;
     }
     @Override
     public String getImage()
     {
-        return image;
+        return _image;
     }
 
     //-----PROTECTED METHODS-----
     protected void setId(String id)
     {
-        this.id = id;
+        this._id = id;
     }
     protected void setLabel(String label)
     {
-        this.label = label;
+        this._label = label;
     }
     protected void setDescription(String description)
     {
-        this.description = description;
+        this._description = description;
     }
     protected void setImage(String image)
     {
-        this.image = image;
+        this._image = image;
     }
 
     //-----PRIVATE METHODS-----
