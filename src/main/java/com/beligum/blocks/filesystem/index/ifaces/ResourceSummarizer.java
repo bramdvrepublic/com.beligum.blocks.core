@@ -49,27 +49,27 @@ public interface ResourceSummarizer
     //-----INNER CLASSES-----
     interface SummarizedResource
     {
-        String getTitle();
+        String getLabel();
         String getDescription();
         URI getImage();
     }
     class DefaultSummarizedResource implements SummarizedResource
     {
-        private String title;
+        private String label;
         private String description;
         private URI image;
 
-        public DefaultSummarizedResource(String title, String description, URI image)
+        public DefaultSummarizedResource(String label, String description, URI image)
         {
-            this.title = title;
+            this.label = label;
             this.description = description;
             this.image = image;
         }
 
         @Override
-        public String getTitle()
+        public String getLabel()
         {
-            return title;
+            return label;
         }
         @Override
         public String getDescription()

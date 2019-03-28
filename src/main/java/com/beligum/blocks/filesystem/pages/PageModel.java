@@ -135,7 +135,7 @@ public class PageModel
             if (summarizer != null) {
                 ResourceSummarizer.SummarizedResource summary = summarizer.summarize(type, this.getSubModel());
                 if (summary != null) {
-                    title = summary.getTitle();
+                    title = summary.getLabel();
                     description = summary.getDescription();
                     image = summary.getImage();
                 }

@@ -88,6 +88,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
             catch (Throwable e) {
                throw new RuntimeException("Error while starting up the JSON indexer", e);
             }
+
             try {
                 StorageFactory.getSparqlIndexer();
             }

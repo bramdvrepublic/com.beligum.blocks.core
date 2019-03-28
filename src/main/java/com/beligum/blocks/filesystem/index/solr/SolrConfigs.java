@@ -1,11 +1,14 @@
 package com.beligum.blocks.filesystem.index.solr;
 
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
-import org.apache.solr.schema.IndexSchema;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 
 public class SolrConfigs
 {
     //-----CONSTANTS-----
+    /**
+     * This is the default global config in Solr 8.0
+     */
     public static final String SOLR_CONFIG = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                                              "<!--\n" +
                                              " Licensed to the Apache Software Foundation (ASF) under one or more\n" +
@@ -61,6 +64,9 @@ public class SolrConfigs
                                              "\n" +
                                              "</solr>\n";
 
+    /**
+     * This is the default core config in Solr 8.0
+     */
     public static final String CORE_CONFIG = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                                              "<!--\n" +
                                              " Licensed to the Apache Software Foundation (ASF) under one or more\n" +
@@ -1168,87 +1174,87 @@ public class SolrConfigs
                                              "    </highlighting>\n" +
                                              "  </searchComponent>\n" +
                                              "\n" +
-                                             "  <!-- Update Processors\n" +
-                                             "\n" +
-                                             "       Chains of Update Processor Factories for dealing with Update\n" +
-                                             "       Requests can be declared, and then used by name in Update\n" +
-                                             "       Request Processors\n" +
-                                             "\n" +
-                                             "       http://wiki.apache.org/solr/UpdateRequestProcessor\n" +
-                                             "\n" +
-                                             "    -->\n" +
-                                             "\n" +
-                                             "  <!-- Add unknown fields to the schema\n" +
-                                             "\n" +
-                                             "       Field type guessing update processors that will\n" +
-                                             "       attempt to parse string-typed field values as Booleans, Longs,\n" +
-                                             "       Doubles, or Dates, and then add schema fields with the guessed\n" +
-                                             "       field types. Text content will be indexed as \"text_general\" as\n" +
-                                             "       well as a copy to a plain string version in *_str.\n" +
-                                             "\n" +
-                                             "       These require that the schema is both managed and mutable, by\n" +
-                                             "       declaring schemaFactory as ManagedIndexSchemaFactory, with\n" +
-                                             "       mutable specified as true.\n" +
-                                             "\n" +
-                                             "       See http://wiki.apache.org/solr/GuessingFieldTypes\n" +
-                                             "    -->\n" +
-                                             "  <updateProcessor class=\"solr.UUIDUpdateProcessorFactory\" name=\"uuid\"/>\n" +
-                                             "  <updateProcessor class=\"solr.RemoveBlankFieldUpdateProcessorFactory\" name=\"remove-blank\"/>\n" +
-                                             "  <updateProcessor class=\"solr.FieldNameMutatingUpdateProcessorFactory\" name=\"field-name-mutating\">\n" +
-                                             "    <str name=\"pattern\">[^\\w-\\.]</str>\n" +
-                                             "    <str name=\"replacement\">_</str>\n" +
-                                             "  </updateProcessor>\n" +
-                                             "  <updateProcessor class=\"solr.ParseBooleanFieldUpdateProcessorFactory\" name=\"parse-boolean\"/>\n" +
-                                             "  <updateProcessor class=\"solr.ParseLongFieldUpdateProcessorFactory\" name=\"parse-long\"/>\n" +
-                                             "  <updateProcessor class=\"solr.ParseDoubleFieldUpdateProcessorFactory\" name=\"parse-double\"/>\n" +
-                                             "  <updateProcessor class=\"solr.ParseDateFieldUpdateProcessorFactory\" name=\"parse-date\">\n" +
-                                             "    <arr name=\"format\">\n" +
-                                             "      <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>\n" +
-                                             "      <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>\n" +
-                                             "      <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>\n" +
-                                             "      <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>\n" +
-                                             "      <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>\n" +
-                                             "      <str>EEEE, dd-MMM-yy HH:mm:ss z</str>\n" +
-                                             "      <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>\n" +
-                                             "    </arr>\n" +
-                                             "  </updateProcessor>\n" +
-                                             "  <updateProcessor class=\"solr.AddSchemaFieldsUpdateProcessorFactory\" name=\"add-schema-fields\">\n" +
-                                             "    <lst name=\"typeMapping\">\n" +
-                                             "      <str name=\"valueClass\">java.lang.String</str>\n" +
-                                             "      <str name=\"fieldType\">text_general</str>\n" +
-                                             "      <lst name=\"copyField\">\n" +
-                                             "        <str name=\"dest\">*_str</str>\n" +
-                                             "        <int name=\"maxChars\">256</int>\n" +
-                                             "      </lst>\n" +
-                                             "      <!-- Use as default mapping instead of defaultFieldType -->\n" +
-                                             "      <bool name=\"default\">true</bool>\n" +
-                                             "    </lst>\n" +
-                                             "    <lst name=\"typeMapping\">\n" +
-                                             "      <str name=\"valueClass\">java.lang.Boolean</str>\n" +
-                                             "      <str name=\"fieldType\">booleans</str>\n" +
-                                             "    </lst>\n" +
-                                             "    <lst name=\"typeMapping\">\n" +
-                                             "      <str name=\"valueClass\">java.util.Date</str>\n" +
-                                             "      <str name=\"fieldType\">pdates</str>\n" +
-                                             "    </lst>\n" +
-                                             "    <lst name=\"typeMapping\">\n" +
-                                             "      <str name=\"valueClass\">java.lang.Long</str>\n" +
-                                             "      <str name=\"valueClass\">java.lang.Integer</str>\n" +
-                                             "      <str name=\"fieldType\">plongs</str>\n" +
-                                             "    </lst>\n" +
-                                             "    <lst name=\"typeMapping\">\n" +
-                                             "      <str name=\"valueClass\">java.lang.Number</str>\n" +
-                                             "      <str name=\"fieldType\">pdoubles</str>\n" +
-                                             "    </lst>\n" +
-                                             "  </updateProcessor>\n" +
-                                             "\n" +
-                                             "  <!-- The update.autoCreateFields property can be turned to false to disable schemaless mode -->\n" +
-                                             "  <updateRequestProcessorChain name=\"add-unknown-fields-to-the-schema\" default=\"${update.autoCreateFields:true}\"\n" +
-                                             "           processor=\"uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields\">\n" +
-                                             "    <processor class=\"solr.LogUpdateProcessorFactory\"/>\n" +
-                                             "    <processor class=\"solr.DistributedUpdateProcessorFactory\"/>\n" +
-                                             "    <processor class=\"solr.RunUpdateProcessorFactory\"/>\n" +
-                                             "  </updateRequestProcessorChain>\n" +
+//                                             "  <!-- Update Processors\n" +
+//                                             "\n" +
+//                                             "       Chains of Update Processor Factories for dealing with Update\n" +
+//                                             "       Requests can be declared, and then used by name in Update\n" +
+//                                             "       Request Processors\n" +
+//                                             "\n" +
+//                                             "       http://wiki.apache.org/solr/UpdateRequestProcessor\n" +
+//                                             "\n" +
+//                                             "    -->\n" +
+//                                             "\n" +
+//                                             "  <!-- Add unknown fields to the schema\n" +
+//                                             "\n" +
+//                                             "       Field type guessing update processors that will\n" +
+//                                             "       attempt to parse string-typed field values as Booleans, Longs,\n" +
+//                                             "       Doubles, or Dates, and then add schema fields with the guessed\n" +
+//                                             "       field types. Text content will be indexed as \"text_general\" as\n" +
+//                                             "       well as a copy to a plain string version in *_str.\n" +
+//                                             "\n" +
+//                                             "       These require that the schema is both managed and mutable, by\n" +
+//                                             "       declaring schemaFactory as ManagedIndexSchemaFactory, with\n" +
+//                                             "       mutable specified as true.\n" +
+//                                             "\n" +
+//                                             "       See http://wiki.apache.org/solr/GuessingFieldTypes\n" +
+//                                             "    -->\n" +
+//                                             "  <updateProcessor class=\"solr.UUIDUpdateProcessorFactory\" name=\"uuid\"/>\n" +
+//                                             "  <updateProcessor class=\"solr.RemoveBlankFieldUpdateProcessorFactory\" name=\"remove-blank\"/>\n" +
+//                                             "  <updateProcessor class=\"solr.FieldNameMutatingUpdateProcessorFactory\" name=\"field-name-mutating\">\n" +
+//                                             "    <str name=\"pattern\">[^\\w-\\.]</str>\n" +
+//                                             "    <str name=\"replacement\">_</str>\n" +
+//                                             "  </updateProcessor>\n" +
+//                                             "  <updateProcessor class=\"solr.ParseBooleanFieldUpdateProcessorFactory\" name=\"parse-boolean\"/>\n" +
+//                                             "  <updateProcessor class=\"solr.ParseLongFieldUpdateProcessorFactory\" name=\"parse-long\"/>\n" +
+//                                             "  <updateProcessor class=\"solr.ParseDoubleFieldUpdateProcessorFactory\" name=\"parse-double\"/>\n" +
+//                                             "  <updateProcessor class=\"solr.ParseDateFieldUpdateProcessorFactory\" name=\"parse-date\">\n" +
+//                                             "    <arr name=\"format\">\n" +
+//                                             "      <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>\n" +
+//                                             "      <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>\n" +
+//                                             "      <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>\n" +
+//                                             "      <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>\n" +
+//                                             "      <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>\n" +
+//                                             "      <str>EEEE, dd-MMM-yy HH:mm:ss z</str>\n" +
+//                                             "      <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>\n" +
+//                                             "    </arr>\n" +
+//                                             "  </updateProcessor>\n" +
+//                                             "  <updateProcessor class=\"solr.AddSchemaFieldsUpdateProcessorFactory\" name=\"add-schema-fields\">\n" +
+//                                             "    <lst name=\"typeMapping\">\n" +
+//                                             "      <str name=\"valueClass\">java.lang.String</str>\n" +
+//                                             "      <str name=\"fieldType\">text_general</str>\n" +
+//                                             "      <lst name=\"copyField\">\n" +
+//                                             "        <str name=\"dest\">*_str</str>\n" +
+//                                             "        <int name=\"maxChars\">256</int>\n" +
+//                                             "      </lst>\n" +
+//                                             "      <!-- Use as default mapping instead of defaultFieldType -->\n" +
+//                                             "      <bool name=\"default\">true</bool>\n" +
+//                                             "    </lst>\n" +
+//                                             "    <lst name=\"typeMapping\">\n" +
+//                                             "      <str name=\"valueClass\">java.lang.Boolean</str>\n" +
+//                                             "      <str name=\"fieldType\">booleans</str>\n" +
+//                                             "    </lst>\n" +
+//                                             "    <lst name=\"typeMapping\">\n" +
+//                                             "      <str name=\"valueClass\">java.util.Date</str>\n" +
+//                                             "      <str name=\"fieldType\">pdates</str>\n" +
+//                                             "    </lst>\n" +
+//                                             "    <lst name=\"typeMapping\">\n" +
+//                                             "      <str name=\"valueClass\">java.lang.Long</str>\n" +
+//                                             "      <str name=\"valueClass\">java.lang.Integer</str>\n" +
+//                                             "      <str name=\"fieldType\">plongs</str>\n" +
+//                                             "    </lst>\n" +
+//                                             "    <lst name=\"typeMapping\">\n" +
+//                                             "      <str name=\"valueClass\">java.lang.Number</str>\n" +
+//                                             "      <str name=\"fieldType\">pdoubles</str>\n" +
+//                                             "    </lst>\n" +
+//                                             "  </updateProcessor>\n" +
+//                                             "\n" +
+//                                             "  <!-- The update.autoCreateFields property can be turned to false to disable schemaless mode -->\n" +
+//                                             "  <updateRequestProcessorChain name=\"add-unknown-fields-to-the-schema\" default=\"${update.autoCreateFields:true}\"\n" +
+//                                             "           processor=\"uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields\">\n" +
+//                                             "    <processor class=\"solr.LogUpdateProcessorFactory\"/>\n" +
+//                                             "    <processor class=\"solr.DistributedUpdateProcessorFactory\"/>\n" +
+//                                             "    <processor class=\"solr.RunUpdateProcessorFactory\"/>\n" +
+//                                             "  </updateRequestProcessorChain>\n" +
                                              "\n" +
                                              "  <!-- Deduplication\n" +
                                              "\n" +
@@ -1417,34 +1423,9 @@ public class SolrConfigs
                                              "    -->\n" +
                                              "</config>\n";
 
-    //This is a list of field names that are used below
-    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
-    public static final String CORE_SCHEMA_FIELD_VERSION = "_version_";
-    public static final String CORE_SCHEMA_FIELD_ROOT = "_root_";
-    public static final String CORE_SCHEMA_FIELD_NEST_PATH = "_nest_path_";
-    public static final String CORE_SCHEMA_FIELD_TEXT = "_text_";
-
-    //This is a list of field types that are used below
-    public static final String CORE_SCHEMA_TYPE_NEST_PATH = "_nest_path_";
-    public static final String CORE_SCHEMA_TYPE_STRING = "string";
-    public static final String CORE_SCHEMA_TYPE_STRINGS = "strings";
-    public static final String CORE_SCHEMA_TYPE_BOOLEAN = "boolean";
-    public static final String CORE_SCHEMA_TYPE_BOOLEANS = "booleans";
-    public static final String CORE_SCHEMA_TYPE_PINT = "pint";
-    public static final String CORE_SCHEMA_TYPE_PFLOAT = "pfloat";
-    public static final String CORE_SCHEMA_TYPE_PLONG = "plong";
-    public static final String CORE_SCHEMA_TYPE_PDOUBLE = "pdouble";
-    public static final String CORE_SCHEMA_TYPE_PINTS = "pints";
-    public static final String CORE_SCHEMA_TYPE_PFLOATS = "pfloats";
-    public static final String CORE_SCHEMA_TYPE_PLONGS = "plongs";
-    public static final String CORE_SCHEMA_TYPE_PDOUBLES = "pdoubles";
-    public static final String CORE_SCHEMA_TYPE_RANDOM = "random";
-    public static final String CORE_SCHEMA_TYPE_IGNORED = "ignored";
-    public static final String CORE_SCHEMA_TYPE_PDATE = "pdate";
-    public static final String CORE_SCHEMA_TYPE_PDATES = "pdates";
-    public static final String CORE_SCHEMA_TYPE_BINARY = "binary";
-    public static final String CORE_SCHEMA_TYPE_TEXT_GENERAL = "text_general";
-
+    /**
+     * This is the default (schemaless-oriented) schema in Solr 8.0
+     */
     public static final String DEFAULT_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                                                 "<!--\n" +
                                                 " Licensed to the Apache Software Foundation (ASF) under one or more\n" +
@@ -2459,42 +2440,153 @@ public class SolrConfigs
                                                 "\n" +
                                                 "</schema>\n";
 
+    //This is a list of field names that are used below
+    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
+    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedId.getName();
+    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.label.getName();
+    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.description.getName();
+    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.image.getName();
+    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentId.getName();
+    public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resource.getName();
+    public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOf.getName();
+    public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.language.getName();
+    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
+    public static final String CORE_SCHEMA_FIELD_OBJECT = PageIndexEntry.object.getName();
+
+    public enum ReservedFields
+    {
+        _version_,
+        _root_,
+        _nest_path_,
+        _text_
+    }
+
+    //This is a list of field types that are used below
+    public static final String CORE_SCHEMA_TYPE_NEST_PATH = "_nest_path_";
+    public static final String CORE_SCHEMA_TYPE_STRING = "string";
+    public static final String CORE_SCHEMA_TYPE_STRINGS = "strings";
+    public static final String CORE_SCHEMA_TYPE_BOOLEAN = "boolean";
+    public static final String CORE_SCHEMA_TYPE_BOOLEANS = "booleans";
+    public static final String CORE_SCHEMA_TYPE_PINT = "pint";
+    public static final String CORE_SCHEMA_TYPE_PFLOAT = "pfloat";
+    public static final String CORE_SCHEMA_TYPE_PLONG = "plong";
+    public static final String CORE_SCHEMA_TYPE_PDOUBLE = "pdouble";
+    public static final String CORE_SCHEMA_TYPE_PINTS = "pints";
+    public static final String CORE_SCHEMA_TYPE_PFLOATS = "pfloats";
+    public static final String CORE_SCHEMA_TYPE_PLONGS = "plongs";
+    public static final String CORE_SCHEMA_TYPE_PDOUBLES = "pdoubles";
+    public static final String CORE_SCHEMA_TYPE_RANDOM = "random";
+    public static final String CORE_SCHEMA_TYPE_IGNORED = "ignored";
+    public static final String CORE_SCHEMA_TYPE_PDATE = "pdate";
+    public static final String CORE_SCHEMA_TYPE_PDATES = "pdates";
+    public static final String CORE_SCHEMA_TYPE_BINARY = "binary";
+    public static final String CORE_SCHEMA_TYPE_TEXT_GENERAL = "text_general";
+
+    // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                                              "<schema name=\"default-config\" version=\"1.6\">\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_ID + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_VERSION + "\" type=\"" + CORE_SCHEMA_TYPE_PLONG + "\" indexed=\"false\" stored=\"false\"/>\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_ROOT + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"false\" docValues=\"false\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_NEST_PATH + "\" type=\"" + CORE_SCHEMA_TYPE_NEST_PATH + "\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_TEXT + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"false\" multiValued=\"true\"/>\n" +
-                                             "    <uniqueKey>" + CORE_SCHEMA_FIELD_ID + "</uniqueKey>\n" +
+
+                                             // To be used for field {@link IndexSchema#NEST_PATH_FIELD_NAME} for enhanced nested doc information.
+                                             // By defining a field type, we can encapsulate the configuration here so that the schema is free of it.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_NEST_PATH + "\" class=\"solr.NestPathField\" />\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_STRING + "\" class=\"solr.StrField\" sortMissingLast=\"true\" docValues=\"true\" />\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_STRINGS + "\" class=\"solr.StrField\" sortMissingLast=\"true\" multiValued=\"true\" docValues=\"true\" />\n" +
+
+                                             // Contains either true or false. Values of 1, t, or T in the first character are interpreted as true.
+                                             // Any other values in the first character are interpreted as false.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_BOOLEAN + "\" class=\"solr.BoolField\" sortMissingLast=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_BOOLEANS + "\" class=\"solr.BoolField\" sortMissingLast=\"true\" multiValued=\"true\"/>\n" +
+
+                                             // Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows
+                                             // for very efficient searches for specific values, or ranges of values. For single valued fields, docValues="true" must be used to enable sorting.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PINT + "\" class=\"solr.IntPointField\" docValues=\"true\"/>\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PFLOAT + "\" class=\"solr.FloatPointField\" docValues=\"true\"/>\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PLONG + "\" class=\"solr.LongPointField\" docValues=\"true\"/>\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PDOUBLE + "\" class=\"solr.DoublePointField\" docValues=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PINTS + "\" class=\"solr.IntPointField\" docValues=\"true\" multiValued=\"true\"/>\n" +
+
+                                             // Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows
+                                             // for very efficient searches for specific values, or ranges of values. For single valued fields, docValues="true" must be used to enable sorting.
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PFLOAT + "\" class=\"solr.FloatPointField\" docValues=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PFLOATS + "\" class=\"solr.FloatPointField\" docValues=\"true\" multiValued=\"true\"/>\n" +
+
+                                             // Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows
+                                             // for very efficient searches for specific values, or ranges of values. For single valued fields, docValues="true" must be used to enable sorting.
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PLONG + "\" class=\"solr.LongPointField\" docValues=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PLONGS + "\" class=\"solr.LongPointField\" docValues=\"true\" multiValued=\"true\"/>\n" +
+
+                                             // Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows
+                                             // for very efficient searches for specific values, or ranges of values. For single valued fields, docValues="true" must be used to enable sorting.
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PDOUBLE + "\" class=\"solr.DoublePointField\" docValues=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PDOUBLES + "\" class=\"solr.DoublePointField\" docValues=\"true\" multiValued=\"true\"/>\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_RANDOM + "\" class=\"solr.RandomSortField\" indexed=\"true\"/>\n" +
-                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_IGNORED + "\" stored=\"false\" indexed=\"false\" multiValued=\"true\" class=\"solr.StrField\" />\n" +
+
+                                             // Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows
+                                             // for very efficient searches for specific values, or ranges of values. See the section Working with Dates for more details on the supported syntax.
+                                             // For single valued fields, docValues="true" must be used to enable sorting.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PDATE + "\" class=\"solr.DatePointField\" docValues=\"true\"/>\n" +
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_PDATES + "\" class=\"solr.DatePointField\" docValues=\"true\" multiValued=\"true\"/>\n" +
+
+                                             // String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are not tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_STRING + "\" class=\"solr.StrField\" sortMissingLast=\"true\" docValues=\"true\" />\n" +
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_STRINGS + "\" class=\"solr.StrField\" sortMissingLast=\"true\" multiValued=\"true\" docValues=\"true\" />\n" +
+
+                                             // Does not contain a value. Queries that sort on this field type will return results in random order. Use a dynamic field to use this feature.
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_RANDOM + "\" class=\"solr.RandomSortField\" indexed=\"true\"/>\n" +
+
+                                             // Note: this is an unstored, unindexed string field
+                                             "    <fieldType name=\"" + CORE_SCHEMA_TYPE_IGNORED + "\" stored=\"false\" indexed=\"false\" multiValued=\"true\" class=\"solr.StrField\" />\n" +
+
+                                             // Binary data.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_BINARY + "\" class=\"solr.BinaryField\"/>\n" +
+
+                                             // Text, usually multiple words or tokens.
+                                             // Note: positionIncrementGap is used for phrase query of multi-value fields
+                                             // e.g. doc1 has two titles.
+                                             //   title1: ab cd
+                                             //   title2: xy zz
+                                             // If your positionIncrementGap is 0, then the position of the 4 terms are 0,1,2,3. If you search phrase "cd xy", it will hit.
+                                             // But you may think it should not match so you can adjust positionIncrementGap to a larger one. e.g. 100.
+                                             // Then the positions now are 0,1,100,101. the phrase query will not match it.
                                              "    <fieldType name=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" class=\"solr.TextField\" positionIncrementGap=\"100\" multiValued=\"true\">\n" +
+                                             // We switched to using this analyzer instead of the standard one because of better support for french words.
+                                             // Eg. if the user looks for "écope à grain" and the indexed string was "Ecope à grain", the standard analyzer won't find it.
                                              "      <analyzer type=\"index\">\n" +
                                              "        <tokenizer class=\"solr.StandardTokenizerFactory\"/>\n" +
+                                             "        <filter class=\"solr.ASCIIFoldingFilterFactory\" preserveOriginal=\"false\" />\n" +
                                              "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n" +
+                                             "        <filter class=\"solr.StopFilterFactory\" />" +
                                              "      </analyzer>\n" +
                                              "      <analyzer type=\"query\">\n" +
                                              "        <tokenizer class=\"solr.StandardTokenizerFactory\"/>\n" +
+                                             "        <filter class=\"solr.ASCIIFoldingFilterFactory\" preserveOriginal=\"false\" />\n" +
                                              "        <filter class=\"solr.LowerCaseFilterFactory\"/>\n" +
+                                             "        <filter class=\"solr.StopFilterFactory\" />" +
                                              "      </analyzer>\n" +
                                              "    </fieldType>\n" +
+
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_ID + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_TOKENISED_ID + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"false\" required=\"true\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_LABEL + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_DESCRIPTION + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_IMAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_PARENT_ID + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_RESOURCE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_TYPE_OF + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_LANGUAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_CANONICAL_ADDRESS + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+
+                                             // To support Optimistic Concurrency; see https://lucene.apache.org/solr/guide/7_7/updating-parts-of-documents.html#optimistic-concurrency
+                                             "    <field name=\"" + ReservedFields._version_ + "\" type=\"" + CORE_SCHEMA_TYPE_PLONG + "\" indexed=\"false\" stored=\"false\"/>\n" +
+
+                                             // To support block-join support; see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#nested-child-documents
+                                             // For nested documents (minimal; points to root document)
+                                             "    <field name=\"" + ReservedFields._root_ + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"false\" docValues=\"false\" />\n" +
+                                             // For nested documents (relationship tracking)
+                                             "    <field name=\"" + ReservedFields._nest_path_ + "\" type=\"" + CORE_SCHEMA_TYPE_NEST_PATH + "\" />\n" +
+
+                                             // This field is there in case the client does not know what fields may be searched to support Google-style search over everything.
+                                             // Note that this effectively indexes everything twice, so this is an expensive feature, both in terms of disk space and indexing speed
+                                             "    <field name=\"" + ReservedFields._text_ + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"false\" multiValued=\"true\"/>\n" +
+                                             "    <copyField source=\"*\" dest=\"" + ReservedFields._text_ + "\"/>\n" +
+
+                                             // Field to use to determine and enforce document uniqueness.
+                                             "    <uniqueKey>" + CORE_SCHEMA_FIELD_ID + "</uniqueKey>\n" +
+
                                              "</schema>\n";
 
 }

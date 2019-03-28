@@ -71,6 +71,7 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
+    private final boolean booted;
 
     //-----CONSTRUCTORS-----
     public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
@@ -87,12 +88,16 @@ public class SolrPageIndexer implements PageIndexer
         this.useSchemaless = false;
 
         this.init();
+
+        this.booted = true;
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
+        this.assertBooted();
+
         return new SolrPageIndexConnection(this, tx);
     }
     @Override
@@ -131,16 +136,25 @@ public class SolrPageIndexer implements PageIndexer
 
     //-----PROTECTED METHODS-----
     //TODO re-think concurrency
-    synchronized SolrClient getSolrClient()
+    synchronized SolrClient getSolrClient() throws IOException
     {
+        this.assertBooted();
+
         return this.solrClient;
     }
 
     //-----PRIVATE METHODS-----
+    private void assertBooted() throws IOException
+    {
+        if (!this.booted) {
+            throw new IOException("Solr didn't boot successfully; please fix that first...");
+        }
+    }
     private void init() throws IOException
     {
         final String coreName = SOLR_CORE_NAME;
 
+        boolean success = false;
         try {
             Logger.info("Booting up (embedded) Solr server");
 
@@ -195,18 +209,27 @@ public class SolrPageIndexer implements PageIndexer
                                 .setContentWriter(new RequestWriter.StringPayloadContentWriter(propertyConfigs.toString(), CommonParams.JSON_MIME))
                                 .process(this.solrClient);
             }
+
+            // Let's always call this during startup: ontologies may have changed
+            if (!this.useSchemaless) {
+                try {
+                    this.initSchema();
+                }
+                catch (Exception e) {
+                    throw new IOException("Error while initializing Solr schema; " + SOLR_CORE_NAME, e);
+                }
+            }
+
+            success = true;
         }
         catch (Exception e) {
             throw new IOException("Error while initializing/creating Solr server; " + SOLR_CORE_NAME, e);
         }
-
-        // Let's always call this during startup: ontologies may have changed
-        if (!this.useSchemaless) {
-            try {
-                this.initSchema();
-            }
-            catch (Exception e) {
-                throw new IOException("Error while initializing Solr schema; " + SOLR_CORE_NAME, e);
+        finally {
+            //if the booting of (especially a new) server didn't succeed,
+            //make sure it's closed cleanly, otherwise we'll have dangling lock files
+            if (!success && this.solrClient != null) {
+                this.solrClient.close();
             }
         }
     }
@@ -242,7 +265,7 @@ public class SolrPageIndexer implements PageIndexer
                             //if the field is known, make sure it didn't change
                             if (existingFields.containsKey(rdfField.getName())) {
 
-                                //delete it from the set so we can check for stale fields
+                                //delete it from the set so we can check for stale fields in the loop below
                                 existingFieldsTracker.remove(rdfField.getName());
 
                                 //now compare the properties of the two
@@ -251,19 +274,19 @@ public class SolrPageIndexer implements PageIndexer
                                 //note: using difference to be able to log what changed
                                 MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
                                 if (!difference.areEqual()) {
-                                    Logger.info("Replacing field in Solr schema because it seemed to have changed; " + o + " - " + rdfField.getName() + " (" + rdfField.getType() + ") " +
+                                    Logger.info("Replacing field in Solr schema because it seemed to have changed; " + rdfField.getName() + " (" + rdfField.getType() + ") " +
                                                 difference);
                                     new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
                                 }
                             }
                             //if the field is unknown, add it
                             else {
-                                Logger.info("Adding field to Solr schema because it doesn't exist yet; " + o + " - " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                                Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
                                 new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
                             }
                         }
                         else {
-                            throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + o + " - " + rdfField.getName() + " (" +
+                            throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + rdfField.getName() + " (" +
                                                   rdfField.getType() + ")");
                         }
                     }
@@ -271,22 +294,33 @@ public class SolrPageIndexer implements PageIndexer
             }
         }
 
-        for (String solrFieldName : existingFieldsTracker) {
-            //note: make sure we don't delete non-rdf (like id) fields
-            RdfProperty rdfField = SolrField.fromSolrField(solrFieldName);
-            if (rdfField != null) {
-                Logger.info("Deleting field from Solr schema because it seemed to have vanished; " + solrFieldName);
-                new SchemaRequest.DeleteField(solrFieldName).process(this.solrClient);
-            }
-        }
-
-        // This is just a failsafe test to see if all internal fields are present in the Solr index.
-        // We're not creating them if they are missing (this is static enough to be implemented in SolrConfigs),
-        // we only throw an exception to tell the user something's wrong.
         for (IndexEntryField field : new SolrPageIndexEntry().getInternalFields()) {
+            // This is just a failsafe test to see if all internal fields are present in the Solr index.
+            // We're not creating them if they are missing (this is static enough to be implemented in SolrConfigs),
+            // we only throw an exception to tell the user something's wrong.
             if (!existingFields.containsKey(field.getName())) {
                 throw new IOException("Encountered internal field that's not part of the Solr schema, please fix this; " + field);
             }
+            //since it exists, wipe it from the list so it doesn't get deleted below
+            else {
+                existingFieldsTracker.remove(field.getName());
+            }
+        }
+
+        //do the same for the reserved Solr fields like _version_ and all
+        for (SolrConfigs.ReservedFields field : SolrConfigs.ReservedFields.values()) {
+            if (!existingFields.containsKey(field.toString())) {
+                throw new IOException("Encountered reserved Solr field that's not part of the Solr schema, please fix this; " + field);
+            }
+            //since it exists, wipe it from the list so it doesn't get deleted below
+            else {
+                existingFieldsTracker.remove(field.toString());
+            }
+        }
+
+        for (String solrFieldName : existingFieldsTracker) {
+            Logger.info("Deleting field from Solr schema because it seemed to have vanished; " + solrFieldName);
+            new SchemaRequest.DeleteField(solrFieldName).process(this.solrClient);
         }
     }
 

@@ -79,11 +79,11 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     //TODO to be deleted
     public static String generateId(Page page)
     {
-        return AbstractPageIndexEntry.generateId(page);
+        return AbstractPageIndexEntry.generateId(page).toString();
     }
     public static String generateId(URI subResource)
     {
-        return AbstractPageIndexEntry.generateId(subResource);
+        return AbstractPageIndexEntry.generateId(subResource).toString();
     }
 
     //-----PUBLIC METHODS-----

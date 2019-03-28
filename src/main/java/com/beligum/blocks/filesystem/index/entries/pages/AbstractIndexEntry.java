@@ -20,6 +20,7 @@ import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.google.common.collect.Sets;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 

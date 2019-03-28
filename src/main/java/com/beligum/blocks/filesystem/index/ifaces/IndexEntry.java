@@ -41,7 +41,7 @@ public interface IndexEntry extends Serializable
         @Override
         public String getValue(IndexEntry indexEntry)
         {
-            //is this okay? The value of this field is basically also the id, right?
+            //the value is the same, but it should be indexed in a different way
             return indexEntry.getId();
         }
     };

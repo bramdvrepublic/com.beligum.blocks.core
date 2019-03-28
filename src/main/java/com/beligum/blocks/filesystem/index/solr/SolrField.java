@@ -134,14 +134,17 @@ public class SolrField implements IndexEntryField
      */
     public static RdfProperty fromSolrField(String field) throws IOException
     {
-        //see https://lucene.apache.org/solr/guide/7_7/defining-fields.html
-        boolean isReservedField = field.startsWith("_") && field.endsWith("_");
-
+        boolean isReservedField = isReservedField(field);
         //no need to translate the colon, see comment above
         return isReservedField ? null : RdfFactory.lookup(field/*.replaceFirst("_", ":")*/, RdfProperty.class);
     }
 
     //-----PUBLIC METHODS-----
+    public static boolean isReservedField(String fieldName)
+    {
+        //see https://lucene.apache.org/solr/guide/7_7/defining-fields.html
+        return fieldName.startsWith("_") && fieldName.endsWith("_");
+    }
     @Override
     public String getValue(IndexEntry indexEntry)
     {
@@ -213,6 +216,11 @@ public class SolrField implements IndexEntryField
     }
     @Override
     public String getName()
+    {
+        return name;
+    }
+    @Override
+    public String toString()
     {
         return name;
     }

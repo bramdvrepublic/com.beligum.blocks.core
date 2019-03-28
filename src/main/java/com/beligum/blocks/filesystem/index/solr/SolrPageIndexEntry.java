@@ -1,9 +1,21 @@
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
+import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Locale;
 
 public class SolrPageIndexEntry extends JsonPageIndexEntry
 {
@@ -13,20 +25,44 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
 
     //-----CONSTRUCTORS-----
     /**
-     * Package-private constructor: only for serialization and to call getInternalFields() during initialization
+     * Private constructor: only for serialization
      */
-    SolrPageIndexEntry()
+    protected SolrPageIndexEntry()
     {
         super();
     }
+    protected SolrPageIndexEntry(URI id, URI rootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    {
+        super(id, rootResourceUri, canonicalAddress, language, rdfModel, parent);
+    }
+    /**
+     * This is the only public entry point all the rest are recursive calls
+     */
     public SolrPageIndexEntry(Page page) throws IOException
     {
         super(page);
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * Overridden so this method returns an instance of SolrPageIndexEntry instead of JsonPageIndexEntry
+     * Note that all other create() method (in the superclass) forward their calls here so we don't need to override the others.
+     */
+    @Override
+    public JsonPageIndexEntry create(URI id, URI rootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    {
+        return new SolrPageIndexEntry(id, rootResourceUri, canonicalAddress, language, rdfModel, parent);
+    }
 
     //-----PROTECTED METHODS-----
+    /**
+     * Overridden to make the field name generation uniform with the way our schema is initialized/checked on server startup.
+     */
+    @Override
+    protected String toFieldName(RdfClass clazz, RdfProperty predicate) throws IOException
+    {
+        return new SolrField(clazz, predicate).getName();
+    }
 
     //-----PRIVATE METHODS-----
 }

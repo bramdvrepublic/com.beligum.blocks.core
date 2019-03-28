@@ -67,7 +67,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private boolean active;
 
     //-----CONSTRUCTORS-----
-    public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction)
+    public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction) throws IOException
     {
         this.pageIndexer = pageIndexer;
         this.solrClient = pageIndexer.getSolrClient();
@@ -83,15 +83,15 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
         try {
             SolrQuery query = new SolrQuery();
-            query.setParam("q", "{!child of=isParent:true}");
+            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
             QueryResponse response = this.solrClient.query(query);
-            Logger.info("Got "+response.getResults().getNumFound()+" docs: "+json);
-            for (int i=0;i<response.getResults().getNumFound();i++) {
+            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
+            for (int i = 0; i < response.getResults().getNumFound(); i++) {
                 Logger.info(response.getResults().get(i).jsonStr());
             }
 
             //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
-//            key = URI.create("http://localhost:8080/en/blah");
+            //            key = URI.create("http://localhost:8080/en/blah");
             query = new SolrQuery();
             //query.setQuery(QueryParser.escape(SolrConfigs.CORE_SCHEMA_FIELD_ID) + ":" + SimplePageIndexEntry.generateId(key));
             query.setQuery("*:*");
@@ -104,8 +104,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                 return null;
             }
             else {
-                Logger.info("Got "+docList.getNumFound()+" docs: "+json);
-                for (int i=0;i<docList.getNumFound();i++) {
+                Logger.info("Got " + docList.getNumFound() + " docs: " + json);
+                for (int i = 0; i < docList.getNumFound(); i++) {
                     Logger.info(docList.get(i).jsonStr());
                 }
                 return null;
@@ -124,7 +124,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            JsonPageIndexEntry indexEntry = new JsonPageIndexEntry(page);
+            SolrPageIndexEntry indexEntry = new SolrPageIndexEntry(page);
 
             // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
             // the sub-objects, so we can report to Solr where to split its children
@@ -146,28 +146,27 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                 }
             });
 
-//            this.solrClient.deleteById("1");
-//            this.solrClient.deleteById("2");
-//
-//            SolrInputDocument parent = new SolrInputDocument();
-//            parent.addField("id", "1");
-//            parent.addField("isParent", true);
-//            parent.addField("hehe", "parentValue");
-//            SolrInputDocument child = new SolrInputDocument();
-//            child.addField("id", "2");
-//            child.addField("hehe", "childValue");
-//            parent.addChildDocument(child);
-//            String res = parent.jsonStr();
-//            this.solrClient.add(parent);
-//
-//            Logger.info("Writing index entry: " + indexEntry.toString());
+            //            this.solrClient.deleteById("1");
+            //            this.solrClient.deleteById("2");
+            //
+            //            SolrInputDocument parent = new SolrInputDocument();
+            //            parent.addField("id", "1");
+            //            parent.addField("isParent", true);
+            //            parent.addField("hehe", "parentValue");
+            //            SolrInputDocument child = new SolrInputDocument();
+            //            child.addField("id", "2");
+            //            child.addField("hehe", "childValue");
+            //            parent.addChildDocument(child);
+            //            String res = parent.jsonStr();
+            //            this.solrClient.add(parent);
+            //
+            //            Logger.info("Writing index entry: " + indexEntry.toString());
 
-            this.solrClient.deleteById("/en/blah");
-            this.solrClient.deleteById("/en/blah/child");
+            this.solrClient.deleteById(indexEntry.getId());
+
             // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
             // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
-
-            // Note: the "/update/json/docs" path is a shortcut to "/update" with the contentType and the command=false already set right
+            // Note: the "/update/json/docs" path is a shortcut for "/update" with the contentType and the command=false already set right
             ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
             request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
 
@@ -175,7 +174,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             // If the entire JSON makes a single Solr document, the path must be “/”.
             // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
             // If one path is a child of another, they automatically become a child document.
-            request.setParam("split", "/|/child");
+            request.setParam("split", solrSplit.toString());
 
             // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
             // Provides multivalued mapping to map document field names to Solr field names.
