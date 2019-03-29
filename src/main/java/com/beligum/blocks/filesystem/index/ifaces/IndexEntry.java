@@ -35,6 +35,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.getId();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return indexEntry.hasId();
+        }
     };
     IndexEntryField tokenisedId = new IndexEntryFieldImpl("tokenisedId")
     {
@@ -44,6 +49,11 @@ public interface IndexEntry extends Serializable
             //the value is the same, but it should be indexed in a different way
             return indexEntry.getId();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return indexEntry.hasId();
+        }
     };
     IndexEntryField label = new IndexEntryFieldImpl("label")
     {
@@ -51,6 +61,11 @@ public interface IndexEntry extends Serializable
         public String getValue(IndexEntry indexEntry)
         {
             return indexEntry.getLabel();
+        }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return indexEntry.hasLabel();
         }
     };
     IndexEntryField description = new IndexEntryFieldImpl("description")
@@ -60,6 +75,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.getDescription();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return indexEntry.hasDescription();
+        }
     };
     IndexEntryField image = new IndexEntryFieldImpl("image")
     {
@@ -68,6 +88,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.getImage();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return indexEntry.hasImage();
+        }
     };
 
     //-----VARIABLES-----
@@ -75,6 +100,55 @@ public interface IndexEntry extends Serializable
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    /**
+     * The unique ID of this entry. Eg. for a page, this is the public (relative) URI.
+     * For resources, the more unique, the better, so often the real client URL is used (instead of the linked, auto-generated resource-URI)
+     */
+    String getId();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasId();
+
+    /**
+     * The label of this resource, to be used directly in the HTML that is returned to the client.
+     * So, in the right language and format. Mainly used to build eg. search result lists.
+     * Try not to return null or "".
+     */
+    String getLabel();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasLabel();
+
+    /**
+     * The description of this resource, to be used directly in the HTML that is returned to the client.
+     * So, in the right language and format. Mainly used to build eg. search result lists.
+     * Might be empty or null.
+     */
+    String getDescription();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasDescription();
+
+    /**
+     * A link to the main image that describes this resource, mainly used to build eg. search result lists.
+     * Might be null.
+     */
+    String getImage();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasImage();
 
     /**
      * This should return the list of internal fields, that will be added to the public RDF fields, in order
@@ -88,31 +162,5 @@ public interface IndexEntry extends Serializable
      */
     @JsonIgnore
     String getFieldValue(IndexEntryField field);
-
-    /**
-     * The unique ID of this entry. Eg. for a page, this is the public (relative) URI.
-     * For resources, the more unique, the better, so often the real client URL is used (instead of the linked, auto-generated resource-URI)
-     */
-    String getId();
-
-    /**
-     * The label of this resource, to be used directly in the HTML that is returned to the client.
-     * So, in the right language and format. Mainly used to build eg. search result lists.
-     * Try not to return null or "".
-     */
-    String getLabel();
-
-    /**
-     * The description of this resource, to be used directly in the HTML that is returned to the client.
-     * So, in the right language and format. Mainly used to build eg. search result lists.
-     * Might be empty or null.
-     */
-    String getDescription();
-
-    /**
-     * A link to the main image that describes this resource, mainly used to build eg. search result lists.
-     * Might be null.
-     */
-    String getImage();
 
 }

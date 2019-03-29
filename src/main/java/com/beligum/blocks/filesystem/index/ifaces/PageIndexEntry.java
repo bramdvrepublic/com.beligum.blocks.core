@@ -20,6 +20,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.entries.IndexEntryFieldImpl;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.rdf4j.model.IRI;
 
 import java.net.URI;
@@ -41,6 +42,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).getParentId();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).hasParentId();
+        }
     };
     IndexEntryField resource = new IndexEntryFieldImpl("resource")
     {
@@ -48,6 +54,11 @@ public interface PageIndexEntry extends IndexEntry
         public String getValue(IndexEntry indexEntry)
         {
             return ((PageIndexEntry)indexEntry).getResource();
+        }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).hasResource();
         }
     };
     IndexEntryField typeOf = new IndexEntryFieldImpl("typeOf")
@@ -57,6 +68,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).getTypeOf();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).hasTypeOf();
+        }
     };
     IndexEntryField language = new IndexEntryFieldImpl("language")
     {
@@ -64,6 +80,11 @@ public interface PageIndexEntry extends IndexEntry
         public String getValue(IndexEntry indexEntry)
         {
             return ((PageIndexEntry)indexEntry).getLanguage();
+        }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).hasLanguage();
         }
     };
     IndexEntryField canonicalAddress = new IndexEntryFieldImpl("canonicalAddress")
@@ -73,6 +94,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).getCanonicalAddress();
         }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            return ((PageIndexEntry)indexEntry).hasCanonicalAddress();
+        }
     };
     IndexEntryField object = new IndexEntryFieldImpl("object")
     {
@@ -81,6 +107,12 @@ public interface PageIndexEntry extends IndexEntry
         {
             //don't really know what to return here...
             return null;
+        }
+        @Override
+        public boolean hasValue(IndexEntry indexEntry)
+        {
+            //sync this with above getValue()
+            return false;
         }
     };
 
@@ -96,9 +128,21 @@ public interface PageIndexEntry extends IndexEntry
     String getParentId();
 
     /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasParentId();
+
+    /**
      * The string representation of the most basic resource URI (eg. for a public page, this is the low-level interconnecting "about" URI, not the public SEO-friendly one)
      */
     String getResource();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasResource();
 
     /**
      * The string representation of the CURIE of the RdfClass type of the page
@@ -106,14 +150,32 @@ public interface PageIndexEntry extends IndexEntry
     String getTypeOf();
 
     /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasTypeOf();
+
+    /**
      * What gets returned by the Locale.getLanguage() method of the page's language locale.
      */
     String getLanguage();
 
     /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasLanguage();
+
+    /**
      * The string representation of the canonical address of this page (eg. the standardized form of the publicly visible address)
      */
     String getCanonicalAddress();
+
+    /**
+     * Returns true if this value has been set once (even though it might be null)
+     */
+    @JsonIgnore
+    boolean hasCanonicalAddress();
 
     /**
      * Goes through the supplied page search results and selects the single most fitting result, taking into account the supplied language.

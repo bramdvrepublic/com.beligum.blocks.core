@@ -33,7 +33,7 @@ import java.util.Locale;
 /**
  * Created by bram on 2/13/16.
  */
-public class SimplePageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
+public class SimplePageIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
     private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(IndexEntry.id,
@@ -50,11 +50,6 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     );
 
     //-----VARIABLES-----
-    private String parentId;
-    private String resource;
-    private String typeOf;
-    private String language;
-    private String canonicalAddress;
 
     //-----CONSTRUCTORS-----
     // private, only for serialization
@@ -76,66 +71,11 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
         this.setImage(image == null ? null : image.toString());
     }
 
-    //TODO to be deleted
-    public static String generateId(Page page)
-    {
-        return AbstractPageIndexEntry.generateId(page).toString();
-    }
-    public static String generateId(URI subResource)
-    {
-        return AbstractPageIndexEntry.generateId(subResource).toString();
-    }
-
     //-----PUBLIC METHODS-----
     @Override
     public Iterable<IndexEntryField> getInternalFields()
     {
         return INTERNAL_FIELDS;
-    }
-    @Override
-    public String getParentId()
-    {
-        return parentId;
-    }
-    private void setParentId(String parentId)
-    {
-        this.parentId = parentId;
-    }
-    @Override
-    public String getResource()
-    {
-        return resource;
-    }
-    private void setResource(String resource)
-    {
-        this.resource = resource;
-    }
-    @Override
-    public String getCanonicalAddress()
-    {
-        return canonicalAddress;
-    }
-    private void setCanonicalAddress(String canonicalAddress)
-    {
-        this.canonicalAddress = canonicalAddress;
-    }
-    @Override
-    public String getTypeOf()
-    {
-        return typeOf;
-    }
-    private void setTypeOf(String typeOfCurie)
-    {
-        this.typeOf = typeOfCurie;
-    }
-    @Override
-    public String getLanguage()
-    {
-        return language;
-    }
-    private void setLanguage(String language)
-    {
-        this.language = language;
     }
 
     //-----PROTECTED METHODS-----

@@ -34,6 +34,43 @@ public class DefaultIndexSearchRequest implements IndexSearchRequest
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public List<Filter> getFilters()
+    {
+        return filters;
+    }
+    @Override
+    public RdfProperty getSortProperty()
+    {
+        return sortProperty;
+    }
+    @Override
+    public boolean isSortAscending()
+    {
+        return sortAscending;
+    }
+    @Override
+    public int getPageSize()
+    {
+        return pageSize;
+    }
+    @Override
+    public int getPageOffset()
+    {
+        return pageOffset;
+    }
+    @Override
+    public Locale getLanguage()
+    {
+        return language;
+    }
+    @Override
+    public long getMaxResults()
+    {
+        return maxResults;
+    }
+
+    //-----FACTORY METHODS-----
     public DefaultIndexSearchRequest filter(String value, FilterBoolean filterBoolean)
     {
         this.filters.add(new QueryFilter(value, filterBoolean, false));
@@ -122,9 +159,6 @@ public class DefaultIndexSearchRequest implements IndexSearchRequest
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private interface Filter
-    {
-    }
     private abstract class AbstractFilter implements Filter
     {
         protected final String value;

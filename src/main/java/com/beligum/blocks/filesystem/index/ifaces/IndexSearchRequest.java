@@ -16,7 +16,11 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+
 import java.io.Serializable;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by bram on 6/3/17.
@@ -28,4 +32,16 @@ public interface IndexSearchRequest extends Serializable
         AND,
         OR
     }
+
+    interface Filter
+    {
+    }
+
+    List<Filter> getFilters();
+    RdfProperty getSortProperty();
+    boolean isSortAscending();
+    int getPageSize();
+    int getPageOffset();
+    Locale getLanguage();
+    long getMaxResults();
 }

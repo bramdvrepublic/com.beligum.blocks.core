@@ -34,12 +34,19 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //Note: the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    //Notes:
+    // - the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    // - the booleans is to detect unset fields while supporting null values
     protected String _parentId;
+    protected boolean hasParentId;
     protected String _resource;
+    protected boolean hasResource;
     protected String _typeOf;
+    protected boolean hasTypeOf;
     protected String _language;
+    protected boolean hasLanguage;
     protected String _canonicalAddress;
+    protected boolean hasCanonicalAddress;
 
     //-----CONSTRUCTORS-----
     protected AbstractPageIndexEntry()
@@ -51,6 +58,25 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
         super(id);
     }
 
+    //-----STATIC METHODS-----
+    /**
+     * These are a couple of ID factory methods, grouped for overview
+     * and make static so they can be used from the constructors
+     */
+    public static URI generateId(IRI iri)
+    {
+        return generateId(URI.create(iri.toString()));
+    }
+    public static URI generateId(Page page)
+    {
+        return generateId(page.getPublicRelativeAddress());
+    }
+    public static URI generateId(URI id)
+    {
+        //since we treat all URIs as relative, we only take the path into account
+        return StringFunctions.getRightOfDomain(id);
+    }
+
     //-----PUBLIC METHODS-----
     @Override
     public String getParentId()
@@ -58,9 +84,19 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
         return _parentId;
     }
     @Override
+    public boolean hasParentId()
+    {
+        return hasParentId;
+    }
+    @Override
     public String getResource()
     {
         return _resource;
+    }
+    @Override
+    public boolean hasResource()
+    {
+        return hasResource;
     }
     @Override
     public String getTypeOf()
@@ -68,55 +104,56 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
         return _typeOf;
     }
     @Override
+    public boolean hasTypeOf()
+    {
+        return hasTypeOf;
+    }
+    @Override
     public String getLanguage()
     {
         return _language;
+    }
+    @Override
+    public boolean hasLanguage()
+    {
+        return hasLanguage;
     }
     @Override
     public String getCanonicalAddress()
     {
         return _canonicalAddress;
     }
+    @Override
+    public boolean hasCanonicalAddress()
+    {
+        return hasCanonicalAddress;
+    }
 
     //-----PROTECTED METHODS-----
     protected void setParentId(String parentId)
     {
         this._parentId = parentId;
+        this.hasParentId = true;
     }
     protected void setResource(String resource)
     {
         this._resource = resource;
+        this.hasResource = true;
     }
     protected void setTypeOf(String typeOf)
     {
         this._typeOf = typeOf;
+        this.hasTypeOf = true;
     }
     protected void setLanguage(String language)
     {
         this._language = language;
+        this.hasLanguage = true;
     }
     protected void setCanonicalAddress(String canonicalAddress)
     {
         this._canonicalAddress = canonicalAddress;
-    }
-
-    //-----STATIC METHODS-----
-    /**
-     * These are a couple of ID factory methods, grouped for overview
-     * and make static so they can be used from the constructors
-     */
-    protected static URI generateId(IRI iri)
-    {
-        return generateId(URI.create(iri.toString()));
-    }
-    protected static URI generateId(Page page)
-    {
-        return generateId(page.getPublicRelativeAddress());
-    }
-    protected static URI generateId(URI id)
-    {
-        //since we treat all URIs as relative, we only take the path into account
-        return StringFunctions.getRightOfDomain(id);
+        this.hasCanonicalAddress = true;
     }
 
     //-----PRIVATE METHODS-----

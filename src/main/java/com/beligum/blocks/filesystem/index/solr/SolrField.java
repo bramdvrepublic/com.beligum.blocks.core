@@ -15,7 +15,7 @@ import java.io.IOException;
  * This is more or less the same implementation as org.apache.solr.schema.SchemaField
  * but wrapped around our RDF properties instead.
  */
-public class SolrField implements IndexEntryField
+public class SolrField
 {
     //-----CONSTANTS-----
 
@@ -145,7 +145,6 @@ public class SolrField implements IndexEntryField
         //see https://lucene.apache.org/solr/guide/7_7/defining-fields.html
         return fieldName.startsWith("_") && fieldName.endsWith("_");
     }
-    @Override
     public String getValue(IndexEntry indexEntry)
     {
         //don't really know what to return here, this shouldn't be called anyhow
@@ -169,7 +168,7 @@ public class SolrField implements IndexEntryField
         if (this.docValues != null) {
             retVal.put("docValues", this.docValues);
         }
-        if (this.sortMissingFirst  != null) {
+        if (this.sortMissingFirst != null) {
             retVal.put("sortMissingFirst", this.sortMissingFirst);
         }
         if (this.sortMissingLast != null) {
@@ -193,7 +192,7 @@ public class SolrField implements IndexEntryField
         if (this.termVectors != null) {
             retVal.put("termVectors", this.termVectors);
         }
-        if (this.termPositions  != null) {
+        if (this.termPositions != null) {
             retVal.put("termPositions", this.termPositions);
         }
         if (this.termOffsets != null) {
@@ -214,13 +213,7 @@ public class SolrField implements IndexEntryField
 
         return retVal.build();
     }
-    @Override
     public String getName()
-    {
-        return name;
-    }
-    @Override
-    public String toString()
     {
         return name;
     }
@@ -392,5 +385,12 @@ public class SolrField implements IndexEntryField
         }
 
         return retVal;
+    }
+
+    //-----MGMT METHODS-----
+    @Override
+    public String toString()
+    {
+        return name;
     }
 }

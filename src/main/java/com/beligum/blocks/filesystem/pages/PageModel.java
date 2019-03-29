@@ -17,6 +17,7 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
@@ -58,7 +59,7 @@ public class PageModel
         this.subModel = subModel;
 
         this.isMain = this.mainResource.equals(this.subResource);
-        this.id = this.generateId(this.isMain());
+        this.id = this.generateId(this.isMain()).toString();
     }
 
     //-----PUBLIC METHODS-----
@@ -103,10 +104,10 @@ public class PageModel
         }
         else {
 
-            String id = this.generateId(this.isMain());
+            String id = this.generateId(this.isMain()).toString();
 
             //Note: the whole point is that page resources don't have a parent, so if this is a main resource, set it to null
-            String parentId = this.isMain() ? null : this.generateId(true);
+            String parentId = this.isMain() ? null : this.generateId(true).toString();
 
             URI resource = this.getSubResource();
             //Note that we index all addresses relatively, including the resource uri
@@ -156,8 +157,8 @@ public class PageModel
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private String generateId(boolean forMain)
+    private URI generateId(boolean forMain)
     {
-        return forMain ? SimplePageIndexEntry.generateId(this.getPage()) : SimplePageIndexEntry.generateId(this.getSubResource());
+        return forMain ? AbstractPageIndexEntry.generateId(this.getPage()) : AbstractPageIndexEntry.generateId(this.getSubResource());
     }
 }

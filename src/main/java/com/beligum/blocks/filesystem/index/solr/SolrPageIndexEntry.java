@@ -8,6 +8,7 @@ import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.Model;
@@ -31,9 +32,12 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     {
         super();
     }
-    protected SolrPageIndexEntry(URI id, URI rootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    /**
+     * This is the entry point of the create() function below
+     */
+    protected SolrPageIndexEntry(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
-        super(id, rootResourceUri, canonicalAddress, language, rdfModel, parent);
+        super(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
     /**
      * This is the only public entry point all the rest are recursive calls
@@ -42,6 +46,10 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     {
         super(page);
     }
+    protected SolrPageIndexEntry(String json) throws IOException
+    {
+        super(json);
+    }
 
     //-----PUBLIC METHODS-----
     /**
@@ -49,9 +57,9 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
      * Note that all other create() method (in the superclass) forward their calls here so we don't need to override the others.
      */
     @Override
-    public JsonPageIndexEntry create(URI id, URI rootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    public JsonPageIndexEntry create(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
-        return new SolrPageIndexEntry(id, rootResourceUri, canonicalAddress, language, rdfModel, parent);
+        return new SolrPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
 
     //-----PROTECTED METHODS-----

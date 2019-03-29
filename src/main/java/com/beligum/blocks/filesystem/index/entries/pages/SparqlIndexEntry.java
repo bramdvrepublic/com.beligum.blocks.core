@@ -30,7 +30,7 @@ import java.util.Collection;
 /**
  * Created by bram on 2/13/16.
  */
-public class SparqlIndexEntry extends AbstractIndexEntry implements PageIndexEntry
+public class SparqlIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
     //Note: this doesn't really have internal fields, no?
@@ -52,31 +52,6 @@ public class SparqlIndexEntry extends AbstractIndexEntry implements PageIndexEnt
     public Iterable<IndexEntryField> getInternalFields()
     {
         return INTERNAL_FIELDS;
-    }
-    @Override
-    public String getResource()
-    {
-        return null;
-    }
-    @Override
-    public String getParentId()
-    {
-        return null;
-    }
-    @Override
-    public String getTypeOf()
-    {
-        return null;
-    }
-    @Override
-    public String getLanguage()
-    {
-        return null;
-    }
-    @Override
-    public String getCanonicalAddress()
-    {
-        return null;
     }
     public String getObject(RdfProperty predicate)
     {

@@ -34,11 +34,17 @@ public abstract class AbstractIndexEntry implements IndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //Note: the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    //Notes:
+    // - the underscore is to differentiate this field from the constant field definitions in IndexEntry
+    // - the booleans is to detect unset fields while supporting null values
     protected String _id;
+    protected boolean hasId;
     protected String _label;
+    protected boolean hasLabel;
     protected String _description;
+    protected boolean hasDescription;
     protected String _image;
+    protected boolean hasImage;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexEntry()
@@ -46,19 +52,20 @@ public abstract class AbstractIndexEntry implements IndexEntry
     }
     protected AbstractIndexEntry(String id)
     {
-        this._id = id;
+        this.setId(id);
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public String getFieldValue(IndexEntryField field)
-    {
-        return field.getValue(this);
-    }
+
     @Override
     public String getId()
     {
         return _id;
+    }
+    @Override
+    public boolean hasId()
+    {
+        return hasId;
     }
     @Override
     public String getLabel()
@@ -66,32 +73,56 @@ public abstract class AbstractIndexEntry implements IndexEntry
         return _label;
     }
     @Override
+    public boolean hasLabel()
+    {
+        return hasLabel;
+    }
+    @Override
     public String getDescription()
     {
         return _description;
+    }
+    @Override
+    public boolean hasDescription()
+    {
+        return hasDescription;
     }
     @Override
     public String getImage()
     {
         return _image;
     }
+    @Override
+    public boolean hasImage()
+    {
+        return hasImage;
+    }
+    @Override
+    public String getFieldValue(IndexEntryField field)
+    {
+        return field.getValue(this);
+    }
 
     //-----PROTECTED METHODS-----
     protected void setId(String id)
     {
         this._id = id;
+        this.hasId = true;
     }
     protected void setLabel(String label)
     {
         this._label = label;
+        this.hasLabel = true;
     }
     protected void setDescription(String description)
     {
         this._description = description;
+        this.hasDescription = true;
     }
     protected void setImage(String image)
     {
         this._image = image;
+        this.hasImage = true;
     }
 
     //-----PRIVATE METHODS-----

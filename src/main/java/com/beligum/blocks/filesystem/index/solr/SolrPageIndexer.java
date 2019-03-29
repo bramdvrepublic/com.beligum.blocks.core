@@ -71,7 +71,6 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
-    private final boolean booted;
 
     //-----CONSTRUCTORS-----
     public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
@@ -88,16 +87,12 @@ public class SolrPageIndexer implements PageIndexer
         this.useSchemaless = false;
 
         this.init();
-
-        this.booted = true;
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
-        this.assertBooted();
-
         return new SolrPageIndexConnection(this, tx);
     }
     @Override
@@ -138,18 +133,10 @@ public class SolrPageIndexer implements PageIndexer
     //TODO re-think concurrency
     synchronized SolrClient getSolrClient() throws IOException
     {
-        this.assertBooted();
-
         return this.solrClient;
     }
 
     //-----PRIVATE METHODS-----
-    private void assertBooted() throws IOException
-    {
-        if (!this.booted) {
-            throw new IOException("Solr didn't boot successfully; please fix that first...");
-        }
-    }
     private void init() throws IOException
     {
         final String coreName = SOLR_CORE_NAME;

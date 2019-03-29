@@ -101,7 +101,7 @@ public class StorageFactory
     }
     public static PageIndexer getJsonIndexer() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.JSON_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.JSON_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException

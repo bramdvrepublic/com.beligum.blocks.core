@@ -16,10 +16,12 @@
 
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.base.database.models.ifaces.JsonObject;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.AbstractIndexConnection;
+import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.*;
@@ -38,6 +40,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -97,19 +100,14 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             query.setQuery("*:*");
             response = this.solrClient.query(query);
             SolrDocumentList docList = response.getResults();
-
-            //SolrDocument blah = this.pageIndexer.getSolrClient().getById("/en/blah");
-
-            if (docList.getNumFound() == 0) {
-                return null;
+            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
+            for (int i = 0; i < docList.getNumFound(); i++) {
+                Logger.info(docList.get(i).jsonStr());
             }
-            else {
-                Logger.info("Got " + docList.getNumFound() + " docs: " + json);
-                for (int i = 0; i < docList.getNumFound(); i++) {
-                    Logger.info(docList.get(i).jsonStr());
-                }
-                return null;
-            }
+
+            SolrDocument doc = this.solrClient.getById(AbstractPageIndexEntry.generateId(key).toString());
+
+            return doc == null ? null : new SolrPageIndexEntry(doc.jsonStr());
         }
         catch (Exception e) {
             throw new IOException(e);
@@ -202,7 +200,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             throw new IOException("Error while updating a Solr resource; " + resource, e);
         }
 
-        if (true) throw new IOException("DEBUG");
+        //if (true) throw new IOException("DEBUG");
 
         //TODO
     }
@@ -229,7 +227,16 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         this.assertActive();
 
-        return null;
+        IndexSearchResult retVal = null;
+
+        try {
+            retVal = new SolrIndexSearchResult(indexSearchRequest, this.solrClient.query(new SolrRequestParser(indexSearchRequest).getSolrParams()));
+        }
+        catch (Exception e) {
+            throw new IOException("Error while executing a Solr search request; " + indexSearchRequest, e);
+        }
+
+        return retVal;
     }
     @Override
     public IndexSearchResult search(String query) throws IOException

@@ -24,6 +24,11 @@ public interface IndexEntryField
     String getValue(IndexEntry indexEntry);
 
     /**
+     * Returns true if the value of the index entry has been set once (even if it was set to null)
+     */
+    boolean hasValue(IndexEntry indexEntry);
+
+    /**
      * Make sure this just returns the name
      */
     String toString();
