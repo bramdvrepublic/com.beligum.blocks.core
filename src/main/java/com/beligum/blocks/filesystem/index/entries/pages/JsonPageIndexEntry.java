@@ -6,6 +6,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
+import com.beligum.blocks.filesystem.index.solr.SolrField;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -152,14 +153,6 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
-    /**
-     * Uniform way to translate an RDF property to a JSON field name.
-     * Override in subclass to change its behavior.
-     */
-    protected String toFieldName(RdfClass clazz, RdfProperty predicate) throws IOException
-    {
-        return predicate.getCurie().toString();
-    }
 
     //-----PRIVATE METHODS-----
     /**
@@ -202,7 +195,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 Value value = triple.getObject();
 
                 //put the value in the json object
-                this.putProperty(this.jsonNode, this.type, predicate, value.stringValue());
+                this.addProperty(this.jsonNode, predicate, value.stringValue());
 
                 // If the value is a resource, store it, we'll use it later to hook subobjects to their parents
                 // This means the value of this triple is possibly a reference to (the subject-URI of) another object
@@ -257,7 +250,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
                 //this attaches the subObject to the object in the mapping, using the property in the mapping
                 //Note that it supports both single values and array values, depending on the multiplicity of the field
-                this.addProperty(mapping.getKey(), subNode.type, mapping.getValue(), subNode.getJsonNode());
+                this.addProperty(mapping.getKey(), mapping.getValue(), subNode.getJsonNode());
             }
         }
     }
@@ -338,50 +331,37 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
         return object;
     }
-    private String putProperty(ObjectNode node, RdfClass clazz, RdfProperty predicate, String value) throws IOException
+    private SolrField addProperty(ObjectNode node, RdfProperty predicate, Object value) throws IOException
     {
-        String fieldName = this.toFieldName(clazz, predicate);
-
-        node.put(fieldName, value);
-
-        return fieldName;
-    }
-    private String putProperty(ObjectNode node, RdfClass clazz, RdfProperty predicate, JsonNode object) throws IOException
-    {
-        String fieldName = this.toFieldName(clazz, predicate);
-
-        node.set(fieldName, object);
-
-        return fieldName;
-    }
-    private String addProperty(ObjectNode node, RdfClass clazz, RdfProperty predicate, JsonNode object) throws IOException
-    {
-        String fieldName = this.toFieldName(clazz, predicate);
+        SolrField field = new SolrField(predicate);
 
         // this will support both array-based subObjects when there are multiple objects mapped on the same field
         // and standard subnode (not in an array) when there's only one.
-        JsonNode existingField = node.get(fieldName);
+        JsonNode existingField = node.get(field.getName());
         if (existingField == null) {
-            node.set(fieldName, object);
+            if (value instanceof JsonNode) {
+                node.set(field.getName(), (JsonNode) value);
+            }
+            else {
+                node.put(field.getName(), String.valueOf(value));
+            }
         }
         else {
             //if the existing field is not an array, convert it
             if (!existingField.isArray()) {
-                node.remove(fieldName);
-                node.putArray(fieldName).add(existingField);
+                node.remove(field.getName());
+                node.putArray(field.getName()).add(existingField);
             }
 
             //note: withArray() will create the array field if it doesn't exist (but that should never happen)
-            node.withArray(fieldName).add(object);
+            if (value instanceof JsonNode) {
+                node.withArray(field.getName()).add((JsonNode) value);
+            }
+            else {
+                node.withArray(field.getName()).add(String.valueOf(value));
+            }
         }
 
-        return fieldName;
-    }
-    private JsonNode getProperty(ObjectNode node, RdfClass clazz, RdfProperty predicate) throws IOException
-    {
-        String fieldName = this.toFieldName(clazz, predicate);
-
-        //this returns null if no such field exists
-        return node.get(fieldName);
+        return field;
     }
 }

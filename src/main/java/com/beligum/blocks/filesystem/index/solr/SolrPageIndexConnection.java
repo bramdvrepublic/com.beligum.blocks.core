@@ -25,7 +25,6 @@ import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.*;
-import com.beligum.blocks.filesystem.index.lucene.LuceneDocFactory;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,28 +84,27 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         this.assertActive();
 
         try {
-            SolrQuery query = new SolrQuery();
-            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
-            QueryResponse response = this.solrClient.query(query);
-            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
-            for (int i = 0; i < response.getResults().getNumFound(); i++) {
-                Logger.info(response.getResults().get(i).jsonStr());
-            }
-
-            //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
-            //            key = URI.create("http://localhost:8080/en/blah");
-            query = new SolrQuery();
-            //query.setQuery(QueryParser.escape(SolrConfigs.CORE_SCHEMA_FIELD_ID) + ":" + SimplePageIndexEntry.generateId(key));
-            query.setQuery("*:*");
-            response = this.solrClient.query(query);
-            SolrDocumentList docList = response.getResults();
-            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
-            for (int i = 0; i < docList.getNumFound(); i++) {
-                Logger.info(docList.get(i).jsonStr());
-            }
+//            SolrQuery query = new SolrQuery();
+//            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
+//            QueryResponse response = this.solrClient.query(query);
+//            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
+//            for (int i = 0; i < response.getResults().getNumFound(); i++) {
+//                Logger.info(response.getResults().get(i).jsonStr());
+//            }
+//
+//            //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
+//            //            key = URI.create("http://localhost:8080/en/blah");
+//            query = new SolrQuery();
+//            //query.setQuery(QueryParser.escape(SolrConfigs.CORE_SCHEMA_FIELD_ID) + ":" + SimplePageIndexEntry.generateId(key));
+//            query.setQuery("*:*");
+//            response = this.solrClient.query(query);
+//            SolrDocumentList docList = response.getResults();
+//            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
+//            for (int i = 0; i < docList.getNumFound(); i++) {
+//                Logger.info(docList.get(i).jsonStr());
+//            }
 
             SolrDocument doc = this.solrClient.getById(AbstractPageIndexEntry.generateId(key).toString());
-
             return doc == null ? null : new SolrPageIndexEntry(doc.jsonStr());
         }
         catch (Exception e) {
@@ -160,7 +158,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //
             //            Logger.info("Writing index entry: " + indexEntry.toString());
 
-            this.solrClient.deleteById(indexEntry.getId());
+            //TODO check if we need this
+            //this.solrClient.deleteById(indexEntry.getId());
 
             // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
             // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
@@ -190,8 +189,10 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
             // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
             request.setParam("f", "/**");
+
             this.solrClient.request(request);
 
+            //TODO comment
             this.solrClient.commit(false, false, true);
 
             Logger.info("");
@@ -227,21 +228,24 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         this.assertActive();
 
-        IndexSearchResult retVal = null;
-
-        try {
-            retVal = new SolrIndexSearchResult(indexSearchRequest, this.solrClient.query(new SolrRequestParser(indexSearchRequest).getSolrParams()));
+        if (!(indexSearchRequest instanceof SolrIndexSearchRequest)) {
+            throw new IOException("Encountered unsupported index search request object; this shouldn't happen" + indexSearchRequest);
         }
-        catch (Exception e) {
-            throw new IOException("Error while executing a Solr search request; " + indexSearchRequest, e);
+        else {
+            try {
+                return new SolrIndexSearchResult(indexSearchRequest, this.solrClient.query(((SolrIndexSearchRequest) indexSearchRequest).buildSolrQuery()));
+            }
+            catch (Exception e) {
+                throw new IOException("Error while executing a Solr search; " + indexSearchRequest, e);
+            }
         }
-
-        return retVal;
     }
     @Override
     public IndexSearchResult search(String query) throws IOException
     {
         this.assertActive();
+
+        //TODO
 
         return null;
     }

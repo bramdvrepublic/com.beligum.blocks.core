@@ -22,7 +22,6 @@ import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.filesystem.index.ifaces.*;
-import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -103,14 +102,14 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
 
         PageIndexConnection mainIndexer = StorageFactory.getJsonQueryConnection();
 
-        DefaultIndexSearchRequest mainQuery = DefaultIndexSearchRequest.create();
+        IndexSearchRequest mainQuery = IndexSearchRequest.createFor(mainIndexer);
 
         //let's support search-all-type queries when this is null
         if (resourceType != null) {
             mainQuery.filter(PageIndexEntry.typeOf, resourceType.getCurieName().toString(), IndexSearchRequest.FilterBoolean.AND);
         }
 
-        DefaultIndexSearchRequest subQuery = DefaultIndexSearchRequest.create();
+        IndexSearchRequest subQuery = IndexSearchRequest.createFor(mainIndexer);
         subQuery.wildcard(IndexEntry.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
         subQuery.wildcard(IndexEntry.label, query, IndexSearchRequest.FilterBoolean.OR);
         mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
@@ -202,11 +201,12 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         }
 
         if (selectedEntry == null) {
-            IndexSearchResult matchingPages = StorageFactory.getJsonQueryConnection().search(DefaultIndexSearchRequest.create()
-                                                                                                                      //at least one of the id or resource should match (or both)
-                                                                                                                      .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                                                      .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                                                      .maxResults(R.configuration().getLanguages().size()));
+            PageIndexConnection indexConn = StorageFactory.getJsonQueryConnection();
+            IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
+                                                                                        //at least one of the id or resource should match (or both)
+                                                                                        .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                        .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                        .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }
 

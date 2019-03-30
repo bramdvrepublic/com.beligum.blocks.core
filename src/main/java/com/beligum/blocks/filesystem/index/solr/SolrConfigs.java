@@ -2453,14 +2453,6 @@ public class SolrConfigs
     public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
     public static final String CORE_SCHEMA_FIELD_OBJECT = PageIndexEntry.object.getName();
 
-    public enum ReservedFields
-    {
-        _version_,
-        _root_,
-        _nest_path_,
-        _text_
-    }
-
     //This is a list of field types that are used below
     public static final String CORE_SCHEMA_TYPE_NEST_PATH = "_nest_path_";
     public static final String CORE_SCHEMA_TYPE_STRING = "string";
@@ -2481,6 +2473,19 @@ public class SolrConfigs
     public static final String CORE_SCHEMA_TYPE_PDATES = "pdates";
     public static final String CORE_SCHEMA_TYPE_BINARY = "binary";
     public static final String CORE_SCHEMA_TYPE_TEXT_GENERAL = "text_general";
+
+    public static SolrField _version_ = new SolrField("_version_", CORE_SCHEMA_TYPE_PLONG);
+    public static SolrField _root_ = new SolrField("_root_", CORE_SCHEMA_TYPE_STRING);
+    public static SolrField _nest_path_ = new SolrField("_nest_path_", CORE_SCHEMA_TYPE_NEST_PATH);
+    public static SolrField _text_ = new SolrField("_text_", CORE_SCHEMA_TYPE_TEXT_GENERAL);
+
+    // Sync this with the field list above !
+    public static SolrField[] RESERVED_FIELDS = {
+                    _version_,
+                    _root_,
+                    _nest_path_,
+                    _text_
+    };
 
     // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -2571,18 +2576,18 @@ public class SolrConfigs
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_CANONICAL_ADDRESS + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
 
                                              // To support Optimistic Concurrency; see https://lucene.apache.org/solr/guide/7_7/updating-parts-of-documents.html#optimistic-concurrency
-                                             "    <field name=\"" + ReservedFields._version_ + "\" type=\"" + CORE_SCHEMA_TYPE_PLONG + "\" indexed=\"false\" stored=\"false\"/>\n" +
+                                             "    <field name=\"" + _version_.getName() + "\" type=\"" + _version_.getType() + "\" indexed=\"false\" stored=\"false\"/>\n" +
 
                                              // To support block-join support; see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#nested-child-documents
                                              // For nested documents (minimal; points to root document)
-                                             "    <field name=\"" + ReservedFields._root_ + "\" type=\"" + CORE_SCHEMA_TYPE_STRING + "\" indexed=\"true\" stored=\"false\" docValues=\"false\" />\n" +
+                                             "    <field name=\"" + _root_.getName() + "\" type=\"" + _root_.getType() + "\" indexed=\"true\" stored=\"false\" docValues=\"false\" />\n" +
                                              // For nested documents (relationship tracking)
-                                             "    <field name=\"" + ReservedFields._nest_path_ + "\" type=\"" + CORE_SCHEMA_TYPE_NEST_PATH + "\" />\n" +
+                                             "    <field name=\"" + _nest_path_.getName() + "\" type=\"" + _nest_path_.getType()+ "\" />\n" +
 
                                              // This field is there in case the client does not know what fields may be searched to support Google-style search over everything.
                                              // Note that this effectively indexes everything twice, so this is an expensive feature, both in terms of disk space and indexing speed
-                                             "    <field name=\"" + ReservedFields._text_ + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL + "\" indexed=\"true\" stored=\"false\" multiValued=\"true\"/>\n" +
-                                             "    <copyField source=\"*\" dest=\"" + ReservedFields._text_ + "\"/>\n" +
+                                             "    <field name=\"" + _text_.getName() + "\" type=\"" + _text_.getType() + "\" indexed=\"true\" stored=\"false\" multiValued=\"true\"/>\n" +
+                                             "    <copyField source=\"*\" dest=\"" + _text_.getName() + "\"/>\n" +
 
                                              // Field to use to determine and enforce document uniqueness.
                                              "    <uniqueKey>" + CORE_SCHEMA_FIELD_ID + "</uniqueKey>\n" +

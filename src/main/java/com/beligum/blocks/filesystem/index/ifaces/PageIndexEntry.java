@@ -17,13 +17,9 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.server.R;
-import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.filesystem.index.entries.IndexEntryFieldImpl;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.rdf4j.model.IRI;
 
-import java.net.URI;
 import java.util.Locale;
 
 /**
@@ -35,7 +31,7 @@ public interface PageIndexEntry extends IndexEntry
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField parentId = new IndexEntryFieldImpl("parentId")
+    IndexEntryField parentId = new JsonField("parentId")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -48,7 +44,7 @@ public interface PageIndexEntry extends IndexEntry
             return ((PageIndexEntry)indexEntry).hasParentId();
         }
     };
-    IndexEntryField resource = new IndexEntryFieldImpl("resource")
+    IndexEntryField resource = new JsonField("resource")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -61,7 +57,7 @@ public interface PageIndexEntry extends IndexEntry
             return ((PageIndexEntry)indexEntry).hasResource();
         }
     };
-    IndexEntryField typeOf = new IndexEntryFieldImpl("typeOf")
+    IndexEntryField typeOf = new JsonField("typeOf")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -74,7 +70,7 @@ public interface PageIndexEntry extends IndexEntry
             return ((PageIndexEntry)indexEntry).hasTypeOf();
         }
     };
-    IndexEntryField language = new IndexEntryFieldImpl("language")
+    IndexEntryField language = new JsonField("language")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -87,7 +83,7 @@ public interface PageIndexEntry extends IndexEntry
             return ((PageIndexEntry)indexEntry).hasLanguage();
         }
     };
-    IndexEntryField canonicalAddress = new IndexEntryFieldImpl("canonicalAddress")
+    IndexEntryField canonicalAddress = new JsonField("canonicalAddress")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -100,7 +96,7 @@ public interface PageIndexEntry extends IndexEntry
             return ((PageIndexEntry)indexEntry).hasCanonicalAddress();
         }
     };
-    IndexEntryField object = new IndexEntryFieldImpl("object")
+    IndexEntryField object = new JsonField("object")
     {
         @Override
         public String getValue(IndexEntry indexEntry)

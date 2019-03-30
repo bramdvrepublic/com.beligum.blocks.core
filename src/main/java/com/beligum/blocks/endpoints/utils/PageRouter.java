@@ -16,11 +16,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.IndexSearchResult;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -359,16 +355,18 @@ public class PageRouter
                 //but let's start with this (eg. no query params like languages included) and see where we end up...
                 String searchUri = this.requestedUri.getPath();
 
-                DefaultIndexSearchRequest searchRequest = DefaultIndexSearchRequest.create()
-                                                                                   //we'll search for pages that have an alias (possibly/probably non-existent)
-                                                                                   .filter(Meta.sameAs, searchUri, DefaultIndexSearchRequest.FilterBoolean.OR)
-                                                                                   //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
-                                                                                   .filter(PageIndexEntry.resource, searchUri, DefaultIndexSearchRequest.FilterBoolean.OR);
+                PageIndexConnection indexConn = this.getMainPageQueryConnection();
+
+                IndexSearchRequest searchRequestBuilder = IndexSearchRequest.createFor(indexConn)
+                                                                            //we'll search for pages that have an alias (possibly/probably non-existent)
+                                                                            .filter(Meta.sameAs, searchUri, IndexSearchRequest.FilterBoolean.OR)
+                                                                            //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
+                                                                            .filter(PageIndexEntry.resource, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
                 //makes sense to make room for as much language-triples as we have clauses
-                searchRequest.maxResults(searchRequest.filters().size() * R.configuration().getLanguages().size());
+                searchRequestBuilder.maxResults(searchRequestBuilder.filters().size() * R.configuration().getLanguages().size());
 
-                IndexSearchResult results = this.getMainPageQueryConnection().search(searchRequest);
+                IndexSearchResult results = indexConn.search(searchRequestBuilder);
 
                 PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, this.locale);
 
@@ -423,10 +421,12 @@ public class PageRouter
         if (this.assertUnfinished()) {
 
             try {
+                PageIndexConnection queryConnection = this.getMainPageQueryConnection();
+
                 //more or less the same remark here as with doDetectAliases()
                 String searchUri = this.requestedUri.getPath();
 
-                DefaultIndexSearchRequest pageQuery = DefaultIndexSearchRequest.create();
+                IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
 
                 //part a: first, we go hunting for the uri that _does_ exist
                 Collection<Locale> allLanguages = R.configuration().getLanguages().values();
@@ -436,22 +436,21 @@ public class PageRouter
                         UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                         R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
                         //we'll search for a page that has the translated request uri as it's address
-                        pageQuery.filter(IndexEntry.id, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), DefaultIndexSearchRequest.FilterBoolean.OR);
+                        searchRequest.filter(IndexEntry.id, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
                     }
                 }
 
-                pageQuery.maxResults(allLanguages.size());
+                searchRequest.maxResults(allLanguages.size());
 
-                PageIndexConnection queryConnection = this.getMainPageQueryConnection();
-                IndexSearchResult results = queryConnection.search(pageQuery);
+                IndexSearchResult results = queryConnection.search(searchRequest);
                 //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
                 if (!results.isEmpty()) {
                     //since all resources should be the same, we take the first match
                     String resourceUri = ((PageIndexEntry) results.iterator().next()).getResource();
-                    pageQuery = DefaultIndexSearchRequest.create();
-                    pageQuery.filter(PageIndexEntry.resource, resourceUri, DefaultIndexSearchRequest.FilterBoolean.AND);
-                    pageQuery.filter(PageIndexEntry.language, this.locale.getLanguage(), DefaultIndexSearchRequest.FilterBoolean.AND);
-                    results = queryConnection.search(pageQuery);
+                    searchRequest = IndexSearchRequest.createFor(queryConnection);
+                    searchRequest.filter(PageIndexEntry.resource, resourceUri, IndexSearchRequest.FilterBoolean.AND);
+                    searchRequest.filter(PageIndexEntry.language, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
+                    results = queryConnection.search(searchRequest);
 
                     PageIndexEntry selectedEntry2 = PageIndexEntry.selectBestForLanguage(results, this.locale);
 

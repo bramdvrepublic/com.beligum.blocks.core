@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
-import com.beligum.blocks.filesystem.index.entries.IndexEntryFieldImpl;
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
@@ -28,7 +28,7 @@ public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField id = new IndexEntryFieldImpl("id")
+    IndexEntryField id = new JsonField("id")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -41,7 +41,7 @@ public interface IndexEntry extends Serializable
             return indexEntry.hasId();
         }
     };
-    IndexEntryField tokenisedId = new IndexEntryFieldImpl("tokenisedId")
+    IndexEntryField tokenisedId = new JsonField("tokenisedId")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -55,7 +55,7 @@ public interface IndexEntry extends Serializable
             return indexEntry.hasId();
         }
     };
-    IndexEntryField label = new IndexEntryFieldImpl("label")
+    IndexEntryField label = new JsonField("label")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -68,7 +68,7 @@ public interface IndexEntry extends Serializable
             return indexEntry.hasLabel();
         }
     };
-    IndexEntryField description = new IndexEntryFieldImpl("description")
+    IndexEntryField description = new JsonField("description")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -81,7 +81,7 @@ public interface IndexEntry extends Serializable
             return indexEntry.hasDescription();
         }
     };
-    IndexEntryField image = new IndexEntryFieldImpl("image")
+    IndexEntryField image = new JsonField("image")
     {
         @Override
         public String getValue(IndexEntry indexEntry)

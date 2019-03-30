@@ -19,9 +19,9 @@ package com.beligum.blocks.filesystem.pages;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.MimeType;
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.ResourceRequest;
-import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
@@ -32,7 +32,6 @@ import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.index.ifaces.*;
-import com.beligum.blocks.filesystem.index.request.DefaultIndexSearchRequest;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
@@ -42,10 +41,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.shiro.authz.UnauthorizedException;
 import org.eclipse.rdf4j.model.Model;
 
@@ -307,10 +302,10 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //Note that this also means the lucene index needs to be up-to-date (eg. this is important during reindexing;
         // see the notes in the delete() method of the triple store index connection)
         PageIndexConnection queryConnection = StorageFactory.getJsonQueryConnection();
-        DefaultIndexSearchRequest pageQuery = DefaultIndexSearchRequest.create();
-        pageQuery.filter(PageIndexEntry.resource, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
-        pageQuery.maxResults(siteLanguages.size());
-        IndexSearchResult searchResult = queryConnection.search(pageQuery);
+        IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
+        searchRequest.filter(PageIndexEntry.resource, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
+        searchRequest.maxResults(siteLanguages.size());
+        IndexSearchResult searchResult = queryConnection.search(searchRequest);
         for (IndexEntry entry : searchResult) {
             Page transPage = R.resourceManager().get(URI.create(entry.getId()), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {

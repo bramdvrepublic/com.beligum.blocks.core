@@ -63,14 +63,6 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
-    /**
-     * Overridden to make the field name generation uniform with the way our schema is initialized/checked on server startup.
-     */
-    @Override
-    protected String toFieldName(RdfClass clazz, RdfProperty predicate) throws IOException
-    {
-        return new SolrField(clazz, predicate).getName();
-    }
 
     //-----PRIVATE METHODS-----
 }

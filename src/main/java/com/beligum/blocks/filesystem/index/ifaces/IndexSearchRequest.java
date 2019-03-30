@@ -16,9 +16,13 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import com.beligum.blocks.filesystem.index.solr.SolrIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.solr.SolrIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.solr.SolrPageIndexConnection;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -30,18 +34,63 @@ public interface IndexSearchRequest extends Serializable
     enum FilterBoolean
     {
         AND,
-        OR
+        OR,
+        NOT
     }
 
     interface Filter
     {
     }
 
+    static IndexSearchRequest createFor(SolrPageIndexConnection indexConnection)
+    {
+        return new SolrIndexSearchRequest();
+    }
+    //    public static IndexSearchRequest createFor(LucenePageIndexConnection indexConnection)
+    //    {
+    //        return new IndexSearchRequest();
+    //    }
+    //    public static IndexSearchRequest createFor(SesamePageIndexConnection indexConnection)
+    //    {
+    //        return new IndexSearchRequest();
+    //    }
+    static IndexSearchRequest createFor(IndexConnection indexConnection)
+    {
+        throw new UnsupportedOperationException("Unsupported index connection type; please implement a query builder for this implementation; " + indexConnection);
+    }
+
     List<Filter> getFilters();
-    RdfProperty getSortProperty();
-    boolean isSortAscending();
-    int getPageSize();
-    int getPageOffset();
+    Integer getPageSize();
+    Integer getPageOffset();
     Locale getLanguage();
-    long getMaxResults();
+    Long getMaxResults();
+
+    IndexSearchRequest filter(String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest wildcard(String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
+
+    IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean);
+
+    Collection<Filter> filters();
+
+    IndexSearchRequest sort(RdfProperty property, boolean sortAscending);
+
+    IndexSearchRequest sort(IndexEntryField field, boolean sortAscending);
+
+    IndexSearchRequest pageSize(int pageSize);
+
+    IndexSearchRequest pageOffset(int pageOffset);
+
+    IndexSearchRequest language(Locale language);
+
+    IndexSearchRequest maxResults(long maxResults);
+
 }

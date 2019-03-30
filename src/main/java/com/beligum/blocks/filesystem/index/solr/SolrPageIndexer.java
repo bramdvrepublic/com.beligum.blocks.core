@@ -61,6 +61,20 @@ import java.util.*;
 
 /**
  * Created by bram on 3/24/19.
+ *
+ * Interesting reads:
+ * http://blog-archive.griddynamics.com/2013/09/solr-block-join-support.html
+ * https://issues.apache.org/jira/browse/SOLR-12768
+ * https://issues.apache.org/jira/browse/SOLR-5211
+ * https://www.slideshare.net/lucidworks/json-in-solr-from-top-to-bottom-alexander-rafalovitch-united-nations
+ * https://issues.apache.org/jira/browse/SOLR-12298
+ * https://issues.apache.org/jira/browse/SOLR-12362
+ * https://issues.apache.org/jira/browse/SOLR-7672?jql=project%20%3D%20SOLR%20AND%20text%20~%20_nest_path_
+ * http://yonik.com/solr-nested-objects/
+ * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;h=32a97c1
+ * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/solr-ref-guide/src/uploading-data-with-index-handlers.adoc;h=1c090a09693e7f49fba59df438c49b93dd18fea6;hb=32a97c1
+ * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/solr-ref-guide/src/indexing-nested-documents.adoc;h=ada865e97089f8c3ef738b67959801d6698fa55c;hb=32a97c1
+ *
  */
 public class SolrPageIndexer implements PageIndexer
 {
@@ -242,7 +256,7 @@ public class SolrPageIndexer implements PageIndexer
                     for (RdfProperty p : c.getProperties()) {
 
                         //translate the property to a solr field
-                        SolrField rdfField = new SolrField(c, p);
+                        SolrField rdfField = new SolrField(p);
 
                         //we need at least a name and a type
                         if (rdfField.getName() != null && rdfField.getType() != null) {
@@ -295,13 +309,13 @@ public class SolrPageIndexer implements PageIndexer
         }
 
         //do the same for the reserved Solr fields like _version_ and all
-        for (SolrConfigs.ReservedFields field : SolrConfigs.ReservedFields.values()) {
-            if (!existingFields.containsKey(field.toString())) {
+        for (SolrField field : SolrConfigs.RESERVED_FIELDS) {
+            if (!existingFields.containsKey(field.getName())) {
                 throw new IOException("Encountered reserved Solr field that's not part of the Solr schema, please fix this; " + field);
             }
             //since it exists, wipe it from the list so it doesn't get deleted below
             else {
-                existingFieldsTracker.remove(field.toString());
+                existingFieldsTracker.remove(field.getName());
             }
         }
 

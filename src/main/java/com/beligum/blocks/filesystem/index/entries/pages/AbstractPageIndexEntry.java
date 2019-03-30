@@ -20,6 +20,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.IRI;
 
 import java.net.URI;

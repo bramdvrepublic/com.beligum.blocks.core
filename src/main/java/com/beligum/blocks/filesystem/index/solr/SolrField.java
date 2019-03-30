@@ -1,5 +1,7 @@
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -15,19 +17,12 @@ import java.io.IOException;
  * This is more or less the same implementation as org.apache.solr.schema.SchemaField
  * but wrapped around our RDF properties instead.
  */
-public class SolrField
+public class SolrField extends JsonField
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
     //See https://lucene.apache.org/solr/guide/7_7/defining-fields.html
-    /**
-     * The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit.
-     * This is not currently strictly enforced, but other field names will not have first class support from all components and
-     * back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., _version_) are reserved. Every field must have a name.
-     */
-    private String name = null;
-
     /**
      * The name of the fieldType for this field. This will be found in the name attribute on the fieldType definition. Every field must have a type.
      */
@@ -124,19 +119,18 @@ public class SolrField
     private Boolean large = null;
 
     //-----CONSTRUCTORS-----
-    public SolrField(RdfClass clazz, RdfProperty property) throws IOException
+    // For internal use only, see SolrConfigs
+    SolrField(String name, String type)
     {
-        this.name = this.toSolrFieldName(property);
-        this.type = this.toSolrFieldType(property);
+        super(name);
+
+        this.type = type;
     }
-    /**
-     * This is the inverted method of the constructor in this class, make sure to sync these two.
-     */
-    public static RdfProperty fromSolrField(String field) throws IOException
+    public SolrField(RdfProperty property)
     {
-        boolean isReservedField = isReservedField(field);
-        //no need to translate the colon, see comment above
-        return isReservedField ? null : RdfFactory.lookup(field/*.replaceFirst("_", ":")*/, RdfProperty.class);
+        super(property);
+
+        this.type = this.toSolrFieldType(property);
     }
 
     //-----PUBLIC METHODS-----
@@ -145,10 +139,17 @@ public class SolrField
         //see https://lucene.apache.org/solr/guide/7_7/defining-fields.html
         return fieldName.startsWith("_") && fieldName.endsWith("_");
     }
+    @Override
     public String getValue(IndexEntry indexEntry)
     {
         //don't really know what to return here, this shouldn't be called anyhow
         return null;
+    }
+    @Override
+    public boolean hasValue(IndexEntry indexEntry)
+    {
+        //see note above
+        return false;
     }
     public ImmutableMap<String, Object> toMap()
     {
@@ -212,10 +213,6 @@ public class SolrField
         }
 
         return retVal.build();
-    }
-    public String getName()
-    {
-        return name;
     }
     public String getType()
     {
@@ -295,10 +292,9 @@ public class SolrField
     }
 
     //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
     /**
      * Translate the property name to the solr field name.
+     *
      * Note that solr says only alphanumeric names are supported
      * eg. the default core solrconfig.xml config has this UpdateProcessor in place, that auto-translates
      * all chars to underscores that are not: a word character (\w means [a-zA-Z_0-9]), a dash, a dot:
@@ -308,17 +304,24 @@ public class SolrField
      * </updateProcessor>
      * However, we tried to use colons in the field names without problems (you only need to escape them in your queries),
      * so we'll be using them until we run into problems.
+     *
+     * Btw, this is what the docs say:
+     *   The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit.
+     *   This is not currently strictly enforced, but other field names will not have first class support from all components and
+     *   back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., _version_) are reserved. Every field must have a name.
      */
-    private String toSolrFieldName(RdfProperty property) throws IOException
+    @Override
+    protected String toFieldName(RdfProperty property)
     {
-        //no need to translate the colon, see comment above
-        return property.getCurie().toString()/*.replace(":", "_")*/;
+        return super.toFieldName(property);
     }
+
+    //-----PRIVATE METHODS-----
     /**
      * Convert the datatype of the supplied property to a valid Solr field type.
      * See https://lucene.apache.org/solr/guide/7_1/field-types-included-with-solr.html#field-types-included-with-solr
      */
-    private String toSolrFieldType(RdfProperty property) throws IOException
+    private String toSolrFieldType(RdfProperty property)
     {
         String retVal = null;
 
@@ -380,7 +383,7 @@ public class SolrField
             }
             else {
                 //TODO think about this
-                //throw new IOException("Encountered RDF property '" + property + "' with unsupported datatype; " + property.getDataType());
+                Logger.error("Encountered RDF property '" + property + "' with unsupported datatype; " + property.getDataType());
             }
         }
 
