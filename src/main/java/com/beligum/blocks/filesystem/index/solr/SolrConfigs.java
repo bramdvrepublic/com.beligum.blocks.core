@@ -2440,19 +2440,6 @@ public class SolrConfigs
                                                 "\n" +
                                                 "</schema>\n";
 
-    //This is a list of field names that are used below
-    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
-    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedId.getName();
-    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.label.getName();
-    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.description.getName();
-    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.image.getName();
-    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentId.getName();
-    public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resource.getName();
-    public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOf.getName();
-    public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.language.getName();
-    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
-    public static final String CORE_SCHEMA_FIELD_OBJECT = PageIndexEntry.object.getName();
-
     //This is a list of field types that are used below
     public static final String CORE_SCHEMA_TYPE_NEST_PATH = "_nest_path_";
     public static final String CORE_SCHEMA_TYPE_STRING = "string";
@@ -2474,6 +2461,7 @@ public class SolrConfigs
     public static final String CORE_SCHEMA_TYPE_BINARY = "binary";
     public static final String CORE_SCHEMA_TYPE_TEXT_GENERAL = "text_general";
 
+    //solr-internal fields
     public static SolrField _version_ = new SolrField("_version_", CORE_SCHEMA_TYPE_PLONG);
     public static SolrField _root_ = new SolrField("_root_", CORE_SCHEMA_TYPE_STRING);
     public static SolrField _nest_path_ = new SolrField("_nest_path_", CORE_SCHEMA_TYPE_NEST_PATH);
@@ -2486,6 +2474,19 @@ public class SolrConfigs
                     _nest_path_,
                     _text_
     };
+
+    //our internal fields
+    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
+    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedId.getName();
+    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.label.getName();
+    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.description.getName();
+    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.image.getName();
+    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentId.getName();
+    public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resource.getName();
+    public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOf.getName();
+    public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.language.getName();
+    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
+    public static final String CORE_SCHEMA_FIELD_OBJECT = PageIndexEntry.object.getName();
 
     // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +

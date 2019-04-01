@@ -83,6 +83,8 @@ public interface RdfOntology extends RdfResource
 
     /**
      * Returns all properties of all public classes in this vocabulary.
+     * Note that the public selection of these properties is made on class level,
+     * not property level, so it's possible to "expose" properties by adding them to a public class
      */
     //avoids infinite recursion
     @JsonIgnore

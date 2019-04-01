@@ -62,47 +62,56 @@ public class Meta extends RdfOntologyImpl
         rdfFactory.register(sameAs)
                   .label(Entries.meta_label_sameAs)
                   .dataType(XSD.anyURI)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(InputType.InlineEditor)
+                  .isDefault(true);
 
         rdfFactory.register(created)
                   .label(Entries.meta_label_created)
                   .dataType(XSD.dateTime)
-                  .widgetType(InputType.DateTime);
+                  .widgetType(InputType.DateTime)
+                  .isDefault(true);
 
         rdfFactory.register(creator)
                   .label(Entries.meta_label_creator)
                   .dataType(XSD.anyURI)
-                  .widgetType(InputType.Resource);
+                  .widgetType(InputType.Resource)
+                  .isDefault(true);
 
         rdfFactory.register(modified)
                   .label(Entries.meta_label_modified)
                   .dataType(XSD.dateTime)
-                  .widgetType(InputType.DateTime);
+                  .widgetType(InputType.DateTime)
+                  .isDefault(true);
 
         rdfFactory.register(contributor)
                   .label(Entries.meta_label_contributor)
                   .dataType(XSD.anyURI)
-                  .widgetType(InputType.Resource);
+                  .widgetType(InputType.Resource)
+                  .isDefault(true);
 
         rdfFactory.register(aclRead)
                   .label(Entries.meta_label_aclRead)
                   .dataType(XSD.int_)
-                  .widgetType(InputType.Number);
+                  .widgetType(InputType.Number)
+                  .isDefault(true);
 
         rdfFactory.register(aclUpdate)
                   .label(Entries.meta_label_aclUpdate)
                   .dataType(XSD.int_)
-                  .widgetType(InputType.Number);
+                  .widgetType(InputType.Number)
+                  .isDefault(true);
 
         rdfFactory.register(aclDelete)
                   .label(Entries.meta_label_aclDelete)
                   .dataType(XSD.int_)
-                  .widgetType(InputType.Number);
+                  .widgetType(InputType.Number)
+                  .isDefault(true);
 
         rdfFactory.register(aclManage)
                   .label(Entries.meta_label_aclManage)
                   .dataType(XSD.int_)
-                  .widgetType(InputType.Number);
+                  .widgetType(InputType.Number)
+                  .isDefault(true);
 
     }
 

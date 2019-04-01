@@ -26,6 +26,7 @@ import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.lucene.search.TermQuery;
@@ -194,6 +195,20 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
             //TODO comment
             this.solrClient.commit(false, false, true);
+
+            SolrDocument doc = this.solrClient.getById(AbstractPageIndexEntry.generateId(resource.getUri()).toString());
+
+            SolrQuery testQuery = new SolrQuery();
+            //fq=(id:/en/blah)&rows=50&start=0
+            //testQuery.setQuery("id:/en/blah");
+            testQuery.setQuery("*:*");
+            testQuery.addFilterQuery("id:/en/blah");
+            QueryResponse testRes = this.solrClient.query(testQuery);
+
+            IndexSearchRequest searchRequestBuilder = IndexSearchRequest.createFor(this)
+                                                                        .filter(PageIndexEntry.id, resource.getUri().getPath(),
+                                                                                IndexSearchRequest.FilterBoolean.OR);
+            IndexSearchResult testres = this.search(searchRequestBuilder);
 
             Logger.info("");
         }

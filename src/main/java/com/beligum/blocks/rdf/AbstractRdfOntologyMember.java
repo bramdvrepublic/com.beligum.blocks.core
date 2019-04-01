@@ -6,11 +6,9 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfProxyException;
 import com.beligum.blocks.rdf.ifaces.*;
-import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -25,6 +23,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     protected boolean proxy;
     protected MessagesFileEntry label;
     protected URI[] isSameAs;
+    protected boolean isDefault;
 
     //-----CONSTRUCTORS-----
     protected AbstractRdfOntologyMember(RdfOntologyImpl ontology, String name, boolean isPublic)
@@ -46,6 +45,8 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.proxy = true;
         //make it uniform (never null, always an array)
         this.isSameAs = new URI[] {};
+        //this should be activated
+        this.isDefault = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -117,6 +118,11 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.assertNoProxy();
 
         return isSameAs;
+    }
+    @Override
+    public boolean isDefault()
+    {
+        return isDefault;
     }
 
     //-----PROTECTED METHODS-----
@@ -209,6 +215,18 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         public B isSameAs(T isSameAs)
         {
             this.sameAs.add(isSameAs);
+
+            return this.builder;
+        }
+        public B isDefault(boolean isDefault)
+        {
+            this.rdfResource.isDefault = isDefault;
+
+            //by putting all default members in a central registry, we avoid having to iterate it again after first phase
+            //now, we can just check this registry in create() below
+            if (isDefault) {
+                this.rdfFactory.defaultMemberRegistry.add(this.rdfResource);
+            }
 
             return this.builder;
         }

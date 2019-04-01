@@ -44,6 +44,14 @@ public interface RdfResource extends JsonObject
     Type getType();
 
     /**
+     * Shortcut methods for the type above
+     */
+    boolean isOntology();
+    boolean isClass();
+    boolean isProperty();
+    boolean isDatatype();
+
+    /**
      * The short, well formed (capitalized and/or camel-cased) name that needs to be appended to the context of this resource to get the full describing URI for this class.
      * Eg. WaterWell, sameAs, Class, XMLLiteral, ...
      */

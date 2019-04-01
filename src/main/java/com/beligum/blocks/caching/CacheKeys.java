@@ -71,6 +71,8 @@ public enum CacheKeys implements CacheKey
     RDF_RELEVANT_ONTOLOGIES,
     //Application cache key that maps ontology prefixes to full length vocabulary namespace URIs
     RDF_RELEVANT_ONTOLOGY_PREFIXES,
+    //Application cache key that maps ontology classes to their instances
+    RDF_RELEVANT_ONTOLOGY_CLASSES,
     //Request cache key that holds the resource action (create/update/...) for this request
     RESOURCE_ACTION
 }

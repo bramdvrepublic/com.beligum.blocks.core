@@ -42,6 +42,22 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     }
 
     //-----PUBLIC METHODS-----
+    public boolean isOntology()
+    {
+        return this.getType().equals(Type.ONTOLOGY);
+    }
+    public boolean isClass()
+    {
+        return this.getType().equals(Type.CLASS);
+    }
+    public boolean isProperty()
+    {
+        return this.getType().equals(Type.PROPERTY);
+    }
+    public boolean isDatatype()
+    {
+        return this.getType().equals(Type.DATATYPE);
+    }
 
     //-----PROTECTED METHODS-----
 

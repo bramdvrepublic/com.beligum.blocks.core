@@ -90,11 +90,11 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
     protected JsonPageIndexEntry(String json) throws IOException
     {
-//        super(id.toString());
-//
-//        this.parent = parent;
-//        this.jsonMapper = Json.getObjectMapper();
-//        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel);
+        //        super(id.toString());
+        //
+        //        this.parent = parent;
+        //        this.jsonMapper = Json.getObjectMapper();
+        //        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel);
         this.jsonMapper = Json.getObjectMapper();
         this.jsonNode = this.jsonMapper.readValue(json, ObjectNode.class);
     }
@@ -104,7 +104,8 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     {
         return this.create(AbstractPageIndexEntry.generateId(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
-    public JsonPageIndexEntry create(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    public JsonPageIndexEntry create(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent)
+                    throws IOException
     {
         return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
@@ -205,7 +206,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 }
             }
             else {
-                Logger.error("Encountered an unknown RDF predicate while mapping to JSON; " + triple);
+                Logger.error("Encountered an unknown RDF predicate '" + predicate + "' while mapping to JSON. This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
             }
         }
 

@@ -463,7 +463,9 @@ public abstract class PageSource extends AbstractSource implements Source
         }
 
         if (retVal != null) {
-            retVal.attr(HtmlParser.RDF_PROPERTY_ATTR, property.getName())
+            //note that this can "update" the property name to use the curie variant if it was in the default ontology scope
+            //I hope that's okay...
+            retVal.attr(HtmlParser.RDF_PROPERTY_ATTR, property.getCurie().toString())
                   .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString());
 
             String existingValue = retVal.attr(HtmlParser.RDF_CONTENT_ATTR);
@@ -491,9 +493,13 @@ public abstract class PageSource extends AbstractSource implements Source
     }
     private Elements getPropertyElements(RdfProperty property)
     {
-        //note that we search for both curies and regular names (since we assume we're searching in the default ontology)
-        return this.document.select("[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]" +
-                                    "," + "[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getCurieName() + "]");
+        String cssQuery = "[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getCurieName() + "]";
+        // if the property is inside the main ontology, we need to search for the non-prefixed name as well
+        if (property.getOntology().equals(Settings.instance().getRdfMainOntologyNamespace())) {
+            cssQuery += ", [" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]";
+        }
+
+        return this.document.select(cssQuery);
     }
 
     //-----MANAGEMENT METHODS-----

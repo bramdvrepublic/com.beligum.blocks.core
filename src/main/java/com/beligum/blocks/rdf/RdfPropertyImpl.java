@@ -16,23 +16,16 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.indexers.DefaultRdfPropertyIndexer;
-import com.beligum.blocks.rdf.ifaces.RdfPropertyIndexer;
 import com.beligum.blocks.rdf.ontologies.XSD;
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.rdf4j.model.Value;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -46,7 +39,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected RdfQueryEndpoint endpoint;
     protected InputType widgetType;
     protected InputTypeConfig widgetConfig;
-    protected RdfPropertyIndexer indexer;
 
     //-----CONSTRUCTORS-----
     RdfPropertyImpl(RdfOntologyImpl ontology, String name)
@@ -88,20 +80,20 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         return widgetConfig;
     }
-    @Override
-    public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException
-    {
-        this.assertNoProxy();
-
-        return this.indexer.index(indexer, resource, this, value, language, options);
-    }
-    @Override
-    public Object prepareIndexValue(String value, Locale language) throws IOException
-    {
-        this.assertNoProxy();
-
-        return this.indexer.prepareIndexValue(this, value, language);
-    }
+    //    @Override
+//    public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException
+//    {
+//        this.assertNoProxy();
+//
+//        return this.indexer.index(indexer, resource, this, value, language, options);
+//    }
+//    @Override
+//    public Object prepareIndexValue(String value, Locale language) throws IOException
+//    {
+//        this.assertNoProxy();
+//
+//        return this.indexer.prepareIndexValue(this, value, language);
+//    }
 
     //-----PROTECTED METHODS-----
 
@@ -133,12 +125,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             return this;
         }
-        public Builder indexer(RdfPropertyIndexer indexer)
-        {
-            this.rdfResource.indexer = indexer;
-
-            return this;
-        }
+//        public Builder indexer(RdfPropertyIndexer indexer)
+//        {
+//            this.rdfResource.indexer = indexer;
+//
+//            return this;
+//        }
 
         @Override
         RdfProperty create() throws RdfInitializationException
@@ -166,10 +158,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
             //make it uniform; no nulls
             if (this.rdfResource.widgetConfig == null) {
                 this.rdfResource.widgetConfig = new InputTypeConfig();
-            }
-
-            if (this.rdfResource.indexer == null) {
-                this.rdfResource.indexer = DefaultRdfPropertyIndexer.INSTANCE;
             }
 
             //Note: this call will add us to the ontology

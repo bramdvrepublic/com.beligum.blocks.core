@@ -74,7 +74,6 @@ import java.util.*;
  * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;h=32a97c1
  * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/solr-ref-guide/src/uploading-data-with-index-handlers.adoc;h=1c090a09693e7f49fba59df438c49b93dd18fea6;hb=32a97c1
  * https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=blob;f=solr/solr-ref-guide/src/indexing-nested-documents.adoc;h=ada865e97089f8c3ef738b67959801d6698fa55c;hb=32a97c1
- *
  */
 public class SolrPageIndexer implements PageIndexer
 {
@@ -325,6 +324,17 @@ public class SolrPageIndexer implements PageIndexer
         }
     }
 
+    /**
+     * Note: to load this config into a standalone Solr server:
+     * - first of all, add a symlink to the main pages/index folder in the configsets folder:
+     *   ln -s /home/bram/Projects/republic/website/storage/pages/index /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
+     * - use the Admin gui (http://localhost:8983/solr/) to add a core:
+     *   name: pages
+     *   instanceDir: /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
+     *   data: data
+     *   config: solrconfig.xml
+     *   schema: schema.xml
+     */
     private SolrClient initEmbedded(String coreName) throws IOException
     {
         Path solrHomeDir = Paths.get(Settings.instance().getPageMainIndexFolder());

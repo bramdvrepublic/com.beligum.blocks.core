@@ -118,15 +118,16 @@ public class LuceneIndexSearchResult extends AbstractIndexSearchResult
         {
             IndexEntry retVal = null;
 
-            if (this.hasNext()) {
-                try {
-                    retVal = LuceneDocFactory.INSTANCE.fromLuceneDoc(this.indexSearcher.doc(this.results.scoreDocs[this.index].doc, INDEX_FIELDS_TO_LOAD));
-                    this.index++;
-                }
-                catch (IOException e) {
-                    Logger.error("Error while preparing the next search result (index "+this.index+"); ", e);
-                }
-            }
+            //TODO
+//            if (this.hasNext()) {
+//                try {
+//                    retVal = LuceneDocFactory.INSTANCE.fromLuceneDoc(this.indexSearcher.doc(this.results.scoreDocs[this.index].doc, INDEX_FIELDS_TO_LOAD));
+//                    this.index++;
+//                }
+//                catch (IOException e) {
+//                    Logger.error("Error while preparing the next search result (index "+this.index+"); ", e);
+//                }
+//            }
 
             return retVal;
         }

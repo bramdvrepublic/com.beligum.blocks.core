@@ -16,14 +16,13 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.RDF;
 import com.google.common.base.Function;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -203,23 +202,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         }
         public Builder property(RdfProperty property) throws RdfInitializationException
         {
-            return this.properties(property);
+            return this.addProperties(false, property);
         }
         public Builder properties(RdfProperty... properties) throws RdfInitializationException
         {
-            for (RdfProperty p : properties) {
-
-                RdfPropertyImpl pImpl = (RdfPropertyImpl) p;
-
-                if (this.rdfResource.properties.contains(pImpl)) {
-                    throw new RdfInitializationException("Can't add properties " + p + " to class " + this + " because it would overwrite and existing properties, can't continue.");
-                }
-                else {
-                    this.rdfResource.properties.add(pImpl);
-                }
-            }
-
-            return this;
+            return this.addProperties(false, properties);
         }
         public Builder endpoint(RdfQueryEndpoint endpoint)
         {
@@ -256,14 +243,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             //every public class should at least have a few standard properties, so auto-add them if they're missing
             if (this.rdfResource.isPublic) {
 
-                // the rdf:type property to say what kind of class this instance has
-                if (!this.rdfResource._hasProperty(RDF.type)) {
-                    this.property(RDF.type);
-                }
-
-                // the label property, otherwise we can't set it's <title>
-                if (!this.rdfResource._hasProperty(Settings.instance().getRdfLabelProperty())) {
-                    this.property(Settings.instance().getRdfLabelProperty());
+                // If this class is public, add all default properties to it
+                // Note that the default label property and the RDF.type property are
+                // marked default automatically before calling this
+                for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
+                    if (p.isProperty()) {
+                        this.addProperties(true, (RdfProperty) p);
+                    }
                 }
             }
 
@@ -278,6 +264,23 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             //Note: this call will add us to the ontology
             return super.create();
+        }
+
+        private Builder addProperties(boolean skipCheck, RdfProperty... properties) throws RdfInitializationException
+        {
+            for (RdfProperty p : properties) {
+
+                RdfPropertyImpl pImpl = (RdfPropertyImpl) p;
+
+                if (!skipCheck && this.rdfResource.properties.contains(pImpl)) {
+                    throw new RdfInitializationException("Can't add properties " + p + " to class " + this + " because it would overwrite and existing properties, can't continue.");
+                }
+                else {
+                    this.rdfResource.properties.add(pImpl);
+                }
+            }
+
+            return this;
         }
     }
 }

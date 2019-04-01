@@ -68,4 +68,9 @@ public interface RdfOntologyMember extends RdfResource
      */
     @JsonIgnore
     URI[] getIsSameAs();
+
+    /**
+     * If this returns true, this should be (automatically) added to all publicly available members of our local public ontologies.
+     */
+    boolean isDefault();
 }

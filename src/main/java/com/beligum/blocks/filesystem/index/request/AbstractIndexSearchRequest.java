@@ -5,7 +5,10 @@ import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.apache.solr.client.solrj.SolrQuery;
 
+import java.io.IOException;
 import java.util.*;
+
+import static com.beligum.blocks.filesystem.index.solr.SolrIndexSearchResult.DEFAULT_MAX_SEARCH_RESULTS;
 
 public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 {
@@ -32,14 +35,14 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
         return filters;
     }
     @Override
-    public Integer getPageSize()
+    public int getPageSize()
     {
-        return pageSize;
+        return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
     }
     @Override
-    public Integer getPageOffset()
+    public int getPageOffset()
     {
-        return pageOffset;
+        return pageOffset == null ? DEFAULT_PAGE_OFFSET : pageOffset;
     }
     @Override
     public Locale getLanguage()
@@ -47,9 +50,9 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
         return language;
     }
     @Override
-    public Long getMaxResults()
+    public long getMaxResults()
     {
-        return maxResults;
+        return maxResults == null ? DEFAULT_MAX_SEARCH_RESULTS : maxResults;
     }
 
     //-----BUILDER METHODS-----
@@ -89,7 +92,7 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 
         return this;
     }
-    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
     {
         this.filters.add(new SubFilter(subRequest, filterBoolean));
 

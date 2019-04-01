@@ -19,6 +19,9 @@ package com.beligum.blocks.rdf;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfDatatype;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
+
+import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.

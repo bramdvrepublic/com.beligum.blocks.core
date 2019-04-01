@@ -6,12 +6,11 @@ import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.request.AbstractIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
@@ -37,7 +36,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(String value, FilterBoolean filterBoolean)
     {
-        this.appendQuery(filterBoolean, SolrConfigs._text_.getName(), value);
+        this.append(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value);
 
         return super.filter(value, filterBoolean);
     }
@@ -49,6 +48,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
+        this.append(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+
         return super.filter(field, value, filterBoolean);
     }
     @Override
@@ -59,6 +60,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
+        this.append(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
+
         return super.filter(property, value, filterBoolean);
     }
     @Override
@@ -67,8 +70,21 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
         return super.wildcard(property, value, filterBoolean);
     }
     @Override
-    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
     {
+        if (subRequest instanceof SolrIndexSearchRequest) {
+            SolrIndexSearchRequest solrSubRequest = (SolrIndexSearchRequest) subRequest;
+            if (solrSubRequest.queryBuilder.length() > 0) {
+                this.appendBoolean(this.queryBuilder, filterBoolean).append("(").append(solrSubRequest.queryBuilder).append(")");
+            }
+            if (solrSubRequest.filterQueryBuilder.length() > 0) {
+                this.appendBoolean(this.filterQueryBuilder, filterBoolean).append("(").append(solrSubRequest.filterQueryBuilder).append(")");
+            }
+        }
+        else {
+            throw new IOException("Unsupported sub query type; " + subRequest);
+        }
+
         return super.filter(subRequest, filterBoolean);
     }
     @Override
@@ -89,6 +105,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     {
         SolrQuery retVal = new SolrQuery();
 
+        //make sure this happens before calling the retVal.setFilterQueries() below
+        if (this.getLanguage() != null) {
+            this.filter(PageIndexEntry.language, this.getLanguage().getLanguage(), FilterBoolean.AND);
+        }
+
         if (this.queryBuilder.length() > 0) {
             retVal.setQuery(this.queryBuilder.toString());
         }
@@ -101,21 +122,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
         }
 
-        if (this.getPageSize() != null) {
-            retVal.setRows(this.getPageSize());
-        }
-
-        if (this.getPageOffset() != null) {
-            retVal.setStart(this.getPageOffset());
-        }
-
-        if (this.getLanguage() != null) {
-            retVal.addFilterQuery(QueryParser.escape(PageIndexEntry.language.getName()) + ":" + QueryParser.escape(this.getLanguage().getLanguage()));
-        }
-
-        if (this.getMaxResults() != null) {
-            //TODO...
-        }
+        retVal.setRows(this.getPageSize());
+        retVal.setStart(this.getPageOffset());
+//        if (this.getMaxResults() != null) {
+//            TODO...
+//        }
 
         return retVal;
     }
@@ -123,19 +134,25 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private StringBuilder appendQuery(FilterBoolean filterBoolean, String field, String value)
+    private StringBuilder append(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
     {
-        if (this.queryBuilder.length() > 0) {
+        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(QueryParser.escape(value)).append(")");
+
+        return stringBuilder;
+    }
+    private StringBuilder appendBoolean(StringBuilder stringBuilder, FilterBoolean filterBoolean)
+    {
+        if (stringBuilder.length() > 0) {
             //see https://lucene.apache.org/solr/guide/7_7/the-standard-query-parser.html#boolean-operators-supported-by-the-standard-query-parser
             switch (filterBoolean) {
                 case AND:
-                    this.queryBuilder.append(" && ");
+                    stringBuilder.append("&&");
                     break;
                 case OR:
-                    this.queryBuilder.append(" || ");
+                    stringBuilder.append("||");
                     break;
                 case NOT:
-                    this.queryBuilder.append(" ! ");
+                    stringBuilder.append("!");
                     break;
                 default:
                     Logger.error("Encountered unimplemented filter boolean, ignoring silently; " + filterBoolean);
@@ -149,7 +166,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
                     //NOOP
                     break;
                 case NOT:
-                    this.queryBuilder.append(" ! ");
+                    stringBuilder.append("!");
                     break;
                 default:
                     Logger.error("Encountered unimplemented filter boolean, ignoring silently; " + filterBoolean);
@@ -157,12 +174,17 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             }
         }
 
-        this.queryBuilder.append("(").append(QueryParser.escape(field)).append(":").append(QueryParser.escape(value)).append(")");
-
-        return this.queryBuilder;
+        return stringBuilder;
     }
     private String nameOf(RdfProperty rdfProperty)
     {
         return new SolrField(rdfProperty).getName();
+    }
+
+    //-----MGMT METHODS-----
+    @Override
+    public String toString()
+    {
+        return this.buildSolrQuery().toString();
     }
 }

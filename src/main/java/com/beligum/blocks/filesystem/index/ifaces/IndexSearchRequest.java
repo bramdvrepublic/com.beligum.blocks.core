@@ -21,6 +21,7 @@ import com.beligum.blocks.filesystem.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.filesystem.index.solr.SolrPageIndexConnection;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -42,28 +43,38 @@ public interface IndexSearchRequest extends Serializable
     {
     }
 
-    static IndexSearchRequest createFor(SolrPageIndexConnection indexConnection)
-    {
-        return new SolrIndexSearchRequest();
-    }
-    //    public static IndexSearchRequest createFor(LucenePageIndexConnection indexConnection)
-    //    {
-    //        return new IndexSearchRequest();
-    //    }
-    //    public static IndexSearchRequest createFor(SesamePageIndexConnection indexConnection)
-    //    {
-    //        return new IndexSearchRequest();
-    //    }
+    int DEFAULT_MAX_SEARCH_RESULTS = 1000;
+    int DEFAULT_PAGE_SIZE = 50;
+    int DEFAULT_PAGE_OFFSET = 0;
+
+    /**
+     * Note that multiple static polymorphic methods didn't seem to work...
+     */
     static IndexSearchRequest createFor(IndexConnection indexConnection)
     {
-        throw new UnsupportedOperationException("Unsupported index connection type; please implement a query builder for this implementation; " + indexConnection);
+        if (indexConnection instanceof SolrPageIndexConnection) {
+            return new SolrIndexSearchRequest();
+        }
+        //        else if (indexConnection instanceof LucenePageIndexConnection) {
+        //
+        //        }
+        //        else if (indexConnection instanceof SesamePageIndexConnection) {
+        //
+        //        }
+        else {
+            throw new UnsupportedOperationException("Unsupported index connection type; please implement a query builder for this implementation; " + indexConnection);
+        }
     }
 
     List<Filter> getFilters();
-    Integer getPageSize();
-    Integer getPageOffset();
+
+    int getPageSize();
+
+    int getPageOffset();
+
     Locale getLanguage();
-    Long getMaxResults();
+
+    long getMaxResults();
 
     IndexSearchRequest filter(String value, FilterBoolean filterBoolean);
 
@@ -77,7 +88,7 @@ public interface IndexSearchRequest extends Serializable
 
     IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
 
-    IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
 
     Collection<Filter> filters();
 
