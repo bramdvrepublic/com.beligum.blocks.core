@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.sesame;
+package com.beligum.blocks.filesystem.index.sparql;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
@@ -59,9 +59,7 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
-        //TODO
-        //return new SesamePageIndexConnection(this, tx);
-        return null;
+        return new SesamePageIndexConnection(this, tx);
     }
     @Override
     public synchronized void reboot() throws IOException

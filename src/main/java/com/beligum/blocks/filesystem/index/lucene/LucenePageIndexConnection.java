@@ -51,8 +51,6 @@
 //public class LucenePageIndexConnection extends AbstractIndexConnection implements PageIndexConnection
 //{
 //    //-----CONSTANTS-----
-//    //this is the default number of maximum search results that will be returned when no specific value is passed
-//    public static final int DEFAULT_MAX_SEARCH_RESULTS = 1000;
 //    private static final String TX_RESOURCE_NAME = "LucenePageIndexConnection";
 //
 //    //-----VARIABLES-----

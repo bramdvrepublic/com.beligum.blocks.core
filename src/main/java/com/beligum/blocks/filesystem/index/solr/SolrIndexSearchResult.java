@@ -1,7 +1,7 @@
 package com.beligum.blocks.filesystem.index.solr;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.index.entries.pages.AbstractIndexSearchResult;
+import com.beligum.blocks.filesystem.index.entries.AbstractIndexSearchResult;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -12,21 +12,25 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS;
+
 public class SolrIndexSearchResult extends AbstractIndexSearchResult
 {
     //-----CONSTANTS-----
-    //this is the default number of maximum search results that will be returned when no specific value is passed
-    public static final int DEFAULT_MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
     private final QueryResponse response;
 
     //-----CONSTRUCTORS-----
+    public SolrIndexSearchResult(QueryResponse response)
+    {
+        super(IndexSearchRequest.DEFAULT_PAGE_OFFSET, IndexSearchRequest.DEFAULT_PAGE_SIZE, response.getElapsedTime());
+
+        this.response = response;
+    }
     public SolrIndexSearchResult(IndexSearchRequest indexSearchRequest, QueryResponse response)
     {
-        super(indexSearchRequest.getPageOffset() < 0 ? 0 : indexSearchRequest.getPageOffset(),
-              indexSearchRequest.getPageSize() <= 0 ? DEFAULT_MAX_SEARCH_RESULTS : indexSearchRequest.getPageSize(),
-              response.getElapsedTime());
+        super(indexSearchRequest.getPageOffset(), indexSearchRequest.getPageSize(), response.getElapsedTime());
 
         this.response = response;
     }
@@ -77,7 +81,7 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
                     //TODO this is not very efficient since it re-parses the entire json string
                     retVal = new SolrPageIndexEntry(this.solrResultIterator.next().jsonStr());
                 }
-                catch (IOException e) {
+                catch (Exception e) {
                     Logger.error("Error while fetching the next search result; ", e);
                 }
             }

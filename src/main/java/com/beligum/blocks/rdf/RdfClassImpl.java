@@ -19,7 +19,7 @@ package com.beligum.blocks.rdf;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
-import com.beligum.blocks.filesystem.index.entries.resources.SimpleResourceSummarizer;
+import com.beligum.blocks.filesystem.index.entries.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;

@@ -39,7 +39,7 @@ import com.beligum.blocks.filesystem.ifaces.XAttrFS;
 import com.beligum.blocks.filesystem.index.ifaces.Indexer;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
-import com.beligum.blocks.filesystem.index.sesame.SesamePageIndexer;
+import com.beligum.blocks.filesystem.index.sparql.SesamePageIndexer;
 import com.beligum.blocks.filesystem.index.solr.SolrPageIndexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
@@ -123,7 +123,7 @@ public class StorageFactory
     }
     public static PageIndexer getSparqlIndexer() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.SPARQL_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.SPARQL_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
@@ -142,7 +142,7 @@ public class StorageFactory
     }
     public static TransactionManager getTransactionManager() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, TransactionManager>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, TransactionManager>()
         {
             @Override
             public TransactionManager apply(CacheKey cacheKey) throws IOException
@@ -218,7 +218,7 @@ public class StorageFactory
         Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
 
         if (txCache != null) {
-            retVal = cacheManager().getRequestCache().getAndPutIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, TX>()
+            retVal = cacheManager().getRequestCache().getAndInitIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, TX>()
             {
                 @Override
                 public TX apply(CacheKey cacheKey) throws IOException
@@ -387,7 +387,7 @@ public class StorageFactory
     }
     public static XAFileSystem getXADiskTransactionManager() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
         {
             @Override
             public Object apply(CacheKey cacheKey) throws IOException
@@ -458,7 +458,7 @@ public class StorageFactory
     }
     public static FileContext getPageStoreFileSystem() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, FileContext>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, FileContext>()
         {
             @Override
             public FileContext apply(CacheKey cacheKey) throws IOException
@@ -484,7 +484,7 @@ public class StorageFactory
     }
     public static Configuration getPageViewFileSystemConfig() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Configuration>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Configuration>()
         {
             @Override
             public Configuration apply(CacheKey cacheKey) throws IOException
@@ -495,7 +495,7 @@ public class StorageFactory
     }
     public static FileContext getPageViewFileSystem() throws IOException
     {
-        return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, FileContext>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, FileContext>()
         {
             @Override
             public FileContext apply(CacheKey cacheKey) throws IOException
@@ -514,7 +514,7 @@ public class StorageFactory
     protected static Set<Indexer> getIndexerRegistry()
     {
         try {
-            return cacheManager().getApplicationCache().getAndPutIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
+            return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
             {
                 @Override
                 public Set<Indexer> apply(CacheKey cacheKey) throws IOException

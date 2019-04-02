@@ -16,44 +16,26 @@
 
 package com.beligum.blocks.filesystem.index.solr;
 
-import com.beligum.base.database.models.ifaces.JsonObject;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.AbstractIndexConnection;
-import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.AbstractPageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ontologies.Meta;
-import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.parser.QueryParser;
-import org.apache.solr.schema.NestPathField;
-import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.servlet.SolrRequestParsers;
 
-import javax.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
-
-import static com.beligum.base.templating.velocity.VelocityTemplateToolkit.json;
 
 /**
  * Created by bram on 2/22/16.
@@ -61,6 +43,15 @@ import static com.beligum.base.templating.velocity.VelocityTemplateToolkit.json;
 public class SolrPageIndexConnection extends AbstractIndexConnection implements PageIndexConnection
 {
     //-----CONSTANTS-----
+    public enum QueryFormat implements IndexConnection.QueryFormat
+    {
+        /**
+         * The query string will be an URI with query parameters
+         * as in a default standalone solr server
+         */
+        URI_PARAMS
+    }
+
     private static final String TX_RESOURCE_NAME = SolrPageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
@@ -85,27 +76,27 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         this.assertActive();
 
         try {
-//            SolrQuery query = new SolrQuery();
-//            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
-//            QueryResponse response = this.solrClient.query(query);
-//            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
-//            for (int i = 0; i < response.getResults().getNumFound(); i++) {
-//                Logger.info(response.getResults().get(i).jsonStr());
-//            }
-//
-//            //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
-//            //            key = URI.create("http://localhost:8080/en/blah");
-//            query = new SolrQuery();
-//            //query.setQuery(QueryParser.escape(SolrConfigs.CORE_SCHEMA_FIELD_ID) + ":" + SimplePageIndexEntry.generateId(key));
-//            query.setQuery("*:*");
-//            response = this.solrClient.query(query);
-//            SolrDocumentList docList = response.getResults();
-//            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
-//            for (int i = 0; i < docList.getNumFound(); i++) {
-//                Logger.info(docList.get(i).jsonStr());
-//            }
+            //            SolrQuery query = new SolrQuery();
+            //            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
+            //            QueryResponse response = this.solrClient.query(query);
+            //            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
+            //            for (int i = 0; i < response.getResults().getNumFound(); i++) {
+            //                Logger.info(response.getResults().get(i).jsonStr());
+            //            }
+            //
+            //            //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
+            //            //            key = URI.create("http://localhost:8080/en/blah");
+            //            query = new SolrQuery();
+            //            //query.setQuery(QueryParser.escape(SolrConfigs.CORE_SCHEMA_FIELD_ID) + ":" + SimplePageIndexEntry.generateId(key));
+            //            query.setQuery("*:*");
+            //            response = this.solrClient.query(query);
+            //            SolrDocumentList docList = response.getResults();
+            //            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
+            //            for (int i = 0; i < docList.getNumFound(); i++) {
+            //                Logger.info(docList.get(i).jsonStr());
+            //            }
 
-            SolrDocument doc = this.solrClient.getById(AbstractPageIndexEntry.generateId(key).toString());
+            SolrDocument doc = this.solrClient.getById(PageIndexEntry.generateId(key).toString());
             return doc == null ? null : new SolrPageIndexEntry(doc.jsonStr());
         }
         catch (Exception e) {
@@ -196,20 +187,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //TODO comment
             this.solrClient.commit(false, false, true);
 
-            SolrDocument doc = this.solrClient.getById(AbstractPageIndexEntry.generateId(resource.getUri()).toString());
-
-            SolrQuery testQuery = new SolrQuery();
-            //fq=(id:/en/blah)&rows=50&start=0
-            //testQuery.setQuery("id:/en/blah");
-            testQuery.setQuery("*:*");
-            testQuery.addFilterQuery("id:/en/blah");
-            QueryResponse testRes = this.solrClient.query(testQuery);
-
-            IndexSearchRequest searchRequestBuilder = IndexSearchRequest.createFor(this)
-                                                                        .filter(PageIndexEntry.id, resource.getUri().getPath(),
-                                                                                IndexSearchRequest.FilterBoolean.OR);
-            IndexSearchResult testres = this.search(searchRequestBuilder);
-
             Logger.info("");
         }
         catch (Exception e) {
@@ -256,13 +233,31 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
     }
     @Override
-    public IndexSearchResult search(String query) throws IOException
+    public IndexSearchResult search(String query, IndexConnection.QueryFormat format) throws IOException
     {
         this.assertActive();
 
-        //TODO
+        IndexSearchResult retVal = null;
 
-        return null;
+        if (format instanceof QueryFormat) {
+            switch ((QueryFormat) format) {
+                case URI_PARAMS:
+                    try {
+                        retVal = new SolrIndexSearchResult(this.solrClient.query(SolrRequestParsers.parseQueryString(query)));
+                    }
+                    catch (SolrServerException e) {
+                        throw new IOException("Error while executing a Solr search; " + query, e);
+                    }
+                    break;
+                default:
+                    throw new IOException("Encountered unsupported query format; " + format);
+            }
+        }
+        else {
+            throw new IOException("Encountered unsupported query format; " + format);
+        }
+
+        return retVal;
     }
     @Override
     //Note: this needs to be synchronized for concurrency with the the assertActive() below

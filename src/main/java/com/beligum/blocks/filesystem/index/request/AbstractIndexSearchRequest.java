@@ -2,13 +2,12 @@ package com.beligum.blocks.filesystem.index.request;
 
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.apache.solr.client.solrj.SolrQuery;
 
 import java.io.IOException;
 import java.util.*;
-
-import static com.beligum.blocks.filesystem.index.solr.SolrIndexSearchResult.DEFAULT_MAX_SEARCH_RESULTS;
 
 public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 {
@@ -16,11 +15,10 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 
     //-----VARIABLES-----
     private List<IndexSearchRequest.Filter> filters;
-    private Integer pageSize;
-    private Integer pageOffset;
+    private int pageSize = DEFAULT_PAGE_SIZE;
+    private int pageOffset = DEFAULT_PAGE_OFFSET;
     private Locale language;
-    private Long maxResults;
-
+    private long maxResults = DEFAULT_MAX_SEARCH_RESULTS;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexSearchRequest()
@@ -37,12 +35,12 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     @Override
     public int getPageSize()
     {
-        return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
+        return pageSize;
     }
     @Override
     public int getPageOffset()
     {
-        return pageOffset == null ? DEFAULT_PAGE_OFFSET : pageOffset;
+        return pageOffset;
     }
     @Override
     public Locale getLanguage()
@@ -52,19 +50,19 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     @Override
     public long getMaxResults()
     {
-        return maxResults == null ? DEFAULT_MAX_SEARCH_RESULTS : maxResults;
+        return maxResults;
     }
 
     //-----BUILDER METHODS-----
-    public IndexSearchRequest filter(String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
     {
         this.filters.add(new QueryFilter(value, filterBoolean, false));
 
         return this;
     }
-    public IndexSearchRequest wildcard(String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
-        this.filters.add(new QueryFilter(value, filterBoolean, true));
+        this.filters.add(new ClassFilter(type, filterBoolean));
 
         return this;
     }
@@ -134,38 +132,52 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     //-----INNER CLASSES-----
     private static abstract class AbstractFilter implements IndexSearchRequest.Filter
     {
-        protected final String value;
         protected final FilterBoolean filterBoolean;
 
-        protected AbstractFilter(String value, FilterBoolean filterBoolean)
+        protected AbstractFilter(FilterBoolean filterBoolean)
         {
-            this.value = value;
             this.filterBoolean = filterBoolean;
         }
     }
 
     public static class QueryFilter extends AbstractFilter
     {
+        private final String value;
         private final boolean isWildcard;
 
         private QueryFilter(String value, FilterBoolean filterBoolean, boolean isWildcard)
         {
-            super(value, filterBoolean);
+            super(filterBoolean);
 
+            this.value = value;
             this.isWildcard = isWildcard;
+        }
+    }
+
+    public static class ClassFilter extends AbstractFilter
+    {
+        private final RdfClass type;
+
+        private ClassFilter(RdfClass type, FilterBoolean filterBoolean)
+        {
+            super(filterBoolean);
+
+            this.type = type;
         }
     }
 
     public static class FieldFilter extends AbstractFilter
     {
         private final IndexEntryField field;
+        private final String value;
         private final boolean isWildcard;
 
         private FieldFilter(IndexEntryField field, String value, FilterBoolean filterBoolean, boolean isWildcard)
         {
-            super(value, filterBoolean);
+            super(filterBoolean);
 
             this.field = field;
+            this.value = value;
             this.isWildcard = isWildcard;
         }
     }
@@ -173,13 +185,15 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     public static class PropertyFilter extends AbstractFilter
     {
         private final RdfProperty property;
+        private final String value;
         private final boolean isWildcard;
 
         private PropertyFilter(RdfProperty property, String value, FilterBoolean filterBoolean, boolean isWildcard)
         {
-            super(value, filterBoolean);
+            super(filterBoolean);
 
             this.property = property;
+            this.value = value;
             this.isWildcard = isWildcard;
         }
     }
@@ -190,7 +204,7 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 
         private SubFilter(IndexSearchRequest subRequest, FilterBoolean filterBoolean)
         {
-            super(null, filterBoolean);
+            super(filterBoolean);
 
             this.subRequest = subRequest;
         }

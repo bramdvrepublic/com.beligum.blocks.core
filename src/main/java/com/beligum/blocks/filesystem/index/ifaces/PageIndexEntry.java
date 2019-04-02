@@ -17,9 +17,14 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.entries.JsonField;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.eclipse.rdf4j.model.IRI;
 
+import java.net.URI;
 import java.util.Locale;
 
 /**
@@ -117,7 +122,6 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-
     /**
      * Only for sub-resources: the id of the parent index entry or null if this entry is not a sub-resource
      */
@@ -172,6 +176,46 @@ public interface PageIndexEntry extends IndexEntry
      */
     @JsonIgnore
     boolean hasCanonicalAddress();
+
+    /**
+     * These are a couple of ID factory methods, grouped for overview
+     * and make static so they can be used from the constructors
+     */
+    static String generateId(IRI iri)
+    {
+        return generateId(URI.create(iri.toString()));
+    }
+    static String generateId(Page page)
+    {
+        return generateId(page.getPublicRelativeAddress());
+    }
+    static String generateId(URI id)
+    {
+        //since we treat all URIs as relative, we only take the path into account
+        return StringFunctions.getRightOfDomain(id).toString();
+    }
+    static String generateParentId(IndexEntry parent)
+    {
+        return parent == null ? null : parent.getId();
+    }
+    static String generateResource(URI rootResourceUri)
+    {
+        //Note that we index all addresses relatively
+        return StringFunctions.getRightOfDomain(rootResourceUri).toString();
+    }
+    static String generateTypeOf(RdfClass rdfClass)
+    {
+        return rdfClass.getCurie().toString();
+    }
+    static String generateLanguage(Locale language)
+    {
+        return language.getLanguage();
+    }
+    static String generateCanonicalAddress(URI canonicalAddress)
+    {
+        //the canonical address is indexed as-is, we don't modify it
+        return canonicalAddress.toString();
+    }
 
     /**
      * Goes through the supplied page search results and selects the single most fitting result, taking into account the supplied language.

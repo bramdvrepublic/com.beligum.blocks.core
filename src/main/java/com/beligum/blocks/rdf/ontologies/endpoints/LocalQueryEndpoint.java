@@ -105,8 +105,8 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         IndexSearchRequest mainQuery = IndexSearchRequest.createFor(mainIndexer);
 
         //let's support search-all-type queries when this is null
-        if (resourceType != null) {
-            mainQuery.filter(PageIndexEntry.typeOf, resourceType.getCurieName().toString(), IndexSearchRequest.FilterBoolean.AND);
+        if (resourceType != null && resourceType.isClass()) {
+            mainQuery.filter((RdfClass) resourceType, IndexSearchRequest.FilterBoolean.AND);
         }
 
         IndexSearchRequest subQuery = IndexSearchRequest.createFor(mainIndexer);
@@ -203,10 +203,10 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         if (selectedEntry == null) {
             PageIndexConnection indexConn = StorageFactory.getJsonQueryConnection();
             IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
-                                                                                        //at least one of the id or resource should match (or both)
-                                                                                        .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                        .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                        .maxResults(R.configuration().getLanguages().size()));
+                                                                                 //at least one of the id or resource should match (or both)
+                                                                                 .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                 .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                 .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }
 

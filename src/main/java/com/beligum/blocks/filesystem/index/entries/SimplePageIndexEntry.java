@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
+package com.beligum.blocks.filesystem.index.entries;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
@@ -36,17 +36,17 @@ import java.util.Locale;
 public class SimplePageIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
-    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(IndexEntry.id,
-                                                                                 IndexEntry.tokenisedId,
-                                                                                 IndexEntry.label,
-                                                                                 IndexEntry.description,
-                                                                                 IndexEntry.image,
-                                                                                 PageIndexEntry.parentId,
-                                                                                 PageIndexEntry.resource,
-                                                                                 PageIndexEntry.typeOf,
-                                                                                 PageIndexEntry.language,
-                                                                                 PageIndexEntry.canonicalAddress,
-                                                                                 PageIndexEntry.object
+    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(id,
+                                                                                 tokenisedId,
+                                                                                 label,
+                                                                                 description,
+                                                                                 image,
+                                                                                 parentId,
+                                                                                 resource,
+                                                                                 typeOf,
+                                                                                 language,
+                                                                                 canonicalAddress,
+                                                                                 object
     );
 
     //-----VARIABLES-----

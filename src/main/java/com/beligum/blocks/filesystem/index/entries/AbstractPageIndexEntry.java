@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.pages;
+package com.beligum.blocks.filesystem.index.entries;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
@@ -57,25 +57,6 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     protected AbstractPageIndexEntry(String id)
     {
         super(id);
-    }
-
-    //-----STATIC METHODS-----
-    /**
-     * These are a couple of ID factory methods, grouped for overview
-     * and make static so they can be used from the constructors
-     */
-    public static URI generateId(IRI iri)
-    {
-        return generateId(URI.create(iri.toString()));
-    }
-    public static URI generateId(Page page)
-    {
-        return generateId(page.getPublicRelativeAddress());
-    }
-    public static URI generateId(URI id)
-    {
-        //since we treat all URIs as relative, we only take the path into account
-        return StringFunctions.getRightOfDomain(id);
     }
 
     //-----PUBLIC METHODS-----

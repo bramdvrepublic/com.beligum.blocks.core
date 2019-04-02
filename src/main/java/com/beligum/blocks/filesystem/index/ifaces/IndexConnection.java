@@ -27,6 +27,12 @@ import java.net.URI;
 public interface IndexConnection extends XAClosableResource
 {
     //-----CONSTANTS-----
+    /**
+     * This is the format of a raw string-based query
+     */
+    interface QueryFormat
+    {
+    }
 
     //-----VARIABLES-----
 
@@ -62,7 +68,7 @@ public interface IndexConnection extends XAClosableResource
     /**
      * Low-level search request with implementation-specific query string
      */
-    IndexSearchResult search(String query) throws IOException;
+    IndexSearchResult search(String query, QueryFormat format) throws IOException;
 
     //-----PROTECTED METHODS-----
 

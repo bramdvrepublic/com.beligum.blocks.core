@@ -1,4 +1,4 @@
-package com.beligum.blocks.filesystem.index.solr;
+package com.beligum.blocks.filesystem.index.sparql;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
@@ -6,16 +6,21 @@ import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.request.AbstractIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.solr.SolrConfigs;
+import com.beligum.blocks.filesystem.index.solr.SolrField;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
+import static com.beligum.blocks.filesystem.index.sparql.SesamePageIndexConnection.SPARQL_SUBJECT_BINDING_NAME;
+
+public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 {
     //-----CONSTANTS-----
 
@@ -25,7 +30,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     private Map<String, Boolean> sortsFields;
 
     //-----CONSTRUCTORS-----
-    public SolrIndexSearchRequest()
+    public SparqlIndexSearchRequest()
     {
         super();
 
@@ -76,8 +81,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
     {
-        if (subRequest instanceof SolrIndexSearchRequest) {
-            SolrIndexSearchRequest solrSubRequest = (SolrIndexSearchRequest) subRequest;
+        if (subRequest instanceof SparqlIndexSearchRequest) {
+            SparqlIndexSearchRequest solrSubRequest = (SparqlIndexSearchRequest) subRequest;
             if (solrSubRequest.queryBuilder.length() > 0) {
                 this.appendBoolean(this.queryBuilder, filterBoolean).append("(").append(solrSubRequest.queryBuilder).append(")");
             }
@@ -105,35 +110,72 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return this;
     }
-    public SolrQuery buildSolrQuery()
+    public String buildSparqlQuery()
     {
-        //Note: in Solr, a query is always necessary, so we start out with searching for everything
-        SolrQuery retVal = new SolrQuery("*:*");
+        StringBuilder retVal = new StringBuilder();
 
-        //make sure this happens before calling the retVal.setFilterQueries() below
-        if (this.getLanguage() != null) {
-            this.filter(PageIndexEntry.language, this.getLanguage().getLanguage(), FilterBoolean.AND);
+        for (RdfOntology o : RdfFactory.getRelevantOntologies()) {
+            retVal.append("PREFIX ").append(o.getNamespace().getPrefix()).append(": <").append(o.getNamespace().getUri()).append("> \n");
         }
+        retVal.append("\n");
 
-        if (this.queryBuilder.length() > 0) {
-            retVal.setQuery(this.queryBuilder.toString());
+        //links the resource to be found with the following query statements (required)
+        retVal.append("SELECT DISTINCT ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" WHERE {\n");
+
+//        //TODO implement the type
+        if (type != null) {
+            retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(type.getFullName().toString()).append("> . \n");
         }
-
-        if (this.filterQueryBuilder.length() > 0) {
-            retVal.setFilterQueries(this.filterQueryBuilder.toString());
-        }
-
-        for (Map.Entry<String, Boolean> e : this.sortsFields.entrySet()) {
-            retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
-        }
-
-        retVal.setRows(this.getPageSize());
-        retVal.setStart(this.getPageOffset());
-//        if (this.getMaxResults() != null) {
-//            TODO...
+//
+//        //---Lucene---
+//        if (!StringUtils.isEmpty(luceneQuery)) {
+//            retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(searchPrefix).append(":matches [\n")
+//                        //specifies the Lucene query (required)
+//                        .append("\t").append("\t").append(searchPrefix).append(":query \"").append(QueryParser.escape(luceneQuery)).append("*").append("\";\n")
+//                        //specifies the property to search. If omitted all properties are searched (optional)
+//                        //                    .append("\t").append("\t").append(searchPrefix).append(":property ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append("streetName").append(";\n")
+//                        //specifies a variable for the score (optional)
+//                        //                    .append("\t").append("\t").append(searchPrefix).append(":score ?score;\n")
+//                        //specifies a variable for a highlighted snippet (optional)
+//                        //.append("\t").append("\t").append(searchPrefix).append(":snippet ?snippet;\n")
+//                        .append("\t").append("] .\n");
 //        }
+//
+//        //---triple selection---
+//        retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" .\n");
+//
+//        //---Filters---
+//        if (fieldValues != null) {
+//            Set<Map.Entry<RdfProperty, String>> entries = fieldValues.entrySet();
+//            for (Map.Entry<RdfProperty, String> filter : entries) {
+//                retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(filter.getKey().getCurieName().toString()).append(" ")
+//                            .append(filter.getValue()).append(" .\n");
+//            }
+//        }
+//
+//        //---Save the sort field---
+//        if (sortField != null) {
+//            retVal.append("\t").append("OPTIONAL{ ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" <").append(sortField.getFullName().toString()).append("> ")
+//                        .append("?sortField").append(" . }\n");
+//        }
+//
+//        //---Closes the inner SELECT---
+//        retVal.append("}\n");
+//
+//        //---Sorting---
+//        if (sortField != null) {
+//            retVal.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?sortField").append(")").append("\n");
+//        }
+//        //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
+//        // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
+//        else {
+//            retVal.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(")").append("\n");
+//        }
+//
+//        //---Paging---
+//        retVal.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
 
-        return retVal;
+        return retVal.toString();
     }
 
     //-----PROTECTED METHODS-----
@@ -181,6 +223,10 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return stringBuilder;
     }
+    private String nameOf(RdfClass rdfClass)
+    {
+        return new SolrField(rdfProperty).getName();
+    }
     private String nameOf(RdfProperty rdfProperty)
     {
         return new SolrField(rdfProperty).getName();
@@ -190,6 +236,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public String toString()
     {
-        return this.buildSolrQuery().toString();
+        return this.buildSparqlQuery();
     }
 }

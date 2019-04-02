@@ -17,9 +17,9 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.filesystem.index.entries.pages.AbstractPageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
-import com.beligum.blocks.filesystem.index.entries.pages.SimplePageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.SimplePageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -59,7 +59,7 @@ public class PageModel
         this.subModel = subModel;
 
         this.isMain = this.mainResource.equals(this.subResource);
-        this.id = this.generateId(this.isMain()).toString();
+        this.id = this.generateId(this.isMain());
     }
 
     //-----PUBLIC METHODS-----
@@ -104,10 +104,10 @@ public class PageModel
         }
         else {
 
-            String id = this.generateId(this.isMain()).toString();
+            String id = this.generateId(this.isMain());
 
             //Note: the whole point is that page resources don't have a parent, so if this is a main resource, set it to null
-            String parentId = this.isMain() ? null : this.generateId(true).toString();
+            String parentId = this.isMain() ? null : this.generateId(true);
 
             URI resource = this.getSubResource();
             //Note that we index all addresses relatively, including the resource uri
@@ -157,8 +157,8 @@ public class PageModel
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private URI generateId(boolean forMain)
+    private String generateId(boolean forMain)
     {
-        return forMain ? AbstractPageIndexEntry.generateId(this.getPage()) : AbstractPageIndexEntry.generateId(this.getSubResource());
+        return forMain ? PageIndexEntry.generateId(this.getPage()) : PageIndexEntry.generateId(this.getSubResource());
     }
 }

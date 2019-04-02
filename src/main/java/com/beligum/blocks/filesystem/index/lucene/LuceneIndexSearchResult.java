@@ -17,7 +17,7 @@
 package com.beligum.blocks.filesystem.index.lucene;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.index.entries.pages.AbstractIndexSearchResult;
+import com.beligum.blocks.filesystem.index.entries.AbstractIndexSearchResult;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.google.common.collect.Sets;

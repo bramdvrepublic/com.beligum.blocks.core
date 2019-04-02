@@ -22,7 +22,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.filesystem.index.entries.pages.JsonPageIndexEntry;
+import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;

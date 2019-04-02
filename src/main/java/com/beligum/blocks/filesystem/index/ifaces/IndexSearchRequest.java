@@ -16,9 +16,11 @@
 
 package com.beligum.blocks.filesystem.index.ifaces;
 
-import com.beligum.blocks.filesystem.index.solr.SolrIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.sparql.SparqlIndexSearchRequest;
+import com.beligum.blocks.filesystem.index.sparql.SesamePageIndexConnection;
 import com.beligum.blocks.filesystem.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.filesystem.index.solr.SolrPageIndexConnection;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.IOException;
@@ -43,6 +45,7 @@ public interface IndexSearchRequest extends Serializable
     {
     }
 
+    //this is the default number of maximum search results that will be returned when no specific value is passed
     int DEFAULT_MAX_SEARCH_RESULTS = 1000;
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
@@ -55,12 +58,9 @@ public interface IndexSearchRequest extends Serializable
         if (indexConnection instanceof SolrPageIndexConnection) {
             return new SolrIndexSearchRequest();
         }
-        //        else if (indexConnection instanceof LucenePageIndexConnection) {
-        //
-        //        }
-        //        else if (indexConnection instanceof SesamePageIndexConnection) {
-        //
-        //        }
+        else if (indexConnection instanceof SesamePageIndexConnection) {
+            return new SparqlIndexSearchRequest();
+        }
         else {
             throw new UnsupportedOperationException("Unsupported index connection type; please implement a query builder for this implementation; " + indexConnection);
         }
@@ -76,9 +76,9 @@ public interface IndexSearchRequest extends Serializable
 
     long getMaxResults();
 
-    IndexSearchRequest filter(String value, FilterBoolean filterBoolean);
+    IndexSearchRequest query(String value, FilterBoolean filterBoolean);
 
-    IndexSearchRequest wildcard(String value, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean);
 
     IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean);
 

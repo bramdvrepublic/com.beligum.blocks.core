@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.index.entries.resources;
+package com.beligum.blocks.filesystem.index.entries;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
