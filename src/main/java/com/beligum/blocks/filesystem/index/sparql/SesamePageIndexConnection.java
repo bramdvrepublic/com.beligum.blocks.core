@@ -22,6 +22,8 @@ import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.AbstractIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.RdfFactory;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
@@ -47,12 +49,13 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     public enum QueryFormat implements IndexConnection.QueryFormat
     {
         /**
-         * SPARQL (Simple Protocol and RDF Query Language) is a W3C Recommendation for querying and updating RDF
-         * data.
-         *
-         * @see <a href="http://www.w3.org/TR/sparql11-overview/">SPARQL 1.1 Overview</a>
+         * A SPARQL (v1.1) SELECT query
          */
-        SPARQL11_SELECT
+        SPARQL11_SELECT,
+        /**
+         * A SPARQL (v1.1) CONSTRUCT query
+         */
+        SPARQL11_CONSTRUCT
     }
 
     public static final String SPARQL_SUBJECT_BINDING_NAME = "s";
@@ -119,28 +122,23 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("PREFIX ").append(Local.NAMESPACE.getPrefix()).append(": <").append(Local.NAMESPACE.getUri()).append("> \n");
-        queryBuilder.append("\n");
+
+        SparqlIndexSearchRequest.addOntologyPrefixes(queryBuilder);
+
         queryBuilder.append("CONSTRUCT")
                     .append(" WHERE {\n")
-                    .append("\t").append("<").append(subject.toString()).append(">")
-                    .append(" ?").append(SPARQL_PREDICATE_BINDING_NAME)
-                    .append(" ?").append(SPARQL_OBJECT_BINDING_NAME)
-                    .append(" .\n")
+                    .append("\t").append("<").append(subject.toString()).append(">").append(" ?").append(SPARQL_PREDICATE_BINDING_NAME).append(" ?").append(SPARQL_OBJECT_BINDING_NAME).append(" .\n")
                     .append("}")
         ;
 
         //TODO maybe it's better to iterate the predicates once and build a HashMap instead of pointing to the model?
         //Depends on where we're going with the other functions below, we need to implemente a general OO RDF Mapper
-        SailGraphQuery query = this.connection.prepareGraphQuery(QueryLanguage.SPARQL, queryBuilder.toString(), R.configuration().getSiteDomain().toString());
+        SparqlIndexConstructResult results = this.constructSearch(queryBuilder.toString());
 
-        Model resultModel;
-        try (GraphQueryResult result = query.evaluate()) {
-            resultModel = QueryResults.asModel(result);
-        }
-
-        if (!resultModel.isEmpty()) {
-            retVal = new SparqlConstructIndexEntry(subject.toString(), resultModel);
+        //let's return null if nothing was found
+        if (!results.isEmpty()) {
+            //TODO we should refactor this so it uses the iterator of the results
+            retVal = new SparqlConstructIndexEntry(subject, results.getModel());
         }
 
         // SELECT alternative...
@@ -300,32 +298,31 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         IndexSearchResult retVal = null;
 
         if (format instanceof QueryFormat) {
+
+            long startStamp = System.currentTimeMillis();
+
+            // From the RDF4j docs:
+            // Three types of SPARQL queries are distinguished:
+            //   1) tuple queries The result of a tuple query is a set of tuples (or variable bindings),
+            //      where each tuple represents a solution of a query. This type of query is commonly used
+            //      to get specific values (URIs, blank nodes, literals) from the stored RDF data. SPARQL
+            //      SELECT queries are tuple queries.
+            //   2) graph queries The result of graph queries is an RDF graph (or set of statements).
+            //      This type of query is very useful for extracting sub-graphs from the stored RDF data,
+            //      which can then be queried further, serialized to an RDF document, etc. SPARQL
+            //      CONSTRUCT and DESCRIBE queries are graph queries.
+            //   3) boolean queries The result of boolean queries is a simple boolean value, i.e. true or
+            //      false. This type of query can be used to check if a repository contains specific
+            //      information. SPARQL ASK queries are boolean queries.
             switch ((QueryFormat) format) {
                 case SPARQL11_SELECT:
 
-                    long startStamp = System.currentTimeMillis();
+                    retVal = this.selectSearch(query);
 
-                    // Three types of SPARQL queries are distinguished:
-                    // 1) tuple queries The result of a tuple query is a set of tuples (or variable bindings),
-                    //    where each tuple represents a solution of a query. This type of query is commonly used
-                    //    to get specific values (URIs, blank nodes, literals) from the stored RDF data. SPARQL
-                    //    SELECT queries are tuple queries.
-                    // 2) graph queries The result of graph queries is an RDF graph (or set of statements).
-                    //    This type of query is very useful for extracting sub-graphs from the stored RDF data,
-                    //    which can then be queried further, serialized to an RDF document, etc. SPARQL
-                    //    CONSTRUCT and DESCRIBE queries are graph queries.
-                    // 3) boolean queries The result of boolean queries is a simple boolean value, i.e. true or
-                    //    false. This type of query can be used to check if a repository contains specific
-                    //    information. SPARQL ASK queries are boolean queries.
-                    SailTupleQuery request = this.connection.prepareTupleQuery(QueryLanguage.SPARQL, query, R.configuration().getSiteDomain().toString());
+                    break;
+                case SPARQL11_CONSTRUCT:
 
-                    // we "materialize" the query at once, to have access to it's size and to be able to close it properly
-                    List<BindingSet> resultList;
-                    try (TupleQueryResult result = request.evaluate()) {
-                        resultList = QueryResults.asList(result);
-                    }
-
-                    retVal = new SparqlIndexSearchResult(resultList, System.currentTimeMillis() - startStamp);
+                    retVal = this.constructSearch(query);
 
                     break;
                 default:
@@ -505,6 +502,32 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     }
 
     //-----PRIVATE METHODS-----
+    private SparqlIndexSelectResult selectSearch(String query) throws IOException
+    {
+        SparqlIndexSelectResult retVal = null;
+
+        long startStamp = System.currentTimeMillis();
+
+        SailTupleQuery selectQuery = this.connection.prepareTupleQuery(QueryLanguage.SPARQL, query, R.configuration().getSiteDomain().toString());
+        try (TupleQueryResult result = selectQuery.evaluate()) {
+            retVal = new SparqlIndexSelectResult(result, System.currentTimeMillis() - startStamp);
+        }
+
+        return retVal;
+    }
+    private SparqlIndexConstructResult constructSearch(String query) throws IOException
+    {
+        SparqlIndexConstructResult retVal = null;
+
+        long startStamp = System.currentTimeMillis();
+
+        SailGraphQuery constructQuery = this.connection.prepareGraphQuery(QueryLanguage.SPARQL, query, R.configuration().getSiteDomain().toString());
+        try (GraphQueryResult result = constructQuery.evaluate()) {
+            retVal = new SparqlIndexConstructResult(result, System.currentTimeMillis() - startStamp);
+        }
+
+        return retVal;
+    }
     private boolean isRegistered()
     {
         return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;

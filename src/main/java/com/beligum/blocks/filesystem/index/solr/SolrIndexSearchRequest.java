@@ -22,7 +22,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     //-----VARIABLES-----
     private StringBuilder queryBuilder;
     private StringBuilder filterQueryBuilder;
-    private Map<String, Boolean> sortsFields;
 
     //-----CONSTRUCTORS-----
     public SolrIndexSearchRequest()
@@ -31,7 +30,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         this.queryBuilder = new StringBuilder();
         this.filterQueryBuilder = new StringBuilder();
-        this.sortsFields = new LinkedHashMap<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -91,20 +89,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return super.filter(subRequest, filterBoolean);
     }
-    @Override
-    public IndexSearchRequest sort(RdfProperty property, boolean sortAscending)
-    {
-        this.sortsFields.put(this.nameOf(property), sortAscending);
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest sort(IndexEntryField field, boolean sortAscending)
-    {
-        this.sortsFields.put(field.getName(), sortAscending);
-
-        return this;
-    }
     public SolrQuery buildSolrQuery()
     {
         //Note: in Solr, a query is always necessary, so we start out with searching for everything
@@ -123,7 +107,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             retVal.setFilterQueries(this.filterQueryBuilder.toString());
         }
 
-        for (Map.Entry<String, Boolean> e : this.sortsFields.entrySet()) {
+        for (Map.Entry<String, Boolean> e : this.sortFields.entrySet()) {
             retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
         }
 
@@ -137,6 +121,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected String nameOf(RdfProperty rdfProperty)
+    {
+        return new SolrField(rdfProperty).getName();
+    }
 
     //-----PRIVATE METHODS-----
     private StringBuilder append(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
@@ -180,10 +169,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
         }
 
         return stringBuilder;
-    }
-    private String nameOf(RdfProperty rdfProperty)
-    {
-        return new SolrField(rdfProperty).getName();
     }
 
     //-----MGMT METHODS-----

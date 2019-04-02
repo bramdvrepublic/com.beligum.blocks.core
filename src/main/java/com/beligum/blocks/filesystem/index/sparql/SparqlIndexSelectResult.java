@@ -5,41 +5,43 @@ import com.beligum.blocks.filesystem.index.entries.AbstractIndexSearchResult;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class SparqlIndexSearchResult extends AbstractIndexSearchResult
+public class SparqlIndexSelectResult extends AbstractIndexSearchResult
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private final List<BindingSet> result;
+    private List<BindingSet> selectResult;
 
     //-----CONSTRUCTORS-----
-    public SparqlIndexSearchResult(List<BindingSet> result, long elapsedTime)
+    public SparqlIndexSelectResult(TupleQueryResult result, long elapsedTime)
     {
         super(IndexSearchRequest.DEFAULT_PAGE_SIZE, IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, elapsedTime);
 
-        this.result = result;
+        // we "materialize" the query at once, so we have it's size and can close it properly
+        this.selectResult = QueryResults.asList(result);
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public Integer size()
     {
-        return this.result.size();
+        return this.selectResult.size();
     }
     @Override
     public Long getTotalHits()
     {
-        return Long.valueOf(this.result.size());
+        return Long.valueOf(this.selectResult.size());
     }
     @Override
-    public Iterator<IndexEntry> iterator()
+    public java.util.Iterator iterator()
     {
-        return new SparqlResultIterator(this.result);
+        return new Iterator(this.selectResult);
     }
 
     //-----PROTECTED METHODS-----
@@ -47,19 +49,19 @@ public class SparqlIndexSearchResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class SparqlResultIterator implements Iterator<IndexEntry>
+    private static class Iterator implements java.util.Iterator<IndexEntry>
     {
-        private final Iterator<BindingSet> solrResultIterator;
+        private final java.util.Iterator<BindingSet> bindingIterator;
 
-        public SparqlResultIterator(List<BindingSet> results)
+        public Iterator(List<BindingSet> results)
         {
-            this.solrResultIterator = results.iterator();
+            this.bindingIterator = results.iterator();
         }
 
         @Override
         public boolean hasNext()
         {
-            return this.solrResultIterator.hasNext();
+            return this.bindingIterator.hasNext();
         }
         @Override
         public IndexEntry next()
@@ -69,7 +71,7 @@ public class SparqlIndexSearchResult extends AbstractIndexSearchResult
             if (this.hasNext()) {
                 try {
                     //we don't really know the id, here, right?
-                    retVal = new SparqlSelectIndexEntry(null, this.solrResultIterator.next());
+                    retVal = new SparqlSelectIndexEntry(null, this.bindingIterator.next());
                 }
                 catch (Exception e) {
                     Logger.error("Error while fetching the next search result; ", e);

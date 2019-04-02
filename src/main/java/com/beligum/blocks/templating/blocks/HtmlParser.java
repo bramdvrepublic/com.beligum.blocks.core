@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -511,7 +512,7 @@ public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 
         //inline the resource into the builder
         try (InputStream is = htmlTemplateResource.newInputStream()) {
-            builder.append(IOUtils.toString(is));
+            builder.append(IOUtils.toString(is, StandardCharsets.UTF_8));
         }
 
         if (!inline) {

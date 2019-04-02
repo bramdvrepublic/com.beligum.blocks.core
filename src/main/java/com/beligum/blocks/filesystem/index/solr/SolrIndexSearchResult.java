@@ -8,11 +8,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
-
-import static com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS;
 
 public class SolrIndexSearchResult extends AbstractIndexSearchResult
 {
@@ -47,9 +43,9 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
         return this.response.getResults().getNumFound();
     }
     @Override
-    public Iterator<IndexEntry> iterator()
+    public java.util.Iterator iterator()
     {
-        return new SolrResultIterator(this.response.getResults());
+        return new Iterator(this.response.getResults());
     }
 
     //-----PROTECTED METHODS-----
@@ -57,11 +53,11 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class SolrResultIterator implements Iterator<IndexEntry>
+    private static class Iterator implements java.util.Iterator<IndexEntry>
     {
-        private final Iterator<SolrDocument> solrResultIterator;
+        private final java.util.Iterator<SolrDocument> solrResultIterator;
 
-        public SolrResultIterator(SolrDocumentList results)
+        public Iterator(SolrDocumentList results)
         {
             this.solrResultIterator = results.iterator();
         }

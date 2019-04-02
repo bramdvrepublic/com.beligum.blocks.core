@@ -20,10 +20,7 @@ import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
@@ -106,9 +103,9 @@ public interface RdfClass extends RdfOntologyMember
         @Override
         public void serializeWithType(RdfClass value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException
         {
-            typeSer.writeTypePrefixForScalar(value, gen);
+            typeSer.writeTypePrefix(gen, typeSer.typeId(value, JsonToken.VALUE_STRING));
             serialize(value, gen, serializers);
-            typeSer.writeTypeSuffixForScalar(value, gen);
+            typeSer.writeTypeSuffix(gen, typeSer.typeId(value, JsonToken.VALUE_STRING));
         }
     }
 

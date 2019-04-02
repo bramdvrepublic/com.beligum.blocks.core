@@ -17,10 +17,8 @@
 package com.beligum.blocks.filesystem.index.solr;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.index.AbstractIndexConnection;
-import com.beligum.blocks.filesystem.index.entries.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -60,6 +58,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private TX transaction;
     private boolean active;
 
+    private RollbackBackup rollbackBackup = null;
+    private Object rollbackBackupLock = new Object();
+
     //-----CONSTRUCTORS-----
     public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction) throws IOException
     {
@@ -96,7 +97,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //                Logger.info(docList.get(i).jsonStr());
             //            }
 
-            SolrDocument doc = this.solrClient.getById(PageIndexEntry.generateId(key).toString());
+            SolrDocument doc = this.solrClient.getById(PageIndexEntry.generateId(key));
             return doc == null ? null : new SolrPageIndexEntry(doc.jsonStr());
         }
         catch (Exception e) {
@@ -114,88 +115,74 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
             SolrPageIndexEntry indexEntry = new SolrPageIndexEntry(page);
 
-            // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
-            // the sub-objects, so we can report to Solr where to split its children
-            StringBuilder solrSplit = new StringBuilder();
-            indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
-            {
-                @Override
-                public String getPathDelimiter()
-                {
-                    return "/";
-                }
-                @Override
-                public void visit(String fieldName, JsonNode fieldValue, String path)
-                {
-                    if (solrSplit.length() > 0) {
-                        solrSplit.append("|");
-                    }
-                    solrSplit.append(path);
-                }
-            });
+            this.saveRollbackBackup(page);
 
-            //            this.solrClient.deleteById("1");
-            //            this.solrClient.deleteById("2");
+            this.update(indexEntry);
+
+            // See https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
             //
-            //            SolrInputDocument parent = new SolrInputDocument();
-            //            parent.addField("id", "1");
-            //            parent.addField("isParent", true);
-            //            parent.addField("hehe", "parentValue");
-            //            SolrInputDocument child = new SolrInputDocument();
-            //            child.addField("id", "2");
-            //            child.addField("hehe", "childValue");
-            //            parent.addChildDocument(child);
-            //            String res = parent.jsonStr();
-            //            this.solrClient.add(parent);
-            //
-            //            Logger.info("Writing index entry: " + indexEntry.toString());
-
-            //TODO check if we need this
-            //this.solrClient.deleteById(indexEntry.getId());
-
-            // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
-            // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
-            // Note: the "/update/json/docs" path is a shortcut for "/update" with the contentType and the command=false already set right
-            ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
-            request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
-
-            // Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
-            // If the entire JSON makes a single Solr document, the path must be “/”.
-            // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
-            // If one path is a child of another, they automatically become a child document.
-            request.setParam("split", solrSplit.toString());
-
-            // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
-            // Provides multivalued mapping to map document field names to Solr field names.
-            // The format of the parameter is target-field-name:json-path, as in f=first:/first.
-            // The json-path is required. The target-field-name is the Solr document field name, and is optional.
-            // If not specified, it is automatically derived from the input JSON.
-            // The default target field name is the fully qualified name of the field.
-            // Instead of specifying all the field names explicitly, it is possible to specify wildcards to map fields automatically.
-            // There are two restrictions: wildcards can only be used at the end of the json-path, and the split path cannot use wildcards.
-            // A single asterisk * maps only to direct children, and a double asterisk ** maps recursively to all descendants.
-            // The following are example wildcard path mappings:
-            // f=$FQN:/**: maps all fields to the fully qualified name ($FQN) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (.) as a delimiter. This is the default behavior if no f path mappings are specified.
-            // f=/docs/*: maps all the fields under docs and in the name as given in JSON
-            // f=/docs/**: maps all the fields under docs and its children in the name as given in JSON
-            // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
-            // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
-            request.setParam("f", "/**");
-
-            this.solrClient.request(request);
-
-            //TODO comment
+            // During a softcommit, the transaction log is not truncated, it continues to grow.
+            // However, a new searcher is opened, which makes the documents since last softcommit visible for searching.
+            // Also, some of the top-level caches in Solr are invalidated, so it’s not a completely free operation.
             this.solrClient.commit(false, false, true);
-
-            Logger.info("");
         }
         catch (Exception e) {
             throw new IOException("Error while updating a Solr resource; " + resource, e);
         }
+    }
+    private void update(SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
+    {
+        // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
+        // the sub-objects, so we can report to Solr where to split its children
+        StringBuilder solrSplit = new StringBuilder();
+        indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
+        {
+            @Override
+            public String getPathDelimiter()
+            {
+                return "/";
+            }
+            @Override
+            public void visit(String fieldName, JsonNode fieldValue, String path)
+            {
+                if (solrSplit.length() > 0) {
+                    solrSplit.append("|");
+                }
+                solrSplit.append(path);
+            }
+        });
 
-        //if (true) throw new IOException("DEBUG");
+        // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
+        // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
+        // Note: the "/update/json/docs" path is a shortcut for "/update" with the contentType and the command=false already set right
+        ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
+        request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
 
-        //TODO
+        // Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
+        // If the entire JSON makes a single Solr document, the path must be “/”.
+        // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
+        // If one path is a child of another, they automatically become a child document.
+        request.setParam("split", solrSplit.toString());
+
+        // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
+        // Provides multivalued mapping to map document field names to Solr field names.
+        // The format of the parameter is target-field-name:json-path, as in f=first:/first.
+        // The json-path is required. The target-field-name is the Solr document field name, and is optional.
+        // If not specified, it is automatically derived from the input JSON.
+        // The default target field name is the fully qualified name of the field.
+        // Instead of specifying all the field names explicitly, it is possible to specify wildcards to map fields automatically.
+        // There are two restrictions: wildcards can only be used at the end of the json-path, and the split path cannot use wildcards.
+        // A single asterisk * maps only to direct children, and a double asterisk ** maps recursively to all descendants.
+        // The following are example wildcard path mappings:
+        // f=$FQN:/**: maps all fields to the fully qualified name ($FQN) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (.) as a delimiter. This is the default behavior if no f path mappings are specified.
+        // f=/docs/*: maps all the fields under docs and in the name as given in JSON
+        // f=/docs/**: maps all the fields under docs and its children in the name as given in JSON
+        // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
+        // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
+        request.setParam("f", "/**");
+
+        // this effectively executes the update command
+        this.solrClient.request(request);
     }
     @Override
     public synchronized void delete(Resource resource) throws IOException
@@ -205,7 +192,15 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
         Page page = resource.unwrap(Page.class);
 
-        //TODO
+        try {
+            this.solrClient.deleteById(PageIndexEntry.generateId(page));
+
+            // see comments in update()
+            this.solrClient.commit(false, false, true);
+        }
+        catch (Exception e) {
+            throw new IOException("Error while deleting a Solr resource; " + resource, e);
+        }
     }
     @Override
     public synchronized void deleteAll() throws IOException
@@ -213,7 +208,15 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         this.assertActive();
         this.assertTransaction();
 
-        //TODO
+        try {
+            this.solrClient.deleteByQuery("*:*");
+
+            // see comments in update()
+            this.solrClient.commit(false, false, true);
+        }
+        catch (Exception e) {
+            throw new IOException("Error while deleting an entire Solr database", e);
+        }
     }
     @Override
     public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
@@ -285,24 +288,26 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     protected void prepareCommit() throws IOException
     {
         if (this.isRegistered()) {
-            //            this.pageIndexer.getIndexWriter().prepareCommit();
+
         }
     }
     @Override
     protected void commit() throws IOException
     {
         if (this.isRegistered()) {
-            //            this.pageIndexer.getIndexWriter().commit();
-            //
-            //            //mark all readers and searchers to reload
-            //            this.pageIndexer.indexChanged();
+            this.flushRollbackBackup();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
         if (this.isRegistered()) {
-            //            this.pageIndexer.getIndexWriter().rollback();
+            try {
+                this.restoreRollbackBackup();
+            }
+            catch (SolrServerException e) {
+                throw new IOException(e);
+            }
         }
     }
     @Override
@@ -334,6 +339,47 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private boolean isRegistered()
     {
         return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
+    }
+    private void saveRollbackBackup(Page page) throws IOException, SolrServerException
+    {
+        synchronized (rollbackBackupLock) {
+            if (this.rollbackBackup == null) {
+                this.rollbackBackup = new RollbackBackup(page, this.solrClient);
+            }
+            else {
+                throw new IOException("Encountered a situation where the rollback backup was already set, this shouldn't happen; " + this.rollbackBackup);
+            }
+        }
+    }
+    private void restoreRollbackBackup() throws IOException, SolrServerException
+    {
+        synchronized (rollbackBackupLock) {
+            if (this.rollbackBackup != null) {
+
+                this.solrClient.deleteById(this.rollbackBackup.id);
+
+                if (this.rollbackBackup.document != null) {
+                    //TODO validate this; don't know if it works...
+                    this.solrClient.add(this.solrClient.getBinder().toSolrInputDocument(this.rollbackBackup.document));
+                }
+
+                this.rollbackBackup = null;
+            }
+            else {
+                throw new IOException("Encountered a situation where the rollback backup to be restored was not set, this shouldn't happen");
+            }
+        }
+    }
+    private void flushRollbackBackup() throws IOException
+    {
+        synchronized (rollbackBackupLock) {
+            if (this.rollbackBackup != null) {
+                this.rollbackBackup = null;
+            }
+            else {
+                throw new IOException("Encountered a situation where the rollback backup to be flushed was not set, this shouldn't happen");
+            }
+        }
     }
 
     //    private boolean querySolr(JsonNode json) throws IOException
@@ -413,4 +459,16 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     //        }
     //    }
     //String jsonStr = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(retVal);
+
+    private static class RollbackBackup
+    {
+        private final String id;
+        private final SolrDocument document;
+
+        public RollbackBackup(Page page, SolrClient solrClient) throws IOException, SolrServerException
+        {
+            this.id = PageIndexEntry.generateId(page);
+            this.document = solrClient.getById(this.id);
+        }
+    }
 }

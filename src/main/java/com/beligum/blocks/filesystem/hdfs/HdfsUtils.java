@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitor;
 import java.security.SecureRandom;
 import java.util.EnumSet;
@@ -56,7 +57,7 @@ public class HdfsUtils
         String retVal = null;
 
         try (InputStream is = fs.open(path)) {
-            retVal = IOUtils.toString(is, Charsets.UTF_8);
+            retVal = IOUtils.toString(is, StandardCharsets.UTF_8);
         }
 
         return retVal;

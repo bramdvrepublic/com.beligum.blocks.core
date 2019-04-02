@@ -42,6 +42,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.beligum.blocks.config.Permissions.PAGE_CREATE_COPY_ALL_PERM;
@@ -363,9 +364,6 @@ public class PageRouter
                                                                             //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
                                                                             .filter(PageIndexEntry.resource, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
-                //makes sense to make room for as much language-triples as we have clauses
-                searchRequestBuilder.maxResults(searchRequestBuilder.filters().size() * R.configuration().getLanguages().size());
-
                 IndexSearchResult results = indexConn.search(searchRequestBuilder);
 
                 PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, this.locale);
@@ -661,7 +659,7 @@ public class PageRouter
                         PageSource html = new PageSourceCopy(source, this.newPageCopyLink);
 
                         try (InputStream is = html.newInputStream()) {
-                            this.adminTemplate = R.resourceManager().newTemplate(new StringSource(this.requestedUri, IOUtils.toString(is), MimeTypes.HTML, this.locale));
+                            this.adminTemplate = R.resourceManager().newTemplate(new StringSource(this.requestedUri, IOUtils.toString(is, StandardCharsets.UTF_8), MimeTypes.HTML, this.locale));
                         }
 
                         //transfer the passed-in extra params into the template context

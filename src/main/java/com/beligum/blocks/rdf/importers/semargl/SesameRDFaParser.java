@@ -188,6 +188,7 @@ public class SesameRDFaParser implements RDFParser, ProcessorGraphHandler
     }
 
     @Override
+    @Deprecated
     public void setVerifyData(boolean verifyData)
     {
         // Does not support verification of data values, see getSupportedSettings for list of supported settings
@@ -201,6 +202,7 @@ public class SesameRDFaParser implements RDFParser, ProcessorGraphHandler
     }
 
     @Override
+    @Deprecated
     public void setStopAtFirstError(boolean stopAtFirstError)
     {
         // Does not support changing this setting, see getSupportedSettings for list of supported settings
@@ -208,6 +210,7 @@ public class SesameRDFaParser implements RDFParser, ProcessorGraphHandler
     }
 
     @Override
+    @Deprecated
     public void setDatatypeHandling(DatatypeHandling datatypeHandling)
     {
         // Does not support datatype handling, see getSupportedSettings for list of supported settings

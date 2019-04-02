@@ -41,8 +41,19 @@ public interface IndexSearchRequest extends Serializable
         NOT
     }
 
+    enum FilterType
+    {
+        CLASS,
+        FIELD,
+        PROPERTY,
+        QUERY,
+        SUB
+    }
+
     interface Filter
     {
+        FilterType getFilterType();
+        FilterBoolean getFilterBoolean();
     }
 
     //this is the default number of maximum search results that will be returned when no specific value is passed
@@ -89,8 +100,6 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
 
     IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
-
-    Collection<Filter> filters();
 
     IndexSearchRequest sort(RdfProperty property, boolean sortAscending);
 

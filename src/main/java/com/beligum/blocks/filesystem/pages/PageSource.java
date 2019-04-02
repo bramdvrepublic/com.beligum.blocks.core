@@ -39,7 +39,7 @@ import com.beligum.blocks.utils.SecurityTools;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -166,7 +166,7 @@ public abstract class PageSource extends AbstractSource implements Source
         UriBuilder uriBuilder = UriBuilder.fromUri(unsafeUri);
         for (Map.Entry<String, List<String>> param : queryParams.entrySet()) {
             if (!SUPPORTED_QUERY_PARAMS.contains(param.getKey())) {
-                uriBuilder.replaceQueryParam(param.getKey(), null);
+                uriBuilder.replaceQueryParam(param.getKey(), (Object[]) null);
             }
         }
 

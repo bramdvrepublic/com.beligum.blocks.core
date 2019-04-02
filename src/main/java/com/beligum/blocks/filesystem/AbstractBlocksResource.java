@@ -37,6 +37,7 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.zip.Adler32;
@@ -362,7 +363,7 @@ public abstract class AbstractBlocksResource extends AbstractResource implements
                 //store the mime type to a cache file for quick future detection
                 if (newlyDetected) {
                     try (OutputStream os = fileContext.create(storedMimeFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                        org.apache.commons.io.IOUtils.write(retVal.toString(), os);
+                        org.apache.commons.io.IOUtils.write(retVal.toString(), os, StandardCharsets.UTF_8);
                     }
                     catch (Exception e) {
                         Logger.error("Error while saving mime type '" + retVal + "' to cache file; this shouldn't happen; " + this.getLocalStoragePath(), e);

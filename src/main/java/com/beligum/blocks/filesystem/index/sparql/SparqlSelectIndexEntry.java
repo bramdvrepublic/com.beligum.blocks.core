@@ -49,7 +49,10 @@ public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
     {
         return INTERNAL_FIELDS;
     }
-
+    public BindingSet getBindingSet()
+    {
+        return bindingSet;
+    }
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----

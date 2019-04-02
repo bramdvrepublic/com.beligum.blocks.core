@@ -17,7 +17,7 @@
 package com.beligum.blocks.rdf.importers.semargl;
 
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.ValueFactoryImpl;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.RDFHandlerException;
 import org.semarglproject.rdf.ParseException;
@@ -61,133 +61,159 @@ public class SesameSink implements QuadSink
     //-----CONSTRUCTORS-----
     protected SesameSink(RDFHandler handler)
     {
-        this.valueFactory = ValueFactoryImpl.getInstance();
+        this.valueFactory = SimpleValueFactory.getInstance();
         this.handler = handler;
     }
 
     //-----PUBLIC METHODS-----
     /**
      * Instantiates sink for specified Sesame {@link RDFHandler}
+     *
      * @param handler RDFHandler to sink triples to
      * @return new instance of Sesame sink
      */
-    public static QuadSink connect(RDFHandler handler) {
+    public static QuadSink connect(RDFHandler handler)
+    {
         return new SesameSink(handler);
     }
 
-    private Resource convertNonLiteral(String arg) {
+    private Resource convertNonLiteral(String arg)
+    {
         if (arg.startsWith(RDF.BNODE_PREFIX)) {
             return valueFactory.createBNode(arg.substring(2));
         }
-        return valueFactory.createURI(arg);
+        return valueFactory.createIRI(arg);
     }
 
     @Override
-    public final void addNonLiteral(String subj, String pred, String obj) {
-        addTriple(convertNonLiteral(subj), valueFactory.createURI(pred), convertNonLiteral(obj));
+    public final void addNonLiteral(String subj, String pred, String obj)
+    {
+        addTriple(convertNonLiteral(subj), valueFactory.createIRI(pred), convertNonLiteral(obj));
     }
 
     @Override
-    public final void addPlainLiteral(String subj, String pred, String content, String lang) {
+    public final void addPlainLiteral(String subj, String pred, String content, String lang)
+    {
         if (lang == null) {
-            addTriple(convertNonLiteral(subj), valueFactory.createURI(pred), valueFactory.createLiteral(content));
-        } else {
-            addTriple(convertNonLiteral(subj), valueFactory.createURI(pred),
+            addTriple(convertNonLiteral(subj), valueFactory.createIRI(pred), valueFactory.createLiteral(content));
+        }
+        else {
+            addTriple(convertNonLiteral(subj), valueFactory.createIRI(pred),
                       valueFactory.createLiteral(content, lang));
         }
     }
 
     @Override
-    public final void addTypedLiteral(String subj, String pred, String content, String type) {
-        Literal literal = valueFactory.createLiteral(content, valueFactory.createURI(type));
-        addTriple(convertNonLiteral(subj), valueFactory.createURI(pred), literal);
+    public final void addTypedLiteral(String subj, String pred, String content, String type)
+    {
+        Literal literal = valueFactory.createLiteral(content, valueFactory.createIRI(type));
+        addTriple(convertNonLiteral(subj), valueFactory.createIRI(pred), literal);
     }
 
-    protected void addTriple(Resource subject, URI predicate, Value object) {
+    protected void addTriple(Resource subject, IRI predicate, Value object)
+    {
         try {
             handler.handleStatement(valueFactory.createStatement(subject, predicate, object));
-        } catch(RDFHandlerException e) {
+        }
+        catch (RDFHandlerException e) {
             // TODO: provide standard way to handle exceptions inside of triple sinks
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public final void addNonLiteral(String subj, String pred, String obj, String graph) {
+    public final void addNonLiteral(String subj, String pred, String obj, String graph)
+    {
         if (graph == null) {
             addNonLiteral(subj, pred, obj);
-        } else {
-            addQuad(convertNonLiteral(subj), valueFactory.createURI(pred), convertNonLiteral(obj),
+        }
+        else {
+            addQuad(convertNonLiteral(subj), valueFactory.createIRI(pred), convertNonLiteral(obj),
                     convertNonLiteral(graph));
         }
     }
 
     @Override
-    public final void addPlainLiteral(String subj, String pred, String content, String lang, String graph) {
+    public final void addPlainLiteral(String subj, String pred, String content, String lang, String graph)
+    {
         if (graph == null) {
             addPlainLiteral(subj, pred, content, lang);
-        } else {
+        }
+        else {
             if (lang == null) {
-                addQuad(convertNonLiteral(subj), valueFactory.createURI(pred), valueFactory.createLiteral(content),
+                addQuad(convertNonLiteral(subj), valueFactory.createIRI(pred), valueFactory.createLiteral(content),
                         convertNonLiteral(graph));
-            } else {
-                addQuad(convertNonLiteral(subj), valueFactory.createURI(pred),
+            }
+            else {
+                addQuad(convertNonLiteral(subj), valueFactory.createIRI(pred),
                         valueFactory.createLiteral(content, lang), convertNonLiteral(graph));
             }
         }
     }
 
     @Override
-    public final void addTypedLiteral(String subj, String pred, String content, String type, String graph) {
+    public final void addTypedLiteral(String subj, String pred, String content, String type, String graph)
+    {
         if (graph == null) {
             addTypedLiteral(subj, pred, content, type);
-        } else {
-            Literal literal = valueFactory.createLiteral(content, valueFactory.createURI(type));
-            addQuad(convertNonLiteral(subj), valueFactory.createURI(pred), literal, convertNonLiteral(graph));
+        }
+        else {
+            Literal literal = valueFactory.createLiteral(content, valueFactory.createIRI(type));
+            addQuad(convertNonLiteral(subj), valueFactory.createIRI(pred), literal, convertNonLiteral(graph));
         }
     }
 
-    protected void addQuad(Resource subject, URI predicate, Value object, Resource graph) {
+    protected void addQuad(Resource subject, IRI predicate, Value object, Resource graph)
+    {
         try {
             handler.handleStatement(valueFactory.createStatement(subject, predicate, object, graph));
-        } catch(RDFHandlerException e) {
+        }
+        catch (RDFHandlerException e) {
             // TODO: provide standard way to handle exceptions inside of triple sinks
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void startStream() throws ParseException {
+    public void startStream() throws ParseException
+    {
         try {
             handler.startRDF();
-        } catch(RDFHandlerException e) {
+        }
+        catch (RDFHandlerException e) {
             throw new ParseException(e);
         }
     }
 
     @Override
-    public void endStream() throws ParseException {
+    public void endStream() throws ParseException
+    {
         try {
             handler.endRDF();
-        } catch(RDFHandlerException e) {
+        }
+        catch (RDFHandlerException e) {
             throw new ParseException(e);
         }
     }
 
     @Override
-    public boolean setProperty(String key, Object value) {
+    public boolean setProperty(String key, Object value)
+    {
         if (RDF_HANDLER_PROPERTY.equals(key) && value instanceof RDFHandler) {
             handler = (RDFHandler) value;
-        } else if (VALUE_FACTORY_PROPERTY.equals(key) && value instanceof ValueFactory) {
+        }
+        else if (VALUE_FACTORY_PROPERTY.equals(key) && value instanceof ValueFactory) {
             valueFactory = (ValueFactory) value;
-        } else {
+        }
+        else {
             return false;
         }
         return true;
     }
 
     @Override
-    public void setBaseUri(String baseUri) {
+    public void setBaseUri(String baseUri)
+    {
     }
 
     //-----PROTECTED METHODS-----

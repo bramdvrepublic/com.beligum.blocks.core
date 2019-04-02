@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -379,7 +380,7 @@ public class PageTemplateWrapperDirective extends Directive
 
                     if (proceed) {
                         sb.append(this.getInlineStartTagFor(type));
-                        sb.append(IOUtils.toString(inputStream));
+                        sb.append(IOUtils.toString(inputStream, StandardCharsets.UTF_8));
                         sb.append(this.getInlineEndTagFor(type));
                         retVal = true;
                     }

@@ -18,12 +18,14 @@ package com.beligum.blocks.filesystem.index.sparql;
 
 import com.beligum.blocks.filesystem.index.entries.AbstractPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
+import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 
 /**
@@ -39,9 +41,9 @@ public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
     private Model model;
 
     //-----CONSTRUCTORS-----
-    public SparqlConstructIndexEntry(String id, Model model) throws IOException
+    public SparqlConstructIndexEntry(URI id, Model model) throws IOException
     {
-        super(id);
+        super(PageIndexEntry.generateId(id));
 
         this.model = model;
     }

@@ -53,6 +53,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
@@ -592,7 +593,7 @@ public abstract class HtmlTemplate
      */
     public static Source readHtmlInputStream(InputStream inputStream) throws IOException
     {
-        return new Source(IOUtils.toString(inputStream, Charsets.UTF_8));
+        return new Source(IOUtils.toString(inputStream, StandardCharsets.UTF_8));
     }
 
     //-----PUBLIC METHODS-----
