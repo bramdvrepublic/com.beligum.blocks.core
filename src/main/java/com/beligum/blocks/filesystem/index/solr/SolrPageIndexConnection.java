@@ -50,23 +50,46 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         URI_PARAMS
     }
 
+    /**
+     * This defines which kind of transaction isolation type is used
+     */
+    public enum TxType
+    {
+        /**
+         * This will effectively serialize all transactions in the parent indexer
+         * and use the native commit/rollback of the Solr server. Note that this
+         * is only effective if the server is used in embedded mode and won't be modified
+         * from other clients because otherwise this doesn't make any sense.
+         */
+        EMBEDDED_FULL_SYNC_MODE,
+
+        /**
+         * This will assume everything goes well and try to revert the changes made if it doesn't
+         * by loading in the existing data before making changes and re-entering the saved data
+         * if things go wrong. This mode is not safe at all, but offers a lot more throughput
+         */
+        OPPORTUNISTIC_MODE
+    }
+
     private static final String TX_RESOURCE_NAME = SolrPageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
     private SolrPageIndexer pageIndexer;
     private SolrClient solrClient;
     private TX transaction;
+    private TxType txType;
     private boolean active;
 
     private RollbackBackup rollbackBackup = null;
     private Object rollbackBackupLock = new Object();
 
     //-----CONSTRUCTORS-----
-    public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction) throws IOException
+    public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, TxType txType) throws IOException
     {
         this.pageIndexer = pageIndexer;
         this.solrClient = pageIndexer.getSolrClient();
         this.transaction = transaction;
+        this.txType = txType;
         this.active = true;
     }
 
@@ -113,76 +136,18 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            SolrPageIndexEntry indexEntry = new SolrPageIndexEntry(page);
+            SolrPageIndexEntry newIndexEntry = new SolrPageIndexEntry(page);
 
-            this.saveRollbackBackup(page);
+            SolrDocument existingIndexEntry = this.solrClient.getById(PageIndexEntry.generateId(page));
 
-            this.update(indexEntry);
+            this.saveRollbackBackup(newIndexEntry.getId(), existingIndexEntry == null ? null : new SolrPageIndexEntry(existingIndexEntry.jsonStr()));
 
-            // See https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
-            //
-            // During a softcommit, the transaction log is not truncated, it continues to grow.
-            // However, a new searcher is opened, which makes the documents since last softcommit visible for searching.
-            // Also, some of the top-level caches in Solr are invalidated, so it’s not a completely free operation.
-            this.solrClient.commit(false, false, true);
+            this.updateJsonDoc(newIndexEntry);
+
         }
         catch (Exception e) {
             throw new IOException("Error while updating a Solr resource; " + resource, e);
         }
-    }
-    private void update(SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
-    {
-        // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
-        // the sub-objects, so we can report to Solr where to split its children
-        StringBuilder solrSplit = new StringBuilder();
-        indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
-        {
-            @Override
-            public String getPathDelimiter()
-            {
-                return "/";
-            }
-            @Override
-            public void visit(String fieldName, JsonNode fieldValue, String path)
-            {
-                if (solrSplit.length() > 0) {
-                    solrSplit.append("|");
-                }
-                solrSplit.append(path);
-            }
-        });
-
-        // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
-        // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
-        // Note: the "/update/json/docs" path is a shortcut for "/update" with the contentType and the command=false already set right
-        ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
-        request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
-
-        // Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
-        // If the entire JSON makes a single Solr document, the path must be “/”.
-        // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
-        // If one path is a child of another, they automatically become a child document.
-        request.setParam("split", solrSplit.toString());
-
-        // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
-        // Provides multivalued mapping to map document field names to Solr field names.
-        // The format of the parameter is target-field-name:json-path, as in f=first:/first.
-        // The json-path is required. The target-field-name is the Solr document field name, and is optional.
-        // If not specified, it is automatically derived from the input JSON.
-        // The default target field name is the fully qualified name of the field.
-        // Instead of specifying all the field names explicitly, it is possible to specify wildcards to map fields automatically.
-        // There are two restrictions: wildcards can only be used at the end of the json-path, and the split path cannot use wildcards.
-        // A single asterisk * maps only to direct children, and a double asterisk ** maps recursively to all descendants.
-        // The following are example wildcard path mappings:
-        // f=$FQN:/**: maps all fields to the fully qualified name ($FQN) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (.) as a delimiter. This is the default behavior if no f path mappings are specified.
-        // f=/docs/*: maps all the fields under docs and in the name as given in JSON
-        // f=/docs/**: maps all the fields under docs and its children in the name as given in JSON
-        // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
-        // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
-        request.setParam("f", "/**");
-
-        // this effectively executes the update command
-        this.solrClient.request(request);
     }
     @Override
     public synchronized void delete(Resource resource) throws IOException
@@ -194,9 +159,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
         try {
             this.solrClient.deleteById(PageIndexEntry.generateId(page));
-
-            // see comments in update()
-            this.solrClient.commit(false, false, true);
         }
         catch (Exception e) {
             throw new IOException("Error while deleting a Solr resource; " + resource, e);
@@ -210,9 +172,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
         try {
             this.solrClient.deleteByQuery("*:*");
-
-            // see comments in update()
-            this.solrClient.commit(false, false, true);
         }
         catch (Exception e) {
             throw new IOException("Error while deleting an entire Solr database", e);
@@ -281,32 +240,109 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void begin() throws IOException
     {
-        //note: there's not such thing as a .begin();
-        // the begin is just where the last .commit() left off
+        switch (this.txType) {
+            case EMBEDDED_FULL_SYNC_MODE:
+
+                this.pageIndexer.acquireCentralTxLock();
+
+                break;
+            case OPPORTUNISTIC_MODE:
+
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this.txType);
+        }
     }
     @Override
     protected void prepareCommit() throws IOException
     {
         if (this.isRegistered()) {
+            switch (this.txType) {
+                case EMBEDDED_FULL_SYNC_MODE:
 
+                    //NOOP
+
+                    break;
+                case OPPORTUNISTIC_MODE:
+
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + this.txType);
+            }
         }
     }
+    /**
+     * Note: if this method throws an exception, rollback() will always be called before ending the transaction
+     */
     @Override
     protected void commit() throws IOException
     {
         if (this.isRegistered()) {
-            this.flushRollbackBackup();
+
+            switch (this.txType) {
+                case EMBEDDED_FULL_SYNC_MODE:
+
+                    TODO
+
+                    try {
+                        this.solrClient.commit(false, false, true);
+                    }
+                    catch (SolrServerException e) {
+                        throw new IOException(e);
+                    }
+                    finally {
+                        //TODO
+                    }
+
+                    break;
+                case OPPORTUNISTIC_MODE:
+
+                    try {
+                        // See https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+                        // During a softcommit, the transaction log is not truncated, it continues to grow.
+                        // However, a new searcher is opened, which makes the documents since last softcommit visible for searching.
+                        // Also, some of the top-level caches in Solr are invalidated, so it’s not a completely free operation.
+                        this.solrClient.commit(false, false, true);
+
+                        this.flushRollbackBackup();
+                    }
+                    catch (SolrServerException e) {
+                        throw new IOException(e);
+                    }
+                    finally {
+                        //TODO
+                    }
+
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + this.txType);
+            }
         }
     }
     @Override
     protected void rollback() throws IOException
     {
         if (this.isRegistered()) {
-            try {
-                this.restoreRollbackBackup();
-            }
-            catch (SolrServerException e) {
-                throw new IOException(e);
+
+            switch (this.txType) {
+                case EMBEDDED_FULL_SYNC_MODE:
+
+                    break;
+                case OPPORTUNISTIC_MODE:
+
+                    try {
+                        this.restoreRollbackBackup();
+                    }
+                    catch (SolrServerException e) {
+                        throw new IOException(e);
+                    }
+                    finally {
+                        //TODO
+                    }
+
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + this.txType);
             }
         }
     }
@@ -340,11 +376,73 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
     }
-    private void saveRollbackBackup(Page page) throws IOException, SolrServerException
+    private void updateJsonDoc(SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
+    {
+        // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
+        // the sub-objects, so we can report to Solr where to split its children
+        StringBuilder solrSplit = new StringBuilder();
+        indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
+        {
+            @Override
+            public String getPathDelimiter()
+            {
+                return "/";
+            }
+            @Override
+            public void visit(String fieldName, JsonNode fieldValue, String path)
+            {
+                if (solrSplit.length() > 0) {
+                    solrSplit.append("|");
+                }
+                solrSplit.append(path);
+            }
+        });
+
+        // see https://lucene.apache.org/solr/guide/7_7/uploading-data-with-index-handlers.html#json-formatted-index-updates
+        // and https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html#setting-json-defaults
+        // Note: the "/update/json/docs" path is a shortcut for "/update" with the contentType and the command=false already set right
+        ContentStreamUpdateRequest request = new ContentStreamUpdateRequest(UpdateRequestHandler.DOC_PATH);
+
+        // From the docs: if you have a unique key field, but you feel confident that you can safely bypass the uniqueness check
+        // (eg: you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once)
+        // you can specify the overwrite="false" option when adding your documents.
+        //true is the default, but this way, we clearly indicate what we're doing
+        request.setParam(UpdateRequestHandler.OVERWRITE, "true");
+
+        //the mime type is not strictly necessary (see comment above) but let's add it anyway
+        request.addContentStream(new ContentStreamBase.StringStream(indexEntry.toString(), CommonParams.JSON_MIME));
+
+        // Defines the path at which to split the input JSON into multiple Solr documents and is required if you have multiple documents in a single JSON file.
+        // If the entire JSON makes a single Solr document, the path must be “/”.
+        // It is possible to pass multiple split paths by separating them with a pipe (|), for example: split=/|/foo|/foo/bar.
+        // If one path is a child of another, they automatically become a child document.
+        request.setParam("split", solrSplit.toString());
+
+        // See https://lucene.apache.org/solr/guide/7_7/transforming-and-indexing-custom-json.html
+        // Provides multivalued mapping to map document field names to Solr field names.
+        // The format of the parameter is target-field-name:json-path, as in f=first:/first.
+        // The json-path is required. The target-field-name is the Solr document field name, and is optional.
+        // If not specified, it is automatically derived from the input JSON.
+        // The default target field name is the fully qualified name of the field.
+        // Instead of specifying all the field names explicitly, it is possible to specify wildcards to map fields automatically.
+        // There are two restrictions: wildcards can only be used at the end of the json-path, and the split path cannot use wildcards.
+        // A single asterisk * maps only to direct children, and a double asterisk ** maps recursively to all descendants.
+        // The following are example wildcard path mappings:
+        // f=$FQN:/**: maps all fields to the fully qualified name ($FQN) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (.) as a delimiter. This is the default behavior if no f path mappings are specified.
+        // f=/docs/*: maps all the fields under docs and in the name as given in JSON
+        // f=/docs/**: maps all the fields under docs and its children in the name as given in JSON
+        // f=searchField:/docs/*: maps all fields under /docs to a single field called ‘searchField’
+        // f=searchField:/docs/**: maps all fields under /docs and its children to searchField
+        request.setParam("f", "/**");
+
+        // this effectively executes the update command
+        this.solrClient.request(request);
+    }
+    private void saveRollbackBackup(String id, SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
     {
         synchronized (rollbackBackupLock) {
             if (this.rollbackBackup == null) {
-                this.rollbackBackup = new RollbackBackup(page, this.solrClient);
+                this.rollbackBackup = new RollbackBackup(id, indexEntry);
             }
             else {
                 throw new IOException("Encountered a situation where the rollback backup was already set, this shouldn't happen; " + this.rollbackBackup);
@@ -354,13 +452,15 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private void restoreRollbackBackup() throws IOException, SolrServerException
     {
         synchronized (rollbackBackupLock) {
+            //note: the object itself shouldn't be null in this phase (it's content might, though)
             if (this.rollbackBackup != null) {
 
-                this.solrClient.deleteById(this.rollbackBackup.id);
-
-                if (this.rollbackBackup.document != null) {
-                    //TODO validate this; don't know if it works...
-                    this.solrClient.add(this.solrClient.getBinder().toSolrInputDocument(this.rollbackBackup.document));
+                //if the indexEntry is null, it means the index didn't have a prior entry
+                if (this.rollbackBackup.indexEntry != null) {
+                    this.updateJsonDoc(this.rollbackBackup.indexEntry);
+                }
+                else {
+                    this.solrClient.deleteById(this.rollbackBackup.id);
                 }
 
                 this.rollbackBackup = null;
@@ -373,6 +473,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private void flushRollbackBackup() throws IOException
     {
         synchronized (rollbackBackupLock) {
+            //note: the object itself shouldn't be null in this phase (it's content might, though)
             if (this.rollbackBackup != null) {
                 this.rollbackBackup = null;
             }
@@ -463,12 +564,12 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private static class RollbackBackup
     {
         private final String id;
-        private final SolrDocument document;
+        private final SolrPageIndexEntry indexEntry;
 
-        public RollbackBackup(Page page, SolrClient solrClient) throws IOException, SolrServerException
+        public RollbackBackup(String id, SolrPageIndexEntry indexEntry)
         {
-            this.id = PageIndexEntry.generateId(page);
-            this.document = solrClient.getById(this.id);
+            this.id = id;
+            this.indexEntry = indexEntry;
         }
     }
 }

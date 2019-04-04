@@ -39,6 +39,11 @@ public class JsonField implements IndexEntryField
     {
         return false;
     }
+    @Override
+    public void setValue(IndexEntry indexEntry, String value)
+    {
+        //NOOP, override
+    }
 
     //-----PROTECTED METHODS-----
     /**

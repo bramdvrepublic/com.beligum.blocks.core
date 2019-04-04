@@ -48,6 +48,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).hasParentId();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            ((PageIndexEntry)indexEntry).setParentId(value);
+        }
     };
     IndexEntryField resource = new JsonField("resource")
     {
@@ -60,6 +65,11 @@ public interface PageIndexEntry extends IndexEntry
         public boolean hasValue(IndexEntry indexEntry)
         {
             return ((PageIndexEntry)indexEntry).hasResource();
+        }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            ((PageIndexEntry)indexEntry).setResource(value);
         }
     };
     IndexEntryField typeOf = new JsonField("typeOf")
@@ -74,6 +84,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).hasTypeOf();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            ((PageIndexEntry)indexEntry).setTypeOf(value);
+        }
     };
     IndexEntryField language = new JsonField("language")
     {
@@ -87,6 +102,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             return ((PageIndexEntry)indexEntry).hasLanguage();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            ((PageIndexEntry)indexEntry).setLanguage(value);
+        }
     };
     IndexEntryField canonicalAddress = new JsonField("canonicalAddress")
     {
@@ -99,6 +119,11 @@ public interface PageIndexEntry extends IndexEntry
         public boolean hasValue(IndexEntry indexEntry)
         {
             return ((PageIndexEntry)indexEntry).hasCanonicalAddress();
+        }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            ((PageIndexEntry)indexEntry).setCanonicalAddress(value);
         }
     };
     IndexEntryField object = new JsonField("object")
@@ -114,6 +139,11 @@ public interface PageIndexEntry extends IndexEntry
         {
             //sync this with above getValue()
             return false;
+        }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            //don't really know what to set here
         }
     };
 
@@ -134,6 +164,12 @@ public interface PageIndexEntry extends IndexEntry
     boolean hasParentId();
 
     /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setParentId(String value);
+
+    /**
      * The string representation of the most basic resource URI (eg. for a public page, this is the low-level interconnecting "about" URI, not the public SEO-friendly one)
      */
     String getResource();
@@ -143,6 +179,12 @@ public interface PageIndexEntry extends IndexEntry
      */
     @JsonIgnore
     boolean hasResource();
+
+    /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setResource(String value);
 
     /**
      * The string representation of the CURIE of the RdfClass type of the page
@@ -156,6 +198,12 @@ public interface PageIndexEntry extends IndexEntry
     boolean hasTypeOf();
 
     /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setTypeOf(String value);
+
+    /**
      * What gets returned by the Locale.getLanguage() method of the page's language locale.
      */
     String getLanguage();
@@ -167,6 +215,12 @@ public interface PageIndexEntry extends IndexEntry
     boolean hasLanguage();
 
     /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setLanguage(String value);
+
+    /**
      * The string representation of the canonical address of this page (eg. the standardized form of the publicly visible address)
      */
     String getCanonicalAddress();
@@ -176,6 +230,12 @@ public interface PageIndexEntry extends IndexEntry
      */
     @JsonIgnore
     boolean hasCanonicalAddress();
+
+    /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setCanonicalAddress(String value);
 
     /**
      * These are a couple of ID factory methods, grouped for overview

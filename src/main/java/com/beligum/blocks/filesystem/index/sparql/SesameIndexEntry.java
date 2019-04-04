@@ -33,6 +33,11 @@ public class SesameIndexEntry implements IndexEntry
         return false;
     }
     @Override
+    public void setId(String value)
+    {
+        //NOOP
+    }
+    @Override
     public String getLabel()
     {
         return null;
@@ -41,6 +46,11 @@ public class SesameIndexEntry implements IndexEntry
     public boolean hasLabel()
     {
         return false;
+    }
+    @Override
+    public void setLabel(String value)
+    {
+        //NOOP
     }
     @Override
     public String getDescription()
@@ -53,6 +63,11 @@ public class SesameIndexEntry implements IndexEntry
         return false;
     }
     @Override
+    public void setDescription(String value)
+    {
+        //NOOP
+    }
+    @Override
     public String getImage()
     {
         return null;
@@ -61,6 +76,11 @@ public class SesameIndexEntry implements IndexEntry
     public boolean hasImage()
     {
         return false;
+    }
+    @Override
+    public void setImage(String value)
+    {
+        //NOOP
     }
     @Override
     public Iterable<IndexEntryField> getInternalFields()

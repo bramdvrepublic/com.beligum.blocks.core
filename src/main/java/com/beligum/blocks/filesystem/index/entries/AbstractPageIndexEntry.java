@@ -71,6 +71,12 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
         return hasParentId;
     }
     @Override
+    public void setParentId(String parentId)
+    {
+        this._parentId = parentId;
+        this.hasParentId = true;
+    }
+    @Override
     public String getResource()
     {
         return _resource;
@@ -79,6 +85,12 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     public boolean hasResource()
     {
         return hasResource;
+    }
+    @Override
+    public void setResource(String resource)
+    {
+        this._resource = resource;
+        this.hasResource = true;
     }
     @Override
     public String getTypeOf()
@@ -91,6 +103,12 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
         return hasTypeOf;
     }
     @Override
+    public void setTypeOf(String typeOf)
+    {
+        this._typeOf = typeOf;
+        this.hasTypeOf = true;
+    }
+    @Override
     public String getLanguage()
     {
         return _language;
@@ -99,6 +117,12 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     public boolean hasLanguage()
     {
         return hasLanguage;
+    }
+    @Override
+    public void setLanguage(String language)
+    {
+        this._language = language;
+        this.hasLanguage = true;
     }
     @Override
     public String getCanonicalAddress()
@@ -110,33 +134,14 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     {
         return hasCanonicalAddress;
     }
-
-    //-----PROTECTED METHODS-----
-    protected void setParentId(String parentId)
-    {
-        this._parentId = parentId;
-        this.hasParentId = true;
-    }
-    protected void setResource(String resource)
-    {
-        this._resource = resource;
-        this.hasResource = true;
-    }
-    protected void setTypeOf(String typeOf)
-    {
-        this._typeOf = typeOf;
-        this.hasTypeOf = true;
-    }
-    protected void setLanguage(String language)
-    {
-        this._language = language;
-        this.hasLanguage = true;
-    }
-    protected void setCanonicalAddress(String canonicalAddress)
+    @Override
+    public void setCanonicalAddress(String canonicalAddress)
     {
         this._canonicalAddress = canonicalAddress;
         this.hasCanonicalAddress = true;
     }
+
+    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 

@@ -6,7 +6,6 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
-import com.beligum.blocks.filesystem.index.solr.SolrField;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -58,8 +57,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     //-----VARIABLES-----
     private ObjectMapper jsonMapper;
     private ObjectNode jsonNode;
-    private RdfClass type;
-    private JsonPageIndexEntry parent;
+    //private JsonPageIndexEntry parent;
 
     //-----CONSTRUCTORS-----
     /**
@@ -85,19 +83,24 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     {
         super(id);
 
-        this.parent = parent;
         this.jsonMapper = Json.getObjectMapper();
-        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel);
+        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, parent, rdfModel);
     }
     protected JsonPageIndexEntry(String json) throws IOException
     {
-        //        super(id.toString());
-        //
-        //        this.parent = parent;
-        //        this.jsonMapper = Json.getObjectMapper();
-        //        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel);
+        //note: we don't have an ID yet, see below
+        super();
+
         this.jsonMapper = Json.getObjectMapper();
         this.jsonNode = this.jsonMapper.readValue(json, ObjectNode.class);
+
+        //Load the internal json fields into the local variables
+        for (IndexEntryField field : this.getInternalFields()) {
+            JsonNode node = this.jsonNode.get(field.getName());
+            if (node != null) {
+                field.setValue(this, node.textValue());
+            }
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -155,13 +158,17 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
+    protected JsonField createField(RdfProperty property)
+    {
+        return new JsonField(property);
+    }
 
     //-----PRIVATE METHODS-----
     /**
      * Iterate the entire RDF model and search for the root resource uri as the base RDF submodel to create
      * an JSON node from. Then, iterate all other RDF to see if we can add them as subnodes to the root node.
      */
-    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel) throws IOException
+    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, JsonPageIndexEntry parent, Model rdfModel) throws IOException
     {
         //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, JsonPageIndexEntry> subObjects = new LinkedHashMap<>();
@@ -178,13 +185,13 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         Model rootModel = rdfModel.filter(rootResourceIri, null, null);
 
         // Extract the type from the graph so we know what we're talking about
-        this.type = RdfFactory.lookup(Models.objectIRI(rootModel.filter(rootResourceIri, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
-        if (this.type == null) {
+        RdfClass type = RdfFactory.lookup(Models.objectIRI(rootModel.filter(rootResourceIri, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
+        if (type == null) {
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
         //create a new object and fill it with the first internal fields like id, etc
-        this.jsonNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), absoluteRootResourceUri, canonicalAddress, language, rootModel);
+        this.jsonNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), absoluteRootResourceUri, canonicalAddress, language, type, parent, rootModel);
 
         //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
         subObjects.put(absoluteRootResourceUri, this);
@@ -296,17 +303,18 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             //NOOP: no need to go down, the node is not a container (object or array)
         }
     }
-    private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, URI canonicalAddress, Locale language, Model rootModel) throws IOException
+    private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, URI canonicalAddress, Locale language, RdfClass type,
+                                                JsonPageIndexEntry parent, Model rootModel) throws IOException
     {
-        this.setParentId(PageIndexEntry.generateParentId(this.parent));
+        this.setParentId(PageIndexEntry.generateParentId(parent));
         this.setResource(PageIndexEntry.generateResource(rootResourceUri));
-        this.setTypeOf(PageIndexEntry.generateTypeOf(this.type));
+        this.setTypeOf(PageIndexEntry.generateTypeOf(type));
         this.setLanguage(PageIndexEntry.generateLanguage(language));
         this.setCanonicalAddress(PageIndexEntry.generateCanonicalAddress(canonicalAddress));
 
-        ResourceSummarizer summarizer = this.type.getSummarizer();
+        ResourceSummarizer summarizer = type.getSummarizer();
         if (summarizer != null) {
-            ResourceSummarizer.SummarizedResource summary = summarizer.summarize(this.type, rootModel);
+            ResourceSummarizer.SummarizedResource summary = summarizer.summarize(type, rootModel);
             if (summary != null) {
                 this.setLabel(summary.getLabel());
                 this.setDescription(summary.getDescription());
@@ -331,9 +339,9 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
         return object;
     }
-    private SolrField addProperty(ObjectNode node, RdfProperty predicate, Object value) throws IOException
+    private JsonField addProperty(ObjectNode node, RdfProperty predicate, Object value) throws IOException
     {
-        SolrField field = new SolrField(predicate);
+        JsonField field = this.createField(predicate);
 
         // this will support both array-based subObjects when there are multiple objects mapped on the same field
         // and standard subnode (not in an array) when there's only one.

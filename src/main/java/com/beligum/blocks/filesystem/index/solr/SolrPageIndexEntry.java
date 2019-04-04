@@ -1,7 +1,9 @@
 package com.beligum.blocks.filesystem.index.solr;
 
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
@@ -53,6 +55,11 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected JsonField createField(RdfProperty property)
+    {
+        return new SolrField(property);
+    }
 
     //-----PRIVATE METHODS-----
 }

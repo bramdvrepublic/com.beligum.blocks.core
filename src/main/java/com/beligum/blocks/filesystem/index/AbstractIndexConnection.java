@@ -160,7 +160,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         try {
             this.begin();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             throw newXAException(XAException.XAER_RMERR, e);
         }
     }
@@ -195,7 +195,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
 
             return XAResource.XA_OK;
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             throw newXAException(XAException.XAER_RMERR, e);
         }
     }
@@ -227,7 +227,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             this.commit();
             clearXid();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             this.rollback(xid);
             throw newXAException(XAException.XAER_RMERR, e);
         }
@@ -252,7 +252,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         try {
             this.rollback();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             throw newXAException(XAException.XAER_RMERR, e);
         }
         finally {
@@ -404,7 +404,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         state = TransactionState.NONE;
         notify();
     }
-    private XAException newXAException(int error, Exception cause)
+    private XAException newXAException(int error, Throwable cause)
     {
         XAException e = new XAException(error);
         e.initCause(cause);

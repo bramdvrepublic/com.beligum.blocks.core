@@ -40,6 +40,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.hasId();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            indexEntry.setId(value);
+        }
     };
     IndexEntryField tokenisedId = new JsonField("tokenisedId")
     {
@@ -54,6 +59,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.hasId();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            //NOOP this is a virtual field, it's value is set with setId()
+        }
     };
     IndexEntryField label = new JsonField("label")
     {
@@ -66,6 +76,11 @@ public interface IndexEntry extends Serializable
         public boolean hasValue(IndexEntry indexEntry)
         {
             return indexEntry.hasLabel();
+        }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            indexEntry.setLabel(value);
         }
     };
     IndexEntryField description = new JsonField("description")
@@ -80,6 +95,11 @@ public interface IndexEntry extends Serializable
         {
             return indexEntry.hasDescription();
         }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            indexEntry.setDescription(value);
+        }
     };
     IndexEntryField image = new JsonField("image")
     {
@@ -92,6 +112,11 @@ public interface IndexEntry extends Serializable
         public boolean hasValue(IndexEntry indexEntry)
         {
             return indexEntry.hasImage();
+        }
+        @Override
+        public void setValue(IndexEntry indexEntry, String value)
+        {
+            indexEntry.setImage(value);
         }
     };
 
@@ -113,6 +138,12 @@ public interface IndexEntry extends Serializable
     boolean hasId();
 
     /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setId(String value);
+
+    /**
      * The label of this resource, to be used directly in the HTML that is returned to the client.
      * So, in the right language and format. Mainly used to build eg. search result lists.
      * Try not to return null or "".
@@ -124,6 +155,12 @@ public interface IndexEntry extends Serializable
      */
     @JsonIgnore
     boolean hasLabel();
+
+    /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setLabel(String value);
 
     /**
      * The description of this resource, to be used directly in the HTML that is returned to the client.
@@ -139,6 +176,12 @@ public interface IndexEntry extends Serializable
     boolean hasDescription();
 
     /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setDescription(String value);
+
+    /**
      * A link to the main image that describes this resource, mainly used to build eg. search result lists.
      * Might be null.
      */
@@ -149,6 +192,12 @@ public interface IndexEntry extends Serializable
      */
     @JsonIgnore
     boolean hasImage();
+
+    /**
+     * Sets the value of this field in this indexEntry
+     */
+    @JsonIgnore
+    void setImage(String value);
 
     /**
      * This should return the list of internal fields, that will be added to the public RDF fields, in order

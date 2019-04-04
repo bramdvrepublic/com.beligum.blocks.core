@@ -29,6 +29,11 @@ public interface IndexEntryField
     boolean hasValue(IndexEntry indexEntry);
 
     /**
+     * Sets the field of the indexEntry to the supplied value
+     */
+    void setValue(IndexEntry indexEntry, String value);
+
+    /**
      * Make sure this just returns the name
      */
     String toString();

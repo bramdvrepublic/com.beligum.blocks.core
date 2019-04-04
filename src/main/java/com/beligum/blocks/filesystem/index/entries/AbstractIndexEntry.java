@@ -68,6 +68,12 @@ public abstract class AbstractIndexEntry implements IndexEntry
         return hasId;
     }
     @Override
+    public void setId(String id)
+    {
+        this._id = id;
+        this.hasId = true;
+    }
+    @Override
     public String getLabel()
     {
         return _label;
@@ -76,6 +82,12 @@ public abstract class AbstractIndexEntry implements IndexEntry
     public boolean hasLabel()
     {
         return hasLabel;
+    }
+    @Override
+    public void setLabel(String label)
+    {
+        this._label = label;
+        this.hasLabel = true;
     }
     @Override
     public String getDescription()
@@ -88,6 +100,12 @@ public abstract class AbstractIndexEntry implements IndexEntry
         return hasDescription;
     }
     @Override
+    public void setDescription(String description)
+    {
+        this._description = description;
+        this.hasDescription = true;
+    }
+    @Override
     public String getImage()
     {
         return _image;
@@ -98,32 +116,18 @@ public abstract class AbstractIndexEntry implements IndexEntry
         return hasImage;
     }
     @Override
+    public void setImage(String image)
+    {
+        this._image = image;
+        this.hasImage = true;
+    }
+    @Override
     public String getFieldValue(IndexEntryField field)
     {
         return field.getValue(this);
     }
 
     //-----PROTECTED METHODS-----
-    protected void setId(String id)
-    {
-        this._id = id;
-        this.hasId = true;
-    }
-    protected void setLabel(String label)
-    {
-        this._label = label;
-        this.hasLabel = true;
-    }
-    protected void setDescription(String description)
-    {
-        this._description = description;
-        this.hasDescription = true;
-    }
-    protected void setImage(String image)
-    {
-        this._image = image;
-        this.hasImage = true;
-    }
 
     //-----PRIVATE METHODS-----
 

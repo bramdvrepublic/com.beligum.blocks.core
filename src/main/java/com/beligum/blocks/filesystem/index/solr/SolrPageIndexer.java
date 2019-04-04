@@ -22,8 +22,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
-import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
@@ -49,7 +47,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 
@@ -58,6 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by bram on 3/24/19.
@@ -80,10 +78,12 @@ public class SolrPageIndexer implements PageIndexer
     //-----CONSTANTS-----
     private static final String SOLR_CORE_NAME = "pages";
     private static final String CORE_CONF_DIR = "conf";
+    private static final SolrPageIndexConnection.TxType DEFAULT_SYNC_MODE = SolrPageIndexConnection.TxType.EMBEDDED_FULL_SYNC_MODE;
 
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
+    private ReentrantLock centralTxLock;
 
     //-----CONSTRUCTORS-----
     public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
@@ -99,6 +99,8 @@ public class SolrPageIndexer implements PageIndexer
         // during debugging and for possible future use (eg. it works)
         this.useSchemaless = false;
 
+        this.centralTxLock = new ReentrantLock();
+
         this.init();
     }
 
@@ -106,7 +108,7 @@ public class SolrPageIndexer implements PageIndexer
     @Override
     public synchronized PageIndexConnection connect(TX tx) throws IOException
     {
-        return new SolrPageIndexConnection(this, tx);
+        return new SolrPageIndexConnection(this, tx, DEFAULT_SYNC_MODE);
     }
     @Override
     public synchronized void reboot() throws IOException
@@ -143,10 +145,17 @@ public class SolrPageIndexer implements PageIndexer
     }
 
     //-----PROTECTED METHODS-----
-    //TODO re-think concurrency
-    synchronized SolrClient getSolrClient() throws IOException
+    protected SolrClient getSolrClient()
     {
         return this.solrClient;
+    }
+    protected void acquireCentralTxLock()
+    {
+        this.centralTxLock.lock();
+    }
+    protected void releaseCentralTxLock()
+    {
+        this.centralTxLock.unlock();
     }
 
     //-----PRIVATE METHODS-----
