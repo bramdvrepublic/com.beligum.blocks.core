@@ -10,6 +10,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.google.common.collect.ImmutableMap;
+import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 
@@ -126,7 +127,7 @@ public class SolrField extends JsonField
 
         this.type = type;
     }
-    public SolrField(RdfProperty property)
+    public SolrField(RdfProperty property) throws IOException
     {
         super(property);
 
@@ -150,6 +151,11 @@ public class SolrField extends JsonField
     {
         //see note above
         return false;
+    }
+    @Override
+    public String serialize(RdfProperty predicate, Value rdfValue) throws IOException
+    {
+        return this.toSolrFieldValue(predicate, rdfValue);
     }
     public ImmutableMap<String, Object> toMap()
     {
@@ -294,7 +300,7 @@ public class SolrField extends JsonField
     //-----PROTECTED METHODS-----
     /**
      * Translate the property name to the solr field name.
-     *
+     * <p>
      * Note that solr says only alphanumeric names are supported
      * eg. the default core solrconfig.xml config has this UpdateProcessor in place, that auto-translates
      * all chars to underscores that are not: a word character (\w means [a-zA-Z_0-9]), a dash, a dot:
@@ -304,11 +310,11 @@ public class SolrField extends JsonField
      * </updateProcessor>
      * However, we tried to use colons in the field names without problems (you only need to escape them in your queries),
      * so we'll be using them until we run into problems.
-     *
+     * <p>
      * Btw, this is what the docs say:
-     *   The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit.
-     *   This is not currently strictly enforced, but other field names will not have first class support from all components and
-     *   back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., _version_) are reserved. Every field must have a name.
+     * The name of the field. Field names should consist of alphanumeric or underscore characters only and not start with a digit.
+     * This is not currently strictly enforced, but other field names will not have first class support from all components and
+     * back compatibility is not guaranteed. Names with both leading and trailing underscores (e.g., _version_) are reserved. Every field must have a name.
      */
     @Override
     protected String toFieldName(RdfProperty property)
@@ -321,7 +327,7 @@ public class SolrField extends JsonField
      * Convert the datatype of the supplied property to a valid Solr field type.
      * See https://lucene.apache.org/solr/guide/7_1/field-types-included-with-solr.html#field-types-included-with-solr
      */
-    private String toSolrFieldType(RdfProperty property)
+    private String toSolrFieldType(RdfProperty property) throws IOException
     {
         String retVal = null;
 
@@ -382,8 +388,71 @@ public class SolrField extends JsonField
                 retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRING;
             }
             else {
-                //TODO think about this
-                Logger.error("Encountered RDF property '" + property + "' with unsupported datatype; " + property.getDataType());
+                throw new IOException("Encountered RDF property '" + property + "' with unsupported datatype; " + property.getDataType());
+            }
+        }
+
+        return retVal;
+    }
+    private String toSolrFieldValue(RdfProperty predicate, Value rdfValue) throws IOException
+    {
+        String retVal = null;
+
+        if (rdfValue != null) {
+            if (predicate.getDataType().equals(XSD.boolean_)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.date) || predicate.getDataType().equals(XSD.dateTime)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.time)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.int_)
+                     || predicate.getDataType().equals(XSD.integer)
+                     || predicate.getDataType().equals(XSD.negativeInteger)
+                     || predicate.getDataType().equals(XSD.unsignedInt)
+                     || predicate.getDataType().equals(XSD.nonNegativeInteger)
+                     || predicate.getDataType().equals(XSD.nonPositiveInteger)
+                     || predicate.getDataType().equals(XSD.positiveInteger)
+                     || predicate.getDataType().equals(XSD.short_)
+                     || predicate.getDataType().equals(XSD.unsignedShort)
+                     || predicate.getDataType().equals(XSD.byte_)
+                     || predicate.getDataType().equals(XSD.unsignedByte)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.language)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.long_)
+                     || predicate.getDataType().equals(XSD.unsignedLong)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.float_)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.double_)
+                     //this is doubtful, but let's take the largest one
+                     // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
+                     || predicate.getDataType().equals(XSD.decimal)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.string)
+                     || predicate.getDataType().equals(XSD.normalizedString)
+                     || predicate.getDataType().equals(RDF.langString)
+                     //this is a little tricky, but in the end it's just a string, right?
+                     || predicate.getDataType().equals(XSD.base64Binary)) {
+
+            }
+            else if (predicate.getDataType().equals(RDF.HTML)) {
+
+            }
+            else if (predicate.getDataType().equals(XSD.anyURI)) {
+
+            }
+            else {
+                //this probably means we added a type to SolrConfigs without implementing it here
+                throw new IOException("Encountered unsupported RDF property '" + predicate + "' while serializing RDF value; " + rdfValue);
             }
         }
 

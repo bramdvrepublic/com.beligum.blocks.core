@@ -126,26 +126,6 @@ public interface PageIndexEntry extends IndexEntry
             ((PageIndexEntry)indexEntry).setCanonicalAddress(value);
         }
     };
-    IndexEntryField object = new JsonField("object")
-    {
-        @Override
-        public String getValue(IndexEntry indexEntry)
-        {
-            //don't really know what to return here...
-            return null;
-        }
-        @Override
-        public boolean hasValue(IndexEntry indexEntry)
-        {
-            //sync this with above getValue()
-            return false;
-        }
-        @Override
-        public void setValue(IndexEntry indexEntry, String value)
-        {
-            //don't really know what to set here
-        }
-    };
 
     //-----VARIABLES-----
 

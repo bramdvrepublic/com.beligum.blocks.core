@@ -158,7 +158,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
-    protected JsonField createField(RdfProperty property)
+    protected JsonField createField(RdfProperty property) throws IOException
     {
         return new JsonField(property);
     }
@@ -204,7 +204,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 Value value = triple.getObject();
 
                 //put the value in the json object
-                this.addProperty(this.jsonNode, predicate, value.stringValue());
+                this.addProperty(this.jsonNode, predicate, value);
 
                 // If the value is a resource, store it, we'll use it later to hook subobjects to their parents
                 // This means the value of this triple is possibly a reference to (the subject-URI of) another object
@@ -350,12 +350,15 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             if (value instanceof JsonNode) {
                 node.set(field.getName(), (JsonNode) value);
             }
+            else if (value instanceof Value) {
+                node.put(field.getName(), field.serialize((Value) value));
+            }
             else {
-                node.put(field.getName(), String.valueOf(value));
+                throw new IOException("Unimplemented value type, this shouldn't happen; "+value);
             }
         }
         else {
-            //if the existing field is not an array, convert it
+            //if the existing field is not an array, convert it to one
             if (!existingField.isArray()) {
                 node.remove(field.getName());
                 node.putArray(field.getName()).add(existingField);
@@ -365,8 +368,11 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             if (value instanceof JsonNode) {
                 node.withArray(field.getName()).add((JsonNode) value);
             }
+            else if (value instanceof Value) {
+                node.withArray(field.getName()).add(field.serialize((Value) value));
+            }
             else {
-                node.withArray(field.getName()).add(String.valueOf(value));
+                throw new IOException("Unimplemented value type, this shouldn't happen; "+value);
             }
         }
 

@@ -106,8 +106,6 @@ public class StorageFactory
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                //TODO decide if we change to Solr or implement a switch
-//                PageIndexer indexer = new LucenePageIndexer(lock);
                 PageIndexer indexer = new SolrPageIndexer(lock);
 
                 getIndexerRegistry().add(indexer);

@@ -24,9 +24,12 @@ import com.beligum.blocks.filesystem.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -67,6 +70,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
          * This will assume everything goes well and try to revert the changes made if it doesn't
          * by loading in the existing data before making changes and re-entering the saved data
          * if things go wrong. This mode is not safe at all, but offers a lot more throughput
+         *
+         * WARNING: this mode doesn't support full index deletion rollback using deleteAll() !!!
          */
         OPPORTUNISTIC_MODE
     }
@@ -99,6 +104,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         this.assertActive();
 
+        PageIndexEntry retVal = null;
+
         try {
             //            SolrQuery query = new SolrQuery();
             //            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
@@ -120,12 +127,37 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //                Logger.info(docList.get(i).jsonStr());
             //            }
 
-            SolrDocument doc = this.solrClient.getById(PageIndexEntry.generateId(key));
-            return doc == null ? null : new SolrPageIndexEntry(doc.jsonStr());
+            String pageId = PageIndexEntry.generateId(key);
+
+            //for future use, needs testing first
+            final boolean USE_REALTIME_API = false;
+
+            if (USE_REALTIME_API) {
+                //see https://github.com/apache/lucene-solr/blob/master/solr/solrj/src/test/org/apache/solr/client/solrj/SolrExampleTests.java#L1635
+                SolrQuery query = new SolrQuery();
+                query.setRequestHandler("/get");
+                query.set("id", pageId);
+                QueryResponse response = this.solrClient.query(query);
+                SolrDocumentList results = response.getResults();
+                if (results.size() == 1) {
+                    retVal = new SolrPageIndexEntry(results.get(0).jsonStr());
+                }
+                else if (results.size() > 1) {
+                    throw new IOException("Encountered multiple hits in Solr index for this ID, this shouldn't happen; " + pageId);
+                }
+            }
+            else {
+                SolrDocument doc = this.solrClient.getById(pageId);
+                if (doc != null) {
+                    retVal = new SolrPageIndexEntry(doc.jsonStr());
+                }
+            }
         }
         catch (Exception e) {
             throw new IOException(e);
         }
+
+        return retVal;
     }
     @Override
     public synchronized void update(Resource resource) throws IOException
@@ -136,11 +168,11 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
+            String pageId = PageIndexEntry.generateId(page);
+
             SolrPageIndexEntry newIndexEntry = new SolrPageIndexEntry(page);
 
-            SolrDocument existingIndexEntry = this.solrClient.getById(PageIndexEntry.generateId(page));
-
-            this.saveRollbackBackup(newIndexEntry.getId(), existingIndexEntry == null ? null : new SolrPageIndexEntry(existingIndexEntry.jsonStr()));
+            this.saveRollbackBackup(pageId);
 
             this.updateJsonDoc(newIndexEntry);
 
@@ -155,9 +187,13 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         this.assertActive();
         this.assertTransaction();
 
-        Page page = resource.unwrap(Page.class);
-
         try {
+            Page page = resource.unwrap(Page.class);
+
+            String pageId = PageIndexEntry.generateId(page);
+
+            this.saveRollbackBackup(pageId);
+
             this.solrClient.deleteById(PageIndexEntry.generateId(page));
         }
         catch (Exception e) {
@@ -171,6 +207,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         this.assertTransaction();
 
         try {
+            // WARNING: this doesn't have support for opportunistic rollback
             this.solrClient.deleteByQuery("*:*");
         }
         catch (Exception e) {
@@ -225,12 +262,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     //Note: this needs to be synchronized for concurrency with the the assertActive() below
     public synchronized void close() throws IOException
     {
-        //don't do this anymore: we switched from a new writer per transaction to a single writer
-        // which instead flushes at the end of each transactions, so don't close it
-        //        if (this.createdWriter) {
-        //            this.getLuceneIndexWriter().close();
-        //        }
-
         this.pageIndexer = null;
         this.transaction = null;
         this.active = false;
@@ -243,10 +274,17 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         switch (this.txType) {
             case EMBEDDED_FULL_SYNC_MODE:
 
+                //this will block if there's currently another TX active,
+                // effectively serializing transactions so we can use the native commit/rollback mechanism
                 this.pageIndexer.acquireCentralTxLock();
+
+                // Note: there is no such thing as a Solr "begin" method;
+                // changes are just queued and made visible when we call commit (either hard or soft)
 
                 break;
             case OPPORTUNISTIC_MODE:
+
+                // we don't really do anything special when the transaction starts
 
                 break;
             default:
@@ -259,12 +297,10 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         if (this.isRegistered()) {
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:
-
                     //NOOP
-
                     break;
                 case OPPORTUNISTIC_MODE:
-
+                    //NOOP
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + this.txType);
@@ -282,35 +318,53 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:
 
-                    TODO
-
                     try {
+                        // This will perform a 'soft commit'; eg. the changes will be appended to the transaction log,
+                        // but won't be flushed to the index on disk. So on power failure, the actions in the log
+                        // will need to be replayed. Note that Solr is configured to do a periodic hard commit (every 15 sec),
+                        // so a soft commit basically only makes the changes visible to future search queries.
+                        //
+                        // From the docs:
+                        // During a softcommit, the transaction log is not truncated, it continues to grow.
+                        // However, a new searcher is opened, which makes the documents since last softcommit visible for searching.
+                        // Also, some of the top-level caches in Solr are invalidated, so it’s not a completely free operation.
+                        //
+                        // See https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+                        // In this post, the authors clearly state we shouldn't be calling commit manually because this could potentially
+                        // softcommit the index very frequently. However, since page saving won't happen every millisecond, this should be okay,
+                        // and allows us to wrap our TX methods around use the native lucene methods.
+                        //
+                        // WARNING: beware of re-indexing (when a lot of commits will happen per second), we should create a new mode for this.
                         this.solrClient.commit(false, false, true);
+
+                        // Make sure the data gets saved eventually
+                        // we'll manually schedule a hard commit ourself so the periodic auto-commit if Solr (which we disabled)
+                        // can't slip in between our commits
+                        this.pageIndexer.scheduleHardCommit();
+
+                        // If all went well, release the lock. Note that rollback() will be called
+                        // when this method throws an exception, so the lock should always be released
+                        this.pageIndexer.releaseCentralTxLock();
                     }
                     catch (SolrServerException e) {
                         throw new IOException(e);
-                    }
-                    finally {
-                        //TODO
                     }
 
                     break;
                 case OPPORTUNISTIC_MODE:
 
                     try {
-                        // See https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
-                        // During a softcommit, the transaction log is not truncated, it continues to grow.
-                        // However, a new searcher is opened, which makes the documents since last softcommit visible for searching.
-                        // Also, some of the top-level caches in Solr are invalidated, so it’s not a completely free operation.
+                        //see above
                         this.solrClient.commit(false, false, true);
 
+                        // make sure the data gets saved eventually
+                        this.pageIndexer.scheduleHardCommit();
+
+                        // All went well; wipe the temp-stored rollback backup entry
                         this.flushRollbackBackup();
                     }
                     catch (SolrServerException e) {
                         throw new IOException(e);
-                    }
-                    finally {
-                        //TODO
                     }
 
                     break;
@@ -327,6 +381,26 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:
 
+                    try {
+                        // From the docs:
+                        // Performs a rollback of all non-committed documents pending. Note that this is not a true rollback as in databases.
+                        // Content you have previously added may have been committed due to autoCommit, buffer full, other client performing a commit etc.
+                        // Also note that rollbacks reset changes made by all clients. Use this method carefully when multiple clients, or multithreaded clients are in use.
+                        //
+                        // Note: we explicitly disabled autoCommit (both hard and soft)
+                        this.solrClient.rollback();
+
+                        //Note: don't cancel the scheduled hard commit because other threads/requests might have
+                        // started it and have nothing to do with us.
+
+                        // If all went well, release the lock. Note that rollback() will be called
+                        // when this method throws an exception, so the lock should always be released
+                        this.pageIndexer.releaseCentralTxLock();
+                    }
+                    catch (SolrServerException e) {
+                        throw new IOException(e);
+                    }
+
                     break;
                 case OPPORTUNISTIC_MODE:
 
@@ -335,9 +409,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                     }
                     catch (SolrServerException e) {
                         throw new IOException(e);
-                    }
-                    finally {
-                        //TODO
                     }
 
                     break;
@@ -438,11 +509,14 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         // this effectively executes the update command
         this.solrClient.request(request);
     }
-    private void saveRollbackBackup(String id, SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
+    private void saveRollbackBackup(String id) throws IOException, SolrServerException
     {
         synchronized (rollbackBackupLock) {
             if (this.rollbackBackup == null) {
-                this.rollbackBackup = new RollbackBackup(id, indexEntry);
+                //note: this returns null if nothing was found
+                SolrDocument existingIndexEntry = this.solrClient.getById(id);
+
+                this.rollbackBackup = new RollbackBackup(id, existingIndexEntry == null ? null : new SolrPageIndexEntry(existingIndexEntry.jsonStr()));
             }
             else {
                 throw new IOException("Encountered a situation where the rollback backup was already set, this shouldn't happen; " + this.rollbackBackup);

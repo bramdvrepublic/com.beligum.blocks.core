@@ -59,10 +59,6 @@ public enum CacheKeys implements CacheKey
     NEW_PAGE_PERSISTENT,
     //flash cache key that holds a number of extra get-params that were passed in during new page template creation
     NEW_PAGE_EXTRA_PARAMS,
-    //Application cache key that hold the lucene index writer
-    LUCENE_INDEX_WRITER,
-    //Application cache key that hold the lucene index searcher
-    LUCENE_INDEX_SEARCHER,
     //Application cache key that keeps a reference to the active indexers
     REGISTERED_INDEXERS,
     //Application cache key that keeps a cache of all active thread-bound transactions

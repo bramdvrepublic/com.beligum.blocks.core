@@ -56,7 +56,7 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
 
     //-----PROTECTED METHODS-----
     @Override
-    protected JsonField createField(RdfProperty property)
+    protected JsonField createField(RdfProperty property) throws IOException
     {
         return new SolrField(property);
     }

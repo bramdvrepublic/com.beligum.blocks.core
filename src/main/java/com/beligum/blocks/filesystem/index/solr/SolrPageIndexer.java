@@ -79,11 +79,15 @@ public class SolrPageIndexer implements PageIndexer
     private static final String SOLR_CORE_NAME = "pages";
     private static final String CORE_CONF_DIR = "conf";
     private static final SolrPageIndexConnection.TxType DEFAULT_SYNC_MODE = SolrPageIndexConnection.TxType.EMBEDDED_FULL_SYNC_MODE;
+    // note: 15 sec is the default hard commit timeout in Solr (see updateHandler.autoCommit.maxTime)
+    private static final long HARD_COMMIT_TIMEOUT = 15 * 1000;
 
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
     private ReentrantLock centralTxLock;
+    private Object hardCommitLock;
+    private Timer hardCommitTimer;
 
     //-----CONSTRUCTORS-----
     public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
@@ -100,6 +104,7 @@ public class SolrPageIndexer implements PageIndexer
         this.useSchemaless = false;
 
         this.centralTxLock = new ReentrantLock();
+        this.hardCommitLock = new Object();
 
         this.init();
     }
@@ -157,6 +162,66 @@ public class SolrPageIndexer implements PageIndexer
     {
         this.centralTxLock.unlock();
     }
+    protected void scheduleHardCommit()
+    {
+        // if a timer is already scheduled, no need to boot a second;
+        // this effectively "groups" commits.
+        if (this.hardCommitTimer == null) {
+            synchronized (this.hardCommitLock) {
+                if (this.hardCommitTimer == null) {
+                    this.hardCommitTimer = new Timer();
+                    this.hardCommitTimer.schedule(new TimerTask()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            try {
+                                // note: we'll be "interfering" with manual commits, so make sure
+                                // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...
+                                acquireCentralTxLock();
+
+                                solrClient.commit(true, true);
+                            }
+                            catch (Exception e) {
+                                Logger.error("Error while hard committing the Solr searcher, this is bad and should be fixed", e);
+                            }
+                            finally {
+                                //allow a new schedule to happen
+                                hardCommitTimer = null;
+
+                                //this might potentially throw an exception, so put it last
+                                releaseCentralTxLock();
+                            }
+                        }
+                    }, HARD_COMMIT_TIMEOUT);
+                }
+            }
+        }
+    }
+    protected void cancelHardCommit()
+    {
+        if (this.hardCommitTimer != null) {
+            synchronized (this.hardCommitLock) {
+                if (this.hardCommitTimer != null) {
+                    try {
+                        // note: we'll be "interfering" with manual commits, so make sure
+                        // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...
+                        acquireCentralTxLock();
+
+                        //really cancel the active task
+                        this.hardCommitTimer.cancel();
+                    }
+                    finally {
+                        //allow a new schedule to happen
+                        hardCommitTimer = null;
+
+                        //this might potentially throw an exception, so put it last
+                        releaseCentralTxLock();
+                    }
+                }
+            }
+        }
+    }
 
     //-----PRIVATE METHODS-----
     private void init() throws IOException
@@ -188,20 +253,25 @@ public class SolrPageIndexer implements PageIndexer
                 StringBuilder propertyConfigs = new StringBuilder("{" +
                                                                   // So (for now) our strategy is to disable auto soft commit and do a manual soft commit after each update
                                                                   // (although the article below says otherwise).
+                                                                  // We'll schedule a hard commit manually to simulate the periodic hard commit in a controlled manner.
                                                                   // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
                                                                   // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
                                                                   // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
-                                                                  "  \"unset-property\": [" +
-                                                                  "    \"updateHandler.autoCommit.maxDocs\"," +
-                                                                  "  ]," +
                                                                   "  \"set-property\": {" +
-                                                                  "    \"updateHandler.autoCommit.maxTime\": \"15000\"," +
+                                                                  // Note: we disable periodic hard commit because it might slip in between our soft commit in EMBEDDED_FULL_SYNC_MODE
+                                                                  // Instead, we'll schedule "grouped" hard commits ourself.
+                                                                  "    \"updateHandler.autoCommit.maxDocs\": \"-1\"," +
+                                                                  "    \"updateHandler.autoCommit.maxTime\": \"-1\"," +
                                                                   "    \"updateHandler.autoCommit.openSearcher\": \"false\"" +
                                                                   "  }," +
                                                                   "  \"set-property\": {" +
                                                                   "    \"updateHandler.autoSoftCommit.maxDocs\": \"-1\"," +
                                                                   "    \"updateHandler.autoSoftCommit.maxTime\": \"-1\"" +
                                                                   "  }," +
+                                                                  // disabled because we set it to -1 above
+                                                                  // "  \"unset-property\": [" +
+                                                                  // "    \"updateHandler.autoCommit.maxDocs\"," +
+                                                                  // "  ]," +
                                                                   "}");
 
                 if (!this.useSchemaless) {

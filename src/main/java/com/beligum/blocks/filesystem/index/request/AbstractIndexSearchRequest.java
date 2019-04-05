@@ -1,5 +1,6 @@
 package com.beligum.blocks.filesystem.index.request;
 
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -150,7 +151,7 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     //-----PROTECTED METHODS-----
     protected String nameOf(RdfProperty rdfProperty)
     {
-        return rdfProperty.getCurie().toString();
+        return new JsonField(rdfProperty).getName();
     }
 
     //-----PRIVATE METHODS-----

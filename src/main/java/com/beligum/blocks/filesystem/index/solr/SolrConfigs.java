@@ -2442,22 +2442,22 @@ public class SolrConfigs
 
     //This is a list of field types that are used below
     public static final String CORE_SCHEMA_TYPE_NEST_PATH = "_nest_path_";
-    public static final String CORE_SCHEMA_TYPE_STRING = "string";
-    public static final String CORE_SCHEMA_TYPE_STRINGS = "strings";
     public static final String CORE_SCHEMA_TYPE_BOOLEAN = "boolean";
     public static final String CORE_SCHEMA_TYPE_BOOLEANS = "booleans";
     public static final String CORE_SCHEMA_TYPE_PINT = "pint";
-    public static final String CORE_SCHEMA_TYPE_PFLOAT = "pfloat";
-    public static final String CORE_SCHEMA_TYPE_PLONG = "plong";
-    public static final String CORE_SCHEMA_TYPE_PDOUBLE = "pdouble";
     public static final String CORE_SCHEMA_TYPE_PINTS = "pints";
+    public static final String CORE_SCHEMA_TYPE_PFLOAT = "pfloat";
     public static final String CORE_SCHEMA_TYPE_PFLOATS = "pfloats";
+    public static final String CORE_SCHEMA_TYPE_PLONG = "plong";
     public static final String CORE_SCHEMA_TYPE_PLONGS = "plongs";
+    public static final String CORE_SCHEMA_TYPE_PDOUBLE = "pdouble";
     public static final String CORE_SCHEMA_TYPE_PDOUBLES = "pdoubles";
-    public static final String CORE_SCHEMA_TYPE_RANDOM = "random";
-    public static final String CORE_SCHEMA_TYPE_IGNORED = "ignored";
     public static final String CORE_SCHEMA_TYPE_PDATE = "pdate";
     public static final String CORE_SCHEMA_TYPE_PDATES = "pdates";
+    public static final String CORE_SCHEMA_TYPE_STRING = "string";
+    public static final String CORE_SCHEMA_TYPE_STRINGS = "strings";
+    public static final String CORE_SCHEMA_TYPE_RANDOM = "random";
+    public static final String CORE_SCHEMA_TYPE_IGNORED = "ignored";
     public static final String CORE_SCHEMA_TYPE_BINARY = "binary";
     public static final String CORE_SCHEMA_TYPE_TEXT_GENERAL = "text_general";
 
@@ -2486,7 +2486,6 @@ public class SolrConfigs
     public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOf.getName();
     public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.language.getName();
     public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
-    public static final String CORE_SCHEMA_FIELD_OBJECT = PageIndexEntry.object.getName();
 
     // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +

@@ -45,8 +45,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry
                                                                                  resource,
                                                                                  typeOf,
                                                                                  language,
-                                                                                 canonicalAddress,
-                                                                                 object
+                                                                                 canonicalAddress
     );
 
     //-----VARIABLES-----

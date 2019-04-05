@@ -3,7 +3,9 @@ package com.beligum.blocks.filesystem.index.entries;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import org.eclipse.rdf4j.model.Value;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class JsonField implements IndexEntryField
@@ -52,6 +54,12 @@ public class JsonField implements IndexEntryField
     protected String toFieldName(RdfProperty property)
     {
         return property.getCurie().toString();
+    }
+    @Override
+    public String serialize(RdfProperty predicate, Value rdfValue) throws IOException
+    {
+        //this is a very default and generic implementation, subclass for more flexibility
+        return rdfValue == null ? null : rdfValue.stringValue();
     }
 
     //-----PRIVATE METHODS-----

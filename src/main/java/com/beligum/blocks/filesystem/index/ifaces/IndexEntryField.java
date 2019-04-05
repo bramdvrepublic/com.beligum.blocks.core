@@ -1,5 +1,10 @@
 package com.beligum.blocks.filesystem.index.ifaces;
 
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import org.eclipse.rdf4j.model.Value;
+
+import java.io.IOException;
+
 public interface IndexEntryField
 {
     //-----CONSTANTS-----
@@ -32,6 +37,11 @@ public interface IndexEntryField
      * Sets the field of the indexEntry to the supplied value
      */
     void setValue(IndexEntry indexEntry, String value);
+
+    /**
+     * Convert the RDF value to an indexable string value counterpart
+     */
+    String serialize(RdfProperty predicate, Value rdfValue) throws IOException;
 
     /**
      * Make sure this just returns the name

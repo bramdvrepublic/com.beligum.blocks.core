@@ -31,7 +31,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
 import com.beligum.blocks.filesystem.index.reindex.*;
-import com.beligum.blocks.filesystem.pages.PageFixTask;
+import com.beligum.blocks.filesystem.index.reindex.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;

@@ -1,6 +1,7 @@
 package com.beligum.blocks.filesystem.index.solr;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.filesystem.index.entries.JsonField;
 import com.beligum.blocks.filesystem.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.index.ifaces.IndexEntryField;
 import com.beligum.blocks.filesystem.index.ifaces.IndexSearchRequest;
@@ -121,11 +122,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PROTECTED METHODS-----
-    @Override
-    protected String nameOf(RdfProperty rdfProperty)
-    {
-        return new SolrField(rdfProperty).getName();
-    }
 
     //-----PRIVATE METHODS-----
     private StringBuilder append(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)

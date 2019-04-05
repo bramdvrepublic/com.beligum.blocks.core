@@ -80,20 +80,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         return widgetConfig;
     }
-    //    @Override
-//    public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI resource, Value value, Locale language, RdfQueryEndpoint.SearchOption... options) throws IOException
-//    {
-//        this.assertNoProxy();
-//
-//        return this.indexer.index(indexer, resource, this, value, language, options);
-//    }
-//    @Override
-//    public Object prepareIndexValue(String value, Locale language) throws IOException
-//    {
-//        this.assertNoProxy();
-//
-//        return this.indexer.prepareIndexValue(this, value, language);
-//    }
 
     //-----PROTECTED METHODS-----
 
