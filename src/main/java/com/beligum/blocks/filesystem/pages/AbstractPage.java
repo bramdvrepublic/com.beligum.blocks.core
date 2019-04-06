@@ -31,7 +31,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.AbstractBlocksResource;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.filesystem.index.ifaces.*;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;

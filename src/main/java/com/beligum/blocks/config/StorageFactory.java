@@ -36,11 +36,11 @@ import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProduce
 import com.beligum.blocks.filesystem.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
-import com.beligum.blocks.filesystem.index.ifaces.Indexer;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.filesystem.index.ifaces.PageIndexer;
-import com.beligum.blocks.filesystem.index.sparql.SesamePageIndexer;
-import com.beligum.blocks.filesystem.index.solr.SolrPageIndexer;
+import com.beligum.blocks.index.ifaces.Indexer;
+import com.beligum.blocks.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.index.ifaces.PageIndexer;
+import com.beligum.blocks.index.sparql.SesamePageIndexer;
+import com.beligum.blocks.index.solr.SolrPageIndexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;

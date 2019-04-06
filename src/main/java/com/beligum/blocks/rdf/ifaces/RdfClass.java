@@ -18,7 +18,7 @@ package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.ifaces.ResourceSummarizer;
+import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;

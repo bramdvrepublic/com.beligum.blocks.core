@@ -81,7 +81,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * Note that, for now, this method ignores queryType and options parameters
      */
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
+    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -109,7 +109,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * pass a lookup for a resourceId: UriBuilder.fromPath(rawValue).build()
      */
     @Override
-    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
+    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
         //Note: the getPath() converts special URI characters back to their native form
         return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);

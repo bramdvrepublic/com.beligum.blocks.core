@@ -22,7 +22,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
-import com.beligum.blocks.filesystem.index.ifaces.XAClosableResource;
+import com.beligum.blocks.filesystem.ifaces.XAClosableResource;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
 import javax.transaction.*;

@@ -1,7 +1,7 @@
 // Copyright 2011 NexJ Systems Inc. This software is licensed under the terms of the Eclipse Public License 1.0
 package com.beligum.blocks.filesystem.hdfs.impl.sql.sqlite;
 
-import com.beligum.blocks.filesystem.index.ifaces.XAClosableResource;
+import com.beligum.blocks.filesystem.ifaces.XAClosableResource;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;

@@ -20,14 +20,9 @@ import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.ifaces.RdfIndexer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.rdf4j.model.Value;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Locale;
 
 /**
  * This is more or less the OO representation of the RDF:Property

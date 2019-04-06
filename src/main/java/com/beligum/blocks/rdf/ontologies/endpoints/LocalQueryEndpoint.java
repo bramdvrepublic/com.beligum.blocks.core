@@ -21,7 +21,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
-import com.beligum.blocks.filesystem.index.ifaces.*;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -42,42 +42,6 @@ import java.util.*;
 public class LocalQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
-    public static class IntermediateResourcesOption implements SearchOption
-    {
-        private Map<String, Map<String, PageIndexEntry>> store;
-
-        public IntermediateResourcesOption()
-        {
-            this.store = new LinkedHashMap<>();
-        }
-
-        public void add(PageIndexEntry indexEntry) throws IOException
-        {
-            Map<String, PageIndexEntry> storedVariants = this.store.get(indexEntry.getResource());
-            if (storedVariants == null) {
-                this.store.put(indexEntry.getResource(), storedVariants = new HashMap<>());
-            }
-
-            if (storedVariants.containsKey(indexEntry.getLanguage())) {
-                throw new IOException("Overwriting intermediate resource for language " + indexEntry.getLanguage() + ", can't continue because this is probably an error; " + indexEntry.getResource());
-            }
-            else {
-                storedVariants.put(indexEntry.getLanguage(), indexEntry);
-            }
-        }
-
-        public PageIndexEntry get(String relativeResourceUri, String language)
-        {
-            PageIndexEntry retVal = null;
-
-            Map<String, PageIndexEntry> storedResourceVariants = this.store.get(relativeResourceUri);
-            if (storedResourceVariants != null) {
-                retVal = storedResourceVariants.get(language);
-            }
-
-            return retVal;
-        }
-    }
 
     //-----VARIABLES-----
     //Note: don't make this static; it messes with the RdfFactory initialization
@@ -96,7 +60,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return false;
     }
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
+    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -163,7 +127,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language, SearchOption... options) throws IOException
+    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
         ResourceInfo retVal = null;
 
@@ -172,33 +136,6 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
 
         //we'll wrap this one in a ResourceInfo
         PageIndexEntry selectedEntry = null;
-
-        //this is a bit of a hack and needs some explaining: while indexing a resource with sub-resources
-        //(eg. a Page containing an Object widget), we index the sub-resources before the page-resource,
-        //but when this method is called to lookup the sub-resources in that page, they're not committed to
-        //the index yet, that's why we created a temporary store for them.
-        //See LucenePageIndexConnection.update()
-        //Update: note that this needs to be checked first because it's possible we're re-saving (updating) an existing sub-resource
-        //that's already present in the index (with the old values), resulting in a valid hit. This means, if the options contain
-        //a hit for this resourceId, we should expect it's in a more updated state and return that instead of the indexed one.
-        IntermediateResourcesOption intermediateResourcesOption = null;
-
-        if (options != null) {
-            for (SearchOption option : options) {
-                //for now, this is the only option we support here
-                if (option instanceof IntermediateResourcesOption) {
-                    intermediateResourcesOption = (IntermediateResourcesOption) option;
-                    break;
-                }
-                else {
-                    throw new IOException("Encountered unsupported/unimplemented option, this shouldn't happen; " + option);
-                }
-            }
-        }
-
-        if (intermediateResourcesOption != null) {
-            selectedEntry = intermediateResourcesOption.get(relResourceIdStr, language.getLanguage());
-        }
 
         if (selectedEntry == null) {
             PageIndexConnection indexConn = StorageFactory.getJsonQueryConnection();

@@ -25,22 +25,18 @@ import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
-import com.beligum.blocks.filesystem.index.ifaces.Indexer;
+import com.beligum.blocks.index.ifaces.Indexer;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
 
 import javax.transaction.TransactionManager;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 
 /**

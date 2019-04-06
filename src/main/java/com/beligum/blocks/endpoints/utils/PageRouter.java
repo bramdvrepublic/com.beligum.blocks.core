@@ -16,7 +16,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.filesystem.index.ifaces.*;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
