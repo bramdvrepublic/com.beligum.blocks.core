@@ -70,6 +70,15 @@ public interface RdfResource extends JsonObject
     /**
      * Indicates whether this resource should be exposed to the end-users while administering pages.
      * Eg. added to public comboboxes and so on (eg. the ones in the UI on the client side)
+     *
+     * Overview:
+     * - public ontologies are saved in the lookup maps of RdfFactory.
+     *   Also, inside those public ontologies, references to members of non-public ontologies will cause the non-public ontologies
+     *   to be added to the lookup maps as well (because otherwise they can't be resolved).
+     *   Also note that modularized ontologies (ontologies configured from multiple classes) will be made public as soon as one of those
+     *   modules configures the ontology as public.
+     *   Also note that only classes/members of public ontologies will be added to the index schema.
+     * -
      */
     @JsonIgnore
     boolean isPublic();

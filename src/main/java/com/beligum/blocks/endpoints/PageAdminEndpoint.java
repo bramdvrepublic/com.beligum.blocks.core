@@ -241,12 +241,12 @@ public class PageAdminEndpoint
                         // but they are activated contextually (eg. blocks-fact-entry) and in the current context,
                         // there are none (eg. because the current page type doesn't have any properties in its ontology).
                         // Then this template-tag shouldn't be enabled because the user won't be able to create instances
-                        // of this tempalte-tag (the client-side UI should prevent this)
+                        // of this template-tag (the client-side UI should prevent this)
                         enableTemplate = enableTemplate && !(tagTemplate.hasRdfProperties() && !hasRdfProperties);
 
                         //if strict mode is active and this template has no true rdf properties,
                         //disable it because this is only allowed for the default page type
-                        if (enableTemplate && !hasRdfProperties) {
+                        if (enableStrictMode && !hasRdfProperties) {
                             enableTemplate = false;
                         }
 
@@ -272,7 +272,7 @@ public class PageAdminEndpoint
                             }
                         }
                     }
-                    //if the page type has no properties (eg. a spacer) and it's not the default type (already checked)
+                    //if the page type has no properties at all (eg. a spacer) and it's not the default type (already checked)
                     //and strict mode is enabled, we need to disable this template because non-rdf templates are only allowed
                     //for the default type in strict mode
                     else if (enableStrictMode) {

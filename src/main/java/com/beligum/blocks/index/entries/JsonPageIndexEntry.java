@@ -1,8 +1,12 @@
 package com.beligum.blocks.index.entries;
 
+import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
@@ -21,6 +25,7 @@ import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.Models;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -214,7 +219,8 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 }
             }
             else {
-                Logger.error("Encountered an unknown RDF predicate '" + predicate + "' while mapping to JSON. This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
+                Logger.error("Encountered an unknown RDF predicate '" + predicate +
+                             "' while mapping to JSON. This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
             }
         }
 
@@ -339,9 +345,14 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
         return object;
     }
-    private JsonField addProperty(ObjectNode node, Object value, RdfProperty predicate, Locale language) throws IOException
+    /**
+     * Add the value (of the specified property in the specified language) to the json object,
+     * auto-detecting if this is the first property and converting the field to an array if (and only if) the
+     * field was already present in the json object.
+     */
+    private JsonField addProperty(ObjectNode node, Object value, RdfProperty property, Locale language) throws IOException
     {
-        JsonField field = this.createField(predicate);
+        JsonField field = this.createField(property);
 
         // this will support both array-based subObjects when there are multiple objects mapped on the same field
         // and standard subnode (not in an array) when there's only one.
@@ -351,10 +362,15 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 node.set(field.getName(), (JsonNode) value);
             }
             else if (value instanceof Value) {
-                node.put(field.getName(), field.serialize((Value) value, predicate, language));
+                Value rdfValue = (Value) value;
+
+                node.put(field.getName(), field.serialize(rdfValue, property, language));
+
+                //TODO
+                //this.addExtraResourceFields(node, field.getName(), rdfValue, property, language);
             }
             else {
-                throw new IOException("Unimplemented value type, this shouldn't happen; "+value);
+                throw new IOException("Unimplemented value type, this shouldn't happen; " + value);
             }
         }
         else {
@@ -369,13 +385,66 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 node.withArray(field.getName()).add((JsonNode) value);
             }
             else if (value instanceof Value) {
-                node.withArray(field.getName()).add(field.serialize((Value) value, predicate, language));
+                Value rdfValue = (Value) value;
+
+                node.withArray(field.getName()).add(field.serialize(rdfValue, property, language));
+
+                //TODO
+                //this.addExtraResourceFields(node, field.getName(), rdfValue, property, language);
             }
             else {
-                throw new IOException("Unimplemented value type, this shouldn't happen; "+value);
+                throw new IOException("Unimplemented value type, this shouldn't happen; " + value);
             }
         }
 
         return field;
+    }
+    private List<String> addExtraResourceFields(ObjectNode node, String fieldName, Value value, RdfProperty property, Locale language) throws IOException
+    {
+        List<String> retVal = new ArrayList<>();
+
+        if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
+            //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+            URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
+
+            RdfClass dataType = property.getDataType();
+            RdfQueryEndpoint endpoint = dataType.getEndpoint();
+            // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
+            if (endpoint != null) {
+
+                //make sure we have a language or we won't be able to lookup the resource from the uri
+                URI debugValue = uriValue;
+                Locale uriValueLang = R.i18n().getUrlLocale(debugValue);
+                if (uriValueLang == null) {
+                    //it's a resource, so add it as a query parameter
+                    debugValue = UriBuilder.fromUri(debugValue).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
+                }
+
+                ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language);
+                if (resourceValue != null) {
+                    //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
+                    try {
+                        //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
+                        String label = resourceValue.getLabel();
+
+                        //TODO
+//                        String humanReadableFieldName = LucenePageIndexer.buildHumanReadableFieldName(fieldName);
+//                        indexer.indexStringField(humanReadableFieldName, label);
+//
+//                        retVal = new RdfIndexer.IndexResult(uriValueStr, label);
+                    }
+                    catch (Exception e) {
+                        throw new IOException("Unable to serialize resource value for field " + fieldName + " because there was an setRollbackOnly" +
+                                              " while parsing the information coming back from the resource endpoint for datatype " + dataType + ";" + debugValue, e);
+                    }
+                }
+                //we didn't get a resource value from the endpoint and need to crash, but let's add some nice info to the stacktrace
+                else {
+                    throw new IOException("Unable to serialize resource value for field " + fieldName + " because it's resource endpoint returned null; " + debugValue);
+                }
+            }
+        }
+
+        return retVal;
     }
 }

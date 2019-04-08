@@ -91,7 +91,7 @@ public abstract class HtmlTemplate
 
     public enum SpecialProperty
     {
-        //specifying "_all" means we indicate we want to include/allow all properties of a specific vocabulary context
+        //specifying "_vocab" means we indicate we want to include/allow all properties of a specific vocabulary context
         _vocab,
         //specifying "_class" means we indicate we want to include/allow all properties of a specific class context
         _class

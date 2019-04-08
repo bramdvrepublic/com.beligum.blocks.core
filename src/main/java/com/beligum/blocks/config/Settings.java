@@ -472,10 +472,20 @@ public class Settings
 
         return this.cachedRdfLabelProperty;
     }
+    /**
+     * When "rdf create sync" is active, we sync the offered list of blocks (when creating a new block)
+     * to the rdf ontology of the (current) page type.
+     * Note that the default class is an exception: we allow it to have all blocks.
+     */
     public boolean getEnableRdfCreateSync()
     {
         return R.configuration().getBoolean(RDF_PREFIX + ".enable-create-sync", true);
     }
+    /**
+     * If strict mode is active, no blocks that only consist of non-rdf properties can be added to pages that are not of default type.
+     * Note that this is an extra flag on top of "rdf create sync" mode and is only checked
+     * when that flag is active.
+     */
     public boolean getEnableRdfCreateSyncStrict()
     {
         return R.configuration().getBoolean(RDF_PREFIX + ".enable-create-sync-strict", false);

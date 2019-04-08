@@ -92,16 +92,20 @@ public class RdfFactory
     //a package-private set of all default members across all ontologies; will be inspected inside create()
     final Set<RdfOntologyMember> defaultMemberRegistry;
 
+    //this is the default (eg. Page) class in the system that should automatically receive all public members
+    final RdfClass defaultClass;
+
     //-----CONSTRUCTORS-----
     /**
      * This private constructor will function as a 'lock' that needs to be passed to the RDF initialization methods
      * and assures those can only be constructed from the assertInitialized() in this class.
      */
-    private RdfFactory(RdfOntologyImpl ontology, Map<RdfOntologyMember, AbstractRdfOntologyMember.Builder> registry, Set<RdfOntologyMember> defaultMemberRegistry)
+    private RdfFactory(RdfOntologyImpl ontology, Map<RdfOntologyMember, AbstractRdfOntologyMember.Builder> registry, Set<RdfOntologyMember> defaultMemberRegistry, RdfClass defaultClass)
     {
         this.ontology = ontology;
         this.registry = registry;
         this.defaultMemberRegistry = defaultMemberRegistry;
+        this.defaultClass = defaultClass;
     }
 
     //-----STATIC METHODS-----
@@ -419,7 +423,7 @@ public class RdfFactory
                                 // Passing an instance of RdfFactory (note the private constructor) to the create() method,
                                 // assures other developers won't be able to create RDF ontology instances manually
                                 // (it's a sort of key for a lock)
-                                RdfFactory rdfFactory = new RdfFactory(mainOntology, registry, defaultMemberRegistry);
+                                RdfFactory rdfFactory = new RdfFactory(mainOntology, registry, defaultMemberRegistry, Settings.DEFAULT_CLASS);
 
                                 //this call will initialize all member fields and add them to the registry if
                                 //the're not present yet.
@@ -435,7 +439,7 @@ public class RdfFactory
                     // we're sure it's added to all public classes (even though it can be configured dynamically from the settings)
                     RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
                     try {
-                        new RdfFactory((RdfOntologyImpl) labelProperty.getOntology(), registry, defaultMemberRegistry).register(labelProperty).isDefault(true);
+                        new RdfFactory((RdfOntologyImpl) labelProperty.getOntology(), registry, defaultMemberRegistry, Settings.DEFAULT_CLASS).register(labelProperty).isDefault(true);
                     }
                     catch (Throwable e) {
                         throw new RdfInstantiationException("Error while initializing RDF label property; " + labelProperty, e);
