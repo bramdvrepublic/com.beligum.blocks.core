@@ -62,7 +62,7 @@ public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
     public String toString()
     {
         return "SparqlSelectIndexEntry{" +
-               "id='" + id + '\'' +
+               "id='" + idField + '\'' +
                '}';
     }
 }

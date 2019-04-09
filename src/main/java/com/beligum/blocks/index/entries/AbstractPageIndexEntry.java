@@ -31,15 +31,15 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     //Notes:
     // - the underscore is to differentiate this field from the constant field definitions in IndexEntry
     // - the booleans is to detect unset fields while supporting null values
-    protected String _parentId;
+    protected String parentId;
     protected boolean hasParentId;
-    protected String _resource;
+    protected String resource;
     protected boolean hasResource;
-    protected String _typeOf;
+    protected String typeOf;
     protected boolean hasTypeOf;
-    protected String _language;
+    protected String language;
     protected boolean hasLanguage;
-    protected String _canonicalAddress;
+    protected String canonicalAddress;
     protected boolean hasCanonicalAddress;
 
     //-----CONSTRUCTORS-----
@@ -56,7 +56,7 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public String getParentId()
     {
-        return _parentId;
+        return parentId;
     }
     @Override
     public boolean hasParentId()
@@ -66,13 +66,13 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public void setParentId(String parentId)
     {
-        this._parentId = parentId;
+        this.parentId = parentId;
         this.hasParentId = true;
     }
     @Override
     public String getResource()
     {
-        return _resource;
+        return resource;
     }
     @Override
     public boolean hasResource()
@@ -82,13 +82,13 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public void setResource(String resource)
     {
-        this._resource = resource;
+        this.resource = resource;
         this.hasResource = true;
     }
     @Override
     public String getTypeOf()
     {
-        return _typeOf;
+        return typeOf;
     }
     @Override
     public boolean hasTypeOf()
@@ -98,13 +98,13 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public void setTypeOf(String typeOf)
     {
-        this._typeOf = typeOf;
+        this.typeOf = typeOf;
         this.hasTypeOf = true;
     }
     @Override
     public String getLanguage()
     {
-        return _language;
+        return language;
     }
     @Override
     public boolean hasLanguage()
@@ -114,13 +114,13 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public void setLanguage(String language)
     {
-        this._language = language;
+        this.language = language;
         this.hasLanguage = true;
     }
     @Override
     public String getCanonicalAddress()
     {
-        return _canonicalAddress;
+        return canonicalAddress;
     }
     @Override
     public boolean hasCanonicalAddress()
@@ -130,7 +130,7 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     @Override
     public void setCanonicalAddress(String canonicalAddress)
     {
-        this._canonicalAddress = canonicalAddress;
+        this.canonicalAddress = canonicalAddress;
         this.hasCanonicalAddress = true;
     }
 

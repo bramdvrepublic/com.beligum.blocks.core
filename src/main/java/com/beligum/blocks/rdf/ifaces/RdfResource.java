@@ -71,14 +71,32 @@ public interface RdfResource extends JsonObject
      * Indicates whether this resource should be exposed to the end-users while administering pages.
      * Eg. added to public comboboxes and so on (eg. the ones in the UI on the client side)
      *
-     * Overview:
-     * - public ontologies are saved in the lookup maps of RdfFactory.
-     *   Also, inside those public ontologies, references to members of non-public ontologies will cause the non-public ontologies
+     * ----- Overview of rules -----
+     *
+     * Ontologies:
+     *
+     * - Only public ontologies are saved in the lookup maps of RdfFactory, but inside those public ontologies,
+     *   references to members of other non-public ontologies will cause those non-public ontologies
      *   to be added to the lookup maps as well (because otherwise they can't be resolved).
-     *   Also note that modularized ontologies (ontologies configured from multiple classes) will be made public as soon as one of those
+     * - Modularized ontologies (ontologies configured from multiple classes) will be made public as soon as one of the
      *   modules configures the ontology as public.
-     *   Also note that only classes/members of public ontologies will be added to the index schema.
-     * -
+     * - Only classes/members of public ontologies will be considered to be added to the schema of the index.
+     * - All properties of public ontologies need to be configured with a datatype and a widgettype
+     *
+     * Classes:
+     *
+     * - Only public classes are exposed to the client as possible values for the @typeof attribute.
+     * - Non-public classes are hidden from the user and for internal use only.
+     * - Public classes need to follow our own name formatting rules (eg. begin with a capital letter)
+     * - Public classes are automatically extended with all properties that are marked "default".
+     *
+     * Properties:
+     *
+     * - Only public properties are exposed to the client as possible types for the properties of the class they are requested for.
+     * - Non-public properties are hidden from the user and for internal use only.
+     * - Public properties need to follow our own name formatting rules (eg. begin with a lowercase letter)
+     * - All public properties of all public ontologies are automatically added to the default class (eg. Page)
+     *
      */
     @JsonIgnore
     boolean isPublic();

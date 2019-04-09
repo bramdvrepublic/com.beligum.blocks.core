@@ -95,14 +95,14 @@ public class Log extends RdfOntologyImpl
 
         rdfFactory.register(LogEntry)
                   .label(Entries.log_label_LogEntry)
-                  .properties(type,
-                              subject,
-                              title,
-                              description,
-                              createdAt,
-                              username,
-                              software,
-                              softwareVersion);
+                  .property(type)
+                  .property(subject)
+                  .property(title)
+                  .property(description)
+                  .property(createdAt)
+                  .property(username)
+                  .property(software)
+                  .property(softwareVersion);
     }
 
     //-----PUBLIC METHODS-----

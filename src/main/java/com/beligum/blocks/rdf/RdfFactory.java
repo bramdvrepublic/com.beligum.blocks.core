@@ -92,20 +92,16 @@ public class RdfFactory
     //a package-private set of all default members across all ontologies; will be inspected inside create()
     final Set<RdfOntologyMember> defaultMemberRegistry;
 
-    //this is the default (eg. Page) class in the system that should automatically receive all public members
-    final RdfClass defaultClass;
-
     //-----CONSTRUCTORS-----
     /**
      * This private constructor will function as a 'lock' that needs to be passed to the RDF initialization methods
      * and assures those can only be constructed from the assertInitialized() in this class.
      */
-    private RdfFactory(RdfOntologyImpl ontology, Map<RdfOntologyMember, AbstractRdfOntologyMember.Builder> registry, Set<RdfOntologyMember> defaultMemberRegistry, RdfClass defaultClass)
+    private RdfFactory(RdfOntologyImpl ontology, Map<RdfOntologyMember, AbstractRdfOntologyMember.Builder> registry, Set<RdfOntologyMember> defaultMemberRegistry)
     {
         this.ontology = ontology;
         this.registry = registry;
         this.defaultMemberRegistry = defaultMemberRegistry;
-        this.defaultClass = defaultClass;
     }
 
     //-----STATIC METHODS-----
@@ -163,7 +159,7 @@ public class RdfFactory
      * - if a match was found, the first one is returned
      * - if nothing was found, null is returned
      */
-    public static RdfResource lookup(String unsafeValue) throws IOException
+    public static RdfResource lookup(String unsafeValue)
     {
         RdfResource retVal = null;
 
@@ -190,7 +186,8 @@ public class RdfFactory
                     retVal = RdfFactory.lookup(uri);
                 }
                 else {
-                    throw new IOException("Encountered a value with a colon (:), but it didn't parse to a valid URI; " + value);
+                    //note: retVal will be null
+                    Logger.error("Encountered a value with a colon (:), but it didn't parse to a valid URI; " + value);
                 }
             }
             //if the value is no CURIE or URI, look it up as a member of the default ontology
@@ -204,14 +201,14 @@ public class RdfFactory
     /**
      * Same as lookup(String), but generic with a filter type (returns null when the type doesn't match)
      */
-    public static <T extends RdfResource> T lookup(String unsafeValue, Class<T> type) throws IOException
+    public static <T extends RdfResource> T lookup(String unsafeValue, Class<T> type)
     {
         return RdfFactory.lookupCast(RdfFactory.lookup(unsafeValue == null ? null : unsafeValue), type);
     }
     /**
      * Same as lookup(String), but the value is known to be a URI
      */
-    public static RdfResource lookup(URI uri) throws IOException
+    public static RdfResource lookup(URI uri)
     {
         RdfResource retVal = null;
 
@@ -223,7 +220,8 @@ public class RdfFactory
                     retVal = ontology.getMember(uri.getSchemeSpecificPart());
                 }
                 else {
-                    throw new IOException("Encountered a CURIE with an unknown ontology prefix '" + uri.getScheme() + "'; " + uri);
+                    //Note: retVal will be null
+                    Logger.error("Encountered a CURIE with an unknown ontology prefix '" + uri.getScheme() + "'; " + uri);
                 }
             }
             //here, the URI is a full-blown uri
@@ -252,99 +250,65 @@ public class RdfFactory
     /**
      * Same as lookup(URI), but generic with a filter type (returns null when the type doesn't match)
      */
-    public static <T extends RdfResource> T lookup(URI uri, Class<T> type) throws IOException
+    public static <T extends RdfResource> T lookup(URI uri, Class<T> type)
     {
         return RdfFactory.lookupCast(RdfFactory.lookup(uri), type);
     }
     /**
      * Same as lookup(String), but the value is known to be a IRI
      */
-    public static RdfResource lookup(IRI iri) throws IOException
+    public static RdfResource lookup(IRI iri)
     {
         return RdfFactory.lookup(iri == null ? null : iri.toString());
     }
     /**
      * Same as lookup(IRI), but generic with a filter type (returns null when the type doesn't match)
      */
-    public static <T extends RdfResource> T lookup(IRI iri, Class<T> type) throws IOException
+    public static <T extends RdfResource> T lookup(IRI iri, Class<T> type)
     {
         return RdfFactory.lookupCast(RdfFactory.lookup(iri), type);
     }
     /**
-     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfClass instance
-     * Note that this will also return RdfDatatype because it extends RdfClass.
+     * Shorthand for lookup(uri, RdfClass.class)
      */
-    public static RdfClass getClass(URI curie)
+    public static RdfClass getClass(URI uri)
     {
-        RdfOntologyMember member = getOntologyMember(curie);
-
-        return member != null && member instanceof RdfClass ? (RdfClass) member : null;
+        return lookup(uri, RdfClass.class);
     }
     /**
-     * Convenience method around getClass() with a curie string instead of URI
+     * Convenience method around getClass() with a URI string instead of URI
      */
-    public static RdfClass getClass(String curie)
+    public static RdfClass getClass(String uri)
     {
-        return getClass(URI.create(curie));
+        return getClass(URI.create(uri));
     }
     /**
-     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfDatatype instance
+     * Shorthand for lookup(uri, RdfDatatype.class)
      */
-    public static RdfDatatype getDatatype(URI curie)
+    public static RdfDatatype getDatatype(URI uri)
     {
-        RdfOntologyMember member = getOntologyMember(curie);
-
-        return member != null && member instanceof RdfDatatype ? (RdfDatatype) member : null;
+        return lookup(uri, RdfDatatype.class);
     }
     /**
-     * Convenience method around getDatatype() with a curie string instead of URI
+     * Convenience method around getDatatype() with a URI string instead of URI
      */
-    public static RdfDatatype getDatatype(String curie)
+    public static RdfDatatype getDatatype(String uri)
     {
-        return getDatatype(URI.create(curie));
+        return getDatatype(URI.create(uri));
     }
     /**
-     * Convenience method around getOntologyMember() that only returns non-null if the member is a RdfProperty instance
+     * Shorthand for lookup(uri, RdfProperty.class)
      */
-    public static RdfProperty getProperty(URI curie)
+    public static RdfProperty getProperty(URI uri)
     {
-        RdfOntologyMember member = getOntologyMember(curie);
-
-        return member != null && member instanceof RdfProperty ? (RdfProperty) member : null;
+        return lookup(uri, RdfProperty.class);
     }
     /**
      * Convenience method around getProperty() with a curie string instead of URI
      */
-    public static RdfProperty getProperty(String curie)
+    public static RdfProperty getProperty(String uri)
     {
-        return getProperty(URI.create(curie));
-    }
-    /**
-     * Convenience method around getOntologyMember() with a curie string instead of URI
-     */
-    public static RdfOntologyMember getOntologyMember(String curie)
-    {
-        return getOntologyMember(URI.create(curie));
-    }
-    /**
-     * Looks up the RDF ontology member in all known (public) ontologies.
-     * Returns null if nothing was found.
-     */
-    public static RdfOntologyMember getOntologyMember(URI curie)
-    {
-        //make sure we booted the static members at least once
-        assertInitialized();
-
-        RdfOntologyMember retVal = null;
-
-        RdfOntology ontology = getOntology(curie.getScheme());
-        if (ontology != null) {
-            //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
-            //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
-            retVal = ontology.getMember(curie.getSchemeSpecificPart());
-        }
-
-        return retVal;
+        return getProperty(URI.create(uri));
     }
     /**
      * Returns a reference to the local main ontology
@@ -423,7 +387,7 @@ public class RdfFactory
                                 // Passing an instance of RdfFactory (note the private constructor) to the create() method,
                                 // assures other developers won't be able to create RDF ontology instances manually
                                 // (it's a sort of key for a lock)
-                                RdfFactory rdfFactory = new RdfFactory(mainOntology, registry, defaultMemberRegistry, Settings.DEFAULT_CLASS);
+                                RdfFactory rdfFactory = new RdfFactory(mainOntology, registry, defaultMemberRegistry);
 
                                 //this call will initialize all member fields and add them to the registry if
                                 //the're not present yet.
@@ -435,14 +399,27 @@ public class RdfFactory
                         }
                     }
 
-                    // A little workaround to re-use the API to mark the label property as a default property so
-                    // we're sure it's added to all public classes (even though it can be configured dynamically from the settings)
-                    RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
+                    //These are a few workaround API calls that will allow us to re-use our RdfFactory to initialize some defaults
                     try {
-                        new RdfFactory((RdfOntologyImpl) labelProperty.getOntology(), registry, defaultMemberRegistry, Settings.DEFAULT_CLASS).register(labelProperty).isDefault(true);
+                        // Mark the label property as a default property so we're sure it's added to all public classes (even though it can be configured dynamically from the settings)
+                        RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
+                        new RdfFactory((RdfOntologyImpl) labelProperty.getOntology(), registry, defaultMemberRegistry)
+                                        .register(labelProperty)
+                                        .isPublic(true)
+                                        .isDefault(true);
+
+                        // At this point, all properties are iterated at least once, so the registry is initialized:
+                        // Our rules state all public properties of all public ontologies should be automatically added to the default class (eg. Page).
+                        RdfClassImpl.Builder defaultClassBuilder = new RdfFactory((RdfOntologyImpl) Settings.DEFAULT_CLASS.getOntology(), registry, defaultMemberRegistry)
+                                        .register(Settings.DEFAULT_CLASS);
+                        for (RdfOntologyMember p : registry.keySet()) {
+                            if (p.isProperty() && p.getOntology().isPublic() && p.isPublic()) {
+                                defaultClassBuilder.property((RdfProperty) p);
+                            }
+                        }
                     }
                     catch (Throwable e) {
-                        throw new RdfInstantiationException("Error while initializing RDF label property; " + labelProperty, e);
+                        throw new RdfInstantiationException("Error while initializing RDF defaults", e);
                     }
 
                     // Now loop through all members that were created during the scope of the last create()
@@ -454,15 +431,8 @@ public class RdfFactory
                         try {
                             //all members should still be proxies here
                             if (builder.rdfResource.isProxy()) {
-
-                                // now convert the proxy to a real member and attach it to the main ontology
+                                // convert the proxy to a real member (note that this will also attach it to its ontology)
                                 builder.create();
-
-                                // register the member into it's ontology, filling all the right mappings
-                                // note that this needs to happen after creation (proxy = false) because it will
-                                // call public methods on the resource and they are programmed to throw exceptions
-                                // when the instance is still a proxy
-                                builder.rdfResource.ontology._register(builder.rdfResource);
                             }
                             else {
                                 throw new RdfInitializationException("Encountered a non-proxy RDF ontology member, this shouldn't happen; " + builder);
@@ -513,7 +483,6 @@ public class RdfFactory
                     ontologyInstances.clear();
 
                     //Note: no need to wipe the allOntologies map; it will be garbage collected
-
                     initialized = true;
                 }
             }

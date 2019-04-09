@@ -79,7 +79,7 @@ public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
     public String toString()
     {
         return "SparqlConstructIndexEntry{" +
-               "id='" + id + '\'' +
+               "id='" + idField + '\'' +
                '}';
     }
 }

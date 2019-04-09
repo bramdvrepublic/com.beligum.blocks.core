@@ -245,7 +245,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
                 throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
             }
 
-            //convert the RdfOntologyMember set to URI[]
+            //convert the RdfOntologyMember set to an array of URI
             int i = 0;
             this.rdfResource.isSameAs = new URI[this.sameAs.size()];
             for (T m : this.sameAs) {
@@ -256,6 +256,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             //here, all checks passed and the proxy can be converted to a valid instance
             this.rdfResource.proxy = false;
+
+            // register the member into it's ontology, filling all the right mappings
+            // note that this needs to happen after creation (proxy = false) because it will
+            // call public methods on the resource and they are programmed to throw exceptions
+            // when the instance is still a proxy
+            this.rdfResource.ontology._register(this.rdfResource);
 
             //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
             return (T) this.rdfResource;

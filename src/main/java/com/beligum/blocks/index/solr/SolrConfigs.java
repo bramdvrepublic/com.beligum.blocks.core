@@ -2478,16 +2478,16 @@ public class SolrConfigs
     };
 
     //our internal fields
-    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.id.getName();
-    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedId.getName();
-    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.label.getName();
-    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.description.getName();
-    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.image.getName();
-    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentId.getName();
-    public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resource.getName();
-    public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOf.getName();
-    public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.language.getName();
-    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddress.getName();
+    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.idField.getName();
+    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedIdField.getName();
+    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.labelField.getName();
+    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.descriptionField.getName();
+    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.imageField.getName();
+    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentIdField.getName();
+    public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resourceField.getName();
+    public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOfField.getName();
+    public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.languageField.getName();
+    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddressField.getName();
 
     // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +

@@ -30,15 +30,14 @@ public abstract class AbstractIndexEntry implements IndexEntry
 
     //-----VARIABLES-----
     //Notes:
-    // - the underscore is to differentiate this field from the constant field definitions in IndexEntry
     // - the booleans is to detect unset fields while supporting null values
-    protected String _id;
+    protected String id;
     protected boolean hasId;
-    protected String _label;
+    protected String label;
     protected boolean hasLabel;
-    protected String _description;
+    protected String description;
     protected boolean hasDescription;
-    protected String _image;
+    protected String image;
     protected boolean hasImage;
 
     //-----CONSTRUCTORS-----
@@ -55,7 +54,7 @@ public abstract class AbstractIndexEntry implements IndexEntry
     @Override
     public String getId()
     {
-        return _id;
+        return id;
     }
     @Override
     public boolean hasId()
@@ -65,13 +64,13 @@ public abstract class AbstractIndexEntry implements IndexEntry
     @Override
     public void setId(String id)
     {
-        this._id = id;
+        this.id = id;
         this.hasId = true;
     }
     @Override
     public String getLabel()
     {
-        return _label;
+        return label;
     }
     @Override
     public boolean hasLabel()
@@ -81,13 +80,13 @@ public abstract class AbstractIndexEntry implements IndexEntry
     @Override
     public void setLabel(String label)
     {
-        this._label = label;
+        this.label = label;
         this.hasLabel = true;
     }
     @Override
     public String getDescription()
     {
-        return _description;
+        return description;
     }
     @Override
     public boolean hasDescription()
@@ -97,13 +96,13 @@ public abstract class AbstractIndexEntry implements IndexEntry
     @Override
     public void setDescription(String description)
     {
-        this._description = description;
+        this.description = description;
         this.hasDescription = true;
     }
     @Override
     public String getImage()
     {
-        return _image;
+        return image;
     }
     @Override
     public boolean hasImage()
@@ -113,7 +112,7 @@ public abstract class AbstractIndexEntry implements IndexEntry
     @Override
     public void setImage(String image)
     {
-        this._image = image;
+        this.image = image;
         this.hasImage = true;
     }
     @Override

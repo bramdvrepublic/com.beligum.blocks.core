@@ -362,7 +362,7 @@ public class PageRouter
                                                                             //we'll search for pages that have an alias (possibly/probably non-existent)
                                                                             .filter(Meta.sameAs, searchUri, IndexSearchRequest.FilterBoolean.OR)
                                                                             //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
-                                                                            .filter(PageIndexEntry.resource, searchUri, IndexSearchRequest.FilterBoolean.OR);
+                                                                            .filter(PageIndexEntry.resourceField, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
                 IndexSearchResult results = indexConn.search(searchRequestBuilder);
 
@@ -434,7 +434,7 @@ public class PageRouter
                         UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                         R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
                         //we'll search for a page that has the translated request uri as it's address
-                        searchRequest.filter(IndexEntry.id, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
+                        searchRequest.filter(IndexEntry.idField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
                     }
                 }
 
@@ -446,8 +446,8 @@ public class PageRouter
                     //since all resources should be the same, we take the first match
                     String resourceUri = ((PageIndexEntry) results.iterator().next()).getResource();
                     searchRequest = IndexSearchRequest.createFor(queryConnection);
-                    searchRequest.filter(PageIndexEntry.resource, resourceUri, IndexSearchRequest.FilterBoolean.AND);
-                    searchRequest.filter(PageIndexEntry.language, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
+                    searchRequest.filter(PageIndexEntry.resourceField, resourceUri, IndexSearchRequest.FilterBoolean.AND);
+                    searchRequest.filter(PageIndexEntry.languageField, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
                     results = queryConnection.search(searchRequest);
 
                     PageIndexEntry selectedEntry2 = PageIndexEntry.selectBestForLanguage(results, this.locale);

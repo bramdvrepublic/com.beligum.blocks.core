@@ -126,13 +126,9 @@ public class RdfTools
         URI retVal = null;
 
         if (fullUri != null) {
-            try {
-                RdfResource resource = RdfFactory.lookup(fullUri);
-                if (resource != null) {
-                    retVal = resource.getCurie();
-                }
-            }
-            catch (IOException e) {
+            RdfResource resource = RdfFactory.lookup(fullUri);
+            if (resource != null) {
+                retVal = resource.getCurie();
             }
         }
 
@@ -389,19 +385,15 @@ public class RdfTools
                         case 3:
                             //this will add support for curies or just the name of the class in the default ontology
                             String className = this.path.getName(1).toString();
-                            try {
-                                RdfResource resource = RdfFactory.lookup(className);
-                                if (resource != null && resource instanceof RdfClass) {
-                                    this.resourceClass = (RdfClass) resource;
-                                }
-                                else {
-                                    Logger.error("Error while translating the class of a resource uri (" + className + ") to a valid RDF member." +
-                                                 " Could translate it to a valid resource, but it doesn't seem to be a RdfClass, but a " +
-                                                 " This shouldn't happen; " + resource);
-                                }
+
+                            RdfResource resource = RdfFactory.lookup(className);
+                            if (resource != null && resource instanceof RdfClass) {
+                                this.resourceClass = (RdfClass) resource;
                             }
-                            catch (IOException e) {
-                                Logger.error("Error while translating the class of a resource uri (" + className + ") to a valid RDF member", e);
+                            else {
+                                Logger.error("Error while translating the class of a resource uri (" + className + ") to a valid RDF member." +
+                                             " Could translate it to a valid resource, but it doesn't seem to be a RdfClass, but a " +
+                                             " This shouldn't happen; " + resource);
                             }
 
                             this.resourceId = this.path.getName(2).toString();

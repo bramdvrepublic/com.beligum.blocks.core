@@ -36,7 +36,7 @@ public interface PageIndexEntry extends IndexEntry
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField parentId = new JsonField("parentId")
+    IndexEntryField parentIdField = new JsonField("parentId")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -54,7 +54,7 @@ public interface PageIndexEntry extends IndexEntry
             ((PageIndexEntry)indexEntry).setParentId(value);
         }
     };
-    IndexEntryField resource = new JsonField("resource")
+    IndexEntryField resourceField = new JsonField("resource")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -72,7 +72,7 @@ public interface PageIndexEntry extends IndexEntry
             ((PageIndexEntry)indexEntry).setResource(value);
         }
     };
-    IndexEntryField typeOf = new JsonField("typeOf")
+    IndexEntryField typeOfField = new JsonField("typeOf")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -90,7 +90,7 @@ public interface PageIndexEntry extends IndexEntry
             ((PageIndexEntry)indexEntry).setTypeOf(value);
         }
     };
-    IndexEntryField language = new JsonField("language")
+    IndexEntryField languageField = new JsonField("language")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -108,7 +108,7 @@ public interface PageIndexEntry extends IndexEntry
             ((PageIndexEntry)indexEntry).setLanguage(value);
         }
     };
-    IndexEntryField canonicalAddress = new JsonField("canonicalAddress")
+    IndexEntryField canonicalAddressField = new JsonField("canonicalAddress")
     {
         @Override
         public String getValue(IndexEntry indexEntry)

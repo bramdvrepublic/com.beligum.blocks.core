@@ -17,6 +17,7 @@
 package com.beligum.blocks.rdf.ontologies.endpoints;
 
 import com.beligum.base.server.R;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
@@ -25,7 +26,6 @@ import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontologies.local.WrappedPageResourceInfo;
@@ -74,8 +74,8 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         }
 
         IndexSearchRequest subQuery = IndexSearchRequest.createFor(mainIndexer);
-        subQuery.wildcard(IndexEntry.tokenisedId, query, IndexSearchRequest.FilterBoolean.OR);
-        subQuery.wildcard(IndexEntry.label, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.tokenisedIdField, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(IndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR);
         mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
 
         mainQuery.maxResults(maxResults);
@@ -141,8 +141,8 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
             PageIndexConnection indexConn = StorageFactory.getJsonQueryConnection();
             IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
                                                                                  //at least one of the id or resource should match (or both)
-                                                                                 .filter(IndexEntry.id, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                                 .filter(PageIndexEntry.resource, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                 .filter(IndexEntry.idField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                 .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
                                                                                  .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
         }
@@ -158,7 +158,10 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
     {
         if (this.cachedLabelProps == null) {
-            this.cachedLabelProps = new RdfProperty[] { RDFS.label, Local.title };
+            Set<RdfProperty> labels = new LinkedHashSet<>();
+            labels.add(RDFS.label);
+            labels.add(Settings.instance().getRdfLabelProperty());
+            this.cachedLabelProps = labels.toArray(new RdfProperty[0]);
         }
 
         return this.cachedLabelProps;

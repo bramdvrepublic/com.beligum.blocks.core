@@ -17,11 +17,11 @@
 package com.beligum.blocks.index.entries;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.Local;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -42,10 +42,7 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
 
     //-----VARIABLES-----
     private boolean initialized;
-    private IRI titleIri;
-    private IRI textIri;
-    private IRI descriptionIri;
-    private IRI imageIri;
+    private IRI labelIri;
 
     //-----CONSTRUCTORS-----
     //making it private and using the INSTANCE method instead to have control over the static initialization order...
@@ -64,9 +61,8 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
         //Need to do this here or we'll run into trouble while initializing static members
         this.assertInit();
 
-        String title = null;
-        String main = null;
         String label = null;
+        String main = null;
         String text = null;
         String description = null;
         URI image = null;
@@ -93,20 +89,12 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
         while (iter.hasNext()) {
             Statement stmt = iter.next();
 
-            if (stmt.getPredicate().equals(titleIri)) {
-                if (title == null) {
-                    title = stmt.getObject().stringValue();
+            if (stmt.getPredicate().equals(labelIri)) {
+                if (label == null) {
+                    label = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.debug("Double " + titleIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
-                }
-            }
-            else if (stmt.getPredicate().equals(textIri)) {
-                if (text == null) {
-                    text = stmt.getObject().stringValue();
-                }
-                else {
-                    Logger.debug("Double " + textIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double " + labelIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
             else if (stmt.getPredicate().equals(mainIri)) {
@@ -117,20 +105,20 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
                     Logger.debug("Double " + mainIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
                 }
             }
-            else if (stmt.getPredicate().equals(descriptionIri)) {
-                if (description == null) {
-                    description = stmt.getObject().stringValue();
+            else if (stmt.getPredicate().getLocalName().equalsIgnoreCase("text")) {
+                if (text == null) {
+                    text = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.debug("Double " + descriptionIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double text predicate entry found for " + stmt.getSubject() + ", only using first; " + stmt.getPredicate());
                 }
             }
-            else if (stmt.getPredicate().equals(imageIri)) {
+            else if (stmt.getPredicate().getLocalName().equalsIgnoreCase("image")) {
                 if (image == null) {
                     image = URI.create(stmt.getObject().stringValue());
                 }
                 else {
-                    Logger.debug("Double " + imageIri + " predicate entry found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double image predicate entry found for " + stmt.getSubject() + ", only using first; " + stmt.getPredicate());
                 }
             }
 
@@ -139,7 +127,7 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
                     label = stmt.getObject().stringValue();
                 }
                 else {
-                    Logger.debug("Double label candidate found for " + stmt.getSubject() + "; only using first.");
+                    Logger.debug("Double label candidate found for " + stmt.getSubject() + "; only using first; " + stmt.getPredicate());
                 }
             }
         }
@@ -149,17 +137,12 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
             description = text;
         }
 
-        //most of the time, for sub-resources, the title will be empty, so let's check if we have a main property value instead...
-        if (StringUtils.isEmpty(title)) {
-            title = main;
+        //most of the time, for sub-resources, the label will be empty (update: is it?), so let's check if we have a main property value instead...
+        if (StringUtils.isEmpty(label)) {
+            label = main;
         }
 
-        //this is a last-option check and a possibility to link the main property, label candidate and title concepts together
-        if (StringUtils.isEmpty(title)) {
-            title = label;
-        }
-
-        return new DefaultSummarizedResource(title, description, image);
+        return new DefaultSummarizedResource(label, description, image);
     }
 
     //-----PROTECTED METHODS-----
@@ -168,10 +151,7 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
     private void assertInit()
     {
         if (!this.initialized) {
-            this.titleIri = SimpleValueFactory.getInstance().createIRI(Local.title.getFullName().toString());
-            this.textIri = SimpleValueFactory.getInstance().createIRI(Local.text.getFullName().toString());
-            this.descriptionIri = SimpleValueFactory.getInstance().createIRI(Local.description.getFullName().toString());
-            this.imageIri = SimpleValueFactory.getInstance().createIRI(Local.image.getFullName().toString());
+            this.labelIri = SimpleValueFactory.getInstance().createIRI(Settings.instance().getRdfLabelProperty().getFullName().toString());
 
             this.initialized = true;
         }

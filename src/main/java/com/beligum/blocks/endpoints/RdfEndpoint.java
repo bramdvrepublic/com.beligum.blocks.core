@@ -18,16 +18,15 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.RdfClassImpl;
-import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
-import gen.com.beligum.blocks.core.messages.blocks.core;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
@@ -38,7 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
+import java.util.Collections;
 
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
@@ -50,16 +49,16 @@ public class RdfEndpoint
 {
     //-----CONSTANTS-----
     private static final RdfQueryEndpoint SEARCH_ALL_ENDPOINT = new LocalQueryEndpoint();
-//    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
-//    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
-//    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
-//                                                                Local.INSTANCE,
-//                                                                core.Entries.rdfClassAllTitle,
-//                                                                core.Entries.rdfClassAllLabel,
-//                                                                new URI[] {},
-//                                                                false,
-//                                                                new LocalQueryEndpoint(),
-//                                                                null);
+    //    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
+    //    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
+    //    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
+    //                                                                Local.INSTANCE,
+    //                                                                core.Entries.rdfClassAllTitle,
+    //                                                                core.Entries.rdfClassAllLabel,
+    //                                                                new URI[] {},
+    //                                                                false,
+    //                                                                new LocalQueryEndpoint(),
+    //                                                                null);
 
     //-----VARIABLES-----
 
@@ -72,6 +71,7 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_CLASS_READ_ALL_PERM)
     public Response getClasses() throws IOException
     {
+        //TODO maybe we should think about specifying the ontology to get the classes of?
         return Response.ok(RdfFactory.getLocalOntology().getPublicClasses()).build();
     }
 
@@ -86,18 +86,23 @@ public class RdfEndpoint
         if (resourceTypeCurie != null) {
             RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
             if (rdfClass != null) {
-                Iterable<RdfProperty> classProps = rdfClass.getProperties();
-                //note that the javadoc of getProperties() says that we returns all properties if this returns null (which will be true later on),
-                // but if it returns the empty array, no properties should be returned.
-                if (classProps != null) {
-                    retVal = classProps;
-                }
+                retVal = Iterables.filter(rdfClass.getProperties(), new Predicate<RdfProperty>()
+                {
+                    @Override
+                    public boolean apply(RdfProperty property)
+                    {
+                        return property.isPublic();
+                    }
+                });
+            }
+            else {
+                Logger.error("Encountered unknown RDF class; " + resourceTypeCurie);
             }
         }
 
-        //if nothing happened, we just return the intersecting properties of all public classes
+        //don't return null
         if (retVal == null) {
-            retVal = RdfFactory.getLocalOntology().getPublicClassProperties();
+            retVal = Collections.emptySet();
         }
 
         return Response.ok(retVal).build();
@@ -107,7 +112,7 @@ public class RdfEndpoint
     @Path("/properties/main")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
-    public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
+    public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
         RdfProperty retVal = null;
 

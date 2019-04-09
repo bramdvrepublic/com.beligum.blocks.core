@@ -95,7 +95,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         //make sure this happens before calling the retVal.setFilterQueries() below
         if (this.getLanguage() != null) {
-            this.filter(PageIndexEntry.language, this.getLanguage().getLanguage(), FilterBoolean.AND);
+            this.filter(PageIndexEntry.languageField, this.getLanguage().getLanguage(), FilterBoolean.AND);
         }
 
         if (this.queryBuilder.length() > 0) {

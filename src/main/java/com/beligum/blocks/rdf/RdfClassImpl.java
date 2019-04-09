@@ -104,7 +104,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         this.assertNoProxy();
 
         //this does nothing more than restrict the member values to the interface
-        return Iterables.transform(this._getProperties(),
+        return Iterables.transform(this.getPropertiesWithoutProxyCheck(),
                                    new Function<RdfPropertyImpl, RdfProperty>()
                                    {
                                        @Override
@@ -120,7 +120,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     {
         this.assertNoProxy();
 
-        return _hasProperty(property);
+        return hasPropertyWithoutProxyCheck(property);
     }
     @Override
     public RdfQueryEndpoint getEndpoint()
@@ -150,13 +150,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     /**
      * The same as getProperties(), but without the proxy check
      */
-    private Iterable<RdfPropertyImpl> _getProperties()
+    private Iterable<RdfPropertyImpl> getPropertiesWithoutProxyCheck()
     {
         //by constructing it this way, we can keep using the references to the (proxy) superclasses
         //until this method is really called.
         Iterable<RdfPropertyImpl> retVal = this.properties;
         for (RdfClassImpl c : this.superClasses) {
-            retVal = Iterables.concat(retVal, c._getProperties());
+            retVal = Iterables.concat(retVal, c.getPropertiesWithoutProxyCheck());
         }
 
         return retVal;
@@ -164,9 +164,9 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     /**
      * The same as hasProperty(), but without the proxy check
      */
-    private boolean _hasProperty(RdfProperty property)
+    private boolean hasPropertyWithoutProxyCheck(RdfProperty property)
     {
-        return Iterables.tryFind(this._getProperties(), Predicates.equalTo(property)).isPresent();
+        return Iterables.tryFind(this.getPropertiesWithoutProxyCheck(), Predicates.equalTo(property)).isPresent();
     }
 
     //-----INNER CLASSES-----
@@ -200,13 +200,17 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder property(RdfProperty property) throws RdfInitializationException
-        {
-            return this.addProperties(false, property);
-        }
         public Builder properties(RdfProperty... properties) throws RdfInitializationException
         {
-            return this.addProperties(false, properties);
+            for (RdfProperty p : properties) {
+                return this.property(p);
+            }
+
+            return this;
+        }
+        public Builder property(RdfProperty property) throws RdfInitializationException
+        {
+            return this.addProperty(property, false);
         }
         public Builder endpoint(RdfQueryEndpoint endpoint)
         {
@@ -236,19 +240,23 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         RdfClass create() throws RdfInitializationException
         {
             //enforce a naming policy on the classes of our local public ontologies
-            if (this.rdfResource.ontology.isPublic && Character.isLowerCase(this.rdfResource.name.charAt(0))) {
-                throw new RdfInitializationException("Encountered RDF class with lowercase name; our policy enforces all RDF classes should start with an uppercase letter; " + this);
-            }
+            if (this.rdfResource.ontology.isPublic) {
+                if (Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                    throw new RdfInitializationException("Encountered RDF class with lowercase name; our policy enforces all RDF classes should start with an uppercase letter; " + this);
+                }
+                else {
+                    //every public class (in a public ontology) should at least have a few standard properties, so auto-add them if they're missing
+                    if (this.rdfResource.isPublic) {
 
-            //every public class should at least have a few standard properties, so auto-add them if they're missing
-            if (this.rdfResource.isPublic) {
-
-                // If this class is public, add all default properties to it
-                // Note that the default label property and the RDF.type property are
-                // marked default automatically before calling this
-                for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
-                    if (p.isProperty()) {
-                        this.addProperties(true, (RdfProperty) p);
+                        // If this class is public, add all default properties to it
+                        // Note that the default label property and the RDF.type property are
+                        // marked default automatically before calling this
+                        for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
+                            if (p.isProperty()) {
+                                //skip the overwrite check so the addition doesn't throw an exception
+                                this.addProperty((RdfProperty) p, true);
+                            }
+                        }
                     }
                 }
             }
@@ -266,18 +274,21 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             return super.create();
         }
 
-        private Builder addProperties(boolean skipCheck, RdfProperty... properties) throws RdfInitializationException
+        private Builder addProperty(RdfProperty property, boolean skipOverwriteCheck) throws RdfInitializationException
         {
-            for (RdfProperty p : properties) {
+            RdfPropertyImpl pImpl = (RdfPropertyImpl) property;
 
-                RdfPropertyImpl pImpl = (RdfPropertyImpl) p;
-
-                if (!skipCheck && this.rdfResource.properties.contains(pImpl)) {
-                    throw new RdfInitializationException("Can't add properties " + p + " to class " + this + " because it would overwrite and existing properties, can't continue.");
+            // we never overwrite existing values, the check only decides if we throw an exception or not
+            if (this.rdfResource.properties.contains(pImpl)) {
+                if (skipOverwriteCheck) {
+                    //NOOP don't overwrite (note that this is actually the behavior of .add() but this way it's more clear)
                 }
                 else {
-                    this.rdfResource.properties.add(pImpl);
+                    throw new RdfInitializationException("Can't add property " + property + " to class " + this + " because it would overwrite and existing properties, can't continue.");
                 }
+            }
+            else {
+                this.rdfResource.properties.add(pImpl);
             }
 
             return this;

@@ -28,7 +28,7 @@ public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField id = new JsonField("id")
+    IndexEntryField idField = new JsonField("id")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -46,7 +46,7 @@ public interface IndexEntry extends Serializable
             indexEntry.setId(value);
         }
     };
-    IndexEntryField tokenisedId = new JsonField("tokenisedId")
+    IndexEntryField tokenisedIdField = new JsonField("tokenisedId")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -65,7 +65,7 @@ public interface IndexEntry extends Serializable
             //NOOP this is a virtual field, it's value is set with setId()
         }
     };
-    IndexEntryField label = new JsonField("label")
+    IndexEntryField labelField = new JsonField("label")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -83,7 +83,7 @@ public interface IndexEntry extends Serializable
             indexEntry.setLabel(value);
         }
     };
-    IndexEntryField description = new JsonField("description")
+    IndexEntryField descriptionField = new JsonField("description")
     {
         @Override
         public String getValue(IndexEntry indexEntry)
@@ -101,7 +101,7 @@ public interface IndexEntry extends Serializable
             indexEntry.setDescription(value);
         }
     };
-    IndexEntryField image = new JsonField("image")
+    IndexEntryField imageField = new JsonField("image")
     {
         @Override
         public String getValue(IndexEntry indexEntry)

@@ -21,7 +21,7 @@ import java.util.Locale;
 
 /**
  * A general wrapper class for a resource that is returned from a JSON-endpoint, to be used (among others)
- * in the javascript whilebuilding the fact entries (and it's autocomplete functionality)
+ * in the javascript while building the fact entries (and it's autocomplete functionality)
  *
  * Created by bram on 3/12/16.
  */

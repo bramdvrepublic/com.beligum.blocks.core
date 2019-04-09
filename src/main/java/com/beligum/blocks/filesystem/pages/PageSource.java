@@ -31,7 +31,6 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;

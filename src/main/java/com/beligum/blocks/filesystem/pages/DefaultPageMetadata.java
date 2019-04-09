@@ -4,7 +4,6 @@ import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
-import com.beligum.blocks.rdf.ontologies.Local;
 import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;

@@ -33,7 +33,7 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
-import com.beligum.blocks.rdf.ontologies.Local;
+import com.beligum.blocks.rdf.ontologies.Main;
 import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.security.AclImpl;
 import com.beligum.blocks.security.ifaces.Acl;
@@ -43,7 +43,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.TransactionManager;
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -64,7 +63,7 @@ public class Settings
     public static final String DEFAULT_BLOCKS_ONTOLOGY_PREFIX = "blocks";
 
     //centralized constant for the default entity type when nothing is set
-    public static final RdfClass DEFAULT_CLASS = Local.Page;
+    public static final RdfClass DEFAULT_CLASS = Main.Page;
 
     private static final String COMMON_PREFIX = "blocks.core";
     private static final String PAGES_PREFIX = COMMON_PREFIX + ".pages";
@@ -460,7 +459,7 @@ public class Settings
                         Logger.error("A default RDF label property was configured, but it doesn't seem to be a property; " + propertyName);
                     }
                 }
-                catch (IOException e) {
+                catch (Exception e) {
                     Logger.error("Error happened while looking up the default RDF label property, " + propertyName, e);
                 }
             }

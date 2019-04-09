@@ -303,7 +303,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         // see the notes in the delete() method of the triple store index connection)
         PageIndexConnection queryConnection = StorageFactory.getJsonQueryConnection();
         IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
-        searchRequest.filter(PageIndexEntry.resource, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
+        searchRequest.filter(PageIndexEntry.resourceField, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
         searchRequest.maxResults(siteLanguages.size());
         IndexSearchResult searchResult = queryConnection.search(searchRequest);
         for (IndexEntry entry : searchResult) {

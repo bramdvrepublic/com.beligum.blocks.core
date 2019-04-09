@@ -31,6 +31,10 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     {
         super(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
+    protected SolrPageIndexEntry(String json) throws IOException
+    {
+        super(json);
+    }
     /**
      * This is the only public entry point all the rest are recursive calls
      */
@@ -38,23 +42,19 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     {
         super(page);
     }
-    protected SolrPageIndexEntry(String json) throws IOException
-    {
-        super(json);
-    }
 
     //-----PUBLIC METHODS-----
+
+    //-----PROTECTED METHODS-----
     /**
      * Overridden so this method returns an instance of SolrPageIndexEntry instead of JsonPageIndexEntry
      * Note that all other create() method (in the superclass) forward their calls here so we don't need to override the others.
      */
     @Override
-    public JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         return new SolrPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
     }
-
-    //-----PROTECTED METHODS-----
     @Override
     protected JsonField createField(RdfProperty property) throws IOException
     {

@@ -38,6 +38,7 @@ import java.net.URI;
 //@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
 public interface RdfClass extends RdfOntologyMember
 {
+
     /**
      * A collection of all superclasses of this class. Note that RDF classes can extend multiple super classes.
      * This class inherits all properties of all registered superclasses.

@@ -31,16 +31,16 @@ import java.util.Locale;
 public class SimplePageIndexEntry extends AbstractPageIndexEntry
 {
     //-----CONSTANTS-----
-    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(id,
-                                                                                 tokenisedId,
-                                                                                 label,
-                                                                                 description,
-                                                                                 image,
-                                                                                 parentId,
-                                                                                 resource,
-                                                                                 typeOf,
-                                                                                 language,
-                                                                                 canonicalAddress
+    private static Collection<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(idField,
+                                                                                 tokenisedIdField,
+                                                                                 labelField,
+                                                                                 descriptionField,
+                                                                                 imageField,
+                                                                                 parentIdField,
+                                                                                 resourceField,
+                                                                                 typeOfField,
+                                                                                 languageField,
+                                                                                 canonicalAddressField
     );
 
     //-----VARIABLES-----
@@ -81,11 +81,11 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry
     public String toString()
     {
         return "PageIndexEntry{" +
-               "id='" + id + '\'' +
-               ", title='" + label + '\'' +
-               ", language='" + language + '\'' +
-               ", resource='" + resource + '\'' +
-               ", parentId='" + parentId + '\'' +
+               "id='" + idField + '\'' +
+               ", title='" + labelField + '\'' +
+               ", language='" + languageField + '\'' +
+               ", resource='" + resourceField + '\'' +
+               ", parentId='" + parentIdField + '\'' +
                '}';
     }
 }

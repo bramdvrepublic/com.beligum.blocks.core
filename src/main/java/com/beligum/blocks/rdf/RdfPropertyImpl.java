@@ -121,16 +121,19 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         @Override
         RdfProperty create() throws RdfInitializationException
         {
-            //enforce a naming policy on the properties of our local public ontologies
-            if (this.rdfResource.ontology.isPublic && !Character.isLowerCase(this.rdfResource.name.charAt(0))) {
-                throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
-            }
-
-            //enforces the properties in our local public ontologies to have valid datatypes
             if (this.rdfResource.ontology.isPublic) {
 
+                //enforce a naming policy on the properties of our local public ontologies
+                if (!Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                    throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
+                }
+
+                //enforces the properties in our local public ontologies to have valid datatypes
                 if (this.rdfResource.dataType == null) {
-                    throw new RdfInitializationException("Datatype of RDF property " + this.rdfResource.getName() + " (" + this.rdfResource.getFullName() + ") inside a public ontology is null. This is not allowed; " + this);
+                    throw new RdfInitializationException("Datatype of RDF property " + this.rdfResource.getName() + " inside a public ontology is null. This is not allowed; " + this);
+                }
+                else if (this.rdfResource.widgetType == null) {
+                    throw new RdfInitializationException("Widget type of RDF property " + this.rdfResource.getName() + " inside a public ontology is null. This is not allowed; " + this);
                 }
                 else {
                     //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
@@ -139,8 +142,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                         || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
                         throw new RdfInitializationException("Encountered RDF property with a datatype-widgetType mismatch; " + this);
                     }
-
-
                 }
             }
 

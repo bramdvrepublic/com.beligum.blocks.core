@@ -181,7 +181,9 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
     void _register(AbstractRdfOntologyMember member) throws RdfInitializationException
     {
         //always make sure the ontology in the member points to this instance
-        member.ontology = this;
+        if (!member.ontology.equals(this)) {
+            throw new RdfInitializationException("Encountered a registration of an ontology member that doesn't belong to this ontology; " + member);
+        }
 
         //first, make sure to register the resource into the set of all members
         this.allMembers.put(member.getName(), member);

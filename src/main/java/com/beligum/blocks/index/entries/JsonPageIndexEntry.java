@@ -48,16 +48,16 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      * - getInternalFields()
      * - initializeInternalFields()
      */
-    private static Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(id,
-                                                                          tokenisedId,
-                                                                          label,
-                                                                          description,
-                                                                          image,
-                                                                          parentId,
-                                                                          resource,
-                                                                          typeOf,
-                                                                          language,
-                                                                          canonicalAddress);
+    private static Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(idField,
+                                                                          tokenisedIdField,
+                                                                          labelField,
+                                                                          descriptionField,
+                                                                          imageField,
+                                                                          parentIdField,
+                                                                          resourceField,
+                                                                          typeOfField,
+                                                                          languageField,
+                                                                          canonicalAddressField);
 
     //-----VARIABLES-----
     private ObjectMapper jsonMapper;
@@ -89,6 +89,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         super(id);
 
         this.jsonMapper = Json.getObjectMapper();
+
         this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, parent, rdfModel);
     }
     protected JsonPageIndexEntry(String json) throws IOException
@@ -109,15 +110,6 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PUBLIC METHODS-----
-    public JsonPageIndexEntry create(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
-    {
-        return this.create(PageIndexEntry.generateId(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
-    }
-    public JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent)
-                    throws IOException
-    {
-        return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
-    }
     @Override
     public Iterable<IndexEntryField> getInternalFields()
     {
@@ -163,6 +155,15 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
+    protected JsonPageIndexEntry create(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    {
+        return this.create(PageIndexEntry.generateId(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+    }
+    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent)
+                    throws IOException
+    {
+        return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+    }
     protected JsonField createField(RdfProperty property) throws IOException
     {
         return new JsonField(property);
@@ -170,7 +171,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
     //-----PRIVATE METHODS-----
     /**
-     * Iterate the entire RDF model and search for the root resource uri as the base RDF submodel to create
+     * Iterate the entire RDF model and search for the root resource uri as the base RDF model to create
      * an JSON node from. Then, iterate all other RDF to see if we can add them as subnodes to the root node.
      */
     private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, JsonPageIndexEntry parent, Model rdfModel) throws IOException
@@ -211,7 +212,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                 //put the value in the json object
                 this.addProperty(this.jsonNode, value, predicate, language);
 
-                // If the value is a resource, store it, we'll use it later to hook subobjects to their parents
+                // If the value is a resource, store it, we'll use it later to hook sub-objects to their parents
                 // This means the value of this triple is possibly a reference to (the subject-URI of) another object
                 // in this model (that might come later) .
                 if (value instanceof IRI || predicate.getDataType().equals(XSD.anyURI)) {
@@ -236,8 +237,10 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                     //note: this create() is a means to have polymophic constructor (it creates the same new class instance as this instance)
                     //also note that the language of sub objects is always the same as the language of the parent
                     Model subModel = rdfModel.filter(subjectIri, null, null);
+
                     //note: the canonical address of a subresource is just the relative counterpart of its resource uri, right?
                     JsonPageIndexEntry subEntry = this.create(absolutePublicPageUri, subjectUri, StringFunctions.getRightOfDomain(subjectUri), language, subModel, this);
+
                     subObjects.put(RdfTools.iriToUri((IRI) subjectIri), subEntry);
                 }
             }
