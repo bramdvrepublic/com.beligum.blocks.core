@@ -1,6 +1,6 @@
 package com.beligum.blocks.index.entries;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Value;
@@ -33,17 +33,17 @@ public class JsonField implements IndexEntryField
         return name;
     }
     @Override
-    public String getValue(IndexEntry indexEntry)
+    public String getValue(ResourceIndexEntry indexEntry)
     {
         return null;
     }
     @Override
-    public boolean hasValue(IndexEntry indexEntry)
+    public boolean hasValue(ResourceIndexEntry indexEntry)
     {
         return false;
     }
     @Override
-    public void setValue(IndexEntry indexEntry, String value)
+    public void setValue(ResourceIndexEntry indexEntry, String value)
     {
         //NOOP, override
     }
@@ -69,7 +69,7 @@ public class JsonField implements IndexEntryField
     @Override
     public String toString()
     {
-        return name;
+        return this.getName();
     }
     @Override
     public boolean equals(Object o)

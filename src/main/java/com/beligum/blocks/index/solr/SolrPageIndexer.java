@@ -373,7 +373,7 @@ public class SolrPageIndexer implements PageIndexer
             }
         }
 
-        for (IndexEntryField field : new SolrPageIndexEntry().getInternalFields()) {
+        for (IndexEntryField field : SolrPageIndexEntry.INTERNAL_FIELDS) {
             // This is just a failsafe test to see if all internal fields are present in the Solr index.
             // We're not creating them if they are missing (this is static enough to be implemented in SolrConfigs),
             // we only throw an exception to tell the user something's wrong.

@@ -20,7 +20,8 @@ import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
@@ -38,7 +39,7 @@ import java.util.*;
 /**
  * Created by bram on 3/14/16.
  */
-public class EnumQueryEndpoint implements RdfQueryEndpoint
+public class EnumQueryEndpoint implements RdfEndpoint
 {
     //-----CONSTANTS-----
 
@@ -81,9 +82,9 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * Note that, for now, this method ignores queryType and options parameters
      */
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
+    public Collection<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
-        Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
+        Collection<ResourceProxy> retVal = new ArrayList<>();
 
         if (this.resourceType.equals(resourceType)) {
             //Note: two little stunts to modify the returned language of the title, based on the passed-in language in this method
@@ -109,7 +110,7 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
      * pass a lookup for a resourceId: UriBuilder.fromPath(rawValue).build()
      */
     @Override
-    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
         //Note: the getPath() converts special URI characters back to their native form
         return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);

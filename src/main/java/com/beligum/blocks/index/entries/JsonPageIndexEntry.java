@@ -4,15 +4,11 @@ import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
-import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
-import com.beligum.blocks.index.ifaces.IndexEntryField;
-import com.beligum.blocks.index.ifaces.PageIndexEntry;
-import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
@@ -48,16 +44,15 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      * - getInternalFields()
      * - initializeInternalFields()
      */
-    private static Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(idField,
-                                                                          tokenisedIdField,
+    public static Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(uriField,
+                                                                          tokenisedUriField,
                                                                           labelField,
                                                                           descriptionField,
                                                                           imageField,
                                                                           parentIdField,
                                                                           resourceField,
                                                                           typeOfField,
-                                                                          languageField,
-                                                                          canonicalAddressField);
+                                                                          languageField);
 
     //-----VARIABLES-----
     private ObjectMapper jsonMapper;
@@ -74,7 +69,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
     protected JsonPageIndexEntry(Page page) throws IOException
     {
-        this(PageIndexEntry.generateId(page), page.getPublicAbsoluteAddress(), page.getAbsoluteResourceAddress(), page.getCanonicalAddress(), page.getLanguage(), page.readRdfModel(), null);
+        this(PageIndexEntry.generateUri(page), page.getPublicAbsoluteAddress(), page.getAbsoluteResourceAddress(), page.getLanguage(), page.readRdfModel(), null);
     }
     /**
      * To build a JSON node from an RDF model, we also need a root resource URI
@@ -84,13 +79,13 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      * This is because, eg. for pages, we use the public page address as it's id, instead
      * of the resource id (because it might not be unique since multiple pages can be describing it)
      */
-    protected JsonPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected JsonPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         super(id);
 
         this.jsonMapper = Json.getObjectMapper();
 
-        this.parse(absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, parent, rdfModel);
+        this.parse(absolutePublicPageUri, absoluteRootResourceUri, language, parent, rdfModel);
     }
     protected JsonPageIndexEntry(String json) throws IOException
     {
@@ -110,11 +105,6 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public Iterable<IndexEntryField> getInternalFields()
-    {
-        return INTERNAL_FIELDS;
-    }
     @Override
     public String toString()
     {
@@ -155,14 +145,18 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PROTECTED METHODS-----
-    protected JsonPageIndexEntry create(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected Iterable<IndexEntryField> getInternalFields()
     {
-        return this.create(PageIndexEntry.generateId(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+        return INTERNAL_FIELDS;
     }
-    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent)
+    protected JsonPageIndexEntry create(URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    {
+        return this.create(PageIndexEntry.generateUri(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
+    }
+    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent)
                     throws IOException
     {
-        return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+        return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
     protected JsonField createField(RdfProperty property) throws IOException
     {
@@ -174,7 +168,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      * Iterate the entire RDF model and search for the root resource uri as the base RDF model to create
      * an JSON node from. Then, iterate all other RDF to see if we can add them as subnodes to the root node.
      */
-    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, JsonPageIndexEntry parent, Model rdfModel) throws IOException
+    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, JsonPageIndexEntry parent, Model rdfModel) throws IOException
     {
         //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, JsonPageIndexEntry> subObjects = new LinkedHashMap<>();
@@ -197,7 +191,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         }
 
         //create a new object and fill it with the first internal fields like id, etc
-        this.jsonNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), absoluteRootResourceUri, canonicalAddress, language, type, parent, rootModel);
+        this.jsonNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), absoluteRootResourceUri, language, type, parent, rootModel);
 
         //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
         subObjects.put(absoluteRootResourceUri, this);
@@ -238,8 +232,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                     //also note that the language of sub objects is always the same as the language of the parent
                     Model subModel = rdfModel.filter(subjectIri, null, null);
 
-                    //note: the canonical address of a subresource is just the relative counterpart of its resource uri, right?
-                    JsonPageIndexEntry subEntry = this.create(absolutePublicPageUri, subjectUri, StringFunctions.getRightOfDomain(subjectUri), language, subModel, this);
+                    JsonPageIndexEntry subEntry = this.create(absolutePublicPageUri, subjectUri, language, subModel, this);
 
                     subObjects.put(RdfTools.iriToUri((IRI) subjectIri), subEntry);
                 }
@@ -312,18 +305,16 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             //NOOP: no need to go down, the node is not a container (object or array)
         }
     }
-    private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, URI canonicalAddress, Locale language, RdfClass type,
-                                                JsonPageIndexEntry parent, Model rootModel) throws IOException
+    private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, Locale language, RdfClass type, JsonPageIndexEntry parent, Model rootModel) throws IOException
     {
         this.setParentId(PageIndexEntry.generateParentId(parent));
         this.setResource(PageIndexEntry.generateResource(rootResourceUri));
         this.setTypeOf(PageIndexEntry.generateTypeOf(type));
         this.setLanguage(PageIndexEntry.generateLanguage(language));
-        this.setCanonicalAddress(PageIndexEntry.generateCanonicalAddress(canonicalAddress));
 
         ResourceSummarizer summarizer = type.getSummarizer();
         if (summarizer != null) {
-            ResourceSummarizer.SummarizedResource summary = summarizer.summarize(type, rootModel);
+            ResourceSummary summary = summarizer.summarize(type, rootModel);
             if (summary != null) {
                 this.setLabel(summary.getLabel());
                 this.setDescription(summary.getDescription());
@@ -337,6 +328,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             throw new IOException("Encountered an RDF class with a null summarizer; this shouldn't happen; " + type);
         }
 
+        // now iterate all internal fields of this object and copy them to the Json node
         for (IndexEntryField e : INTERNAL_FIELDS) {
             if (e.hasValue(this)) {
                 object.put(e.getName(), e.getValue(this));
@@ -411,7 +403,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 
             RdfClass dataType = property.getDataType();
-            RdfQueryEndpoint endpoint = dataType.getEndpoint();
+            RdfEndpoint endpoint = dataType.getEndpoint();
             // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
             if (endpoint != null) {
 
@@ -423,7 +415,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
                     debugValue = UriBuilder.fromUri(debugValue).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
                 }
 
-                ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language);
+                ResourceProxy resourceValue = endpoint.getResource(dataType, uriValue, language);
                 if (resourceValue != null) {
                     //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
                     try {

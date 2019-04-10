@@ -19,7 +19,7 @@ package com.beligum.blocks.index.ifaces;
 /**
  * Created by bram on 6/3/17.
  */
-public interface IndexSearchResult extends Iterable<IndexEntry>
+public interface IndexSearchResult extends Iterable<ResourceIndexEntry>
 {
     /**
      * @return true if the size > 0
@@ -59,5 +59,5 @@ public interface IndexSearchResult extends Iterable<IndexEntry>
     /**
      * @return the same set of results, but sorted alphabetically on the title of the entries.
      */
-    Iterable<IndexEntry> getAlphaSortedResults();
+    Iterable<ResourceIndexEntry> getAlphaSortedResults();
 }

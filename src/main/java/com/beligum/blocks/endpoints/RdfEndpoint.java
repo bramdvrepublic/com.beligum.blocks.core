@@ -18,9 +18,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -48,7 +46,7 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 public class RdfEndpoint
 {
     //-----CONSTANTS-----
-    private static final RdfQueryEndpoint SEARCH_ALL_ENDPOINT = new LocalQueryEndpoint();
+    private static final com.beligum.blocks.rdf.ifaces.RdfEndpoint SEARCH_ALL_ENDPOINT = new LocalQueryEndpoint();
     //    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
     //    //--> this was changed to use the local vocabulary instead because we don't support anonymous classes anymore...
     //    public static final RdfClass ALL_CLASSES = new RdfClassImpl("All",
@@ -135,11 +133,11 @@ public class RdfEndpoint
     public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults,
                                  @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
     {
-        Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
+        Collection<ResourceProxy> retVal = new ArrayList<>();
 
         //support a search-all-types-query when this is empty
         RdfClass resourceClassFilter = null;
-        RdfQueryEndpoint endpoint = null;
+        com.beligum.blocks.rdf.ifaces.RdfEndpoint endpoint = null;
         if (resourceTypeCurie != null && !StringUtils.isEmpty(resourceTypeCurie.toString())) {
             resourceClassFilter = RdfFactory.getClass(resourceTypeCurie);
             if (resourceClassFilter != null) {
@@ -151,9 +149,9 @@ public class RdfEndpoint
         }
 
         if (endpoint != null) {
-            RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
+            com.beligum.blocks.rdf.ifaces.RdfEndpoint.QueryType queryType = com.beligum.blocks.rdf.ifaces.RdfEndpoint.QueryType.FULL;
             if (prefixSearch) {
-                queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
+                queryType = com.beligum.blocks.rdf.ifaces.RdfEndpoint.QueryType.STARTS_WITH;
             }
 
             retVal = endpoint.search(resourceClassFilter, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
@@ -173,11 +171,11 @@ public class RdfEndpoint
     @RequiresPermissions(RDF_RESOURCE_READ_ALL_PERM)
     public Response getResource(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_RES_URI_PARAM) URI resourceUri) throws IOException
     {
-        ResourceInfo retVal = null;
+        ResourceProxy retVal = null;
 
         RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
         if (rdfClass != null) {
-            RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
+            com.beligum.blocks.rdf.ifaces.RdfEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
                 retVal = endpoint.getResource(rdfClass, resourceUri, R.i18n().getOptimalRefererLocale());
             }

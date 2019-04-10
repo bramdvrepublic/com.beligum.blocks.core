@@ -16,10 +16,10 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
-import com.beligum.blocks.index.entries.SimpleResourceSummarizer;
+import com.beligum.blocks.index.summarizers.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -43,7 +43,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     protected Set<RdfClassImpl> superClasses;
     protected Set<RdfClassImpl> subClasses;
     protected Set<RdfPropertyImpl> properties;
-    protected RdfQueryEndpoint endpoint;
+    protected RdfEndpoint endpoint;
     protected ResourceSummarizer summarizer;
     protected RdfProperty mainProperty;
 
@@ -123,7 +123,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return hasPropertyWithoutProxyCheck(property);
     }
     @Override
-    public RdfQueryEndpoint getEndpoint()
+    public RdfEndpoint getEndpoint()
     {
         this.assertNoProxy();
 
@@ -212,7 +212,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         {
             return this.addProperty(property, false);
         }
-        public Builder endpoint(RdfQueryEndpoint endpoint)
+        public Builder endpoint(RdfEndpoint endpoint)
         {
             this.rdfResource.endpoint = endpoint;
 
@@ -261,7 +261,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                 }
             }
 
-            //revert to default if null (this behaviour is expected in com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry)
+            //revert to default if null (this behaviour is expected in our implementation)
             if (this.rdfResource.summarizer == null) {
                 this.rdfResource.summarizer = new SimpleResourceSummarizer();
             }

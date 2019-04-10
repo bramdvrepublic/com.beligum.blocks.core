@@ -17,7 +17,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.*;
@@ -73,7 +72,7 @@ public interface RdfClass extends RdfOntologyMember
      * Can return null to signal there is no such functionality and this class is for syntax/semantic-use only
      */
     @JsonIgnore
-    RdfQueryEndpoint getEndpoint();
+    RdfEndpoint getEndpoint();
 
     /**
      * A summarizer that pulls out search-relevant information from this instance during indexing.

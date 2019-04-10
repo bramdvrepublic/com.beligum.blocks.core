@@ -43,23 +43,23 @@ public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
     //-----CONSTRUCTORS-----
     public SparqlConstructIndexEntry(URI id, Model model) throws IOException
     {
-        super(PageIndexEntry.generateId(id));
+        super(PageIndexEntry.generateUri(id));
 
         this.model = model;
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public Iterable<IndexEntryField> getInternalFields()
-    {
-        return INTERNAL_FIELDS;
-    }
     public String getObject(RdfProperty predicate)
     {
         return this.getModelValue(this.model, predicate);
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected Iterable<IndexEntryField> getInternalFields()
+    {
+        return INTERNAL_FIELDS;
+    }
 
     //-----PRIVATE METHODS-----
     private String getModelValue(Model model, RdfProperty property)

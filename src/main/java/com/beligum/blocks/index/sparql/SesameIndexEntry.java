@@ -1,10 +1,9 @@
 package com.beligum.blocks.index.sparql;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
-import com.beligum.blocks.index.ifaces.IndexEntryField;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import org.eclipse.rdf4j.query.BindingSet;
 
-public class SesameIndexEntry implements IndexEntry
+public class SesameIndexEntry implements ResourceIndexEntry
 {
     //-----CONSTANTS-----
 
@@ -28,29 +27,9 @@ public class SesameIndexEntry implements IndexEntry
         return null;
     }
     @Override
-    public boolean hasId()
-    {
-        return false;
-    }
-    @Override
-    public void setId(String value)
-    {
-        //NOOP
-    }
-    @Override
     public String getLabel()
     {
         return null;
-    }
-    @Override
-    public boolean hasLabel()
-    {
-        return false;
-    }
-    @Override
-    public void setLabel(String value)
-    {
-        //NOOP
     }
     @Override
     public String getDescription()
@@ -58,37 +37,7 @@ public class SesameIndexEntry implements IndexEntry
         return null;
     }
     @Override
-    public boolean hasDescription()
-    {
-        return false;
-    }
-    @Override
-    public void setDescription(String value)
-    {
-        //NOOP
-    }
-    @Override
     public String getImage()
-    {
-        return null;
-    }
-    @Override
-    public boolean hasImage()
-    {
-        return false;
-    }
-    @Override
-    public void setImage(String value)
-    {
-        //NOOP
-    }
-    @Override
-    public Iterable<IndexEntryField> getInternalFields()
-    {
-        return null;
-    }
-    @Override
-    public String getFieldValue(IndexEntryField field)
     {
         return null;
     }

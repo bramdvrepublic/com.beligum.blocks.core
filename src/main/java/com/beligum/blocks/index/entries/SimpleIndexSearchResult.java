@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.entries;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchResult;
 
 import java.util.Collections;
@@ -35,14 +35,14 @@ public class SimpleIndexSearchResult extends AbstractIndexSearchResult
     /**
      * The result of a lucene query
      */
-    private List<IndexEntry> results;
+    private List<ResourceIndexEntry> results;
 
     //-----CONSTRUCTORS-----
-    public SimpleIndexSearchResult(List<IndexEntry> results)
+    public SimpleIndexSearchResult(List<ResourceIndexEntry> results)
     {
         this(results, null, null, null);
     }
-    public SimpleIndexSearchResult(List<IndexEntry> results, Integer pageIndex, Integer pageSize, Long searchDuration)
+    public SimpleIndexSearchResult(List<ResourceIndexEntry> results, Integer pageIndex, Integer pageSize, Long searchDuration)
     {
         super(pageIndex, pageSize, searchDuration);
 
@@ -66,7 +66,7 @@ public class SimpleIndexSearchResult extends AbstractIndexSearchResult
         return Long.valueOf(this.size());
     }
     @Override
-    public Iterator<IndexEntry> iterator()
+    public Iterator<ResourceIndexEntry> iterator()
     {
         return this.results.iterator();
     }

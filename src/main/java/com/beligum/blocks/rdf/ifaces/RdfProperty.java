@@ -19,7 +19,6 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -47,7 +46,7 @@ public interface RdfProperty extends RdfOntologyMember
      * An instance (eg. for enums) of an endpoint to use while looking up possible values of this property.
      */
     @JsonIgnore
-    RdfQueryEndpoint getEndpoint();
+    RdfEndpoint getEndpoint();
 
     /**
      * This widget-type to be used in the admin sidebar (or just inline, eg. in the case of the editor)

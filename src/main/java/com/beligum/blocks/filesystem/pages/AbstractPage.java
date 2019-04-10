@@ -81,6 +81,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
                     };
 
     //-----VARIABLES-----
+    // this is the 'most naked' address of the page, relative, without language params or storage filenames
     protected URI canonicalAddress;
 
     protected URI cachedAbsoluteAddress;
@@ -306,7 +307,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         searchRequest.filter(PageIndexEntry.resourceField, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
         searchRequest.maxResults(siteLanguages.size());
         IndexSearchResult searchResult = queryConnection.search(searchRequest);
-        for (IndexEntry entry : searchResult) {
+        for (ResourceIndexEntry entry : searchResult) {
             Page transPage = R.resourceManager().get(URI.create(entry.getId()), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {
                 retVal.put(transPage.getLanguage(), transPage);

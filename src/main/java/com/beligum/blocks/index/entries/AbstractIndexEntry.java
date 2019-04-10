@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.entries;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 
 /**
@@ -24,15 +24,21 @@ import com.beligum.blocks.index.ifaces.IndexEntryField;
  *
  * Created by bram on 2/14/16.
  */
-public abstract class AbstractIndexEntry implements IndexEntry
+public abstract class AbstractIndexEntry implements ResourceIndexEntry
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
     //Notes:
     // - the booleans is to detect unset fields while supporting null values
-    protected String id;
-    protected boolean hasId;
+    protected String uri;
+    protected boolean hasUri;
+    protected String resource;
+    protected boolean hasResource;
+    protected String typeOf;
+    protected boolean hasTypeOf;
+    protected String language;
+    protected boolean hasLanguage;
     protected String label;
     protected boolean hasLabel;
     protected String description;
@@ -44,40 +50,77 @@ public abstract class AbstractIndexEntry implements IndexEntry
     protected AbstractIndexEntry()
     {
     }
-    protected AbstractIndexEntry(String id)
+    protected AbstractIndexEntry(String uri)
     {
-        this.setId(id);
+        this.setUri(uri);
     }
 
     //-----PUBLIC METHODS-----
-
     @Override
-    public String getId()
+    public String getUri()
     {
-        return id;
+        return uri;
+    }
+    public boolean hasUri()
+    {
+        return hasUri;
+    }
+    public void setUri(String uri)
+    {
+        this.uri = uri;
+        this.hasUri = true;
     }
     @Override
-    public boolean hasId()
+    public String getResource()
     {
-        return hasId;
+        return resource;
+    }
+    public boolean hasResource()
+    {
+        return hasResource;
+    }
+    public void setResource(String resource)
+    {
+        this.resource = resource;
+        this.hasResource = true;
     }
     @Override
-    public void setId(String id)
+    public String getTypeOf()
     {
-        this.id = id;
-        this.hasId = true;
+        return typeOf;
+    }
+    public boolean hasTypeOf()
+    {
+        return hasTypeOf;
+    }
+    public void setTypeOf(String typeOf)
+    {
+        this.typeOf = typeOf;
+        this.hasTypeOf = true;
+    }
+    @Override
+    public String getLanguage()
+    {
+        return language;
+    }
+    public boolean hasLanguage()
+    {
+        return hasLanguage;
+    }
+    public void setLanguage(String language)
+    {
+        this.language = language;
+        this.hasLanguage = true;
     }
     @Override
     public String getLabel()
     {
         return label;
     }
-    @Override
     public boolean hasLabel()
     {
         return hasLabel;
     }
-    @Override
     public void setLabel(String label)
     {
         this.label = label;
@@ -88,12 +131,10 @@ public abstract class AbstractIndexEntry implements IndexEntry
     {
         return description;
     }
-    @Override
     public boolean hasDescription()
     {
         return hasDescription;
     }
-    @Override
     public void setDescription(String description)
     {
         this.description = description;
@@ -104,24 +145,30 @@ public abstract class AbstractIndexEntry implements IndexEntry
     {
         return image;
     }
-    @Override
     public boolean hasImage()
     {
         return hasImage;
     }
-    @Override
     public void setImage(String image)
     {
         this.image = image;
         this.hasImage = true;
     }
-    @Override
-    public String getFieldValue(IndexEntryField field)
+
+    //-----PROTECTED METHODS-----
+    /**
+     * This should return the list of internal fields, that will be added to the public RDF fields, in order
+     * to make this entry function.
+     */
+    protected abstract Iterable<IndexEntryField> getInternalFields();
+
+    /**
+     * This is a generic getter to get the value associated with the internal field key
+     */
+    protected String getFieldValue(IndexEntryField field)
     {
         return field.getValue(this);
     }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 
@@ -136,12 +183,12 @@ public abstract class AbstractIndexEntry implements IndexEntry
 
         AbstractIndexEntry that = (AbstractIndexEntry) o;
 
-        return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
+        return getUri() != null ? getUri().equals(that.getUri()) : that.getUri() == null;
 
     }
     @Override
     public int hashCode()
     {
-        return getId() != null ? getId().hashCode() : 0;
+        return getUri() != null ? getUri().hashCode() : 0;
     }
 }

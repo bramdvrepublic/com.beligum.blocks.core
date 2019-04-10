@@ -19,11 +19,9 @@ package com.beligum.blocks.rdf.ontologies.endpoints;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDFS;
@@ -39,7 +37,7 @@ import java.util.*;
 /**
  * Created by bram on 3/14/16.
  */
-public class LocalQueryEndpoint implements RdfQueryEndpoint
+public class LocalQueryEndpoint implements RdfEndpoint
 {
     //-----CONSTANTS-----
 
@@ -60,9 +58,9 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return false;
     }
     @Override
-    public Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
+    public Collection<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
-        List<AutocompleteSuggestion> retVal = new ArrayList<>();
+        List<ResourceProxy> retVal = new ArrayList<>();
 
         PageIndexConnection mainIndexer = StorageFactory.getJsonQueryConnection();
 
@@ -74,8 +72,8 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         }
 
         IndexSearchRequest subQuery = IndexSearchRequest.createFor(mainIndexer);
-        subQuery.wildcard(IndexEntry.tokenisedIdField, query, IndexSearchRequest.FilterBoolean.OR);
-        subQuery.wildcard(IndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR);
+        subQuery.wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR);
         mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
 
         mainQuery.maxResults(maxResults);
@@ -94,10 +92,10 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
          * based on the grouping of the resource URI, selecting the best matching language, effectively narrowing the results to a number < maxResults
          */
         Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
-        for (IndexEntry entry : matchingPages) {
+        for (ResourceIndexEntry entry : matchingPages) {
             PageIndexEntry page = (PageIndexEntry) entry;
 
-            URI pageId = URI.create(page.getId());
+            URI pageId = URI.create(page.getUri());
             URI resourceUri = URI.create(page.getResource());
             EntryWithIndex<PageIndexEntry> selectedEntry = langMapping.get(resourceUri);
             //small optimization to re-use the passed resourceType if we have it so we don't need to parse the string
@@ -127,9 +125,9 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
-        ResourceInfo retVal = null;
+        ResourceProxy retVal = null;
 
         //resources are indexed with relative id's, so make sure the URI is relative
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
@@ -141,7 +139,7 @@ public class LocalQueryEndpoint implements RdfQueryEndpoint
             PageIndexConnection indexConn = StorageFactory.getJsonQueryConnection();
             IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
                                                                                  //at least one of the id or resource should match (or both)
-                                                                                 .filter(IndexEntry.idField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                 .filter(ResourceIndexEntry.idField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
                                                                                  .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
                                                                                  .maxResults(R.configuration().getLanguages().size()));
             selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);

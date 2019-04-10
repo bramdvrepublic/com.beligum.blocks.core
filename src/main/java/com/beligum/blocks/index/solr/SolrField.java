@@ -2,18 +2,15 @@ package com.beligum.blocks.index.solr;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.index.entries.JsonField;
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
-import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -23,7 +20,8 @@ import static java.time.ZoneOffset.UTC;
 
 /**
  * This is more or less the same implementation as org.apache.solr.schema.SchemaField
- * but wrapped around our RDF properties instead.
+ * but wrapped around our RDF properties and implementing our field interface.
+ * Compared with JsonField, this class adds all configurable bells and whistles of the Solr fields.
  */
 public class SolrField extends JsonField
 {
@@ -142,19 +140,19 @@ public class SolrField extends JsonField
     }
 
     //-----PUBLIC METHODS-----
-    public static boolean isReservedField(String fieldName)
+    public boolean isReservedSolrField(String fieldName)
     {
         //see https://lucene.apache.org/solr/guide/7_7/defining-fields.html
         return fieldName.startsWith("_") && fieldName.endsWith("_");
     }
     @Override
-    public String getValue(IndexEntry indexEntry)
+    public String getValue(ResourceIndexEntry indexEntry)
     {
         //don't really know what to return here, this shouldn't be called anyhow
         return null;
     }
     @Override
-    public boolean hasValue(IndexEntry indexEntry)
+    public boolean hasValue(ResourceIndexEntry indexEntry)
     {
         //see note above
         return false;
@@ -478,56 +476,16 @@ public class SolrField extends JsonField
                     throw new IOException("Unable to serialize literal value for field '" + this.getName() + "' because the datatype '" + property.getDataType() + "' is unimplemented; " + value);
                 }
             }
-            else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
-
-                //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-                URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
-
-                //We'll always index the relative, stringified URI as a value for the field,
-                //but if the property has an endpoint, we'll query it to get (and index) the label as well.
-                retVal = uriValue.toString();
-
-                //TODO label also needs to be indexed...
-//                RdfClass dataType = property.getDataType();
-//                RdfQueryEndpoint endpoint = dataType.getEndpoint();
-//                // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
-//                if (endpoint != null) {
+            //TODO think about this: shouldn't we create a proxy for this?
+//            else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
 //
-//                    //make sure we have a language or we won't be able to lookup the resource from the uri
-//                    URI debugValue = uriValue;
-//                    Locale uriValueLang = R.i18n().getUrlLocale(debugValue);
-//                    if (uriValueLang == null) {
-//                        //it's a resource, so add it as a query parameter
-//                        debugValue = UriBuilder.fromUri(debugValue).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
-//                    }
+//                //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+//                URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 //
-//                    ResourceInfo resourceValue = endpoint.getResource(dataType, uriValue, language);
-//                    if (resourceValue != null) {
-//                        //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
-//                        try {
-//                            //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
-//                            String label = resourceValue.getLabel();
-//
-//                            String humanReadableFieldName = LucenePageIndexer.buildHumanReadableFieldName(fieldName);
-//
-//                            indexer.indexStringField(humanReadableFieldName, label);
-//                            //we'll mimic the behavior of String indexing, see above
-//                            if (label.length() <= MAX_CONSTANT_STRING_FIELD_SIZE) {
-//                                indexer.indexConstantField(LucenePageIndexer.buildVerbatimFieldName(humanReadableFieldName), label);
-//                            }
-//                            retVal = new RdfIndexer.IndexResult(uriValueStr, label);
-//                        }
-//                        catch (Exception e) {
-//                            throw new IOException("Unable to serialize resource value for field " + this.getName() + " because there was an setRollbackOnly" +
-//                                                  " while parsing the information coming back from the resource endpoint for datatype " + dataType + ";" + debugValue, e);
-//                        }
-//                    }
-//                    //we didn't get a resource value from the endpoint and need to crash, but let's add some nice info to the stacktrace
-//                    else {
-//                        throw new IOException("Unable to serialize resource value for field " + this.getName() + " because it's resource endpoint returned null; " + debugValue);
-//                    }
-//                }
-            }
+//                //We'll always index the relative, stringified URI as a value for the field,
+//                //but if the property has an endpoint, we'll query it to get (and index) the label as well.
+//                retVal = uriValue.toString();
+//            }
             else {
                 throw new IOException("Unable to serialize unknown value for field '" + this.getName() + "' because the datatype '" + property.getDataType() + "' is unimplemented; " + value);
             }

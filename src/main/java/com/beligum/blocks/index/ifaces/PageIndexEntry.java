@@ -18,10 +18,10 @@ package com.beligum.blocks.index.ifaces;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.index.entries.AbstractPageIndexEntry;
 import com.beligum.blocks.index.entries.JsonField;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.rdf4j.model.IRI;
 
 import java.net.URI;
@@ -32,98 +32,26 @@ import java.util.Locale;
  *
  * Created by bram on 2/23/16.
  */
-public interface PageIndexEntry extends IndexEntry
+public interface PageIndexEntry extends ResourceIndexEntry
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
     IndexEntryField parentIdField = new JsonField("parentId")
     {
         @Override
-        public String getValue(IndexEntry indexEntry)
+        public String getValue(ResourceIndexEntry indexEntry)
         {
             return ((PageIndexEntry)indexEntry).getParentId();
         }
         @Override
-        public boolean hasValue(IndexEntry indexEntry)
+        public boolean hasValue(ResourceIndexEntry indexEntry)
         {
-            return ((PageIndexEntry)indexEntry).hasParentId();
+            return ((AbstractPageIndexEntry)indexEntry).hasParentId();
         }
         @Override
-        public void setValue(IndexEntry indexEntry, String value)
+        public void setValue(ResourceIndexEntry indexEntry, String value)
         {
-            ((PageIndexEntry)indexEntry).setParentId(value);
-        }
-    };
-    IndexEntryField resourceField = new JsonField("resource")
-    {
-        @Override
-        public String getValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).getResource();
-        }
-        @Override
-        public boolean hasValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).hasResource();
-        }
-        @Override
-        public void setValue(IndexEntry indexEntry, String value)
-        {
-            ((PageIndexEntry)indexEntry).setResource(value);
-        }
-    };
-    IndexEntryField typeOfField = new JsonField("typeOf")
-    {
-        @Override
-        public String getValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).getTypeOf();
-        }
-        @Override
-        public boolean hasValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).hasTypeOf();
-        }
-        @Override
-        public void setValue(IndexEntry indexEntry, String value)
-        {
-            ((PageIndexEntry)indexEntry).setTypeOf(value);
-        }
-    };
-    IndexEntryField languageField = new JsonField("language")
-    {
-        @Override
-        public String getValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).getLanguage();
-        }
-        @Override
-        public boolean hasValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).hasLanguage();
-        }
-        @Override
-        public void setValue(IndexEntry indexEntry, String value)
-        {
-            ((PageIndexEntry)indexEntry).setLanguage(value);
-        }
-    };
-    IndexEntryField canonicalAddressField = new JsonField("canonicalAddress")
-    {
-        @Override
-        public String getValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).getCanonicalAddress();
-        }
-        @Override
-        public boolean hasValue(IndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).hasCanonicalAddress();
-        }
-        @Override
-        public void setValue(IndexEntry indexEntry, String value)
-        {
-            ((PageIndexEntry)indexEntry).setCanonicalAddress(value);
+            ((AbstractPageIndexEntry)indexEntry).setParentId(value);
         }
     };
 
@@ -138,105 +66,25 @@ public interface PageIndexEntry extends IndexEntry
     String getParentId();
 
     /**
-     * Returns true if this value has been set once (even though it might be null)
-     */
-    @JsonIgnore
-    boolean hasParentId();
-
-    /**
-     * Sets the value of this field in this indexEntry
-     */
-    @JsonIgnore
-    void setParentId(String value);
-
-    /**
-     * The string representation of the most basic resource URI (eg. for a public page, this is the low-level interconnecting "about" URI, not the public SEO-friendly one)
-     */
-    String getResource();
-
-    /**
-     * Returns true if this value has been set once (even though it might be null)
-     */
-    @JsonIgnore
-    boolean hasResource();
-
-    /**
-     * Sets the value of this field in this indexEntry
-     */
-    @JsonIgnore
-    void setResource(String value);
-
-    /**
-     * The string representation of the CURIE of the RdfClass type of the page
-     */
-    String getTypeOf();
-
-    /**
-     * Returns true if this value has been set once (even though it might be null)
-     */
-    @JsonIgnore
-    boolean hasTypeOf();
-
-    /**
-     * Sets the value of this field in this indexEntry
-     */
-    @JsonIgnore
-    void setTypeOf(String value);
-
-    /**
-     * What gets returned by the Locale.getLanguage() method of the page's language locale.
-     */
-    String getLanguage();
-
-    /**
-     * Returns true if this value has been set once (even though it might be null)
-     */
-    @JsonIgnore
-    boolean hasLanguage();
-
-    /**
-     * Sets the value of this field in this indexEntry
-     */
-    @JsonIgnore
-    void setLanguage(String value);
-
-    /**
-     * The string representation of the canonical address of this page (eg. the standardized form of the publicly visible address)
-     */
-    String getCanonicalAddress();
-
-    /**
-     * Returns true if this value has been set once (even though it might be null)
-     */
-    @JsonIgnore
-    boolean hasCanonicalAddress();
-
-    /**
-     * Sets the value of this field in this indexEntry
-     */
-    @JsonIgnore
-    void setCanonicalAddress(String value);
-
-    /**
      * These are a couple of ID factory methods, grouped for overview
      * and make static so they can be used from the constructors
      */
-    static String generateId(IRI iri)
+    static String generateUri(IRI iri)
     {
-        return generateId(URI.create(iri.toString()));
+        return generateUri(URI.create(iri.toString()));
     }
-    static String generateId(Page page)
+    static String generateUri(Page page)
     {
-        return generateId(page.getPublicRelativeAddress());
+        return generateUri(page.getPublicRelativeAddress());
     }
-    static String generateId(URI id)
+    static String generateUri(URI id)
     {
         //since we treat all URIs as relative, we only take the path into account
         return StringFunctions.getRightOfDomain(id).toString();
     }
-    static String generateParentId(IndexEntry parent)
+    static String generateParentId(ResourceIndexEntry parent)
     {
-        return parent == null ? null : parent.getId();
+        return parent == null ? null : parent.getUri();
     }
     static String generateResource(URI rootResourceUri)
     {
@@ -251,11 +99,6 @@ public interface PageIndexEntry extends IndexEntry
     {
         return language.getLanguage();
     }
-    static String generateCanonicalAddress(URI canonicalAddress)
-    {
-        //the canonical address is indexed as-is, we don't modify it
-        return canonicalAddress.toString();
-    }
 
     /**
      * Goes through the supplied page search results and selects the single most fitting result, taking into account the supplied language.
@@ -269,7 +112,7 @@ public interface PageIndexEntry extends IndexEntry
     {
         PageIndexEntry retVal = null;
 
-        for (IndexEntry entry : searchResult) {
+        for (ResourceIndexEntry entry : searchResult) {
             if (entry instanceof PageIndexEntry) {
                 PageIndexEntry page = (PageIndexEntry) entry;
 

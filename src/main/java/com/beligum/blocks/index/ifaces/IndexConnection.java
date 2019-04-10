@@ -44,7 +44,7 @@ public interface IndexConnection extends XAClosableResource
     /**
      * Fetch the index entry for the supplied URI from the underlying index store
      */
-    IndexEntry get(URI key) throws IOException;
+    ResourceIndexEntry get(URI key) throws IOException;
 
     /**
      * (re-)index the supplied resource into the underlying index store

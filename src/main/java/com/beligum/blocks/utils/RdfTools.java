@@ -18,8 +18,6 @@ package com.beligum.blocks.utils;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;

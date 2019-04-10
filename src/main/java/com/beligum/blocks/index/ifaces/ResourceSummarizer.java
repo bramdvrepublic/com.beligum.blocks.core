@@ -19,8 +19,6 @@ package com.beligum.blocks.index.ifaces;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.eclipse.rdf4j.model.Model;
 
-import java.net.URI;
-
 /**
  * Class used to pull some general information (like title, description, image, link, ...) from a resource class to be used to render search results.
  * This is used while indexing a page to be able to render search results from the index without having to look up the whole page.
@@ -40,46 +38,10 @@ public interface ResourceSummarizer
      * Parse the supplied model and return the generated index that was extracted from it.
      * Note that the type should be allowed to be empty.
      */
-    SummarizedResource summarize(RdfClass type, Model model);
+    ResourceSummary summarize(RdfClass type, Model model);
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 
-    //-----INNER CLASSES-----
-    interface SummarizedResource
-    {
-        String getLabel();
-        String getDescription();
-        URI getImage();
-    }
-    class DefaultSummarizedResource implements SummarizedResource
-    {
-        private String label;
-        private String description;
-        private URI image;
-
-        public DefaultSummarizedResource(String label, String description, URI image)
-        {
-            this.label = label;
-            this.description = description;
-            this.image = image;
-        }
-
-        @Override
-        public String getLabel()
-        {
-            return label;
-        }
-        @Override
-        public String getDescription()
-        {
-            return description;
-        }
-        @Override
-        public URI getImage()
-        {
-            return image;
-        }
-    }
 }

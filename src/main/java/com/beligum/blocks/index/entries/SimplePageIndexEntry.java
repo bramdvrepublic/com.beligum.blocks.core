@@ -66,13 +66,13 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PUBLIC METHODS-----
+
+    //-----PROTECTED METHODS-----
     @Override
-    public Iterable<IndexEntryField> getInternalFields()
+    protected Iterable<IndexEntryField> getInternalFields()
     {
         return INTERNAL_FIELDS;
     }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 

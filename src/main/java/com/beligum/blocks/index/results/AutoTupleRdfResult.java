@@ -17,8 +17,8 @@
 package com.beligum.blocks.index.results;
 
 import com.beligum.blocks.config.InputType;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.index.ifaces.RdfTupleResult;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import gen.com.beligum.blocks.core.messages.blocks.core;
@@ -145,7 +145,7 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
                 }
                 else if (this.property.getWidgetType().equals(InputType.Enum)) {
                     //this translates the raw enum value to a translated label for the current request language
-                    ResourceInfo res = this.property.getEndpoint().getResource(this.property, UriBuilder.fromPath(rawValue).build(), this.language);
+                    ResourceProxy res = this.property.getEndpoint().getResource(this.property, UriBuilder.fromPath(rawValue).build(), this.language);
                     retVal = res.getLabel();
                 }
 

@@ -15,7 +15,7 @@ import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
@@ -313,7 +313,7 @@ public class PageRouter
             // don't try to lookup the resource locally, but redirect there.
             if (this.rdfResourceUriAnalyzer.isValid()) {
                 if (this.rdfResourceUriAnalyzer.isTyped()) {
-                    RdfQueryEndpoint endpoint = this.rdfResourceUriAnalyzer.getResourceClass().getEndpoint();
+                    RdfEndpoint endpoint = this.rdfResourceUriAnalyzer.getResourceClass().getEndpoint();
                     if (endpoint != null) {
                         //note that eg. LocalQueryEndpoint returns null here to signal we're not dealing with a true external URI
                         //so make sure to check it or we'll have an eternal redirect
@@ -434,7 +434,7 @@ public class PageRouter
                         UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                         R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
                         //we'll search for a page that has the translated request uri as it's address
-                        searchRequest.filter(IndexEntry.idField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
+                        searchRequest.filter(ResourceIndexEntry.idField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
                     }
                 }
 

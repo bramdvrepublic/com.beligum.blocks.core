@@ -2,7 +2,7 @@ package com.beligum.blocks.index.sparql;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -49,7 +49,7 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class Iterator implements java.util.Iterator<IndexEntry>
+    private static class Iterator implements java.util.Iterator<ResourceIndexEntry>
     {
         private final java.util.Iterator<BindingSet> bindingIterator;
 
@@ -64,9 +64,9 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
             return this.bindingIterator.hasNext();
         }
         @Override
-        public IndexEntry next()
+        public ResourceIndexEntry next()
         {
-            IndexEntry retVal = null;
+            ResourceIndexEntry retVal = null;
 
             if (this.hasNext()) {
                 try {

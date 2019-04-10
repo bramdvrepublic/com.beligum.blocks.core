@@ -2,7 +2,7 @@ package com.beligum.blocks.index.solr;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -53,7 +53,7 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class Iterator implements java.util.Iterator<IndexEntry>
+    private static class Iterator implements java.util.Iterator<ResourceIndexEntry>
     {
         private final java.util.Iterator<SolrDocument> solrResultIterator;
 
@@ -68,9 +68,9 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
             return this.solrResultIterator.hasNext();
         }
         @Override
-        public IndexEntry next()
+        public ResourceIndexEntry next()
         {
-            IndexEntry retVal = null;
+            ResourceIndexEntry retVal = null;
 
             if (this.hasNext()) {
                 try {

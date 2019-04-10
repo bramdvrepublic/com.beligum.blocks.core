@@ -33,14 +33,6 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     // - the booleans is to detect unset fields while supporting null values
     protected String parentId;
     protected boolean hasParentId;
-    protected String resource;
-    protected boolean hasResource;
-    protected String typeOf;
-    protected boolean hasTypeOf;
-    protected String language;
-    protected boolean hasLanguage;
-    protected String canonicalAddress;
-    protected boolean hasCanonicalAddress;
 
     //-----CONSTRUCTORS-----
     protected AbstractPageIndexEntry()
@@ -58,80 +50,14 @@ public abstract class AbstractPageIndexEntry extends AbstractIndexEntry implemen
     {
         return parentId;
     }
-    @Override
     public boolean hasParentId()
     {
         return hasParentId;
     }
-    @Override
     public void setParentId(String parentId)
     {
         this.parentId = parentId;
         this.hasParentId = true;
-    }
-    @Override
-    public String getResource()
-    {
-        return resource;
-    }
-    @Override
-    public boolean hasResource()
-    {
-        return hasResource;
-    }
-    @Override
-    public void setResource(String resource)
-    {
-        this.resource = resource;
-        this.hasResource = true;
-    }
-    @Override
-    public String getTypeOf()
-    {
-        return typeOf;
-    }
-    @Override
-    public boolean hasTypeOf()
-    {
-        return hasTypeOf;
-    }
-    @Override
-    public void setTypeOf(String typeOf)
-    {
-        this.typeOf = typeOf;
-        this.hasTypeOf = true;
-    }
-    @Override
-    public String getLanguage()
-    {
-        return language;
-    }
-    @Override
-    public boolean hasLanguage()
-    {
-        return hasLanguage;
-    }
-    @Override
-    public void setLanguage(String language)
-    {
-        this.language = language;
-        this.hasLanguage = true;
-    }
-    @Override
-    public String getCanonicalAddress()
-    {
-        return canonicalAddress;
-    }
-    @Override
-    public boolean hasCanonicalAddress()
-    {
-        return hasCanonicalAddress;
-    }
-    @Override
-    public void setCanonicalAddress(String canonicalAddress)
-    {
-        this.canonicalAddress = canonicalAddress;
-        this.hasCanonicalAddress = true;
     }
 
     //-----PROTECTED METHODS-----

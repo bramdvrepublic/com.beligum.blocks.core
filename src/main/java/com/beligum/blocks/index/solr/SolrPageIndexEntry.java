@@ -27,9 +27,9 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     /**
      * This is the entry point of the create() function below
      */
-    protected SolrPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected SolrPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
-        super(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+        super(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
     protected SolrPageIndexEntry(String json) throws IOException
     {
@@ -51,9 +51,9 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
      * Note that all other create() method (in the superclass) forward their calls here so we don't need to override the others.
      */
     @Override
-    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, URI canonicalAddress, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
-        return new SolrPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, canonicalAddress, language, rdfModel, parent);
+        return new SolrPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
     @Override
     protected JsonField createField(RdfProperty property) throws IOException

@@ -23,7 +23,7 @@ import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.filesystem.hdfs.HdfsZipUtils;
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
 import com.beligum.blocks.filesystem.log.PageLogEntry;
@@ -123,7 +123,7 @@ public class ReadWritePage extends DefaultPage
                     //should always be ok because of the check above
                     if (predicate != null) {
                         RdfClass dataType = predicate.getDataType();
-                        RdfQueryEndpoint endpoint = dataType.getEndpoint();
+                        RdfEndpoint endpoint = dataType.getEndpoint();
                         //this means the predicate's datatype has an external endpoint, so it's a valid external resource
                         if (endpoint != null && endpoint.isExternal()) {
                             URI localResourceId = URI.create(value.stringValue());

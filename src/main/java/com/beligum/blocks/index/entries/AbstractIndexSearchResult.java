@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.entries;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchResult;
 import com.google.common.collect.Lists;
 
@@ -52,7 +52,7 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
      * Note: this is mainly needed for the letter-format result box, which needs to be sorted alphabetically,
      * no matter what was configured by the search box.
      */
-    private List<IndexEntry> cachedAlphaSortedResults;
+    private List<ResourceIndexEntry> cachedAlphaSortedResults;
 
     //-----CONSTRUCTORS-----
     public AbstractIndexSearchResult(Integer pageIndex, Integer pageSize, Long searchDuration)
@@ -89,14 +89,14 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
         return searchDuration == null ? null : String.format("%.3f", searchDuration / 1000.0f);
     }
     @Override
-    public Iterable<IndexEntry> getAlphaSortedResults()
+    public Iterable<ResourceIndexEntry> getAlphaSortedResults()
     {
         if (this.cachedAlphaSortedResults == null) {
             this.cachedAlphaSortedResults = Lists.newArrayList(this);
-            Collections.sort(this.cachedAlphaSortedResults, new Comparator<IndexEntry>()
+            Collections.sort(this.cachedAlphaSortedResults, new Comparator<ResourceIndexEntry>()
             {
                 @Override
-                public int compare(IndexEntry o1, IndexEntry o2)
+                public int compare(ResourceIndexEntry o1, ResourceIndexEntry o2)
                 {
                     if (o1.getLabel() == null) {
                         return -1;

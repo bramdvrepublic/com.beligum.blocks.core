@@ -1,6 +1,6 @@
 package com.beligum.blocks.index.solr;
 
-import com.beligum.blocks.index.ifaces.IndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.PageIndexEntry;
 
 public class SolrConfigs
@@ -2478,16 +2478,15 @@ public class SolrConfigs
     };
 
     //our internal fields
-    public static final String CORE_SCHEMA_FIELD_ID = IndexEntry.idField.getName();
-    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = IndexEntry.tokenisedIdField.getName();
-    public static final String CORE_SCHEMA_FIELD_LABEL = IndexEntry.labelField.getName();
-    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = IndexEntry.descriptionField.getName();
-    public static final String CORE_SCHEMA_FIELD_IMAGE = IndexEntry.imageField.getName();
+    public static final String CORE_SCHEMA_FIELD_ID = ResourceIndexEntry.idField.getName();
+    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = ResourceIndexEntry.tokenisedIdField.getName();
+    public static final String CORE_SCHEMA_FIELD_LABEL = ResourceIndexEntry.labelField.getName();
+    public static final String CORE_SCHEMA_FIELD_DESCRIPTION = ResourceIndexEntry.descriptionField.getName();
+    public static final String CORE_SCHEMA_FIELD_IMAGE = ResourceIndexEntry.imageField.getName();
     public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentIdField.getName();
     public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resourceField.getName();
     public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOfField.getName();
     public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.languageField.getName();
-    public static final String CORE_SCHEMA_FIELD_CANONICAL_ADDRESS = PageIndexEntry.canonicalAddressField.getName();
 
     // For details, see https://lucene.apache.org/solr/guide/7_7/field-types-included-with-solr.html#field-types-included-with-solr
     public static final String CORE_SCHEMA = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -2623,8 +2622,6 @@ public class SolrConfigs
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_TYPE_OF + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LANGUAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_CANONICAL_ADDRESS + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
 
                                              // To support Optimistic Concurrency; see https://lucene.apache.org/solr/guide/7_7/updating-parts-of-documents.html#optimistic-concurrency

@@ -44,16 +44,16 @@ public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public Iterable<IndexEntryField> getInternalFields()
-    {
-        return INTERNAL_FIELDS;
-    }
     public BindingSet getBindingSet()
     {
         return bindingSet;
     }
+
     //-----PROTECTED METHODS-----
+    protected Iterable<IndexEntryField> getInternalFields()
+    {
+        return INTERNAL_FIELDS;
+    }
 
     //-----PRIVATE METHODS-----
 

@@ -19,7 +19,7 @@ package com.beligum.blocks.utils.importer;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
@@ -131,7 +131,7 @@ public abstract class ImportTools
                 }
                 else {
                     //I think it's better to use a true query-like search, so we can add more liberties (eg. specify "Loenhout,Belgium" instead of "Loenhout" and hope for the best)
-                    RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
+                    RdfEndpoint.QueryType queryType = RdfEndpoint.QueryType.FULL;
                     //Note: we disabled this when factoring out the ontologies from blocks-core, please re-enable it if necessary
                     //                    //Hmmm, this doesn't seem to work well with countries (like a query for 'Belgium' yields Zimbabwe if you do a full 'q' query (instead of searching by name))
                     //                    if (property.equals(Terms.country)) {
@@ -285,7 +285,7 @@ public abstract class ImportTools
                 String enumKey = value.toString();
 
                 //note: contrary to the resource endpoint below, we want the endpoint of the property, not the class, so don't use property.getDataType().getEndpoint() here
-                Collection<AutocompleteSuggestion> enumSuggestion = property.getEndpoint().search(property, enumKey, RdfQueryEndpoint.QueryType.NAME, language, 1);
+                Collection<AutocompleteSuggestion> enumSuggestion = property.getEndpoint().search(property, enumKey, RdfEndpoint.QueryType.NAME, language, 1);
                 if (enumSuggestion.size() == 1) {
                     AutocompleteSuggestion enumValue = enumSuggestion.iterator().next();
                     addDataType = true;

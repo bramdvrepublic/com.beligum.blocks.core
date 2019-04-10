@@ -27,25 +27,21 @@ public interface IndexEntryField
     /**
      * Returns the value of the index entry, associated with this field
      */
-    String getValue(IndexEntry indexEntry);
+    String getValue(ResourceIndexEntry indexEntry);
 
     /**
      * Returns true if the value of the index entry has been set once (even if it was set to null)
      */
-    boolean hasValue(IndexEntry indexEntry);
+    boolean hasValue(ResourceIndexEntry indexEntry);
 
     /**
      * Sets the field of the indexEntry to the supplied value
      */
-    void setValue(IndexEntry indexEntry, String value);
+    void setValue(ResourceIndexEntry indexEntry, String value);
 
     /**
      * Convert the RDF value to an indexable string value counterpart
      */
     String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException;
 
-    /**
-     * Make sure this just returns the name
-     */
-    String toString();
 }

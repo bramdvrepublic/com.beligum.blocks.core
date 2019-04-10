@@ -18,14 +18,11 @@ package com.beligum.blocks.rdf;
 
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.XSD;
-
-import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -36,7 +33,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
     //-----VARIABLES-----
     protected RdfClassImpl dataType;
-    protected RdfQueryEndpoint endpoint;
+    protected RdfEndpoint endpoint;
     protected InputType widgetType;
     protected InputTypeConfig widgetConfig;
 
@@ -60,7 +57,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         return dataType;
     }
     @Override
-    public RdfQueryEndpoint getEndpoint()
+    public RdfEndpoint getEndpoint()
     {
         this.assertNoProxy();
 

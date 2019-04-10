@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.endpoints.ifaces;
+package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -29,7 +31,7 @@ import java.util.Locale;
 /**
  * Created by bram on 3/14/16.
  */
-public interface RdfQueryEndpoint
+public interface RdfEndpoint
 {
     /**
      * How to interpret the query string:
@@ -46,11 +48,6 @@ public interface RdfQueryEndpoint
     }
 
     /**
-     * Returns true if this endpoint is actually a foreign ontology, external from this website
-     */
-    boolean isExternal();
-
-    /**
      * Searches the (fast) index of the specified type for the supplied query string.
      * Mainly used to feed client-side autocomplete boxes
      *
@@ -62,7 +59,7 @@ public interface RdfQueryEndpoint
      * @return a list of maxResults size
      * @throws IOException
      */
-    Collection<AutocompleteSuggestion> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException;
+    Collection<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.
@@ -73,7 +70,12 @@ public interface RdfQueryEndpoint
      * @return the wrapped value with all possible fields indicating how to render this value (if may contain null values for some properties of AutocompleteValue)
      * @throws IOException
      */
-    ResourceInfo getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException;
+    ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException;
+
+    /**
+     * Returns true if this endpoint is actually a foreign ontology, external from this website
+     */
+    boolean isExternal();
 
     /**
      * Returns the RDF properties that are good candidates to find a human readable string representation of instances of the specified class.

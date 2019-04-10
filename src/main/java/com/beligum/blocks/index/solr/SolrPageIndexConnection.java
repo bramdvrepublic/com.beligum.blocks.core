@@ -127,7 +127,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //                Logger.info(docList.get(i).jsonStr());
             //            }
 
-            String pageId = PageIndexEntry.generateId(key);
+            String pageId = PageIndexEntry.generateUri(key);
 
             //for future use, needs testing first
             final boolean USE_REALTIME_API = false;
@@ -168,7 +168,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            String pageId = PageIndexEntry.generateId(page);
+            String pageId = PageIndexEntry.generateUri(page);
 
             SolrPageIndexEntry newIndexEntry = new SolrPageIndexEntry(page);
 
@@ -189,11 +189,11 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            String pageId = PageIndexEntry.generateId(page);
+            String pageId = PageIndexEntry.generateUri(page);
 
             this.saveRollbackBackup(pageId);
 
-            this.solrClient.deleteById(PageIndexEntry.generateId(page));
+            this.solrClient.deleteById(PageIndexEntry.generateUri(page));
         }
         catch (Exception e) {
             throw new IOException("Error while deleting a Solr resource; " + resource, e);
