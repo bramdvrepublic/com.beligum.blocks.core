@@ -1,7 +1,7 @@
 package com.beligum.blocks.index.solr;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.index.entries.JsonField;
+import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;

@@ -46,7 +46,14 @@ public interface IndexSearchRequest extends Serializable
         FIELD,
         PROPERTY,
         QUERY,
-        SUB
+        SUB,
+        LANGUAGE
+    }
+
+    enum LanguageFilterType
+    {
+        STRICT,
+        PREFERRED
     }
 
     interface Filter
@@ -66,15 +73,17 @@ public interface IndexSearchRequest extends Serializable
     static IndexSearchRequest createFor(IndexConnection indexConnection)
     {
         if (indexConnection instanceof SolrPageIndexConnection) {
-            return new SolrIndexSearchRequest();
+            return new SolrIndexSearchRequest(indexConnection);
         }
         else if (indexConnection instanceof SesamePageIndexConnection) {
-            return new SparqlIndexSearchRequest();
+            return new SparqlIndexSearchRequest(indexConnection);
         }
         else {
             throw new UnsupportedOperationException("Unsupported index connection type; please implement a query builder for this implementation; " + indexConnection);
         }
     }
+
+    IndexConnection getIndexConnection();
 
     List<Filter> getFilters();
 
@@ -94,11 +103,11 @@ public interface IndexSearchRequest extends Serializable
 
     IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean);
 
+    IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
+
     IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean);
 
     IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
-
-    IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
 
     IndexSearchRequest sort(RdfProperty property, boolean sortAscending);
 
@@ -109,6 +118,8 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest pageOffset(int pageOffset);
 
     IndexSearchRequest language(Locale language);
+
+    IndexSearchRequest language(Locale language, IndexEntryField groupingField);
 
     IndexSearchRequest maxResults(long maxResults);
 

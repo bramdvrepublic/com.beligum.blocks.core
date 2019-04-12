@@ -302,13 +302,12 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //     different URIs (eg. for SEO purposes).
         //Note that this also means the lucene index needs to be up-to-date (eg. this is important during reindexing;
         // see the notes in the delete() method of the triple store index connection)
-        PageIndexConnection queryConnection = StorageFactory.getJsonQueryConnection();
-        IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
+        IndexSearchRequest searchRequest = IndexSearchRequest.createFor(StorageFactory.getJsonQueryConnection());
         searchRequest.filter(PageIndexEntry.resourceField, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
         searchRequest.maxResults(siteLanguages.size());
-        IndexSearchResult searchResult = queryConnection.search(searchRequest);
-        for (ResourceIndexEntry entry : searchResult) {
-            Page transPage = R.resourceManager().get(URI.create(entry.getId()), MimeTypes.HTML, Page.class);
+        IndexSearchResult searchResult = searchRequest.getIndexConnection().search(searchRequest);
+        for (ResourceProxy entry : searchResult) {
+            Page transPage = R.resourceManager().get(entry.getUri(), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {
                 retVal.put(transPage.getLanguage(), transPage);
             }

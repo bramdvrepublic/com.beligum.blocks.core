@@ -21,7 +21,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
-import com.beligum.blocks.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.PageIndexer;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -57,7 +57,7 @@ public class SesamePageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public synchronized PageIndexConnection connect(TX tx) throws IOException
+    public synchronized IndexConnection connect(TX tx) throws IOException
     {
         return new SesamePageIndexConnection(this, tx);
     }

@@ -18,10 +18,9 @@ package com.beligum.blocks.index.ifaces;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.index.entries.AbstractPageIndexEntry;
-import com.beligum.blocks.index.entries.JsonField;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.IRI;
 
 import java.net.URI;
@@ -35,70 +34,12 @@ import java.util.Locale;
 public interface PageIndexEntry extends ResourceIndexEntry
 {
     //-----CONSTANTS-----
-    //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField parentIdField = new JsonField("parentId")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return ((PageIndexEntry)indexEntry).getParentId();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractPageIndexEntry)indexEntry).hasParentId();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractPageIndexEntry)indexEntry).setParentId(value);
-        }
-    };
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    /**
-     * Only for sub-resources: the id of the parent index entry or null if this entry is not a sub-resource
-     */
-    String getParentId();
-
-    /**
-     * These are a couple of ID factory methods, grouped for overview
-     * and make static so they can be used from the constructors
-     */
-    static String generateUri(IRI iri)
-    {
-        return generateUri(URI.create(iri.toString()));
-    }
-    static String generateUri(Page page)
-    {
-        return generateUri(page.getPublicRelativeAddress());
-    }
-    static String generateUri(URI id)
-    {
-        //since we treat all URIs as relative, we only take the path into account
-        return StringFunctions.getRightOfDomain(id).toString();
-    }
-    static String generateParentId(ResourceIndexEntry parent)
-    {
-        return parent == null ? null : parent.getUri();
-    }
-    static String generateResource(URI rootResourceUri)
-    {
-        //Note that we index all addresses relatively
-        return StringFunctions.getRightOfDomain(rootResourceUri).toString();
-    }
-    static String generateTypeOf(RdfClass rdfClass)
-    {
-        return rdfClass.getCurie().toString();
-    }
-    static String generateLanguage(Locale language)
-    {
-        return language.getLanguage();
-    }
 
     /**
      * Goes through the supplied page search results and selects the single most fitting result, taking into account the supplied language.
@@ -108,28 +49,30 @@ public interface PageIndexEntry extends ResourceIndexEntry
      * @param language the requested language (note that the selected result may not be this language)
      * @return the best fitting result
      */
-    static PageIndexEntry selectBestForLanguage(IndexSearchResult searchResult, Locale language)
+    static ResourceProxy selectBestForLanguage(IndexSearchResult searchResult, Locale language)
     {
-        PageIndexEntry retVal = null;
+        ResourceProxy retVal = null;
 
-        for (ResourceIndexEntry entry : searchResult) {
-            if (entry instanceof PageIndexEntry) {
-                PageIndexEntry page = (PageIndexEntry) entry;
+        for (ResourceProxy entry : searchResult) {
 
-                if (retVal == null) {
-                    retVal = page;
-                }
-                else {
-                    int entryLangScore = PageIndexEntry.getLanguageScore(page, language);
-                    int selectedLangScore = PageIndexEntry.getLanguageScore(retVal, language);
-                    if (entryLangScore > selectedLangScore) {
-                        retVal = page;
-                    }
+            if (retVal == null) {
+                retVal = entry;
+            }
+            else {
+                int entryLangScore = PageIndexEntry.getLanguageScore(entry, language);
+                int selectedLangScore = PageIndexEntry.getLanguageScore(retVal, language);
+                if (entryLangScore > selectedLangScore) {
+                    retVal = entry;
                 }
             }
         }
 
         return retVal;
+    }
+    static ResourceProxy selectBestLanguage(IndexSearchResult searchResult)
+    {
+        //TODO check this
+        return searchResult.getTotalHits() > 0 ? searchResult.iterator().next() : null;
     }
 
     /**
@@ -141,14 +84,14 @@ public interface PageIndexEntry extends ResourceIndexEntry
      *
      * --> higher means better
      */
-    static int getLanguageScore(PageIndexEntry entry, Locale requestLanguage)
+    static int getLanguageScore(ResourceProxy entry, Locale requestLanguage)
     {
         int retVal = 1;
 
-        if (entry.getLanguage().equals(requestLanguage.getLanguage())) {
+        if (entry.getLanguage().equals(requestLanguage)) {
             retVal = 3;
         }
-        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage().getLanguage())) {
+        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage())) {
             retVal = 2;
         }
 

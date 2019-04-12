@@ -1,5 +1,6 @@
 package com.beligum.blocks.index.sparql;
 
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.index.request.AbstractIndexSearchRequest;
@@ -19,9 +20,9 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public SparqlIndexSearchRequest()
+    public SparqlIndexSearchRequest(IndexConnection indexConnection)
     {
-        super();
+        super(indexConnection);
     }
 
     //-----STATIC METHODS-----
@@ -119,6 +120,8 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
                     throw new IllegalStateException("Unexpected value: " + filter.getFilterType());
             }
         }
+
+        //TODO what about the language?
 
         //---Save the sort field---
         if (this.sortFields.size() > 1) {

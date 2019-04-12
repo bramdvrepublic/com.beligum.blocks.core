@@ -19,16 +19,15 @@ package com.beligum.blocks.rdf.ontologies.endpoints;
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.server.R;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.local.WrappedSuggestionResourceInfo;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.Model;
 
@@ -45,7 +44,7 @@ public class EnumQueryEndpoint implements RdfEndpoint
 
     //-----VARIABLES-----
     protected RdfClass resourceType;
-    protected Map<String, EnumAutocompleteSuggestion> suggestions;
+    protected Map<String, EnumSuggestion> suggestions;
 
     //-----CONSTRUCTORS-----
     public EnumQueryEndpoint(RdfClass resourceType)
@@ -59,7 +58,7 @@ public class EnumQueryEndpoint implements RdfEndpoint
         this.suggestions = new LinkedHashMap<>(suggestions.size());
         for (MessagesFileEntry e : suggestions) {
             PropertiesEnumSuggestion sugg = new PropertiesEnumSuggestion(e);
-            this.suggestions.put(sugg.getValue(), sugg);
+            this.suggestions.put(sugg.getResource(), sugg);
         }
     }
     public EnumQueryEndpoint(RdfClass resourceType, Map<ConstantsFileEntry, MessagesFileEntry> suggestions)
@@ -68,7 +67,7 @@ public class EnumQueryEndpoint implements RdfEndpoint
         this.suggestions = new LinkedHashMap<>(suggestions.size());
         for (Map.Entry<ConstantsFileEntry, MessagesFileEntry> e : suggestions.entrySet()) {
             PropertiesEnumSuggestion sugg = new PropertiesEnumSuggestion(e.getValue(), e.getKey());
-            this.suggestions.put(sugg.getValue(), sugg);
+            this.suggestions.put(sugg.getResource(), sugg);
         }
     }
 
@@ -82,23 +81,27 @@ public class EnumQueryEndpoint implements RdfEndpoint
      * Note that, for now, this method ignores queryType and options parameters
      */
     @Override
-    public Collection<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
+    public Iterable<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
-        Collection<ResourceProxy> retVal = new ArrayList<>();
+        Iterable<ResourceProxy> retVal = new ArrayList<>();
 
         if (this.resourceType.equals(resourceType)) {
             //Note: two little stunts to modify the returned language of the title, based on the passed-in language in this method
             if (!StringUtils.isEmpty(query)) {
-                retVal = Arrays.asList(new AutocompleteSuggestion[] { new LangFilteredEnumSuggestion(this.getSuggestions().get(query), language) });
+                retVal = Arrays.asList(new ResourceProxy[] { new LangFilteredEnumSuggestion(this.getSuggestions().get(query), language) });
             }
             else {
-                retVal = Collections2.transform(this.getSuggestions().values(), new Function<EnumAutocompleteSuggestion, AutocompleteSuggestion>()
-                {
-                    public AutocompleteSuggestion apply(EnumAutocompleteSuggestion from)
-                    {
-                        return new LangFilteredEnumSuggestion(from, language);
-                    }
-                });
+                //if no specific query is passed, we return all values
+                retVal = Iterables.transform(this.getSuggestions().values(),
+                                             new Function<EnumSuggestion, ResourceProxy>()
+                                             {
+                                                 @Override
+                                                 public ResourceProxy apply(EnumSuggestion from)
+                                                 {
+                                                     return new LangFilteredEnumSuggestion(from, language);
+                                                 }
+                                             }
+                );
             }
         }
 
@@ -113,12 +116,12 @@ public class EnumQueryEndpoint implements RdfEndpoint
     public ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
         //Note: the getPath() converts special URI characters back to their native form
-        return new WrappedSuggestionResourceInfo(this.getSuggestions().get(resourceId.getPath()), language);
+        return new LangFilteredEnumSuggestion(this.getSuggestions().get(resourceId.getPath()), language);
     }
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)
     {
-        //we're no resource endpoint
+        //we're not a resource endpoint
         return new RdfProperty[0];
     }
     @Override
@@ -142,21 +145,20 @@ public class EnumQueryEndpoint implements RdfEndpoint
 
     //-----PROTECTED METHODS-----
     //allows us to override this in subclasses
-    protected Map<String, EnumAutocompleteSuggestion> getSuggestions()
+    protected Map<String, EnumSuggestion> getSuggestions()
     {
         return this.suggestions;
     }
 
     //-----PRIVATE METHODS-----
-    public interface EnumAutocompleteSuggestion extends AutocompleteSuggestion
+    public interface EnumSuggestion extends ResourceProxy
     {
         //two extra methods to be able to handle the language dynamically
-        String getTitleFor(Locale lang);
-
-        String getSubTitleFor(Locale lang);
+        String getLabelFor(Locale lang);
+        String getDescriptionFor(Locale lang);
     }
 
-    public class SimpleEnumSuggestion implements EnumAutocompleteSuggestion
+    public class SimpleEnumSuggestion implements EnumSuggestion
     {
         protected String title;
         protected String value;
@@ -171,43 +173,63 @@ public class EnumQueryEndpoint implements RdfEndpoint
             this.value = value;
         }
 
+        @Override
+        public URI getUri()
+        {
+            return RdfTools.createRelativeResourceId(this.getTypeOf(), this.getResource());
+        }
         //Note: for enums, this value will be used to fill the @content attribute on the html property element;
         // it's the formal 'value' part of the enum's AutocompleteSuggestion
         @Override
-        public String getValue()
+        public String getResource()
         {
             return value;
         }
         @Override
-        public URI getResourceType()
+        public RdfClass getTypeOf()
         {
-            return resourceType.getCurieName();
+            return resourceType;
         }
         @Override
-        public URI getPublicPage()
-        {
-            return null;
-        }
-        @Override
-        public String getTitle()
+        public Locale getLanguage()
         {
             //Note: this will most likely be called from a AJAX call from the admin interface;
             // meaning we want to know the values matching the current resource/url, so use the referer language to generate the title
             //(although the value will probably be used, but we still might incorporate the title in the page html somewhere too...)
-            return this.getTitleFor(R.i18n().getOptimalRefererLocale());
+            return R.i18n().getOptimalRefererLocale();
         }
         @Override
-        public String getTitleFor(Locale lang)
+        public boolean isExternal()
         {
-            return this.title;
+            return false;
         }
         @Override
-        public String getSubTitle()
+        public URI getParentUri()
         {
             return null;
         }
         @Override
-        public String getSubTitleFor(Locale lang)
+        public String getLabel()
+        {
+            return this.getLabelFor(this.getLanguage());
+        }
+        @Override
+        public String getDescription()
+        {
+            return null;
+        }
+        @Override
+        public URI getImage()
+        {
+            return null;
+        }
+        @Override
+        public String getLabelFor(Locale lang)
+        {
+            return this.title;
+        }
+        @Override
+        public String getDescriptionFor(Locale lang)
         {
             return null;
         }
@@ -232,22 +254,22 @@ public class EnumQueryEndpoint implements RdfEndpoint
             this.value = value;
         }
 
-        //check out the constructors above: if the value is null, we're supposed to take the title instead
         @Override
-        public String getValue()
-        {
-            return this.value != null ? this.value.getValue() : this.getTitle();
-        }
-        @Override
-        public String getTitle()
+        public String getLabel()
         {
             //Note: this will most likely be called from a AJAX call from the admin interface;
             // meaning we want to know the values matching the current resource/url, so use the referer language to generate the title
             //(although the value will probably be used, but we still might incorporate the title in the page html somewhere too...)
-            return this.getTitleFor(R.i18n().getOptimalRefererLocale());
+            return this.getLabelFor(R.i18n().getOptimalRefererLocale());
+        }
+        //check out the constructors above: if the value is null, we're supposed to take the title instead
+        @Override
+        public String getResource()
+        {
+            return this.value != null ? this.value.getValue() : this.getLabel();
         }
         @Override
-        public String getTitleFor(Locale lang)
+        public String getLabelFor(Locale lang)
         {
             return this.title == null ? null : this.title.toString(lang);
         }
@@ -256,40 +278,61 @@ public class EnumQueryEndpoint implements RdfEndpoint
     /**
      * This is a helper class to be able to choose the locale of the returned value on-the-fly (see above)
      */
-    public class LangFilteredEnumSuggestion implements AutocompleteSuggestion
+    public class LangFilteredEnumSuggestion implements ResourceProxy
     {
-        private EnumAutocompleteSuggestion suggestion;
+        private EnumSuggestion suggestion;
         private Locale language;
-        public LangFilteredEnumSuggestion(EnumAutocompleteSuggestion suggestion, Locale language)
+
+        public LangFilteredEnumSuggestion(EnumSuggestion suggestion, Locale language)
         {
             this.suggestion = suggestion;
             this.language = language;
         }
 
         @Override
-        public String getValue()
+        public URI getUri()
         {
-            return this.suggestion == null ? null : this.suggestion.getValue();
+            return RdfTools.createRelativeResourceId(this.getTypeOf(), this.getResource());
         }
         @Override
-        public URI getResourceType()
+        public RdfClass getTypeOf()
         {
-            return this.suggestion == null ? null : this.suggestion.getResourceType();
+            return this.suggestion == null ? null : this.suggestion.getTypeOf();
         }
         @Override
-        public URI getPublicPage()
+        public Locale getLanguage()
+        {
+            return this.language;
+        }
+        @Override
+        public boolean isExternal()
+        {
+            return false;
+        }
+        @Override
+        public URI getParentUri()
         {
             return null;
         }
         @Override
-        public String getTitle()
+        public String getResource()
         {
-            return this.suggestion == null ? null : this.suggestion.getTitleFor(this.language);
+            return this.suggestion == null ? null : this.suggestion.getResource();
         }
         @Override
-        public String getSubTitle()
+        public String getLabel()
         {
-            return this.suggestion == null ? null : this.suggestion.getSubTitleFor(this.language);
+            return this.suggestion == null ? null : this.suggestion.getLabelFor(this.language);
+        }
+        @Override
+        public String getDescription()
+        {
+            return this.suggestion == null ? null : this.suggestion.getDescriptionFor(this.language);
+        }
+        @Override
+        public URI getImage()
+        {
+            return null;
         }
     }
 }

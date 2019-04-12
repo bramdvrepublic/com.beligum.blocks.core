@@ -18,6 +18,7 @@ package com.beligum.blocks.index.entries;
 
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchResult;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.google.common.collect.Lists;
 
 import java.util.Collections;
@@ -93,10 +94,10 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
     {
         if (this.cachedAlphaSortedResults == null) {
             this.cachedAlphaSortedResults = Lists.newArrayList(this);
-            Collections.sort(this.cachedAlphaSortedResults, new Comparator<ResourceIndexEntry>()
+            Collections.sort(this.cachedAlphaSortedResults, new Comparator<ResourceProxy>()
             {
                 @Override
-                public int compare(ResourceIndexEntry o1, ResourceIndexEntry o2)
+                public int compare(ResourceProxy o1, ResourceProxy o2)
                 {
                     if (o1.getLabel() == null) {
                         return -1;

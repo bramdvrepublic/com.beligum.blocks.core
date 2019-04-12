@@ -2478,12 +2478,12 @@ public class SolrConfigs
     };
 
     //our internal fields
-    public static final String CORE_SCHEMA_FIELD_ID = ResourceIndexEntry.idField.getName();
-    public static final String CORE_SCHEMA_FIELD_TOKENISED_ID = ResourceIndexEntry.tokenisedIdField.getName();
+    public static final String CORE_SCHEMA_FIELD_URI = ResourceIndexEntry.uriField.getName();
+    public static final String CORE_SCHEMA_FIELD_TOKENISED_URI = ResourceIndexEntry.tokenisedUriField.getName();
     public static final String CORE_SCHEMA_FIELD_LABEL = ResourceIndexEntry.labelField.getName();
     public static final String CORE_SCHEMA_FIELD_DESCRIPTION = ResourceIndexEntry.descriptionField.getName();
     public static final String CORE_SCHEMA_FIELD_IMAGE = ResourceIndexEntry.imageField.getName();
-    public static final String CORE_SCHEMA_FIELD_PARENT_ID = PageIndexEntry.parentIdField.getName();
+    public static final String CORE_SCHEMA_FIELD_PARENT_URI = PageIndexEntry.parentUriField.getName();
     public static final String CORE_SCHEMA_FIELD_RESOURCE = PageIndexEntry.resourceField.getName();
     public static final String CORE_SCHEMA_FIELD_TYPE_OF = PageIndexEntry.typeOfField.getName();
     public static final String CORE_SCHEMA_FIELD_LANGUAGE = PageIndexEntry.languageField.getName();
@@ -2605,9 +2605,9 @@ public class SolrConfigs
                                              "      </analyzer>\n" +
                                              "    </fieldType>\n" +
 
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_ID + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_URI + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_TOKENISED_ID + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"false\" required=\"true\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LABEL + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
@@ -2615,7 +2615,7 @@ public class SolrConfigs
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_IMAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
-                                             "    <field name=\"" + CORE_SCHEMA_FIELD_PARENT_ID + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_PARENT_URI + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_RESOURCE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
@@ -2640,7 +2640,7 @@ public class SolrConfigs
                                              "    <copyField source=\"*\" dest=\"" + _text_.getName() + "\"/>\n" +
 
                                              // Field to use to determine and enforce document uniqueness.
-                                             "    <uniqueKey>" + CORE_SCHEMA_FIELD_ID + "</uniqueKey>\n" +
+                                             "    <uniqueKey>" + CORE_SCHEMA_FIELD_URI + "</uniqueKey>\n" +
 
                                              "</schema>\n";
 

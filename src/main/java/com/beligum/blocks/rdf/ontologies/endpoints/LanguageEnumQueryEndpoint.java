@@ -33,7 +33,7 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
     private static final String UNKNOWN_LANGUAGE_CODE = "und";
 
     //-----VARIABLES-----
-    private static Map<String, EnumAutocompleteSuggestion> languageSuggestions;
+    private static Map<String, EnumSuggestion> languageSuggestions;
 
     //-----CONSTRUCTORS-----
     public LanguageEnumQueryEndpoint(RdfClass resourceType)
@@ -45,7 +45,7 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
 
     //-----PROTECTED METHODS-----
     @Override
-    protected Map<String, EnumAutocompleteSuggestion> getSuggestions()
+    protected Map<String, EnumSuggestion> getSuggestions()
     {
         //we can make the languageSuggestions static and save some space because it won't change across instances anyway
         if (languageSuggestions == null) {
@@ -57,7 +57,7 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
                 //we'll generally won't allow the unknown language in the selection
                 if (!langCode.equals(UNKNOWN_LANGUAGE_CODE)) {
                     LanguageEnumSuggestion sugg = new LanguageEnumSuggestion(langCode);
-                    String engName = sugg.getTitleFor(Locale.ENGLISH);
+                    String engName = sugg.getLabelFor(Locale.ENGLISH);
                     //Note: we'll do a little filtering: the language's name must exist in english
                     //and it's name can't be the same as the language code (which is returned by getDisplayLanguage() when no such entry is present in the DB)
                     //this is a good reference, but not all translations have been added to ICU(4j) so it seems
@@ -85,7 +85,7 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
         }
 
         @Override
-        public String getTitleFor(Locale lang)
+        public String getLabelFor(Locale lang)
         {
             String retVal = this.locale.getDisplayLanguage(ULocale.forLocale(lang));
 

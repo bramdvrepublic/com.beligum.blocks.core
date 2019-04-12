@@ -16,17 +16,18 @@
 
 package com.beligum.blocks.index.sparql;
 
-import com.beligum.blocks.index.entries.AbstractPageIndexEntry;
+import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.query.BindingSet;
 
+import java.net.URI;
 import java.util.Collection;
 
 /**
  * Created by bram on 2/13/16.
  */
-public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
+public class SparqlSelectIndexEntry extends AbstractIndexEntry
 {
     //-----CONSTANTS-----
     //Note: this doesn't really have internal fields, no?
@@ -36,14 +37,19 @@ public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
     private final BindingSet bindingSet;
 
     //-----CONSTRUCTORS-----
-    public SparqlSelectIndexEntry(String id, BindingSet bindingSet)
+    public SparqlSelectIndexEntry(URI uri, BindingSet bindingSet)
     {
-        super(id);
+        super(uri);
 
         this.bindingSet = bindingSet;
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean isExternal()
+    {
+        return false;
+    }
     public BindingSet getBindingSet()
     {
         return bindingSet;
@@ -62,7 +68,7 @@ public class SparqlSelectIndexEntry extends AbstractPageIndexEntry
     public String toString()
     {
         return "SparqlSelectIndexEntry{" +
-               "id='" + idField + '\'' +
+               "uri='" + this.getUri() + '\'' +
                '}';
     }
 }

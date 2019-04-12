@@ -36,11 +36,11 @@ import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProduce
 import com.beligum.blocks.filesystem.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.Indexer;
-import com.beligum.blocks.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.index.ifaces.PageIndexer;
-import com.beligum.blocks.index.sparql.SesamePageIndexer;
 import com.beligum.blocks.index.solr.SolrPageIndexer;
+import com.beligum.blocks.index.sparql.SesamePageIndexer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
@@ -114,7 +114,7 @@ public class StorageFactory
             }
         });
     }
-    public static PageIndexConnection getJsonQueryConnection() throws IOException
+    public static IndexConnection getJsonQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return getJsonIndexer().connect(null);
@@ -133,7 +133,7 @@ public class StorageFactory
             }
         });
     }
-    public static PageIndexConnection getSparqlQueryConnection() throws IOException
+    public static IndexConnection getSparqlQueryConnection() throws IOException
     {
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return getSparqlIndexer().connect(null);

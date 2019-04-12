@@ -4,6 +4,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Locale;
 
 public interface IndexEntryField

@@ -16,8 +16,20 @@
 
 package com.beligum.blocks.index.ifaces;
 
+import com.beligum.base.server.R;
+import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
-import com.beligum.blocks.index.entries.JsonField;
+import com.beligum.blocks.index.fields.*;
+import com.beligum.blocks.rdf.RdfFactory;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.utils.RdfTools;
+import com.google.common.collect.Sets;
+import org.eclipse.rdf4j.model.IRI;
+
+import java.net.URI;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * This is the general superclass for all entries in any kind of index.
@@ -28,152 +40,29 @@ import com.beligum.blocks.index.entries.JsonField;
 public interface ResourceIndexEntry extends ResourceProxy
 {
     //-----CONSTANTS-----
-    //note: sync these with the getter names below (and the setters of the implementations)
-    IndexEntryField uriField = new JsonField("uri")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getUri();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasUri();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setUri(value);
-        }
-    };
-    IndexEntryField tokenisedUriField = new JsonField("tokenisedUri")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            //the value is the same, but it should be indexed in a different way
-            return indexEntry.getUri();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasUri();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            //NOOP this is a virtual field, it's value is set with setId()
-        }
-    };
-    IndexEntryField resourceField = new JsonField("resource")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getResource();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasResource();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setResource(value);
-        }
-    };
-    IndexEntryField typeOfField = new JsonField("typeOf")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getTypeOf();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasTypeOf();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setTypeOf(value);
-        }
-    };
-    IndexEntryField languageField = new JsonField("language")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getLanguage();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasLanguage();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setLanguage(value);
-        }
-    };
-    IndexEntryField labelField = new JsonField("label")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getLabel();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasLabel();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setLabel(value);
-        }
-    };
-    IndexEntryField descriptionField = new JsonField("description")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getDescription();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasDescription();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setDescription(value);
-        }
-    };
-    IndexEntryField imageField = new JsonField("image")
-    {
-        @Override
-        public String getValue(ResourceIndexEntry indexEntry)
-        {
-            return indexEntry.getImage();
-        }
-        @Override
-        public boolean hasValue(ResourceIndexEntry indexEntry)
-        {
-            return ((AbstractIndexEntry)indexEntry).hasImage();
-        }
-        @Override
-        public void setValue(ResourceIndexEntry indexEntry, String value)
-        {
-            ((AbstractIndexEntry)indexEntry).setImage(value);
-        }
-    };
+    //note: sync the names of these below with the getter names of AbstractIndexEntry and the setters of the implementations
+    UriField uriField = new UriField();
+    TokenizedUriField tokenisedUriField = new TokenizedUriField();
+    ResourceField resourceField = new ResourceField();
+    TypeOfField typeOfField = new TypeOfField();
+    LanguageField languageField = new LanguageField();
+    ParentUriField parentUriField = new ParentUriField();
+    LabelField labelField = new LabelField();
+    DescriptionField descriptionField = new DescriptionField();
+    ImageField imageField = new ImageField();
+
+    /**
+     * Note: sync this with the constants above
+     */
+    Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(uriField,
+                                                           tokenisedUriField,
+                                                           resourceField,
+                                                           typeOfField,
+                                                           languageField,
+                                                           parentUriField,
+                                                           labelField,
+                                                           descriptionField,
+                                                           imageField);
 
     //-----VARIABLES-----
 

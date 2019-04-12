@@ -1,8 +1,9 @@
 package com.beligum.blocks.index.solr;
 
-import com.beligum.blocks.index.entries.JsonField;
+import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Model;
 
@@ -27,7 +28,7 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
     /**
      * This is the entry point of the create() function below
      */
-    protected SolrPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected SolrPageIndexEntry(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         super(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
@@ -40,7 +41,7 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
      */
     public SolrPageIndexEntry(Page page) throws IOException
     {
-        super(page);
+        this(PageIndexEntry.uriField.create(page), page.getPublicAbsoluteAddress(), page.getAbsoluteResourceAddress(), page.getLanguage(), page.readRdfModel(), null);
     }
 
     //-----PUBLIC METHODS-----
@@ -51,7 +52,7 @@ public class SolrPageIndexEntry extends JsonPageIndexEntry
      * Note that all other create() method (in the superclass) forward their calls here so we don't need to override the others.
      */
     @Override
-    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected JsonPageIndexEntry create(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         return new SolrPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }

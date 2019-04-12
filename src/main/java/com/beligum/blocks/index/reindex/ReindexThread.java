@@ -23,11 +23,11 @@ import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfClassNode;
-import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.github.dexecutor.core.DefaultDexecutor;
@@ -758,8 +758,8 @@ public class ReindexThread extends Thread implements LongRunningThread
                     // that will get passed to the reindex() method to re-use our general transaction
                     //Note that the connections get released when the transaction is released (see below)
                     //Also note this means we'll have a transaction per rdf class
-                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
-                                                                                                                         StorageFactory.getSparqlIndexer().connect(transaction));
+                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
+                                                                                                                     StorageFactory.getSparqlIndexer().connect(transaction));
 
                     try (Statement stmt = dbConnection.createStatement()) {
 
@@ -822,8 +822,8 @@ public class ReindexThread extends Thread implements LongRunningThread
 
                                 //start a new transaction
                                 transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
-                                indexConnectionsOption = new PageRepository.PageIndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
-                                                                                                      StorageFactory.getSparqlIndexer().connect(transaction));
+                                indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
+                                                                                                  StorageFactory.getSparqlIndexer().connect(transaction));
                             }
 
                             //Logger.info("Submitting reindexation of " + publicUri);

@@ -143,7 +143,7 @@ public class PageRouter
     /**
      * Just a cached index connection
      */
-    private PageIndexConnection cachedQueryConnection;
+    private IndexConnection cachedQueryConnection;
 
     //-----CONSTRUCTORS-----
     /**
@@ -356,20 +356,20 @@ public class PageRouter
                 //but let's start with this (eg. no query params like languages included) and see where we end up...
                 String searchUri = this.requestedUri.getPath();
 
-                PageIndexConnection indexConn = this.getMainPageQueryConnection();
-
-                IndexSearchRequest searchRequestBuilder = IndexSearchRequest.createFor(indexConn)
+                IndexSearchRequest searchRequestBuilder = IndexSearchRequest.createFor(this.getMainPageQueryConnection())
+                                                                            // This will group of the resource URI, selecting the best matching language
+                                                                            .language(this.locale, ResourceIndexEntry.resourceField)
                                                                             //we'll search for pages that have an alias (possibly/probably non-existent)
                                                                             .filter(Meta.sameAs, searchUri, IndexSearchRequest.FilterBoolean.OR)
                                                                             //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
                                                                             .filter(PageIndexEntry.resourceField, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
-                IndexSearchResult results = indexConn.search(searchRequestBuilder);
+                IndexSearchResult results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
 
-                PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, this.locale);
+                ResourceProxy selectedEntry = PageIndexEntry.selectBestLanguage(results);
 
                 //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
-                String selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getId();
+                URI selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getUri();
 
                 //this detects if the above search matched on the resource uri (and not the sameAs)
                 if (selectedEntry != null && selectedEntry.getResource().equals(searchUri)) {
@@ -380,8 +380,8 @@ public class PageRouter
                     //So we redirect to the parent's id
                     //Also note that (unlike real resources, see check just below) we can't offer the user the choice to make this page,
                     //because sub-resources are not supposed to have real pages; they only exist in the context of a parent page.
-                    if (selectedEntry.getParentId() != null) {
-                        selectedEntryAddress = selectedEntry.getParentId();
+                    if (selectedEntry.getParentUri() != null) {
+                        selectedEntryAddress = selectedEntry.getParentUri();
                     }
                     //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
                     //and we want to instance it's translation, it would redirect back to the english page instead of allowing us to
@@ -393,13 +393,13 @@ public class PageRouter
                 }
 
                 //little protection against eternal redirects
-                if (selectedEntryAddress != null && selectedEntryAddress.equals(searchUri)) {
+                if (selectedEntryAddress != null && selectedEntryAddress.toString().equals(searchUri)) {
                     selectedEntryAddress = null;
                 }
 
                 //this means we found something, so save the redirection url
                 if (selectedEntryAddress != null) {
-                    this.targetUri = URI.create(selectedEntryAddress);
+                    this.targetUri = selectedEntryAddress;
                     this.needsRedirection = true;
                 }
             }
@@ -419,7 +419,7 @@ public class PageRouter
         if (this.assertUnfinished()) {
 
             try {
-                PageIndexConnection queryConnection = this.getMainPageQueryConnection();
+                IndexConnection queryConnection = this.getMainPageQueryConnection();
 
                 //more or less the same remark here as with doDetectAliases()
                 String searchUri = this.requestedUri.getPath();
@@ -434,7 +434,7 @@ public class PageRouter
                         UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
                         R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
                         //we'll search for a page that has the translated request uri as it's address
-                        searchRequest.filter(ResourceIndexEntry.idField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
+                        searchRequest.filter(ResourceIndexEntry.uriField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
                     }
                 }
 
@@ -444,18 +444,19 @@ public class PageRouter
                 //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
                 if (!results.isEmpty()) {
                     //since all resources should be the same, we take the first match
-                    String resourceUri = ((PageIndexEntry) results.iterator().next()).getResource();
+                    String resourceUri = results.iterator().next().getResource();
                     searchRequest = IndexSearchRequest.createFor(queryConnection);
                     searchRequest.filter(PageIndexEntry.resourceField, resourceUri, IndexSearchRequest.FilterBoolean.AND);
                     searchRequest.filter(PageIndexEntry.languageField, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
                     results = queryConnection.search(searchRequest);
 
-                    PageIndexEntry selectedEntry2 = PageIndexEntry.selectBestForLanguage(results, this.locale);
+                    //TODO do we still need this? See the language filter above
+                    ResourceProxy selectedEntry2 = PageIndexEntry.selectBestLanguage(results);
 
                     //this means we found something, so save the redirection url
                     if (selectedEntry2 != null) {
                         //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                        this.targetUri = URI.create(selectedEntry2.getId());
+                        this.targetUri = selectedEntry2.getUri();
                         this.needsRedirection = true;
                     }
                 }
@@ -736,7 +737,7 @@ public class PageRouter
     {
         return this.adminTemplate != null;
     }
-    private PageIndexConnection getMainPageQueryConnection() throws IOException
+    private IndexConnection getMainPageQueryConnection() throws IOException
     {
         //note: no synchronization needed, this is assumed to be all one thread
         if (this.cachedQueryConnection == null) {

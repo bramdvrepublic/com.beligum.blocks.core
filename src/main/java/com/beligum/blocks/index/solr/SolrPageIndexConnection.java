@@ -41,7 +41,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/22/16.
  */
-public class SolrPageIndexConnection extends AbstractIndexConnection implements PageIndexConnection
+public class SolrPageIndexConnection extends AbstractIndexConnection implements IndexConnection
 {
     //-----CONSTANTS-----
     public enum QueryFormat implements IndexConnection.QueryFormat
@@ -127,7 +127,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //                Logger.info(docList.get(i).jsonStr());
             //            }
 
-            String pageId = PageIndexEntry.generateUri(key);
+            String pageId = PageIndexEntry.uriField.serialize(key);
 
             //for future use, needs testing first
             final boolean USE_REALTIME_API = false;
@@ -168,11 +168,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            String pageId = PageIndexEntry.generateUri(page);
-
             SolrPageIndexEntry newIndexEntry = new SolrPageIndexEntry(page);
 
-            this.saveRollbackBackup(pageId);
+            this.saveRollbackBackup(PageIndexEntry.uriField.serialize(page));
 
             this.updateJsonDoc(newIndexEntry);
         }
@@ -189,11 +187,11 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            String pageId = PageIndexEntry.generateUri(page);
+            String pageId = PageIndexEntry.uriField.serialize(page);
 
             this.saveRollbackBackup(pageId);
 
-            this.solrClient.deleteById(PageIndexEntry.generateUri(page));
+            this.solrClient.deleteById(pageId);
         }
         catch (Exception e) {
             throw new IOException("Error while deleting a Solr resource; " + resource, e);

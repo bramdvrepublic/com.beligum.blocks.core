@@ -2,16 +2,16 @@ package com.beligum.blocks.index.solr;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
-import com.beligum.blocks.index.ifaces.IndexEntryField;
-import com.beligum.blocks.index.ifaces.IndexSearchRequest;
-import com.beligum.blocks.index.ifaces.PageIndexEntry;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.index.request.AbstractIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
@@ -23,9 +23,9 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     private StringBuilder filterQueryBuilder;
 
     //-----CONSTRUCTORS-----
-    public SolrIndexSearchRequest()
+    public SolrIndexSearchRequest(IndexConnection indexConnection)
     {
-        super();
+        super(indexConnection);
 
         this.queryBuilder = new StringBuilder();
         this.filterQueryBuilder = new StringBuilder();
@@ -35,40 +35,30 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
     {
-        this.append(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value);
+        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value);
 
         return super.query(value, filterBoolean);
     }
     @Override
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
-        this.append(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), PageIndexEntry.generateTypeOf(type));
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
 
         return super.filter(type, filterBoolean);
     }
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
-        this.append(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value);
 
         return super.filter(field, value, filterBoolean);
     }
     @Override
-    public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
-    {
-        return super.wildcard(field, value, filterBoolean);
-    }
-    @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
-        this.append(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
 
         return super.filter(property, value, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
-    {
-        return super.wildcard(property, value, filterBoolean);
     }
     @Override
     public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
@@ -88,14 +78,44 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return super.filter(subRequest, filterBoolean);
     }
-    public SolrQuery buildSolrQuery()
+    @Override
+    public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
+    {
+        this.appendWildcard(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+
+        return super.wildcard(field, value, filterBoolean);
+    }
+    @Override
+    public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
+    {
+        this.appendWildcard(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
+
+        return super.wildcard(property, value, filterBoolean);
+    }
+
+    //-----PROTECTED METHODS-----
+    SolrQuery buildSolrQuery()
     {
         //Note: in Solr, a query is always necessary, so we start out with searching for everything
         SolrQuery retVal = new SolrQuery("*:*");
 
         //make sure this happens before calling the retVal.setFilterQueries() below
         if (this.getLanguage() != null) {
-            this.filter(PageIndexEntry.languageField, this.getLanguage().getLanguage(), FilterBoolean.AND);
+
+            // do this here because we'll just add a filter in strict mode
+            switch (this.languageFilterType) {
+                case STRICT:
+                    this.filter(PageIndexEntry.languageField, this.getLanguage().getLanguage(), FilterBoolean.AND);
+                    break;
+                case PREFERRED:
+                    StringBuilder langFilterQuery = new StringBuilder();
+                    // see https://lucene.apache.org/solr/guide/7_7/collapse-and-expand-results.html
+                    langFilterQuery.append("!collapse field=").append(this.languageGroupField);
+                    retVal.addFilterQuery(langFilterQuery.toString());
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + this.languageFilterType);
+            }
         }
 
         if (this.queryBuilder.length() > 0) {
@@ -112,19 +132,31 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         retVal.setRows(this.getPageSize());
         retVal.setStart(this.getPageOffset());
-//        if (this.getMaxResults() != null) {
-//            TODO...
-//        }
+
+
+        //        if (this.getMaxResults() != null) {
+        //            TODO...
+        //        }
 
         return retVal;
     }
 
-    //-----PROTECTED METHODS-----
-
     //-----PRIVATE METHODS-----
-    private StringBuilder append(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
+    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
     {
         this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(QueryParser.escape(value)).append(")");
+
+        return stringBuilder;
+    }
+    private StringBuilder appendWildcard(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
+    {
+        StringBuilder query = new StringBuilder(QueryParser.escape(value));
+
+        if (!NumberUtils.isNumber(value) && !value.contains("*")) {
+            query.append("*");
+        }
+
+        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(query.toString()).append(")");
 
         return stringBuilder;
     }

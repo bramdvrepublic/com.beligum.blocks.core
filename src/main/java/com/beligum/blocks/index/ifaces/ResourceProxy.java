@@ -30,15 +30,15 @@ public interface ResourceProxy extends Serializable
     //-----PUBLIC METHODS-----
     /**
      * A public URI that uniquely identifies the resource. For local resources, this should return a relative URI.
+     * Note that we prefer to use the relative address instead of the absolute one,
+     * so there's no need to reindex when moving to a different domain name.
      * For remote ones, any kind of unique identifier. The more unique, the better.
      * Eg. for pages, this should return the public relative address, not the common @about resource URI.
-     * Note that for local resources, we prefer to use the relative address instead of the absolute one,
-     * so there's no need to reindex when moving to a different domain name.
      */
-    String getUri();
+    URI getUri();
 
     /**
-     * The descriptor (eg. probably always a URI) of the original resource this proxy object points to.
+     * The descriptor (eg. the URI) or the actual value of the original resource this proxy object points to.
      * This should return the string representation of the most basic resource URI (eg. for a public page,
      * this is the low-level interconnecting "about" URI, not the public SEO-friendly one).
      */
@@ -47,17 +47,22 @@ public interface ResourceProxy extends Serializable
     /**
      * The string representation (CURIE) of the RDF type of the resource.
      */
-    String getTypeOf();
+    RdfClass getTypeOf();
 
     /**
      * The language of this resource
      */
-    String getLanguage();
+    Locale getLanguage();
 
     /**
      * Specifies if the resource is external or local to this site.
      */
     boolean isExternal();
+
+    /**
+     * The id of the parent index entry or null if this entry doesn't have a parent (eg. probably only for sub-resources)
+     */
+    URI getParentUri();
 
     /**
      * The label-value (in the right language) of this resource. Keep this short and simple.
@@ -72,6 +77,6 @@ public interface ResourceProxy extends Serializable
     /**
      * The address of an image describing this resource or null if the resource doesn't have an image.
      */
-    String getImage();
+    URI getImage();
 
 }

@@ -18,9 +18,8 @@ package com.beligum.blocks.utils.importer;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.utils.RdfTools;
@@ -35,7 +34,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.Locale;
 
 import static java.time.ZoneOffset.UTC;
@@ -141,10 +140,11 @@ public abstract class ImportTools
                     //extra wrapper around this part because it might call a remote API and the return values (eg. 404) can be mixed up
                     // with the return values of this endpoint. By wrapping it in a different try-catch, we get extra logging if something goes wrong.
                     try {
-                        Collection<AutocompleteSuggestion> searchSuggestions = property.getDataType().getEndpoint().search(property.getDataType(), value, queryType, language, 1);
+                        Iterable<ResourceProxy> searchSuggestions = property.getDataType().getEndpoint().search(property.getDataType(), value, queryType, language, 1);
                         //just take the first hit
-                        if (!searchSuggestions.isEmpty()) {
-                            retVal = URI.create(searchSuggestions.iterator().next().getValue());
+                        Iterator<ResourceProxy> iter = searchSuggestions.iterator();
+                        if (iter.hasNext()) {
+                            retVal = URI.create(iter.next().getResource());
                         }
                         else {
                             throw new IOException("Unable to find a resource of type " + property.getDataType() + " for input '" + value +
@@ -285,11 +285,12 @@ public abstract class ImportTools
                 String enumKey = value.toString();
 
                 //note: contrary to the resource endpoint below, we want the endpoint of the property, not the class, so don't use property.getDataType().getEndpoint() here
-                Collection<AutocompleteSuggestion> enumSuggestion = property.getEndpoint().search(property, enumKey, RdfEndpoint.QueryType.NAME, language, 1);
-                if (enumSuggestion.size() == 1) {
-                    AutocompleteSuggestion enumValue = enumSuggestion.iterator().next();
+                Iterable<ResourceProxy> enumSuggestion = property.getEndpoint().search(property, enumKey, RdfEndpoint.QueryType.NAME, language, 1);
+                Iterator<ResourceProxy> iter = enumSuggestion.iterator();
+                if (iter.hasNext()) {
+                    ResourceProxy enumValue = iter.next();
                     addDataType = true;
-                    content = enumValue.getValue();
+                    content = enumValue.getResource();
                     html = RdfTools.serializeEnumHtml(enumValue).toString();
                 }
                 else {
@@ -301,10 +302,10 @@ public abstract class ImportTools
             case Resource:
 
                 URI resourceId = (URI) value;
-                ResourceInfo resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
+                ResourceProxy resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
 
                 addDataType = false;
-                factEntryHtml.append(" resource=\"" + resourceInfo.getResourceUri().toString() + "\"");
+                factEntryHtml.append(" resource=\"" + resourceInfo.getResource() + "\"");
                 if (resourceInfo != null) {
                     html = RdfTools.serializeResourceHtml(resourceInfo).toString();
                 }

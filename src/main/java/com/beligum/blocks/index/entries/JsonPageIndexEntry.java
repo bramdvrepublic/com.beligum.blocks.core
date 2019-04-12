@@ -4,7 +4,7 @@ import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -15,9 +15,7 @@ import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Sets;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.Models;
 
@@ -26,7 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-public class JsonPageIndexEntry extends AbstractPageIndexEntry
+public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
     public interface JsonNodeVisitor
@@ -39,25 +37,8 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     public static final RdfProperty TYPEOF_PROPERTY = RDF.type;
     private static final IRI TYPEOF_PROPERTY_IRI = RdfTools.uriToIri(TYPEOF_PROPERTY.getUri());
 
-    /**
-     * Note: this is a bit of an elaborate implementation just to type-sync two methods:
-     * - getInternalFields()
-     * - initializeInternalFields()
-     */
-    public static Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(uriField,
-                                                                          tokenisedUriField,
-                                                                          labelField,
-                                                                          descriptionField,
-                                                                          imageField,
-                                                                          parentIdField,
-                                                                          resourceField,
-                                                                          typeOfField,
-                                                                          languageField);
-
     //-----VARIABLES-----
-    private ObjectMapper jsonMapper;
     private ObjectNode jsonNode;
-    //private JsonPageIndexEntry parent;
 
     //-----CONSTRUCTORS-----
     /**
@@ -67,10 +48,6 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     {
         super();
     }
-    protected JsonPageIndexEntry(Page page) throws IOException
-    {
-        this(PageIndexEntry.generateUri(page), page.getPublicAbsoluteAddress(), page.getAbsoluteResourceAddress(), page.getLanguage(), page.readRdfModel(), null);
-    }
     /**
      * To build a JSON node from an RDF model, we also need a root resource URI
      * so we know which subject to treat as the root node. The other subjects in the model
@@ -79,11 +56,9 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
      * This is because, eg. for pages, we use the public page address as it's id, instead
      * of the resource id (because it might not be unique since multiple pages can be describing it)
      */
-    protected JsonPageIndexEntry(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
+    protected JsonPageIndexEntry(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         super(id);
-
-        this.jsonMapper = Json.getObjectMapper();
 
         this.parse(absolutePublicPageUri, absoluteRootResourceUri, language, parent, rdfModel);
     }
@@ -92,8 +67,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         //note: we don't have an ID yet, see below
         super();
 
-        this.jsonMapper = Json.getObjectMapper();
-        this.jsonNode = this.jsonMapper.readValue(json, ObjectNode.class);
+        this.jsonNode = Json.getObjectMapper().readValue(json, ObjectNode.class);
 
         //Load the internal json fields into the local variables
         for (IndexEntryField field : this.getInternalFields()) {
@@ -106,12 +80,17 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
 
     //-----PUBLIC METHODS-----
     @Override
+    public boolean isExternal()
+    {
+        return false;
+    }
+    @Override
     public String toString()
     {
         String retVal = null;
 
         try {
-            retVal = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(this.jsonNode);
+            retVal = Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(this.jsonNode);
         }
         catch (JsonProcessingException e) {
             Logger.error("Error while rendering JSON node", e);
@@ -128,7 +107,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         byte[] retVal = null;
 
         try {
-            retVal = this.jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(this.jsonNode);
+            retVal = Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsBytes(this.jsonNode);
         }
         catch (JsonProcessingException e) {
             Logger.error("Error while rendering JSON node", e);
@@ -151,10 +130,9 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
     protected JsonPageIndexEntry create(URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
-        return this.create(PageIndexEntry.generateUri(absoluteRootResourceUri), absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
+        return this.create(absoluteRootResourceUri, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
-    protected JsonPageIndexEntry create(String id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent)
-                    throws IOException
+    protected JsonPageIndexEntry create(URI id, URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, Model rdfModel, JsonPageIndexEntry parent) throws IOException
     {
         return new JsonPageIndexEntry(id, absolutePublicPageUri, absoluteRootResourceUri, language, rdfModel, parent);
     }
@@ -191,7 +169,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
         }
 
         //create a new object and fill it with the first internal fields like id, etc
-        this.jsonNode = this.initializeInternalFields(this.jsonMapper.createObjectNode(), absoluteRootResourceUri, language, type, parent, rootModel);
+        this.jsonNode = this.initializeInternalFields(Json.getObjectMapper().createObjectNode(), absoluteRootResourceUri, language, type, parent, rootModel);
 
         //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
         subObjects.put(absoluteRootResourceUri, this);
@@ -307,10 +285,10 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
     }
     private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, Locale language, RdfClass type, JsonPageIndexEntry parent, Model rootModel) throws IOException
     {
-        this.setParentId(PageIndexEntry.generateParentId(parent));
-        this.setResource(PageIndexEntry.generateResource(rootResourceUri));
-        this.setTypeOf(PageIndexEntry.generateTypeOf(type));
-        this.setLanguage(PageIndexEntry.generateLanguage(language));
+        this.setParentUri(PageIndexEntry.parentUriField.create(parent));
+        this.setResource(PageIndexEntry.resourceField.create(rootResourceUri));
+        this.setTypeOf(type);
+        this.setLanguage(language);
 
         ResourceSummarizer summarizer = type.getSummarizer();
         if (summarizer != null) {
@@ -318,7 +296,7 @@ public class JsonPageIndexEntry extends AbstractPageIndexEntry
             if (summary != null) {
                 this.setLabel(summary.getLabel());
                 this.setDescription(summary.getDescription());
-                this.setImage(summary.getImage() == null ? null : summary.getImage().toString());
+                this.setImage(summary.getImage());
             }
             else {
                 throw new IOException("RDF class summarizer returned a null summary; this shouldn't happen; " + type);

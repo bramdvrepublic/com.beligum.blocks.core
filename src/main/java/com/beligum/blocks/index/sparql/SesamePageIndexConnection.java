@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 /**
  * Created by bram on 2/21/16.
  */
-public class SesamePageIndexConnection extends AbstractIndexConnection implements PageIndexConnection
+public class SesamePageIndexConnection extends AbstractIndexConnection implements IndexConnection
 {
     //-----CONSTANTS-----
     public enum QueryFormat implements IndexConnection.QueryFormat
@@ -107,11 +107,11 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
     //-----PUBLIC METHODS-----
     @Override
-    public PageIndexEntry get(URI key) throws IOException
+    public ResourceIndexEntry get(URI key) throws IOException
     {
         this.assertActive();
 
-        PageIndexEntry retVal = null;
+        ResourceIndexEntry retVal = null;
 
         URI subject = key;
         if (!subject.isAbsolute()) {

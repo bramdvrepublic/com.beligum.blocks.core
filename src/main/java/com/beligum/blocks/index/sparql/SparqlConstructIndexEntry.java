@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.sparql;
 
-import com.beligum.blocks.index.entries.AbstractPageIndexEntry;
+import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.PageIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -31,7 +31,7 @@ import java.util.Collection;
 /**
  * Created by bram on 2/13/16.
  */
-public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
+public class SparqlConstructIndexEntry extends AbstractIndexEntry
 {
     //-----CONSTANTS-----
     //Note: this doesn't really have internal fields, no?
@@ -43,12 +43,17 @@ public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
     //-----CONSTRUCTORS-----
     public SparqlConstructIndexEntry(URI id, Model model) throws IOException
     {
-        super(PageIndexEntry.generateUri(id));
+        super(id);
 
         this.model = model;
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean isExternal()
+    {
+        return false;
+    }
     public String getObject(RdfProperty predicate)
     {
         return this.getModelValue(this.model, predicate);
@@ -79,7 +84,7 @@ public class SparqlConstructIndexEntry extends AbstractPageIndexEntry
     public String toString()
     {
         return "SparqlConstructIndexEntry{" +
-               "id='" + idField + '\'' +
+               "uri='" + getUri() + '\'' +
                '}';
     }
 }

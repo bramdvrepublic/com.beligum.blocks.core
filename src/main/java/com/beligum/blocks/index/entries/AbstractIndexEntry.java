@@ -16,8 +16,12 @@
 
 package com.beligum.blocks.index.entries;
 
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+
+import java.net.URI;
+import java.util.Locale;
 
 /**
  * Simple implementation that provides accessors to all the required fields and offers a basic equals() implementation
@@ -31,33 +35,35 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     //-----VARIABLES-----
     //Notes:
     // - the booleans is to detect unset fields while supporting null values
-    protected String uri;
+    protected URI uri;
     protected boolean hasUri;
     protected String resource;
     protected boolean hasResource;
-    protected String typeOf;
+    protected RdfClass typeOf;
     protected boolean hasTypeOf;
-    protected String language;
+    protected Locale language;
     protected boolean hasLanguage;
+    protected URI parentUri;
+    protected boolean hasParentUri;
     protected String label;
     protected boolean hasLabel;
     protected String description;
     protected boolean hasDescription;
-    protected String image;
+    protected URI image;
     protected boolean hasImage;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexEntry()
     {
     }
-    protected AbstractIndexEntry(String uri)
+    protected AbstractIndexEntry(URI uri)
     {
         this.setUri(uri);
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getUri()
+    public URI getUri()
     {
         return uri;
     }
@@ -65,7 +71,7 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     {
         return hasUri;
     }
-    public void setUri(String uri)
+    public void setUri(URI uri)
     {
         this.uri = uri;
         this.hasUri = true;
@@ -85,7 +91,7 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
         this.hasResource = true;
     }
     @Override
-    public String getTypeOf()
+    public RdfClass getTypeOf()
     {
         return typeOf;
     }
@@ -93,13 +99,13 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     {
         return hasTypeOf;
     }
-    public void setTypeOf(String typeOf)
+    public void setTypeOf(RdfClass typeOf)
     {
         this.typeOf = typeOf;
         this.hasTypeOf = true;
     }
     @Override
-    public String getLanguage()
+    public Locale getLanguage()
     {
         return language;
     }
@@ -107,10 +113,24 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     {
         return hasLanguage;
     }
-    public void setLanguage(String language)
+    public void setLanguage(Locale language)
     {
         this.language = language;
         this.hasLanguage = true;
+    }
+    @Override
+    public URI getParentUri()
+    {
+        return parentUri;
+    }
+    public boolean hasParentUri()
+    {
+        return hasParentUri;
+    }
+    public void setParentUri(URI parentUri)
+    {
+        this.parentUri = parentUri;
+        this.hasParentUri = true;
     }
     @Override
     public String getLabel()
@@ -141,7 +161,7 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
         this.hasDescription = true;
     }
     @Override
-    public String getImage()
+    public URI getImage()
     {
         return image;
     }
@@ -149,7 +169,7 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     {
         return hasImage;
     }
-    public void setImage(String image)
+    public void setImage(URI image)
     {
         this.image = image;
         this.hasImage = true;

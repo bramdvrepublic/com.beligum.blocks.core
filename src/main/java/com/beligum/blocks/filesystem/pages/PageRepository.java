@@ -27,7 +27,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.filesystem.log.PageLogEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.utils.SecurityTools;
@@ -57,22 +57,22 @@ public class PageRepository extends AbstractResourceRepository
         DELETE_ALL_TRANSLATIONS
     }
 
-    public static class PageIndexConnectionOption implements ResourceRepository.IndexOption
+    public static class IndexConnectionOption implements ResourceRepository.IndexOption
     {
-        private PageIndexConnection mainPageConnection;
-        private PageIndexConnection triplestoreConnection;
+        private IndexConnection mainPageConnection;
+        private IndexConnection triplestoreConnection;
 
-        public PageIndexConnectionOption(PageIndexConnection mainPageConnection, PageIndexConnection triplestoreConnection)
+        public IndexConnectionOption(IndexConnection mainPageConnection, IndexConnection triplestoreConnection)
         {
             this.mainPageConnection = mainPageConnection;
             this.triplestoreConnection = triplestoreConnection;
         }
 
-        public PageIndexConnection getMainPageConnection()
+        public IndexConnection getMainPageConnection()
         {
             return mainPageConnection;
         }
-        public PageIndexConnection getTriplestoreConnection()
+        public IndexConnection getTriplestoreConnection()
         {
             return triplestoreConnection;
         }
@@ -288,8 +288,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //we need to reuse the connection or we'll run into trouble when deleting multiple translations
-        PageIndexConnection mainPageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
-        PageIndexConnection triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
+        IndexConnection mainPageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
+        IndexConnection triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
 
         //first, delete the translations, then delete the first one
         if (deleteAllTranslations) {
@@ -310,13 +310,13 @@ public class PageRepository extends AbstractResourceRepository
         Resource retVal = null;
 
         //this allows us to pass a long-running (asynchronous, shared) transaction to boost performance
-        PageIndexConnection mainPageConnection = null;
-        PageIndexConnection triplestoreConnection = null;
+        IndexConnection mainPageConnection = null;
+        IndexConnection triplestoreConnection = null;
         if (options.length > 0) {
             for (IndexOption option : options) {
                 //for now, this is the only option we support here
-                if (option instanceof PageIndexConnectionOption) {
-                    PageIndexConnectionOption o = (PageIndexConnectionOption) option;
+                if (option instanceof IndexConnectionOption) {
+                    IndexConnectionOption o = (IndexConnectionOption) option;
                     mainPageConnection = o.mainPageConnection;
                     triplestoreConnection = o.triplestoreConnection;
                 }
@@ -410,7 +410,7 @@ public class PageRepository extends AbstractResourceRepository
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private Resource deleteSinglePage(Page roPage, Person editor, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
+    private Resource deleteSinglePage(Page roPage, Person editor, IndexConnection pageIndexer, IndexConnection triplestoreIndexer) throws IOException
     {
         Resource retVal = null;
 
@@ -450,7 +450,7 @@ public class PageRepository extends AbstractResourceRepository
     {
         this.index(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
-    private void index(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
+    private void index(Page page, IndexConnection pageIndexer, IndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
         //Note: order is important!
@@ -461,7 +461,7 @@ public class PageRepository extends AbstractResourceRepository
     {
         this.unindex(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
     }
-    private void unindex(Page page, PageIndexConnection pageIndexer, PageIndexConnection triplestoreIndexer) throws IOException
+    private void unindex(Page page, IndexConnection pageIndexer, IndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
         //Note: we must delete the triplestore before the page index because the page index is used to calculate translations and subresources!

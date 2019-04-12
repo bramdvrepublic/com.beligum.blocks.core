@@ -1,11 +1,13 @@
-package com.beligum.blocks.index.entries;
+package com.beligum.blocks.index.fields;
 
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -47,6 +49,12 @@ public class JsonField implements IndexEntryField
     {
         //NOOP, override
     }
+    @Override
+    public String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException
+    {
+        //this is a very default and generic implementation, subclass for more flexibility
+        return rdfValue == null ? null : rdfValue.stringValue();
+    }
 
     //-----PROTECTED METHODS-----
     /**
@@ -56,11 +64,19 @@ public class JsonField implements IndexEntryField
     {
         return property.getCurie().toString();
     }
-    @Override
-    public String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException
+    protected String serializeUri(URI value)
     {
-        //this is a very default and generic implementation, subclass for more flexibility
-        return rdfValue == null ? null : rdfValue.stringValue();
+        if (value != null) {
+            //TODO check this: it used to be implemented with StringFunctions.getRightOfDomain(id)
+            return RdfTools.relativizeToLocalDomain(value).toString();
+        }
+        else {
+            return null;
+        }
+    }
+    protected URI deserializeUri(String value)
+    {
+        return value == null ? null : URI.create(value);
     }
 
     //-----PRIVATE METHODS-----

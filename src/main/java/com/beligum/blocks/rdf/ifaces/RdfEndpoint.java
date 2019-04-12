@@ -16,11 +16,7 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.eclipse.rdf4j.model.Model;
 
 import java.io.IOException;
@@ -59,7 +55,7 @@ public interface RdfEndpoint
      * @return a list of maxResults size
      * @throws IOException
      */
-    Collection<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException;
+    Iterable<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.

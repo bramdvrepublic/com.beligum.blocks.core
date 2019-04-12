@@ -1,8 +1,10 @@
 package com.beligum.blocks.index.request;
 
-import com.beligum.blocks.index.entries.JsonField;
+import com.beligum.blocks.index.fields.JsonField;
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
@@ -14,21 +16,30 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private final IndexConnection indexConnection;
     protected List<IndexSearchRequest.Filter> filters;
     protected Map<String, Boolean> sortFields;
     protected int pageSize = DEFAULT_PAGE_SIZE;
     protected int pageOffset = DEFAULT_PAGE_OFFSET;
     protected Locale language;
+    protected LanguageFilterType languageFilterType;
+    protected IndexEntryField languageGroupField;
     protected long maxResults = DEFAULT_MAX_SEARCH_RESULTS;
 
     //-----CONSTRUCTORS-----
-    protected AbstractIndexSearchRequest()
+    protected AbstractIndexSearchRequest(IndexConnection indexConnection)
     {
+        this.indexConnection = indexConnection;
         this.filters = new ArrayList<>();
         this.sortFields = new LinkedHashMap<>();
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public IndexConnection getIndexConnection()
+    {
+        return indexConnection;
+    }
     @Override
     public List<Filter> getFilters()
     {
@@ -78,13 +89,6 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
         return this;
     }
     @Override
-    public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
-    {
-        this.filters.add(new FieldFilter(field, value, filterBoolean, true));
-
-        return this;
-    }
-    @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
         this.filters.add(new PropertyFilter(property, value, filterBoolean, false));
@@ -92,16 +96,23 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
         return this;
     }
     @Override
-    public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
     {
-        this.filters.add(new PropertyFilter(property, value, filterBoolean, true));
+        this.filters.add(new SubFilter(subRequest, filterBoolean));
 
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
+    public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
-        this.filters.add(new SubFilter(subRequest, filterBoolean));
+        this.filters.add(new FieldFilter(field, value, filterBoolean, true));
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
+    {
+        this.filters.add(new PropertyFilter(property, value, filterBoolean, true));
 
         return this;
     }
@@ -137,6 +148,16 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     public IndexSearchRequest language(Locale language)
     {
         this.language = language;
+        this.languageFilterType = LanguageFilterType.STRICT;
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest language(Locale language, IndexEntryField field)
+    {
+        this.language = language;
+        this.languageFilterType = LanguageFilterType.PREFERRED;
+        this.languageGroupField = field;
 
         return this;
     }

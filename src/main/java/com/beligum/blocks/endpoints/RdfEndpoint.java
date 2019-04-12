@@ -133,7 +133,7 @@ public class RdfEndpoint
     public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults,
                                  @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
     {
-        Collection<ResourceProxy> retVal = new ArrayList<>();
+        Iterable<ResourceProxy> retVal = new ArrayList<>();
 
         //support a search-all-types-query when this is empty
         RdfClass resourceClassFilter = null;

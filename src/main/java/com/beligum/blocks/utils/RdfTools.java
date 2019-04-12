@@ -16,8 +16,10 @@
 
 package com.beligum.blocks.utils;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
@@ -37,7 +39,6 @@ import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 
-import static com.beligum.base.server.R.configuration;
 import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_TZONE_CLASS;
 
 /**
@@ -181,7 +182,7 @@ public class RdfTools
 
         if (uri.isAbsolute()) {
             //Note: if the url is not relative to the siteDomain url, the url is simply returned
-            URI relative = configuration().getSiteDomain().relativize(retVal);
+            URI relative = R.configuration().getSiteDomain().relativize(retVal);
             //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
             if (!relative.isAbsolute()) {
                 retVal = ROOT.resolve(relative);
@@ -248,33 +249,33 @@ public class RdfTools
     /**
      * Generate a RDFa-compatible HTML string from the supplied enum.
      */
-    public static CharSequence serializeEnumHtml(AutocompleteSuggestion enumValue)
+    public static CharSequence serializeEnumHtml(ResourceProxy enumValue)
     {
         // <p> is consistent with JS
         return new StringBuilder()
                         .append("<p>")
-                        .append(enumValue.getTitle())
+                        .append(enumValue.getLabel())
                         .append("</p>");
     }
 
     /**
      * Generate a RDFa-compatible HTML string from the supplied resource info
      */
-    public static CharSequence serializeResourceHtml(ResourceInfo resourceInfo)
+    public static CharSequence serializeResourceHtml(ResourceProxy resourceProxy)
     {
         CharSequence retVal = null;
 
         StringBuilder labelHtml = new StringBuilder();
-        labelHtml.append(resourceInfo.getLabel());
-        if (resourceInfo.getImage() != null) {
+        labelHtml.append(resourceProxy.getLabel());
+        if (resourceProxy.getImage() != null) {
             //Note: title is for a tooltip
-            labelHtml.append("<img src=\"").append(resourceInfo.getImage()).append("\" alt=\"").append(resourceInfo.getLabel()).append("\" title=\"").append(resourceInfo.getLabel()).append("\">");
+            labelHtml.append("<img src=\"").append(resourceProxy.getImage()).append("\" alt=\"").append(resourceProxy.getLabel()).append("\" title=\"").append(resourceProxy.getLabel()).append("\">");
         }
 
-        if (resourceInfo.getLink() != null) {
+        if (resourceProxy.getUri() != null) {
             StringBuilder linkHtml = new StringBuilder();
-            linkHtml.append("<a href=\"").append(resourceInfo.getLink()).append("\"");
-            if (resourceInfo.isExternalLink() || resourceInfo.getLink().isAbsolute()) {
+            linkHtml.append("<a href=\"").append(resourceProxy.getUri()).append("\"");
+            if (resourceProxy.isExternal() || resourceProxy.getUri().isAbsolute()) {
                 linkHtml.append(" target=\"_blank\"");
             }
             linkHtml.append(">").append(labelHtml).append("</a>");
@@ -312,7 +313,7 @@ public class RdfTools
      */
     private static URI createAbsoluteResourceId(RdfResource entity, String id, boolean ontologyUniqueId)
     {
-        return createResourceIdPath(UriBuilder.fromUri(configuration().getSiteDomain()), entity, id, ontologyUniqueId).build();
+        return createResourceIdPath(UriBuilder.fromUri(R.configuration().getSiteDomain()), entity, id, ontologyUniqueId).build();
     }
 
     /**

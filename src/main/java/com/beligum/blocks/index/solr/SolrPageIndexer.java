@@ -22,8 +22,8 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
-import com.beligum.blocks.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.index.ifaces.PageIndexer;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -111,7 +111,7 @@ public class SolrPageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public synchronized PageIndexConnection connect(TX tx) throws IOException
+    public synchronized IndexConnection connect(TX tx) throws IOException
     {
         return new SolrPageIndexConnection(this, tx, DEFAULT_SYNC_MODE);
     }
