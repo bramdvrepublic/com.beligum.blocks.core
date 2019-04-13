@@ -238,25 +238,26 @@ public class PageRepository extends AbstractResourceRepository
                     }
                 }
 
-                //save the original page html
+                // save the original page html
                 newPage.write(pageSource);
 
-                //generated and write the normalized proxy html
+                // generated and write the normalized proxy html
                 newPage.updateNormalizedProxy(pageSource);
 
-                //extract the RDF and save it
+                // extract the RDF and save it
+                // Note that the indexer below will re-read this, so make sure this happens before indexing
                 newPage.updateRdfProxy(pageSource);
 
-                //if all went well, we can update the hash file
+                // if all went well, we can update the hash file
                 newPage.writeHash(source.getHash());
 
-                //write out a log entry that the page was altered
+                // write out a log entry that the page was altered
                 newPage.writeLogEntry(editor, oldPage != null ? PageLogEntry.Action.UPDATE : PageLogEntry.Action.CREATE);
 
-                //reindex the page
+                // reindex the page
                 this.index(newPage);
 
-                //expire the cache
+                // expire the cache
                 this.expire(newPage);
 
                 retVal = newPage;

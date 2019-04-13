@@ -2609,6 +2609,7 @@ public class SolrConfigs
                                              "\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"false\" required=\"true\" multiValued=\"false\" />\n" +
+                                             "    <copyField source=\"" + CORE_SCHEMA_FIELD_URI + "\" dest=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\"/>\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LABEL + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_DESCRIPTION + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +

@@ -3,6 +3,7 @@ package com.beligum.blocks.index.fields;
 import com.beligum.base.server.R;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 
 import java.net.URI;
 import java.util.Locale;
@@ -24,19 +25,21 @@ public class ParentUriField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return this.serialize(indexEntry.getParentUri());
+        return this.serialize(resourceProxy.getParentUri());
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasParentUri();
+        return resourceProxy.getParentUri() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setParentUri(this.deserialize(value));
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setParentUri(this.deserialize(value));
+        }
     }
 
     public URI create(ResourceIndexEntry parent)

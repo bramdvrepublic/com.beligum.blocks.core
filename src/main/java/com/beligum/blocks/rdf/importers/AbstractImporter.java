@@ -48,6 +48,7 @@ public abstract class AbstractImporter implements Importer
     public static final String XHTML_NS_ICON_NAME = "icon";
     public static final String XHTML_NS_ICON = XHTML_NS + XHTML_NS_ICON_NAME;
     public static final String LOCAL_NS_ICON = LOCAL_NS + XHTML_NS_ICON_NAME;
+    public static final String LOCAL_NS_MANIFEST = LOCAL_NS + "manifest";
     public static final String XHTML_NS_APPLE_TOUCH_ICON_NAME = "apple-touch-icon";
     public static final String XHTML_NS_APPLE_TOUCH_ICON = XHTML_NS + XHTML_NS_APPLE_TOUCH_ICON_NAME;
     public static final String LOCAL_NS_APPLE_TOUCH_ICON = LOCAL_NS + XHTML_NS_APPLE_TOUCH_ICON_NAME;
@@ -98,9 +99,11 @@ public abstract class AbstractImporter implements Importer
             }
             //removes all favicon statements. Note that this last check isn't waterproof (we can use any name for our favicons), but it works 99% of the time
             if (!removed && IGNORE_FAVICON &&
+                stmt.getObject().toString().contains("favicon") &&
                 (stmt.getPredicate().toString().equals(XHTML_NS_ICON) || stmt.getPredicate().toString().equals(LOCAL_NS_ICON) ||
-                 stmt.getPredicate().toString().equals(XHTML_NS_APPLE_TOUCH_ICON) || stmt.getPredicate().toString().equals(LOCAL_NS_APPLE_TOUCH_ICON)
-                ) && stmt.getObject().toString().contains("favicon")) {
+                 stmt.getPredicate().toString().equals(XHTML_NS_APPLE_TOUCH_ICON) || stmt.getPredicate().toString().equals(LOCAL_NS_APPLE_TOUCH_ICON) ||
+                 stmt.getPredicate().toString().equals(LOCAL_NS_MANIFEST)
+                )) {
                 removed = true;
             }
             //remove all non-documentBaseUri subjects from the model

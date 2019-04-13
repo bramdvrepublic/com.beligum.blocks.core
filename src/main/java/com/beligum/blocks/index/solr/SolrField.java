@@ -3,14 +3,18 @@ package com.beligum.blocks.index.solr;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -146,21 +150,21 @@ public class SolrField extends JsonField
         return fieldName.startsWith("_") && fieldName.endsWith("_");
     }
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
         //don't really know what to return here, this shouldn't be called anyhow
         return null;
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
         //see note above
         return false;
     }
     @Override
-    public String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException
+    public String serialize(Value rdfValue, Locale language) throws IOException
     {
-        return this.toSolrFieldValue(rdfValue, predicate, language);
+        return this.toSolrFieldValue(rdfValue, this.getRdfProperty(), language);
     }
     public ImmutableMap<String, Object> toMap()
     {
@@ -476,16 +480,14 @@ public class SolrField extends JsonField
                     throw new IOException("Unable to serialize literal value for field '" + this.getName() + "' because the datatype '" + property.getDataType() + "' is unimplemented; " + value);
                 }
             }
-            //TODO think about this: shouldn't we create a proxy for this?
-//            else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
-//
-//                //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-//                URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
-//
-//                //We'll always index the relative, stringified URI as a value for the field,
-//                //but if the property has an endpoint, we'll query it to get (and index) the label as well.
-//                retVal = uriValue.toString();
-//            }
+            else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
+
+                // All local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+                // Note that we'll always index the relative, stringified URI as a value for the field,
+                // but if the property has an endpoint, we'll query it to get (and index) the label as well
+                // (the caller is responsible for this, see JsonPageIndexEntry).
+                retVal = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue())).toString();
+            }
             else {
                 throw new IOException("Unable to serialize unknown value for field '" + this.getName() + "' because the datatype '" + property.getDataType() + "' is unimplemented; " + value);
             }

@@ -3,6 +3,7 @@ package com.beligum.blocks.index.fields;
 import com.beligum.base.server.R;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 
@@ -25,19 +26,21 @@ public class LanguageField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return this.serialize(indexEntry.getLanguage());
+        return this.serialize(resourceProxy.getLanguage());
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasLanguage();
+        return resourceProxy.getLanguage() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setLanguage(this.deserialize(value));
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setLanguage(this.deserialize(value));
+        }
     }
 
     public String serialize(Locale value)

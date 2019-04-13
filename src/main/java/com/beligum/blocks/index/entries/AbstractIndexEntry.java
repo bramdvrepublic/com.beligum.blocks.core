@@ -33,24 +33,14 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //Notes:
-    // - the booleans is to detect unset fields while supporting null values
     protected URI uri;
-    protected boolean hasUri;
     protected String resource;
-    protected boolean hasResource;
     protected RdfClass typeOf;
-    protected boolean hasTypeOf;
     protected Locale language;
-    protected boolean hasLanguage;
     protected URI parentUri;
-    protected boolean hasParentUri;
     protected String label;
-    protected boolean hasLabel;
     protected String description;
-    protected boolean hasDescription;
     protected URI image;
-    protected boolean hasImage;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexEntry()
@@ -67,112 +57,72 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     {
         return uri;
     }
-    public boolean hasUri()
-    {
-        return hasUri;
-    }
     public void setUri(URI uri)
     {
         this.uri = uri;
-        this.hasUri = true;
     }
     @Override
     public String getResource()
     {
         return resource;
     }
-    public boolean hasResource()
-    {
-        return hasResource;
-    }
     public void setResource(String resource)
     {
         this.resource = resource;
-        this.hasResource = true;
     }
     @Override
     public RdfClass getTypeOf()
     {
         return typeOf;
     }
-    public boolean hasTypeOf()
-    {
-        return hasTypeOf;
-    }
     public void setTypeOf(RdfClass typeOf)
     {
         this.typeOf = typeOf;
-        this.hasTypeOf = true;
     }
     @Override
     public Locale getLanguage()
     {
         return language;
     }
-    public boolean hasLanguage()
-    {
-        return hasLanguage;
-    }
     public void setLanguage(Locale language)
     {
         this.language = language;
-        this.hasLanguage = true;
     }
     @Override
     public URI getParentUri()
     {
         return parentUri;
     }
-    public boolean hasParentUri()
-    {
-        return hasParentUri;
-    }
     public void setParentUri(URI parentUri)
     {
         this.parentUri = parentUri;
-        this.hasParentUri = true;
     }
     @Override
     public String getLabel()
     {
         return label;
     }
-    public boolean hasLabel()
-    {
-        return hasLabel;
-    }
     public void setLabel(String label)
     {
         this.label = label;
-        this.hasLabel = true;
     }
     @Override
     public String getDescription()
     {
         return description;
     }
-    public boolean hasDescription()
-    {
-        return hasDescription;
-    }
     public void setDescription(String description)
     {
         this.description = description;
-        this.hasDescription = true;
     }
     @Override
     public URI getImage()
     {
         return image;
     }
-    public boolean hasImage()
-    {
-        return hasImage;
-    }
     public void setImage(URI image)
     {
         this.image = image;
-        this.hasImage = true;
     }
 
     //-----PROTECTED METHODS-----

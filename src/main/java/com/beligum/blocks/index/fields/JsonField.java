@@ -1,7 +1,7 @@
 package com.beligum.blocks.index.fields;
 
 import com.beligum.blocks.index.ifaces.IndexEntryField;
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.Value;
@@ -17,15 +17,18 @@ public class JsonField implements IndexEntryField
 
     //-----VARIABLES-----
     protected String name;
+    private RdfProperty rdfProperty;
 
     //-----CONSTRUCTORS-----
     public JsonField(String name)
     {
         this.name = name;
+        this.rdfProperty = null;
     }
     public JsonField(RdfProperty rdfProperty)
     {
         this.name = this.toFieldName(rdfProperty);
+        this.rdfProperty = rdfProperty;
     }
 
     //-----PUBLIC METHODS-----
@@ -35,25 +38,43 @@ public class JsonField implements IndexEntryField
         return name;
     }
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
         return null;
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
         return false;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
         //NOOP, override
     }
     @Override
-    public String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException
+    public boolean isInternal()
+    {
+        return this.rdfProperty == null;
+    }
+    @Override
+    public boolean isVirtual()
+    {
+        return false;
+    }
+    @Override
+    public String serialize(Value rdfValue, Locale language) throws IOException
     {
         //this is a very default and generic implementation, subclass for more flexibility
         return rdfValue == null ? null : rdfValue.stringValue();
+    }
+    public RdfProperty getRdfProperty()
+    {
+        return rdfProperty;
+    }
+    public JsonProxyField getProxyField()
+    {
+        return new JsonProxyField(this);
     }
 
     //-----PROTECTED METHODS-----

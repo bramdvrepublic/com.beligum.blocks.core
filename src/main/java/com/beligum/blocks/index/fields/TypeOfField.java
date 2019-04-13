@@ -3,6 +3,7 @@ package com.beligum.blocks.index.fields;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 
@@ -25,19 +26,21 @@ public class TypeOfField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return this.serialize(indexEntry.getTypeOf());
+        return this.serialize(resourceProxy.getTypeOf());
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasTypeOf();
+        return resourceProxy.getTypeOf() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setTypeOf(this.deserialize(value));
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setTypeOf(this.deserialize(value));
+        }
     }
 
     public String serialize(RdfClass value)

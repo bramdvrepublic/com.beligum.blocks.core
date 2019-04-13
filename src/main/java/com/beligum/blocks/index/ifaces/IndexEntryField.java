@@ -17,6 +17,12 @@ public interface IndexEntryField
      */
     String NULL_VALUE = "NULL";
 
+    /**
+     * This will be appended to the name of this field if we're creating a "proxy field".
+     * For more info, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/50
+     */
+    String PROXY_FIELD_SUFFIX = "_proxy";
+
     //-----VARIABLES-----
 
     //-----PUBLIC METHODS-----
@@ -28,21 +34,32 @@ public interface IndexEntryField
     /**
      * Returns the value of the index entry, associated with this field
      */
-    String getValue(ResourceIndexEntry indexEntry);
+    String getValue(ResourceProxy resourceProxy);
 
     /**
      * Returns true if the value of the index entry has been set once (even if it was set to null)
      */
-    boolean hasValue(ResourceIndexEntry indexEntry);
+    boolean hasValue(ResourceProxy resourceProxy);
 
     /**
      * Sets the field of the indexEntry to the supplied value
      */
-    void setValue(ResourceIndexEntry indexEntry, String value);
+    void setValue(ResourceProxy resourceProxy, String value);
+
+    /**
+     * Returns true if this field is an internal field instead of a field wrapping an RDF property
+     */
+    boolean isInternal();
+
+    /**
+     * Virtual fields shouldn't be copied to the serialized JSON representation eg. because they
+     * are implemented as Solr copyFields (eg. tokenizedUri)
+     */
+    boolean isVirtual();
 
     /**
      * Convert the RDF value to an indexable string value counterpart
      */
-    String serialize(Value rdfValue, RdfProperty predicate, Locale language) throws IOException;
+    String serialize(Value rdfValue, Locale language) throws IOException;
 
 }

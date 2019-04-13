@@ -1,14 +1,11 @@
 package com.beligum.blocks.index.entries;
 
-import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
@@ -19,7 +16,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.Models;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -151,9 +147,6 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, JsonPageIndexEntry> subObjects = new LinkedHashMap<>();
 
-        //this will hold URIs that are values in the ObjectNode, for the RdfProperty
-        Map<URI, Map.Entry<ObjectNode, RdfProperty>> subObjectMapping = new LinkedHashMap<>();
-
         IRI rootResourceIri = RdfTools.uriToIri(absoluteRootResourceUri);
         if (!rdfModel.subjects().contains(rootResourceIri)) {
             throw new IOException("Couldn't find resource URI in RDF model; " + absoluteRootResourceUri);
@@ -168,80 +161,97 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
-        //create a new object and fill it with the first internal fields like id, etc
+        //create a new object and fill it with the first internal fields like uri, resource, etc
         this.jsonNode = this.initializeInternalFields(Json.getObjectMapper().createObjectNode(), absoluteRootResourceUri, language, type, parent, rootModel);
 
         //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
         subObjects.put(absoluteRootResourceUri, this);
 
-        for (Statement triple : rootModel) {
-
-            RdfProperty predicate = RdfFactory.lookup(triple.getPredicate(), RdfProperty.class);
-            if (predicate != null) {
-
-                Value value = triple.getObject();
-
-                //put the value in the json object
-                this.addProperty(this.jsonNode, value, predicate, language);
-
-                // If the value is a resource, store it, we'll use it later to hook sub-objects to their parents
-                // This means the value of this triple is possibly a reference to (the subject-URI of) another object
-                // in this model (that might come later) .
-                if (value instanceof IRI || predicate.getDataType().equals(XSD.anyURI)) {
-                    subObjectMapping.put(URI.create(value.stringValue()), new AbstractMap.SimpleEntry<>(this.jsonNode, predicate));
-                }
-            }
-            else {
-                Logger.error("Encountered an unknown RDF predicate '" + predicate +
-                             "' while mapping to JSON. This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
-            }
-        }
-
         // The model might have more subjects than just the root resource (eg. sub-objects).
-        // so do a recursive call and parse those other submodels to JSON nodes
+        // We'll iterate the subjects and check all non-root ones and build a map of sub-nodes first.
+        // This will do a recursive call and parse those other submodels to JSON nodes.
+        // This way, they're ready to be attached to the root node below
         for (Resource subjectIri : rdfModel.subjects()) {
+
+            //skip this, we'll parse it in the loop below
             if (!subjectIri.equals(rootResourceIri)) {
+
                 URI subjectUri = RdfTools.iriToUri((IRI) subjectIri);
 
                 //we'll skip the triples that describe the public page since these only describe some marginal RDFa properties,
                 //and only get us in trouble later on because they don't have typeOf, etc.
                 if (!subjectUri.equals(absolutePublicPageUri)) {
-                    //note: this create() is a means to have polymophic constructor (it creates the same new class instance as this instance)
-                    //also note that the language of sub objects is always the same as the language of the parent
+
+                    // zoom-in on the subject and recursively call the parser
                     Model subModel = rdfModel.filter(subjectIri, null, null);
 
-                    JsonPageIndexEntry subEntry = this.create(absolutePublicPageUri, subjectUri, language, subModel, this);
-
-                    subObjects.put(RdfTools.iriToUri((IRI) subjectIri), subEntry);
+                    // note: this create() is a means to have a polymorphic constructor (it creates the same new class instance as this instance)
+                    // also note that the language of sub objects is always the same as the language of the parent
+                    subObjects.put(subjectUri, this.create(absolutePublicPageUri, subjectUri, language, subModel, this));
                 }
             }
         }
 
-        // Now branch sub-objects into other parent objects where possible
-        // Note that, conceptually, this (in theory) doesn't necessarily means we're attaching to the root node
-        // We might be branching deeper sub-objects into each other as well.
-        // but note that deeper sub-objects that are not "attached" to the root node will be lost, cause that's the only
-        // one we're saving as a class field
-        for (Map.Entry<URI, JsonPageIndexEntry> m : subObjects.entrySet()) {
+        // This is the main loop: iterate the root model and connect everything together.
+        for (Statement triple : rootModel) {
 
-            URI subObjectSubject = m.getKey();
+            RdfProperty property = RdfFactory.lookup(triple.getPredicate(), RdfProperty.class);
+            if (property != null && property.getDataType() != null) {
 
-            // This won't necessarily resolve: the keys here in the mapping are the values of properties in other objects
-            // Note that the fact it's not present in the map will always happen; it means the model had a subject URI
-            // that isn't linked to the main object and this is always the case with our RDFa models because the "rdfa:usesVocabulary" property
-            // is attached as a predicate to the public (human readable) page address, but that URI is never attached to the resource URI further down the model
-            if (subObjectMapping.containsKey(subObjectSubject)) {
+                Value value = triple.getObject();
 
-                JsonPageIndexEntry subNode = m.getValue();
+                JsonField field = this.createField(property);
 
-                //this pair holds the object and its property to which we should attach
-                Map.Entry<ObjectNode, RdfProperty> mapping = subObjectMapping.get(subObjectSubject);
+                // If the value is a resource, we'll store its reference:
+                // - if its a sub-resource, the data of it will be in the RDF model and we need to 'instantiate' these in the JSON tree
+                //   by saving the reference to the right property now and create + attach the sub-object later on (see below)
+                // - if it's a reference to a (local or external) resource that has an endpoint, we'll store some metadata about
+                //   that resource in this JSON object (eg. for sorting/filtering on the human readable label of the resource instead of its URI)
+                // - if it's a reference to a resource without an endpoint,
+                if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
 
-                //this attaches the subObject to the object in the mapping, using the property in the mapping
-                //Note that it supports both single values and array values, depending on the multiplicity of the field
-                this.addProperty(mapping.getKey(), subNode.getJsonNode(), mapping.getValue(), language);
+                    URI resourceUri = URI.create(value.stringValue());
+
+                    // check if it's a subresource that was present in the RDF model and already parsed into an object
+                    if (subObjects.containsKey(resourceUri)) {
+                        this.addProperty(this.jsonNode, subObjects.get(resourceUri), field, language);
+                    }
+                    else {
+                        // we start out by adding the resource URI as the "real" value of this property
+                        this.addProperty(this.jsonNode, value, field, language);
+
+                        // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
+                        // using a separate "_proxy" suffixed field
+                        if (property.getDataType().getEndpoint() != null) {
+
+                            ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
+                            if (resourceValue != null) {
+
+                                // now iterate all internal fields of this object and copy them to the Json node
+                                ObjectNode resourceNode = this.copyInternalFields(Json.getObjectMapper().createObjectNode(), true);
+
+                                // lastly, hook the sub-node in the main node using the "_proxy" suffix
+                                this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
+                            }
+                            //we didn't get a resource value from the endpoint; this shouldn't really happen because how did we get our hands on the URI in the first place anyway?
+                            else {
+                                throw new IOException("Unable to serialize resource value because it's resource endpoint returned null; " + triple);
+                            }
+                        }
+                    }
+                }
+                else {
+                    //if it's a literal value, put the value in the json object
+                    this.addProperty(this.jsonNode, value, field, language);
+                }
+            }
+            else {
+                Logger.error("Encountered an unknown or invalid RDF predicate '" + property + "' while mapping to JSON." +
+                             " This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
             }
         }
+
+        Logger.info("done");
     }
     private void findChildBoundaries(JsonNode fieldValue, JsonNodeVisitor visitor) throws IOException
     {
@@ -285,10 +295,10 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     }
     private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, Locale language, RdfClass type, JsonPageIndexEntry parent, Model rootModel) throws IOException
     {
-        this.setParentUri(PageIndexEntry.parentUriField.create(parent));
         this.setResource(PageIndexEntry.resourceField.create(rootResourceUri));
         this.setTypeOf(type);
         this.setLanguage(language);
+        this.setParentUri(PageIndexEntry.parentUriField.create(parent));
 
         ResourceSummarizer summarizer = type.getSummarizer();
         if (summarizer != null) {
@@ -306,13 +316,26 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF class with a null summarizer; this shouldn't happen; " + type);
         }
 
+        // Instead of omitting the fields without a value, we explicitly choose to set them to null
+        // (at least for the core internal fields). Note that Solr might still decide to filter these out
+        // (eg. see RemoveBlankFieldUpdateProcessorFactory updateProcessor), but this way, we can decide
+        // to include them, so we can search for them explicitly, eg. analogous to:
+        // https://www.elastic.co/guide/en/elasticsearch/reference/2.1/null-value.html
+        return this.copyInternalFields(object, false);
+    }
+    private ObjectNode copyInternalFields(ObjectNode object, boolean omitEmptyFields)
+    {
         // now iterate all internal fields of this object and copy them to the Json node
         for (IndexEntryField e : INTERNAL_FIELDS) {
-            if (e.hasValue(this)) {
-                object.put(e.getName(), e.getValue(this));
-            }
-            else {
-                throw new IOException("Encountered an uninitialized internal field, this probably means some internal fields have changed without updating this method; " + e);
+            if (!e.isVirtual()) {
+                if (e.hasValue(this)) {
+                    object.put(e.getName(), e.getValue(this));
+                }
+                else {
+                    if (!omitEmptyFields) {
+                        object.putNull(e.getName());
+                    }
+                }
             }
         }
 
@@ -323,10 +346,8 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
      * auto-detecting if this is the first property and converting the field to an array if (and only if) the
      * field was already present in the json object.
      */
-    private JsonField addProperty(ObjectNode node, Object value, RdfProperty property, Locale language) throws IOException
+    private IndexEntryField addProperty(ObjectNode node, Object value, IndexEntryField field, Locale language) throws IOException
     {
-        JsonField field = this.createField(property);
-
         // this will support both array-based subObjects when there are multiple objects mapped on the same field
         // and standard subnode (not in an array) when there's only one.
         JsonNode existingField = node.get(field.getName());
@@ -337,10 +358,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             else if (value instanceof Value) {
                 Value rdfValue = (Value) value;
 
-                node.put(field.getName(), field.serialize(rdfValue, property, language));
-
-                //TODO
-                //this.addExtraResourceFields(node, field.getName(), rdfValue, property, language);
+                node.put(field.getName(), field.serialize(rdfValue, language));
             }
             else {
                 throw new IOException("Unimplemented value type, this shouldn't happen; " + value);
@@ -360,10 +378,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             else if (value instanceof Value) {
                 Value rdfValue = (Value) value;
 
-                node.withArray(field.getName()).add(field.serialize(rdfValue, property, language));
-
-                //TODO
-                //this.addExtraResourceFields(node, field.getName(), rdfValue, property, language);
+                node.withArray(field.getName()).add(field.serialize(rdfValue, language));
             }
             else {
                 throw new IOException("Unimplemented value type, this shouldn't happen; " + value);
@@ -371,53 +386,5 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         }
 
         return field;
-    }
-    private List<String> addExtraResourceFields(ObjectNode node, String fieldName, Value value, RdfProperty property, Locale language) throws IOException
-    {
-        List<String> retVal = new ArrayList<>();
-
-        if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
-            //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-            URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
-
-            RdfClass dataType = property.getDataType();
-            RdfEndpoint endpoint = dataType.getEndpoint();
-            // If we have an endpoint, we'll contact it to get more (human readable) information about the resource
-            if (endpoint != null) {
-
-                //make sure we have a language or we won't be able to lookup the resource from the uri
-                URI debugValue = uriValue;
-                Locale uriValueLang = R.i18n().getUrlLocale(debugValue);
-                if (uriValueLang == null) {
-                    //it's a resource, so add it as a query parameter
-                    debugValue = UriBuilder.fromUri(debugValue).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
-                }
-
-                ResourceProxy resourceValue = endpoint.getResource(dataType, uriValue, language);
-                if (resourceValue != null) {
-                    //this is setRollbackOnly prone, but the logging info is minimal, so we wrap it to have more information
-                    try {
-                        //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
-                        String label = resourceValue.getLabel();
-
-                        //TODO
-//                        String humanReadableFieldName = LucenePageIndexer.buildHumanReadableFieldName(fieldName);
-//                        indexer.indexStringField(humanReadableFieldName, label);
-//
-//                        retVal = new RdfIndexer.IndexResult(uriValueStr, label);
-                    }
-                    catch (Exception e) {
-                        throw new IOException("Unable to serialize resource value for field " + fieldName + " because there was an setRollbackOnly" +
-                                              " while parsing the information coming back from the resource endpoint for datatype " + dataType + ";" + debugValue, e);
-                    }
-                }
-                //we didn't get a resource value from the endpoint and need to crash, but let's add some nice info to the stacktrace
-                else {
-                    throw new IOException("Unable to serialize resource value for field " + fieldName + " because it's resource endpoint returned null; " + debugValue);
-                }
-            }
-        }
-
-        return retVal;
     }
 }

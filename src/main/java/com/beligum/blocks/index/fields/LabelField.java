@@ -2,6 +2,7 @@ package com.beligum.blocks.index.fields;
 
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 
 import java.net.URI;
 
@@ -22,19 +23,21 @@ public class LabelField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return indexEntry.getLabel();
+        return resourceProxy.getLabel();
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasLabel();
+        return resourceProxy.getLabel() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setLabel(value);
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setLabel(value);
+        }
     }
 
     //-----PROTECTED METHODS-----

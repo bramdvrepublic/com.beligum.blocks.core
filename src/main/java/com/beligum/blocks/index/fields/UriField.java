@@ -5,6 +5,7 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.IRI;
 
@@ -27,19 +28,21 @@ public class UriField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return this.serialize(indexEntry.getUri());
+        return this.serialize(resourceProxy.getUri());
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasUri();
+        return resourceProxy.getUri() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setUri(this.deserialize(value));
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setUri(this.deserialize(value));
+        }
     }
 
     public URI create(IRI iri)

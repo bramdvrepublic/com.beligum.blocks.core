@@ -2,6 +2,7 @@ package com.beligum.blocks.index.fields;
 
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
+import com.beligum.blocks.index.ifaces.ResourceProxy;
 
 /**
  * Created by bram on Apr 12, 2019
@@ -20,19 +21,26 @@ public class DescriptionField extends JsonField
 
     //-----PUBLIC METHODS-----
     @Override
-    public String getValue(ResourceIndexEntry indexEntry)
+    public String getValue(ResourceProxy resourceProxy)
     {
-        return indexEntry.getDescription();
+        return resourceProxy.getDescription();
     }
     @Override
-    public boolean hasValue(ResourceIndexEntry indexEntry)
+    public boolean hasValue(ResourceProxy resourceProxy)
     {
-        return ((AbstractIndexEntry)indexEntry).hasDescription();
+        return resourceProxy.getDescription() != null;
     }
     @Override
-    public void setValue(ResourceIndexEntry indexEntry, String value)
+    public void setValue(ResourceProxy resourceProxy, String value)
     {
-        ((AbstractIndexEntry)indexEntry).setDescription(value);
+        if (resourceProxy instanceof AbstractIndexEntry) {
+            ((AbstractIndexEntry) resourceProxy).setDescription(value);
+        }
+    }
+    @Override
+    public boolean isInternal()
+    {
+        return true;
     }
 
     //-----PROTECTED METHODS-----

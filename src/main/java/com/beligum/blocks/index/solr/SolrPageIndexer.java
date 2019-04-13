@@ -324,6 +324,9 @@ public class SolrPageIndexer implements PageIndexer
         //we will wipe the fields from this map when they were processed, to iterare when all is done to detect the stale fields to be deleted
         Set<String> existingFieldsTracker = new HashSet<>(existingFields.keySet());
 
+        //this will make sure we don't create fields twice
+        Set<SolrField> newFieldsTracker = new HashSet<>();
+
         //iterate all properties in all public ontologies and check if their field and type is known in the solr schema
         for (RdfOntology o : RdfFactory.getRelevantOntologies()) {
             //We only iterate the properties of the public ontologies; no need to check every single referenced ontology
@@ -358,10 +361,14 @@ public class SolrPageIndexer implements PageIndexer
                                     new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
                                 }
                             }
+                            else if (newFieldsTracker.contains(rdfField)) {
+                                Logger.info("Not adding field to Solr schema because it was already created; " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                            }
                             //if the field is unknown, add it
                             else {
                                 Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
                                 new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
+                                newFieldsTracker.add(rdfField);
                             }
                         }
                         else {
