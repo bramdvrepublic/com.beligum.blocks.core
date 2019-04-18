@@ -67,14 +67,6 @@ public interface RdfClass extends RdfOntologyMember
     boolean hasProperty(RdfProperty property);
 
     /**
-     * Factory method to get a reference to the endpoint for this class.
-     * The endpoint is used to lookup remote or local values for autocomplete boxes etc. of resources with this type.
-     * Can return null to signal there is no such functionality and this class is for syntax/semantic-use only
-     */
-    @JsonIgnore
-    RdfEndpoint getEndpoint();
-
-    /**
      * A summarizer that pulls out search-relevant information from this instance during indexing.
      * If this is null, a generic SimpleResourceSummarizer is used.
      */

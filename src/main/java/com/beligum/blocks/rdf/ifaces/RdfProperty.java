@@ -16,9 +16,9 @@
 
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.InputTypeAdapter;
-import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.blocks.config.WidgetTypeConfig;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -56,11 +56,11 @@ public interface RdfProperty extends RdfOntologyMember
      * Note: we serialize this (eg. to JS client side) as it's constant, so we can easily check it's value client side
      */
     @XmlJavaTypeAdapter(InputTypeAdapter.class)
-    InputType getWidgetType();
+    WidgetType getWidgetType();
 
     /**
      * A map of key/value entries that contain specific settings for the input widget type
      */
-    InputTypeConfig getWidgetConfig();
+    WidgetTypeConfig getWidgetConfig();
 
 }

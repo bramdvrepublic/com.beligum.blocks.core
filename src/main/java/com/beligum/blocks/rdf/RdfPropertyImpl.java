@@ -16,13 +16,19 @@
 
 package com.beligum.blocks.rdf;
 
-import com.beligum.blocks.config.InputType;
-import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.base.filesystem.ConstantsFileEntry;
+import com.beligum.blocks.config.WidgetType;
+import com.beligum.blocks.config.WidgetTypeConfig;
+import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.XSD;
+import gen.com.beligum.blocks.core.constants.blocks.core;
+import gen.com.beligum.blocks.endpoints.RdfEndpointRoutes;
+
+import java.net.URI;
 
 /**
  * Created by bram on 2/25/16.
@@ -34,8 +40,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     //-----VARIABLES-----
     protected RdfClassImpl dataType;
     protected RdfEndpoint endpoint;
-    protected InputType widgetType;
-    protected InputTypeConfig widgetConfig;
+    protected WidgetType widgetType;
+    protected WidgetTypeConfig widgetConfig;
 
     //-----CONSTRUCTORS-----
     RdfPropertyImpl(RdfOntologyImpl ontology, String name)
@@ -64,14 +70,14 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         return endpoint;
     }
     @Override
-    public InputType getWidgetType()
+    public WidgetType getWidgetType()
     {
         this.assertNoProxy();
 
         return widgetType;
     }
     @Override
-    public InputTypeConfig getWidgetConfig()
+    public WidgetTypeConfig getWidgetConfig()
     {
         this.assertNoProxy();
 
@@ -88,6 +94,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         Builder(RdfFactory rdfFactory, RdfPropertyImpl rdfProperty)
         {
             super(rdfFactory, rdfProperty);
+
+            this.rdfResource.widgetConfig = new WidgetTypeConfig();
         }
 
         public Builder dataType(RdfClass dataType)
@@ -96,24 +104,24 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             return this;
         }
-        public Builder widgetType(InputType widgetType)
+        public Builder widgetType(WidgetType widgetType)
         {
             this.rdfResource.widgetType = widgetType;
 
             return this;
         }
-        public Builder widgetConfig(InputTypeConfig widgetConfig)
+        public Builder widgetConfig(ConstantsFileEntry key, String value)
         {
-            this.rdfResource.widgetConfig = widgetConfig;
+            this.rdfResource.widgetConfig.put(key.getValue(), value);
 
             return this;
         }
-//        public Builder indexer(RdfPropertyIndexer indexer)
-//        {
-//            this.rdfResource.indexer = indexer;
-//
-//            return this;
-//        }
+        //        public Builder indexer(RdfPropertyIndexer indexer)
+        //        {
+        //            this.rdfResource.indexer = indexer;
+        //
+        //            return this;
+        //        }
 
         @Override
         RdfProperty create() throws RdfInitializationException
@@ -127,24 +135,49 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
                 //enforces the properties in our local public ontologies to have valid datatypes
                 if (this.rdfResource.dataType == null) {
-                    throw new RdfInitializationException("Datatype of RDF property " + this.rdfResource.getName() + " inside a public ontology is null. This is not allowed; " + this);
+                    throw new RdfInitializationException("Datatype of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
                 }
                 else if (this.rdfResource.widgetType == null) {
-                    throw new RdfInitializationException("Widget type of RDF property " + this.rdfResource.getName() + " inside a public ontology is null. This is not allowed; " + this);
+                    throw new RdfInitializationException("Widget type of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
                 }
                 else {
                     //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
-                    if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(InputType.Date))
-                        || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(InputType.Time))
-                        || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(InputType.DateTime))) {
+                    if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(WidgetType.Date))
+                        || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(WidgetType.Time))
+                        || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(WidgetType.DateTime))) {
                         throw new RdfInitializationException("Encountered RDF property with a datatype-widgetType mismatch; " + this);
+                    }
+                }
+
+                // auto-init some widget configs for public properties if none were set
+                if (this.rdfResource.isPublic) {
+
+                    if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
+
+                        if (this.rdfResource.dataType.endpoint == null) {
+                            throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
+                                                                 "' that has a missing endpoint. This is not allowed; " + this);
+                        }
+                        else {
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT)) {
+                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT,
+                                                  RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurieName(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "").getAbsoluteUrl());
+                            }
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT,
+                                                  RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurieName(), URI.create("")).getAbsoluteUrl());
+                            }
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS)) {
+                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                            }
+                        }
                     }
                 }
             }
 
             //make it uniform; no nulls
             if (this.rdfResource.widgetConfig == null) {
-                this.rdfResource.widgetConfig = new InputTypeConfig();
+                this.rdfResource.widgetConfig = new WidgetTypeConfig();
             }
 
             //Note: this call will add us to the ontology

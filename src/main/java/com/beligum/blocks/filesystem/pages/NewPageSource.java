@@ -179,14 +179,18 @@ public class NewPageSource extends PageSource
             htmlTag.attr(HTML_ROOT_TYPEOF_ATTR, newTypeOf.toString());
         }
 
-        if (StringUtils.isEmpty(vocabAttr)) {
-            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, HtmlRdfContext.getDefaultRdfVocab().toString());
-        }
+        //Note: we choose to always update the vocab attribute,
+        // not only when the page is saved for the first time
+        //if (StringUtils.isEmpty(vocabAttr)) {
+        htmlTag.attr(HTML_ROOT_VOCAB_ATTR, HtmlRdfContext.getDefaultRdfVocab().toString());
+        //}
 
-        if (StringUtils.isEmpty(prefixAttr)) {
+        //Note: we choose to always update the prefix attribute,
+        // not only when the page is saved for the first time
+        //if (StringUtils.isEmpty(prefixAttr)) {
             //Note: separate multiple prefixes by a space, like so: prefix="dc: http://purl.org/dc/terms/ schema: http://schema.org/"
-            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlRdfContext.getDefaultRdfPrefixes()));
-        }
+        htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlRdfContext.getDefaultRdfPrefixes()));
+        //}
     }
     private HtmlAnalyzer findTranslationAnalyzer() throws IOException
     {

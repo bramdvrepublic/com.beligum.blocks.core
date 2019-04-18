@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf;
 
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
@@ -43,7 +44,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     protected Set<RdfClassImpl> superClasses;
     protected Set<RdfClassImpl> subClasses;
     protected Set<RdfPropertyImpl> properties;
-    protected RdfEndpoint endpoint;
     protected ResourceSummarizer summarizer;
     protected RdfProperty mainProperty;
 
@@ -123,13 +123,6 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return hasPropertyWithoutProxyCheck(property);
     }
     @Override
-    public RdfEndpoint getEndpoint()
-    {
-        this.assertNoProxy();
-
-        return endpoint;
-    }
-    @Override
     public ResourceSummarizer getSummarizer()
     {
         this.assertNoProxy();
@@ -200,23 +193,11 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder properties(RdfProperty... properties) throws RdfInitializationException
-        {
-            for (RdfProperty p : properties) {
-                return this.property(p);
-            }
-
-            return this;
-        }
         public Builder property(RdfProperty property) throws RdfInitializationException
         {
-            return this.addProperty(property, false);
-        }
-        public Builder endpoint(RdfEndpoint endpoint)
-        {
-            this.rdfResource.endpoint = endpoint;
-
-            return this;
+            // we'll skip the overwrite check when we're dealing with the default class because overwrites will happen
+            // because of the default public fields registering
+            return this.addProperty(property, this.rdfResource.equals(Settings.DEFAULT_CLASS));
         }
         public Builder summarizer(ResourceSummarizer resourceSummarizer)
         {

@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
-import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -56,42 +56,42 @@ public class Log extends RdfOntologyImpl
         rdfFactory.register(type)
                   .label(Entries.log_label_type)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(subject)
                   .label(Entries.log_label_subject)
                   .dataType(XSD.anyURI)
-                  .widgetType(InputType.Resource);
+                  .widgetType(WidgetType.Resource);
 
         rdfFactory.register(title)
                   .label(Entries.log_label_title)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(description)
                   .label(Entries.log_label_description)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.Editor);
+                  .widgetType(WidgetType.Editor);
 
         rdfFactory.register(createdAt)
                   .label(Entries.log_label_createdAt)
                   .dataType(XSD.dateTime)
-                  .widgetType(InputType.DateTime);
+                  .widgetType(WidgetType.DateTime);
 
         rdfFactory.register(username)
                   .label(Entries.log_label_username)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(software)
                   .label(Entries.log_label_software)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(softwareVersion)
                   .label(Entries.log_label_softwareVersion)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(LogEntry)
                   .label(Entries.log_label_LogEntry)

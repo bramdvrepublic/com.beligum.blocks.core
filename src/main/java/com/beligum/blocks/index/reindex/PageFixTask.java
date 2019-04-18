@@ -18,7 +18,7 @@ package com.beligum.blocks.index.reindex;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
-import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -162,9 +162,9 @@ public class PageFixTask extends ReindexTask
 
                             try {
                                 //TODO this doesn't account for the GMT flag!
-                                if ((rdfProperty.getDataType().equals(XSD.date) && !classes.contains(InputType.Date.getConstant()))
-                                    || (rdfProperty.getDataType().equals(XSD.time) && !classes.contains(InputType.Time.getConstant()))
-                                    || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(InputType.DateTime.getConstant()))) {
+                                if ((rdfProperty.getDataType().equals(XSD.date) && !classes.contains(WidgetType.Date.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.time) && !classes.contains(WidgetType.Time.getConstant()))
+                                    || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(WidgetType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
                                     String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);

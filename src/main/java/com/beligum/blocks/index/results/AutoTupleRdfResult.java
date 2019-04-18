@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.results;
 
-import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.ifaces.RdfTupleResult;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -143,7 +143,7 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
                     TemporalAccessor value = DateTimeFormatter.ISO_DATE_TIME.parse(rawValue);
                     retVal = this.getDateTimeFormatter().format(value);
                 }
-                else if (this.property.getWidgetType().equals(InputType.Enum)) {
+                else if (this.property.getWidgetType().equals(WidgetType.Enum)) {
                     //this translates the raw enum value to a translated label for the current request language
                     ResourceProxy res = this.property.getEndpoint().getResource(this.property, UriBuilder.fromPath(rawValue).build(), this.language);
                     retVal = res.getLabel();

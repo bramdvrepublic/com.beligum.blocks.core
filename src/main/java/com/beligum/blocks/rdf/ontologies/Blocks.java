@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
-import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
@@ -50,37 +50,37 @@ public class Blocks extends RdfOntologyImpl
         rdfFactory.register(title)
                   .label(Entries.blocks_label_title)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(description)
                   .label(Entries.blocks_label_description)
                   .dataType(RDF.langString)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(icon)
                   .label(Entries.blocks_label_icon)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(controller)
                   .label(Entries.blocks_label_controller)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(display)
                   .label(Entries.blocks_label_display)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(render)
                   .label(Entries.blocks_label_render)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(properties)
                   .label(Entries.blocks_label_properties)
                   .dataType(XSD.string)
-                  .widgetType(InputType.InlineEditor);
+                  .widgetType(WidgetType.InlineEditor);
 
     }
 

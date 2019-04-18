@@ -16,14 +16,12 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
-import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfNamespace;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 

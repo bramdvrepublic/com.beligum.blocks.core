@@ -1826,11 +1826,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
                 limit: parseInt(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS]) - 1,
                 //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
-                display: 'title',
+                display: 'label',
                 templates: {
                     empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.autocompleteResultsEmpty + '</p></div>',
                     //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-                    suggestion: Handlebars.compile('<div title="{{title}} - {{subTitle}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{subTitle}}</p></div>')
+                    suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
                 }
             };
             input.typeahead(options, dataSet);

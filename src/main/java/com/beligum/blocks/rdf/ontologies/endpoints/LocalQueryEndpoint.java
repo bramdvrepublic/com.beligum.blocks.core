@@ -77,41 +77,6 @@ public class LocalQueryEndpoint implements RdfEndpoint
         mainQuery.maxResults(maxResults);
 
         return Iterables.filter(mainQuery.getIndexConnection().search(mainQuery), ResourceProxy.class);
-
-//        /*
-//         * Note that this is not the best way to do this: it should actually be implemented with the grouping functionality of Lucene
-//         * so that the maxResults number is honoured. This implementation will received maxResults from Lucene and then filter it down,
-//         * based on the grouping of the resource URI, selecting the best matching language, effectively narrowing the results to a number < maxResults
-//         */
-//        Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
-//        for (ResourceIndexEntry entry : matchingPages) {
-//            PageIndexEntry page = (PageIndexEntry) entry;
-//
-//            URI pageId = page.getUri();
-//            URI resourceUri = URI.create(page.getResource());
-//            EntryWithIndex<PageIndexEntry> selectedEntry = langMapping.get(resourceUri);
-//
-//            //this means we have a double result with a different language, so we need to select which language we want to return
-//            // or else we'll be returning doubles, which is annoying
-//            if (selectedEntry != null) {
-//                //we give priority to the requested language, then the default language, then any other language
-//                // since the value in the map is the 'selected' value, we check here if we can improve that value.
-//                // If so, replace it with the better value.
-//                int entryLangScore = PageIndexEntry.getLanguageScore(page, language);
-//                int selectedLangScore = PageIndexEntry.getLanguageScore(selectedEntry.entry, language);
-//                if (entryLangScore > selectedLangScore) {
-//                    //replace the entry in the result list
-//                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getLabel(), pageId.toString()));
-//                    //replace the entry in the lang mapping
-//                    langMapping.replace(resourceUri, new EntryWithIndex(page, selectedEntry.index));
-//                }
-//            }
-//            else {
-//                //Note: the ID of a page is also it's public address, but for the returned ID, we use the resource URI, which is the base ID that describes the 'concept' behind the page
-//                retVal.add(new ResourceSuggestion(resourceUri, resourceTypeCurie, pageId, page.getLabel(), pageId.toString()));
-//                langMapping.put(resourceUri, new EntryWithIndex(page, retVal.size() - 1));
-//            }
-//        }
     }
     @Override
     public ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException

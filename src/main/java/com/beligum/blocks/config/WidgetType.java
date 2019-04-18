@@ -27,7 +27,7 @@ import java.util.Map;
  * <p>
  * Created by bram on 2/26/16.
  */
-public enum InputType
+public enum WidgetType
 {
     //-----CONSTANTS-----
     //this mapping makes sure we can use them in JS/CSS/...
@@ -49,10 +49,10 @@ public enum InputType
     /**
      * this will allow us to map to this enum from a constant string value
      */
-    private static final Map<String, InputType> constantValueMapping = new HashMap<>();
+    private static final Map<String, WidgetType> constantValueMapping = new HashMap<>();
 
     static {
-        for (InputType widget : InputType.values()) {
+        for (WidgetType widget : WidgetType.values()) {
             constantValueMapping.put(widget.getConstant(), widget);
         }
     }
@@ -61,13 +61,13 @@ public enum InputType
     private ConstantsFileEntry constantEntry;
 
     //-----CONSTRUCTORS-----
-    InputType(ConstantsFileEntry constantEntry)
+    WidgetType(ConstantsFileEntry constantEntry)
     {
         this.constantEntry = constantEntry;
     }
 
     //-----STATIC METHODS-----
-    public static InputType valueOfConstant(String constantValue)
+    public static WidgetType valueOfConstant(String constantValue)
     {
         return constantValueMapping.get(constantValue);
     }

@@ -218,10 +218,7 @@ public final class RDF extends RdfOntologyImpl
     {
         rdfFactory.register(type)
                   .label(Entries.RDF_label_type)
-                  //this is the datatype in the ontology, but it doesn't make sense for our uses
-                  //because we use it as the default for page <title> tags
-                  //.dataType(RDFS.Class);
-                  .dataType(RDF.langString)
+                  .dataType(RDFS.Class)
                   //mark this property as default so it's included in all public classes
                   // so we can always say what kind of class the instance has
                   .isDefault(true);

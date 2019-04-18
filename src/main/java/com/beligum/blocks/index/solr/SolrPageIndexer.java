@@ -29,6 +29,7 @@ import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapDifference;
@@ -336,44 +337,57 @@ public class SolrPageIndexer implements PageIndexer
                 for (RdfClass c : o.getAllClasses()) {
                     for (RdfProperty p : c.getProperties()) {
 
-                        //translate the property to a solr field
-                        SolrField rdfField = new SolrField(p);
+                        if (p.getDataType() != null) {
 
-                        //we need at least a name and a type
-                        if (rdfField.getName() != null && rdfField.getType() != null) {
+                            // - If the datatype of the property is a class (eg. a Resource),
+                            //   we'll skip this property, because we only need to map the inner property types
+                            //   to Solr types, not entire classes (these will be iterated separately by the outer loop)
+                            // - If the property is rdfs:Class, the property is most likely rdf:type and needs to included as well
+                            if (p.getDataType().isDatatype() || p.getDataType().isProperty() || p.getDataType().equals(RDFS.Class)) {
 
-                            ImmutableMap<String, Object> rdfFieldMap = rdfField.toMap();
+                                //translate the property to a solr field
+                                SolrField rdfField = new SolrField(p);
 
-                            //if the field is known, make sure it didn't change
-                            if (existingFields.containsKey(rdfField.getName())) {
+                                //we need at least a name and a type
+                                if (rdfField.getName() != null && rdfField.getType() != null) {
 
-                                //delete it from the set so we can check for stale fields in the loop below
-                                existingFieldsTracker.remove(rdfField.getName());
+                                    ImmutableMap<String, Object> rdfFieldMap = rdfField.toMap();
 
-                                //now compare the properties of the two
-                                Map<String, Object> existingField = existingFields.get(rdfField.getName());
+                                    //if the field is known, make sure it didn't change
+                                    if (existingFields.containsKey(rdfField.getName())) {
 
-                                //note: using difference to be able to log what changed
-                                MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
-                                if (!difference.areEqual()) {
-                                    Logger.info("Replacing field in Solr schema because it seemed to have changed; " + rdfField.getName() + " (" + rdfField.getType() + ") " +
-                                                difference);
-                                    new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
+                                        //delete it from the set so we can check for stale fields in the loop below
+                                        existingFieldsTracker.remove(rdfField.getName());
+
+                                        //now compare the properties of the two
+                                        Map<String, Object> existingField = existingFields.get(rdfField.getName());
+
+                                        //note: using difference to be able to log what changed
+                                        MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
+                                        if (!difference.areEqual()) {
+                                            Logger.info("Replacing field in Solr schema because it seemed to have changed; " + rdfField.getName() + " (" + rdfField.getType() + ") " +
+                                                        difference);
+                                            new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
+                                        }
+                                    }
+                                    else if (newFieldsTracker.contains(rdfField)) {
+                                        Logger.debug("Not adding field to Solr schema because it was already created; " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                                    }
+                                    //if the field is unknown, add it
+                                    else {
+                                        Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                                        new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
+                                        newFieldsTracker.add(rdfField);
+                                    }
                                 }
-                            }
-                            else if (newFieldsTracker.contains(rdfField)) {
-                                Logger.info("Not adding field to Solr schema because it was already created; " + rdfField.getName() + " (" + rdfField.getType() + ")");
-                            }
-                            //if the field is unknown, add it
-                            else {
-                                Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
-                                new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
-                                newFieldsTracker.add(rdfField);
+                                else {
+                                    throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + rdfField.getName() + " (" +
+                                                          rdfField.getType() + ")");
+                                }
                             }
                         }
                         else {
-                            throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + rdfField.getName() + " (" +
-                                                  rdfField.getType() + ")");
+                            throw new IOException("Unable to translate an RDF property to a valid Solr field because the property doesn't have a datatype, this should be fixed; " + p.getName());
                         }
                     }
                 }

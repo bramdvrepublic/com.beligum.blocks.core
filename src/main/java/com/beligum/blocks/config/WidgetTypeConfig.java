@@ -21,7 +21,7 @@ import java.util.HashMap;
 /**
  * Created by bram on 3/7/16.
  */
-public class InputTypeConfig extends HashMap<String, String>
+public class WidgetTypeConfig extends HashMap<String, String>
 {
     //-----CONSTANTS-----
 
@@ -31,14 +31,14 @@ public class InputTypeConfig extends HashMap<String, String>
     /**
      * Create an empty configuration
      */
-    public InputTypeConfig()
+    public WidgetTypeConfig()
     {
         super();
     }
     /**
      * Create a configuration filled with the supplied tuples
      */
-    public InputTypeConfig(String[][] args)
+    public WidgetTypeConfig(String[][] args)
     {
         this();
 

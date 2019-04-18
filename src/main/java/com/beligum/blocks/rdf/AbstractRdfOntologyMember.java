@@ -24,6 +24,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     protected MessagesFileEntry label;
     protected URI[] isSameAs;
     protected boolean isDefault;
+    protected RdfEndpoint endpoint;
 
     //-----CONSTRUCTORS-----
     protected AbstractRdfOntologyMember(RdfOntologyImpl ontology, String name, boolean isPublic)
@@ -123,6 +124,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     public boolean isDefault()
     {
         return isDefault;
+    }
+    @Override
+    public RdfEndpoint getEndpoint()
+    {
+        this.assertNoProxy();
+
+        return endpoint;
     }
 
     //-----PROTECTED METHODS-----
@@ -227,6 +235,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             if (isDefault) {
                 this.rdfFactory.defaultMemberRegistry.add(this.rdfResource);
             }
+
+            return this.builder;
+        }
+        public B endpoint(RdfEndpoint endpoint)
+        {
+            this.rdfResource.endpoint = endpoint;
 
             return this.builder;
         }

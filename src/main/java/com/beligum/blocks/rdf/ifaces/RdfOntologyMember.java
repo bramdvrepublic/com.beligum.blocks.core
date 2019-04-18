@@ -73,4 +73,12 @@ public interface RdfOntologyMember extends RdfResource
      * If this returns true, this should be (automatically) added to all publicly available members of our local public ontologies.
      */
     boolean isDefault();
+
+    /**
+     * Factory method to get a reference to the endpoint for this class.
+     * The endpoint is used to lookup remote or local values for autocomplete boxes etc. of resources with this type.
+     * Can return null to signal there is no such functionality and this class is for syntax/semantic-use only
+     */
+    @JsonIgnore
+    RdfEndpoint getEndpoint();
 }

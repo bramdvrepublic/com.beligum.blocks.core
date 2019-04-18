@@ -65,12 +65,12 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
         source: engine,
         //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
         limit: MAX_RESULTS - 1,
-        //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
-        display: 'title',
+        //sync this with the label field of com.beligum.blocks.fs.index.entries.PageIndexEntry
+        display: 'label',
         templates: {
             empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.emptySearchResultsTitle + '</p></div>',
             //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-            suggestion: Handlebars.compile('<div title="{{title}} - {{subTitle}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{subTitle}}</p></div>')
+            suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
         }
     };
     input.typeahead(options, dataSet);
@@ -78,7 +78,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
     //gets called when a real selection is done
     input.bind('typeahead:select', function (ev, suggestion)
     {
-        NewPage.handleSelect(suggestion.title, suggestion.publicPage, suggestion.value, false);
+        NewPage.handleSelect(suggestion.label, suggestion.publicPage, suggestion.value, false);
     });
 
     this.handleSelect = function (pageTitle, pagePublicUrl, pageResourceUrl, linkResources)

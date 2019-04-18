@@ -20,12 +20,12 @@ import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-import static com.beligum.blocks.config.InputType.valueOfConstant;
+import static com.beligum.blocks.config.WidgetType.valueOfConstant;
 
 /**
  * Created by bram on 3/25/16.
  */
-public class InputTypeAdapter extends XmlAdapter<String, InputType>
+public class InputTypeAdapter extends XmlAdapter<String, WidgetType>
 {
     //-----CONSTANTS-----
 
@@ -35,12 +35,12 @@ public class InputTypeAdapter extends XmlAdapter<String, InputType>
 
     //-----PUBLIC METHODS-----
     @Override
-    public String marshal(InputType inputType)
+    public String marshal(WidgetType inputType)
     {
         return inputType == null ? null : inputType.getConstant();
     }
     @Override
-    public InputType unmarshal(String val)
+    public WidgetType unmarshal(String val)
     {
         return StringUtils.isEmpty(val) ? null : valueOfConstant(val);
     }

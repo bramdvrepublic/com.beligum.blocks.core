@@ -4,8 +4,10 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
+import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
@@ -396,6 +398,10 @@ public class SolrField extends JsonField
             else if (property.getDataType().equals(XSD.anyURI)) {
                 retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRINGS;
             }
+            //this is needed to parse the rdf:type property (the <html> @typeof attribute)
+            else if (property.getDataType().equals(RDFS.Class)) {
+                retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRING;
+            }
             else {
                 throw new IOException("Encountered RDF property '" + property + "' with unmapped Solr datatype, please fix this; " + property.getDataType());
             }
@@ -482,11 +488,17 @@ public class SolrField extends JsonField
             }
             else if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
 
-                // All local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
-                // Note that we'll always index the relative, stringified URI as a value for the field,
-                // but if the property has an endpoint, we'll query it to get (and index) the label as well
-                // (the caller is responsible for this, see JsonPageIndexEntry).
-                retVal = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue())).toString();
+                // We index the type of the page using the CURIE
+                if (property.getDataType().equals(RDFS.Class)) {
+                    retVal = RdfFactory.getClass(value.stringValue()).getCurie().toString();
+                }
+                else {
+                    // All local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+                    // Note that we'll always index the relative, stringified URI as a value for the field,
+                    // but if the property has an endpoint, we'll query it to get (and index) the label as well
+                    // (the caller is responsible for this, see JsonPageIndexEntry).
+                    retVal = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue())).toString();
+                }
             }
             else {
                 throw new IOException("Unable to serialize unknown value for field '" + this.getName() + "' because the datatype '" + property.getDataType() + "' is unimplemented; " + value);
