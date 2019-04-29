@@ -11,7 +11,7 @@ import java.util.Locale;
 /**
  * Created by bram on Apr 12, 2019
  */
-public class ParentUriField extends JsonField
+public class ParentUriField extends InternalField
 {
     //-----CONSTANTS-----
 

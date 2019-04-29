@@ -1,5 +1,6 @@
 package com.beligum.blocks.index.solr;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
@@ -398,7 +399,11 @@ public class SolrField extends JsonField
             else if (property.getDataType().equals(XSD.anyURI)) {
                 retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRINGS;
             }
-            //this is needed to parse the rdf:type property (the <html> @typeof attribute)
+            // This will happen when we try to parse fields that reference a resource
+            else if (property.getDataType().isClass()) {
+                retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRINGS;
+            }
+            // this is needed to parse the rdf:type property (the <html> @typeof attribute)
             else if (property.getDataType().equals(RDFS.Class)) {
                 retVal = SolrConfigs.CORE_SCHEMA_TYPE_STRING;
             }

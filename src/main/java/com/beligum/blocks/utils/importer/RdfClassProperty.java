@@ -76,7 +76,7 @@ public class RdfClassProperty
     @Override
     public String toString()
     {
-        return this.getRdfProperty().getCurieName().toString();
+        return this.getRdfProperty().getCurie().toString();
     }
 
     //-----INNER CLASSES-----

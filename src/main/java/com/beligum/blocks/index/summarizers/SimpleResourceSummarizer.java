@@ -49,7 +49,7 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
     //-----CONSTRUCTORS-----
     public SimpleResourceSummarizer()
     {
-        this.labelIri = SimpleValueFactory.getInstance().createIRI(Settings.instance().getRdfLabelProperty().getFullName().toString());
+        this.labelIri = SimpleValueFactory.getInstance().createIRI(Settings.instance().getRdfLabelProperty().getUri().toString());
     }
 
     //-----PUBLIC METHODS-----
@@ -64,14 +64,14 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
         Set<IRI> labelIris = new LinkedHashSet<>();
         if (type != null) {
             if (type.getMainProperty() != null) {
-                mainIri = SimpleValueFactory.getInstance().createIRI(type.getMainProperty().getFullName().toString());
+                mainIri = SimpleValueFactory.getInstance().createIRI(type.getMainProperty().getUri().toString());
             }
             RdfEndpoint typeEndpoint = type.getEndpoint();
             if (typeEndpoint != null) {
                 RdfProperty[] labelCandidates = typeEndpoint.getLabelCandidates(type);
                 if (labelCandidates != null) {
                     for (RdfProperty labelProp : labelCandidates) {
-                        labelIris.add(SimpleValueFactory.getInstance().createIRI(labelProp.getFullName().toString()));
+                        labelIris.add(SimpleValueFactory.getInstance().createIRI(labelProp.getUri().toString()));
                     }
                 }
             }
@@ -145,7 +145,8 @@ public class SimpleResourceSummarizer implements ResourceSummarizer
             label = altLabel;
         }
 
-        // most of the time, for sub-resources, the label will be empty (update: is it?), so let's check if we have a main property value instead...
+        // most of the time, for sub-resources, the label will be empty (because we skip auto-adding the label property if there's a main property set),
+        // so let's check if we have a main property value instead...
         if (StringUtils.isEmpty(label)) {
             label = main;
         }

@@ -19,6 +19,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.base.database.models.ifaces.JsonObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import javax.xml.bind.annotation.XmlTransient;
 import java.net.URI;
 
 /**
@@ -46,9 +47,13 @@ public interface RdfResource extends JsonObject
     /**
      * Shortcut methods for the type above
      */
+    @XmlTransient
     boolean isOntology();
+    @XmlTransient
     boolean isClass();
+    @XmlTransient
     boolean isProperty();
+    @XmlTransient
     boolean isDatatype();
 
     /**
@@ -58,12 +63,12 @@ public interface RdfResource extends JsonObject
     String getName();
 
     /**
-     * The full URI of this resource. Depending on the subclass, this returns the namespace URI (for ontologies) or the fullNameUri (for ontology members)
+     * The full URI of this resource. Depending on the subclass, this returns the namespace URI (for ontologies) or the URI (for ontology members)
      */
     URI getUri();
 
     /**
-     * The CURIE counterpart of the URI of this resource. Depending on the subclass, this (currently) returns null (for ontologies) or the curieNameUri (for ontology members)
+     * The CURIE counterpart of the URI of this resource. Depending on the subclass, this (currently) returns null (for ontologies) or the curie (for ontology members)
      */
     URI getCurie();
 

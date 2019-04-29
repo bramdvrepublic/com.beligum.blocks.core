@@ -1,5 +1,6 @@
 package com.beligum.blocks.index.solr;
 
+import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.PageIndexEntry;
 
@@ -2611,19 +2612,19 @@ public class SolrConfigs
                                              "\" indexed=\"true\" stored=\"false\" required=\"true\" multiValued=\"false\" />\n" +
                                              "    <copyField source=\"" + CORE_SCHEMA_FIELD_URI + "\" dest=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\"/>\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LABEL + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_DESCRIPTION + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_IMAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_PARENT_URI + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_RESOURCE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_TYPE_OF + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LANGUAGE + "\" type=\"" + CORE_SCHEMA_TYPE_STRING +
-                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
+                                             "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" default=\"" + IndexEntryField.NULL_VALUE + "\" />\n" +
 
                                              // To support Optimistic Concurrency; see https://lucene.apache.org/solr/guide/7_7/updating-parts-of-documents.html#optimistic-concurrency
                                              "    <field name=\"" + _version_.getName() + "\" type=\"" + _version_.getType() + "\" indexed=\"false\" stored=\"false\"/>\n" +

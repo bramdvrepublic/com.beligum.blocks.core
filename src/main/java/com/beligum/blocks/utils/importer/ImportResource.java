@@ -44,15 +44,15 @@ public class ImportResource implements Serializable
     //-----PUBLIC METHODS-----
     public void addRdfProperty(RdfProperty rdfProperty, String rdfPropertyValue)
     {
-        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurieName(), rdfPropertyValue));
+        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurie(), rdfPropertyValue));
     }
-    public ImportPropertyMapping getMapping(String rdfPropertyCurieName)
+    public ImportPropertyMapping getMapping(String rdfPropertyCurie)
     {
         ImportPropertyMapping retVal = null;
 
         //lazy solution...
         for (ImportPropertyMapping entry : this.properties) {
-            if (entry.getRdfPropertyCurieName().equals(rdfPropertyCurieName)) {
+            if (entry.getRdfPropertyCurie().equals(rdfPropertyCurie)) {
                 retVal = entry;
                 break;
             }

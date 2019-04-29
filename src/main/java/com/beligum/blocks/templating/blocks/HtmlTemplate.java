@@ -797,7 +797,7 @@ public abstract class HtmlTemplate
                         @Override
                         public String apply(@Nullable RdfProperty property)
                         {
-                            return property.getCurieName().toString();
+                            return property.getCurie().toString();
                         }
                     });
                 }
@@ -902,7 +902,7 @@ public abstract class HtmlTemplate
         while (retVal == null && iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue(RDF_PROPERTY_ATTR);
-            if (propertyVal != null && propertyVal.equalsIgnoreCase(property.getCurieName().toString())) {
+            if (propertyVal != null && propertyVal.equalsIgnoreCase(property.getCurie().toString())) {
                 retVal = element.getAttributeValue(RDF_CONTENT_ATTR);
 
                 if (eatItUp) {

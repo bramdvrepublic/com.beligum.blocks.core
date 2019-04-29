@@ -78,7 +78,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
     //gets called when a real selection is done
     input.bind('typeahead:select', function (ev, suggestion)
     {
-        NewPage.handleSelect(suggestion.label, suggestion.publicPage, suggestion.value, false);
+        NewPage.handleSelect(suggestion.label, suggestion.uri, suggestion.resource, false);
     });
 
     this.handleSelect = function (pageTitle, pagePublicUrl, pageResourceUrl, linkResources)

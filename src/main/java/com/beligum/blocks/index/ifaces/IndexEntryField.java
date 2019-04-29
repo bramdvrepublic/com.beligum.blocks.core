@@ -14,8 +14,13 @@ public interface IndexEntryField
      * This value is used to index "core" Fields (eg. the ones explicitly implementing IndexEntryField) to support
      * an easy means to search for null fields (eg. search for all fields NOT having this field). Analogue to:
      * https://www.elastic.co/guide/en/elasticsearch/reference/2.1/null-value.html
+     * Note that this is required for the Block Join Children Query Parser, see
+     * https://lucene.apache.org/solr/guide/6_6/other-parsers.html#OtherParsers-BlockJoinChildrenQueryParser
+     * Note that in ES, this is NULL, but we want to mimic the JSON style as closely as possible, so we can create
+     * parent-only queries like query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":null}");
+     * This will transform eg. "image" : null to "image" : "null", but the above query still seems to work.
      */
-    String NULL_VALUE = "NULL";
+    String NULL_VALUE = "null";
 
     /**
      * This will be appended to the name of this field if we're creating a "proxy field".

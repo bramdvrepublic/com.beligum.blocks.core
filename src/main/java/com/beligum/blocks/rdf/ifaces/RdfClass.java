@@ -75,7 +75,13 @@ public interface RdfClass extends RdfOntologyMember
 
     /**
      * Added for inline object (rdf subclasses) main property support: a main property of an inline object is
-     * the property that the object actually represents (the other properties being extra information, like title + title type)
+     * the property that the object actually represents (the other properties being extra information, like title + title type).
+     * This property is very closely related to the application-wide 'label property' (see settings), but separating it
+     * (and calling it a 'main property', not the 'label property') allows us to skip the auto-adding of the label property
+     * to specific sub-objects when there's an explicit main property set.
+     * So, summarized: the (application-wide) label property is marked default, so it will be automatically added to add public classes,
+     * with the exception of classes that have an explicit main property set. This method will return the label property if
+     * no such explicit main property was set.
      */
     RdfProperty getMainProperty();
 
@@ -86,7 +92,7 @@ public interface RdfClass extends RdfOntologyMember
         @Override
         public void serialize(RdfClass value, JsonGenerator gen, SerializerProvider serializers) throws IOException
         {
-            URI curie = value == null ? null : (value.getCurieName() == null ? null : value.getCurieName());
+            URI curie = value == null ? null : (value.getCurie() == null ? null : value.getCurie());
             if (curie != null) {
                 //ToStringSerializer.instance.serialize(curie, gen, serializers);
                 gen.writeString(value.toString());

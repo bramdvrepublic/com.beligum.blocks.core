@@ -573,7 +573,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return retVal;
         },
 
-        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener, emptyEntry)
+        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, initListener, changeListener, emptyEntry)
         {
             var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
                 [{
@@ -662,7 +662,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             //return true if this element needs to be selected
                             return retVal;
                         },
-                        function changeCallback(oldValue, newValue)
+                        function changeCallback(oldValue, newValue, event)
                         {
                             var oldValueTerm = _this._termMappings[comboId][oldValue];
                             var newValueTerm = _this._termMappings[comboId][newValue];
@@ -677,7 +677,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             }
 
                             if (changeListener) {
-                                changeListener(oldValueTerm, newValueTerm);
+                                changeListener(oldValueTerm, newValueTerm, event);
                             }
 
                             //On first load, this change callback is called when the value is updated
@@ -695,6 +695,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             }
                         }
                     );
+
+                    // last reinitCombobox() is synchronous, so it's safe to call the init listener here and report what is selected after initialization
+                    if (initListener) {
+                        initListener(_this._termMappings[comboId][initValue]);
+                    }
                 })
                 .fail(function (xhr, textStatus, exception)
                 {
@@ -1838,7 +1843,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             //gets called when a real selection is done
             input.bind('typeahead:select', function (ev, suggestion)
             {
-                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
+                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.resource))
                     .done(function (data)
                     {
                         setterFunction(element, data);
@@ -1887,7 +1892,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     .done(function (data)
                     {
                         //init autocomplete input box
-                        input.typeahead('val', data.name);
+                        input.typeahead('val', data.label);
 
                         //don't think we need to re-set the html here, just init the autocomplete box
                         //Update: this used to be commented out, but our initialValue argument allows us to supply a scripted initial value (eg. not a property-attr saved initial value),

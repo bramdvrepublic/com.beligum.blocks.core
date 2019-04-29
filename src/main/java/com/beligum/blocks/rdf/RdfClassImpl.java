@@ -232,10 +232,28 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                         // If this class is public, add all default properties to it
                         // Note that the default label property and the RDF.type property are
                         // marked default automatically before calling this
+                        RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
                         for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
                             if (p.isProperty()) {
-                                //skip the overwrite check so the addition doesn't throw an exception
-                                this.addProperty((RdfProperty) p, true);
+                                // If we hit the label property (note that this should always happen because the label property
+                                // is marked default in RdfFactory), we'll skip adding it if we have a main property. This will
+                                // allow us to specify another property (class-scoped instead of application-scoped) as the most
+                                // important one (eg. important for sub-resources) without automatically adding the label to
+                                // all classes (only the ones without a main property).
+                                // Note that the main property getter will return the label property if the main property is null
+                                // Also note that the default summarizer behavior is adapted to this
+                                if (p.equals(labelProperty) && this.rdfResource.mainProperty != null) {
+                                    //NOOP, don't add
+                                }
+                                else {
+                                    //skip the overwrite check so the addition doesn't throw an exception
+                                    this.addProperty((RdfProperty) p, true);
+
+                                    //this will make sure the label property is the main property if no explicit main property is set
+                                    if (p.equals(labelProperty) && this.rdfResource.mainProperty == null) {
+                                        this.rdfResource.mainProperty = labelProperty;
+                                    }
+                                }
                             }
                         }
                     }

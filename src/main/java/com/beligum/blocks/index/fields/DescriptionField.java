@@ -7,7 +7,7 @@ import com.beligum.blocks.index.ifaces.ResourceProxy;
 /**
  * Created by bram on Apr 12, 2019
  */
-public class DescriptionField extends JsonField
+public class DescriptionField extends InternalField
 {
     //-----CONSTANTS-----
 
@@ -36,11 +36,6 @@ public class DescriptionField extends JsonField
         if (resourceProxy instanceof AbstractIndexEntry) {
             ((AbstractIndexEntry) resourceProxy).setDescription(value);
         }
-    }
-    @Override
-    public boolean isInternal()
-    {
-        return true;
     }
 
     //-----PROTECTED METHODS-----

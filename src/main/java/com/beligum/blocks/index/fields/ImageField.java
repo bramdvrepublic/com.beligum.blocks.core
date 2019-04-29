@@ -13,7 +13,7 @@ import java.net.URI;
 /**
  * Created by bram on Apr 12, 2019
  */
-public class ImageField extends JsonField
+public class ImageField extends InternalField
 {
     //-----CONSTANTS-----
 

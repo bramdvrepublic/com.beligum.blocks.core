@@ -235,7 +235,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     switchToPage = false;
                 }
                 //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
-                else if (eventData.element.closest(UI.pageContent).length == 0) {
+                else if (eventData.element.closest(UI.pageContent).length === 0) {
                     switchToPage = false;
                 }
             }
@@ -796,29 +796,38 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     var switchFocus = function (surface, clickedElement, clickEvent)
     {
-        //since the css below is animated, the sidebar will be filled by the time
-        //the animation is finished, so boot it first
-        Sidebar.init(surface, clickedElement, clickEvent);
-
-        if (surface.isBlock()) {
-            UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            surface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            Mouse.enableDragging(false);
+        // if the surface is already in focus, what we really want to do is
+        // refresh it and not tear down all sidebar widgets and rebuild them,
+        // because it has a lot of side effects (like possible dangling events
+        // going to widgets that don't exist anymore)
+        if (UI.focusedSurface && UI.focusedSurface === surface) {
+            Sidebar.refresh(surface, clickedElement, clickEvent);
         }
         else {
-            UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
-            Mouse.enableDragging(true);
+            //since the css below is animated, the sidebar will be filled by the time
+            //the animation is finished, so boot it first
+            Sidebar.init(surface, clickedElement, clickEvent);
+
+            if (surface.isBlock()) {
+                UI.overlayWrapper.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+                surface.overlay.addClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+                Mouse.enableDragging(false);
+            }
+            else {
+                UI.overlayWrapper.removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+                UI.surfaceWrapper.children().removeClass(BlocksConstants.BLOCK_FOCUSED_CLASS);
+                Mouse.enableDragging(true);
+            }
+
+            // we need to enable/disable the click events after a little timeout
+            // because enabling them right away will let them slip through
+            setTimeout(function ()
+            {
+                Mouse.enableClickEvents(surface.isBlock());
+            }, 100);
+
+            UI.focusedSurface = surface;
         }
-
-        // we need to enable/disable the click events after a little timeout
-        // because enabling them right away will let them slip through
-        setTimeout(function ()
-        {
-            Mouse.enableClickEvents(surface.isBlock());
-        }, 100);
-
-        UI.focusedSurface = surface;
     };
 
     /**

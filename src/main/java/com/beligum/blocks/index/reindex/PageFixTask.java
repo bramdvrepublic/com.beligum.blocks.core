@@ -134,7 +134,7 @@ public class PageFixTask extends ReindexTask
                             Attributes propertyAttributes = propertyStartTag.getAttributes();
                             propertyAttributes.populateMap(attrMap, false);
 
-                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(XSD.string.getCurieName().toString())) {
+                            if (attrMap.containsKey(DATATYPE_ATTR) && attrMap.get(DATATYPE_ATTR).equals(XSD.string.getCurie().toString())) {
                                 // if we reach this point, we are dealing with a <blocks-fact-entry> start tag that has a datatype="xsd:string",
                                 // but was later upgraded to rdf:langString. Following our own rules in RDF.LANGSTRING,
                                 // we'll delete the datatype-attribute.

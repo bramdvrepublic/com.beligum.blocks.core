@@ -27,21 +27,9 @@ public interface RdfOntologyMember extends RdfResource
      * The site-specific ontology URI for this class. Together with the name, it forms the full URI.
      * Eg. http://www.reinvention.be/ontology/
      */
-    //note: data (URI and prefix) serialized in getFullName and getCurieName
+    //note: data (URI and prefix) serialized in getUri and getCurie
     @JsonIgnore
     RdfOntology getOntology();
-
-    /**
-     * The full, absolute URI of this class that is built from the vocabulary URI and the name
-     * Eg. http://www.reinvention.be/ontology/WaterWell
-     */
-    URI getFullName();
-
-    /**
-     * The full, absolute URI of this class that is built from the vocabulary CURIE and the name
-     * Eg. mot:WaterWell
-     */
-    URI getCurieName();
 
     /**
      * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.

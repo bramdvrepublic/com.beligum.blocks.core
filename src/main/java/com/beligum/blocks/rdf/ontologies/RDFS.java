@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.rdf.ontologies;
 
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.*;
 import com.beligum.blocks.rdf.ifaces.*;
@@ -152,7 +153,9 @@ public final class RDFS extends RdfOntologyImpl
                   // but that's only a general superclass and isn't really usable
                   // in practical situations, so let's restrict it to RDF.langString
                   // (that's a subclass of RDFS.Literal)
-                  .dataType(RDF.langString);
+                  .dataType(RDF.langString)
+                  //Since this willl be used as the default label, it needs to have a widget type
+                  .widgetType(WidgetType.InlineEditor);
 
         rdfFactory.register(Datatype)
                   .label(Entries.RDFS_label_Datatype);

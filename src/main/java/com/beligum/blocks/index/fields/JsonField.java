@@ -18,17 +18,20 @@ public class JsonField implements IndexEntryField
     //-----VARIABLES-----
     protected String name;
     private RdfProperty rdfProperty;
+    private boolean hasProxyField;
 
     //-----CONSTRUCTORS-----
-    public JsonField(String name)
-    {
-        this.name = name;
-        this.rdfProperty = null;
-    }
     public JsonField(RdfProperty rdfProperty)
     {
         this.name = this.toFieldName(rdfProperty);
         this.rdfProperty = rdfProperty;
+        this.hasProxyField = false;
+    }
+    protected JsonField(String name)
+    {
+        this.name = name;
+        this.rdfProperty = null;
+        this.hasProxyField = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -72,6 +75,18 @@ public class JsonField implements IndexEntryField
     {
         return rdfProperty;
     }
+    public boolean hasProxyField()
+    {
+        return this.hasProxyField;
+    }
+    /**
+     * This is the (name of the) proxy field of this field:
+     * Proxy fields of resources are either
+     * - a remote snapshot of the resource this field (eg. the URI) points to (acquired from its endpoint)
+     * - the entire object itself in case of sub-resources
+     *
+     * Note that we don't need to create these fields
+     */
     public JsonProxyField getProxyField()
     {
         return new JsonProxyField(this);

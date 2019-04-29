@@ -17,6 +17,7 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 
 import java.util.HashMap;

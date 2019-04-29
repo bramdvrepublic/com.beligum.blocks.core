@@ -176,7 +176,7 @@ public abstract class ImportTools
         factEntryHtml.append("<div data-property=\"name\"><p>").append(R.i18n().get(property.getLabelKey(), language)).append("</p></div>");
         factEntryHtml.append("<div data-property=\"value\">");
         factEntryHtml.append("<div class=\"property ").append(property.getWidgetType().getConstant()).append("\"");
-        factEntryHtml.append(" property=\"").append(property.getCurieName()).append("\"");
+        factEntryHtml.append(" property=\"").append(property.getCurie()).append("\"");
 
         //"#"+Integer.toHexString(color.getRGB()).substring(2)
 
@@ -325,7 +325,7 @@ public abstract class ImportTools
         }
 
         if (addDataType) {
-            factEntryHtml.append(" datatype=\"").append(property.getDataType().getCurieName()).append("\"");
+            factEntryHtml.append(" datatype=\"").append(property.getDataType().getCurie()).append("\"");
         }
 
         if (content != null) {

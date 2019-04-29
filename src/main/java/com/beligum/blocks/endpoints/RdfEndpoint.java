@@ -121,8 +121,7 @@ public class RdfEndpoint
             }
         }
 
-        //we can't return null, json expects "null" instead
-        return Response.ok(retVal == null ? "null" : retVal).build();
+        return Response.ok(retVal).build();
     }
 
     @GET

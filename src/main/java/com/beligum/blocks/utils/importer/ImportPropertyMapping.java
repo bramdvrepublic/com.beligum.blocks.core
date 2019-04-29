@@ -27,23 +27,23 @@ public class ImportPropertyMapping implements Serializable
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private URI rdfPropertyCurieName;
+    private URI rdfPropertyCurie;
     private String rdfPropertyValue;
 
     //-----CONSTRUCTORS-----
     public ImportPropertyMapping()
     {
     }
-    public ImportPropertyMapping(URI rdfPropertyCurieName, String rdfPropertyValue)
+    public ImportPropertyMapping(URI rdfPropertyCurie, String rdfPropertyValue)
     {
-        this.rdfPropertyCurieName = rdfPropertyCurieName;
+        this.rdfPropertyCurie = rdfPropertyCurie;
         this.rdfPropertyValue = rdfPropertyValue;
     }
 
     //-----PUBLIC METHODS-----
-    public URI getRdfPropertyCurieName()
+    public URI getRdfPropertyCurie()
     {
-        return rdfPropertyCurieName;
+        return rdfPropertyCurie;
     }
     public String getRdfPropertyValue()
     {
@@ -65,7 +65,7 @@ public class ImportPropertyMapping implements Serializable
 
         ImportPropertyMapping that = (ImportPropertyMapping) o;
 
-        if (getRdfPropertyCurieName() != null ? !getRdfPropertyCurieName().equals(that.getRdfPropertyCurieName()) : that.getRdfPropertyCurieName() != null)
+        if (getRdfPropertyCurie() != null ? !getRdfPropertyCurie().equals(that.getRdfPropertyCurie()) : that.getRdfPropertyCurie() != null)
             return false;
         return getRdfPropertyValue() != null ? getRdfPropertyValue().equals(that.getRdfPropertyValue()) : that.getRdfPropertyValue() == null;
 
@@ -73,7 +73,7 @@ public class ImportPropertyMapping implements Serializable
     @Override
     public int hashCode()
     {
-        int result = getRdfPropertyCurieName() != null ? getRdfPropertyCurieName().hashCode() : 0;
+        int result = getRdfPropertyCurie() != null ? getRdfPropertyCurie().hashCode() : 0;
         result = 31 * result + (getRdfPropertyValue() != null ? getRdfPropertyValue().hashCode() : 0);
         return result;
     }
@@ -81,6 +81,6 @@ public class ImportPropertyMapping implements Serializable
     @Override
     public String toString()
     {
-        return "" + rdfPropertyCurieName + " -> '" + rdfPropertyValue + "'";
+        return "" + rdfPropertyCurie + " -> '" + rdfPropertyValue + "'";
     }
 }

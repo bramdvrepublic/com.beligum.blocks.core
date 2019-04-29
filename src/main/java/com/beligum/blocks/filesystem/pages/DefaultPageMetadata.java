@@ -138,44 +138,44 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
     {
         if (!StringUtils.isEmpty(property)) {
             if (!StringUtils.isEmpty(content)) {
-                if (property.equals(Meta.created.getName()) || property.equals(Meta.created.getCurieName().toString())) {
+                if (property.equals(Meta.created.getName()) || property.equals(Meta.created.getCurie().toString())) {
                     this.createdUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Meta.creator.getName()) || property.equals(Meta.creator.getCurieName().toString())) {
+                else if (property.equals(Meta.creator.getName()) || property.equals(Meta.creator.getCurie().toString())) {
                     this.creator = URI.create(content);
                     if (!this.creator.isAbsolute()) {
                         this.creator = baseUri.resolve(this.creator);
                     }
                 }
-                else if (property.equals(Meta.modified.getName()) || property.equals(Meta.modified.getCurieName().toString())) {
+                else if (property.equals(Meta.modified.getName()) || property.equals(Meta.modified.getCurie().toString())) {
                     this.modifiedUtc = this.getDatatypeFactory().newXMLGregorianCalendar(content).toGregorianCalendar().toZonedDateTime();
                 }
-                else if (property.equals(Meta.contributor.getName()) || property.equals(Meta.contributor.getCurieName().toString())) {
+                else if (property.equals(Meta.contributor.getName()) || property.equals(Meta.contributor.getCurie().toString())) {
                     URI contributor = URI.create(content);
                     if (!contributor.isAbsolute()) {
                         contributor = baseUri.resolve(contributor);
                     }
                     this.contributors.add(contributor);
                 }
-                else if (property.equals(Meta.aclRead.getName()) || property.equals(Meta.aclRead.getCurieName().toString())) {
+                else if (property.equals(Meta.aclRead.getName()) || property.equals(Meta.aclRead.getCurie().toString())) {
                     int aclReadLevel = NumberUtils.toInt(content, -1);
                     if (aclReadLevel >= 0) {
                         this.aclRead = aclReadLevel;
                     }
                 }
-                else if (property.equals(Meta.aclUpdate.getName()) || property.equals(Meta.aclUpdate.getCurieName().toString())) {
+                else if (property.equals(Meta.aclUpdate.getName()) || property.equals(Meta.aclUpdate.getCurie().toString())) {
                     int aclUpdateLevel = NumberUtils.toInt(content, -1);
                     if (aclUpdateLevel >= 0) {
                         this.aclUpdate = aclUpdateLevel;
                     }
                 }
-                else if (property.equals(Meta.aclDelete.getName()) || property.equals(Meta.aclDelete.getCurieName().toString())) {
+                else if (property.equals(Meta.aclDelete.getName()) || property.equals(Meta.aclDelete.getCurie().toString())) {
                     int aclDeleteLevel = NumberUtils.toInt(content, -1);
                     if (aclDeleteLevel >= 0) {
                         this.aclDelete = aclDeleteLevel;
                     }
                 }
-                else if (property.equals(Meta.aclManage.getName()) || property.equals(Meta.aclManage.getCurieName().toString())) {
+                else if (property.equals(Meta.aclManage.getName()) || property.equals(Meta.aclManage.getCurie().toString())) {
                     int aclManageLevel = NumberUtils.toInt(content, -1);
                     if (aclManageLevel >= 0) {
                         this.aclManage = aclManageLevel;

@@ -160,109 +160,73 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     {
         this.reset();
 
-        // First, we build a data structure that allows for easy iteration:
-        // Starting at the clicked element, we 'go up' and search for registered widget selectors.
-        // Once we reach the focused surface (note that this means the clicked element should always
-        // be inside the element of the focused surface), we 'go up' faster by taking the parent of the
-        // surface (instead of iterating each DOM element) until we hit the page surface.
-        // This is done in reversed order so we have the page at the top.
-        // Note that we select the column closest around the block we're focusing,
-        // because it's what we naturally expect in the GUI.
-        // Similarly, we select the row furthest from the focused block; the last row before we switch to the page.
+        iterateWidgets(focusedSurface, clickedElement, function widgetCallback(widget, surface, element)
+        {
+            var panelInfo = {
+                widget: widget,
+                surface: surface,
+                element: element
+            };
 
-        // if we click on a block, but we actually clicked on the free room around that block
-        // (the 'stretched' space of a block to make it align with it's parent row), we'll click
-        // on the column-element instead of the block-element and we need to fix this because the
-        // clicked element will be a level 'too high' and out of sync with the surface we want to focus
-        if (clickedElement.closest(focusedSurface.element).length === 0) {
-            // Additional tweaking:
-            // when we click in the margin of a block and that block
-            // has only one property, we'll simulate the click on that property
-            // instead. This is needed eg. for blocks-text that registers itself
-            // on the first property inside the block, not on the block itself.
-            if (focusedSurface.children.length === 1) {
-                clickedElement = focusedSurface.children[0].element;
-            }
-            else {
-                clickedElement = focusedSurface.element;
-            }
+            //save it for blur()
+            activePanels.push(panelInfo);
+
+            initWidget(widget, surface, element, focusedSurface, clickedElement, mousedownEvent, panelInfo);
+
+        });
+    };
+
+    this.refresh = function (focusedSurface, clickedElement, event)
+    {
+        var activePanelsIdx = 0;
+
+        // first, we mark all existing panels to be removed,
+        // then unmark them if we found references
+        // and delete the ones that still have marks active
+        for (var i = 0; i < activePanels.length; i++) {
+            activePanels[i].doDelete = true;
         }
 
-        //keep track of the current surface and element (inside the surface.element)
-        var currSurface = focusedSurface;
-        var currElement = clickedElement;
-        var firstColumn = null;
-
-        var runawayCounter = 0;
-        while (currSurface != null) {
-
-            //note that we don't let properties be surfaces for config widgets; we start at block-level
-            var validSurface = currSurface.isPage()
-                || (currSurface.isRow() && currSurface.parent.isContainer())
-                || (currSurface.isColumn() && !firstColumn && (firstColumn = currSurface))
-                || (currSurface.isBlock());
-
-            if (validSurface) {
-
-                //check if we have a widget registered for the current element
-                var widget = Widget.Class.create(currElement);
-
-                if (widget) {
-
-                    //save it for blur()
-                    activePanels.push({
-                        widget: widget,
-                        surface: currSurface,
-                        element: currElement,
-                        hotspot: clickedElement,
-                    });
-
-                    //we'll iterate the array in reverse order, but when focusing a block,
-                    //we don't want users to be able to save the page (it causes all kinds of problems),
-                    //so we disable the 'page-entry' if a block is focused
-                    var disabled = currSurface.isPage() && !focusedSurface.isPage();
-
-                    //we'll expand all panels by default, except the page, row and column (but the page will be disabled)
-                    var collapsed = currSurface.isRow() || currSurface.isColumn() || disabled;
-
-                    //if we can find a specialized title, use it, otherwise just use the name of the surface
-                    var panelTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : currSurface.name;
-
-                    var panelID = createConfigPanel(panelTitle, collapsed, disabled);
-
-                    widget.focus(currSurface, currElement, clickedElement, mousedownEvent);
-
-                    var optionsToAdd = widget.getConfigs(currSurface, currElement);
-                    if (optionsToAdd && optionsToAdd.length > 0) {
-
-                        //since we have a 'weight' setting, make sure we sort the array first
-                        optionsToAdd.sort(configOptionsSorter);
-
-                        for (var w = 0; w < optionsToAdd.length; w++) {
-                            appendToConfigPanel(panelID, optionsToAdd[w]);
-                        }
-
-                        //we use prepend because we're reversing the order
-                        appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID, true);
-                    }
-                }
-            }
-
-            // we 'go up' element by element until we reach the element of the surface,
-            // then we go up surface by surface
-            if (currElement.is(currSurface.element)) {
-                currSurface = currSurface.parent;
-                currElement = currSurface ? currSurface.element : null;
+        iterateWidgets(focusedSurface, clickedElement, function widgetCallback(widget, surface, element)
+        {
+            // if the widget already exists, just "re-focus" it
+            if (activePanels[activePanelsIdx] && activePanels[activePanelsIdx].element.is(element)) {
+                delete activePanels[activePanelsIdx].doDelete;
+                widget.focus(surface, element, clickedElement, event);
             }
             else {
-                //otherwise, we leave the surface be and iterate the elements first
-                //(this should only happen at the block-level)
-                currElement = currElement.parent();
+
+                var panelInfo = {
+                    widget: widget,
+                    surface: surface,
+                    element: element
+                };
+
+                //insert the widget at the current position, shifting all existing entries
+                //one position, hoping we're now "in sync" with the iteration
+                activePanels.splice(activePanelsIdx, 0, panelInfo);
+
+                initWidget(widget, surface, element, focusedSurface, clickedElement, event, panelInfo);
             }
 
-            if (++runawayCounter > 1000) {
-                Logger.error('Infinite loop detected, breaking forcefully. This shouldn\'t happen.');
-                break;
+            activePanelsIdx++;
+        });
+
+        // Note: iteration in reverse to support on the fly removal of items
+        for (var i = activePanels.length - 1; i >= 0; i--) {
+            var panelInfo = activePanels[i];
+            if (panelInfo.doDelete) {
+                if (panelInfo.widget) {
+                    panelInfo.widget.blur(panelInfo.surface, panelInfo.element);
+                }
+
+                var configPanel = getConfigPanelForId(panelInfo.id);
+                if (configPanel) {
+                    configPanel.remove();
+                    delete configPanelMap[panelInfo.id];
+                }
+
+                activePanels.splice(i, 1);
             }
         }
     };
@@ -278,7 +242,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         for (var i = 0; i < activePanels.length; i++) {
             var e = activePanels[i];
             if (e.widget) {
-                e.widget.blur(e.surface, e.element, e.hotspot);
+                e.widget.blur(e.surface, e.element);
             }
         }
 
@@ -643,6 +607,127 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         }
 
         return retVal;
+    };
+
+    /**
+     * If we click on a block, but we actually clicked on the free room around that block
+     * (the 'stretched' space of a block to make it align with it's parent row), we'll click
+     * on the column-element instead of the block-element and we need to fix this because the
+     * clicked element will be a level 'too high' and out of sync with the surface we want to focus
+     */
+    var validateClickedElement = function (focusedSurface, clickedElement)
+    {
+        var retVal = clickedElement;
+
+        if (clickedElement.closest(focusedSurface.element).length === 0) {
+            // Additional tweaking:
+            // when we click in the margin of a block and that block
+            // has only one property, we'll simulate the click on that property
+            // instead. This is needed eg. for blocks-text that registers itself
+            // on the first property inside the block, not on the block itself.
+            if (focusedSurface.children.length === 1) {
+                retVal = focusedSurface.children[0].element;
+            }
+            else {
+                retVal = focusedSurface.element;
+            }
+        }
+
+        return retVal;
+    };
+
+    var iterateWidgets = function (focusedSurface, clickedElement, widgetCallback)
+    {
+        clickedElement = validateClickedElement(focusedSurface, clickedElement);
+
+        //keep track of the current surface and element (inside the surface.element)
+        var currSurface = focusedSurface;
+        var currElement = clickedElement;
+        var firstColumn = null;
+
+        // First, we build a data structure that allows for easy iteration:
+        // Starting at the clicked element, we 'go up' and search for registered widget selectors.
+        // Once we reach the focused surface (note that this means the clicked element should always
+        // be inside the element of the focused surface), we 'go up' faster by taking the parent of the
+        // surface (instead of iterating each DOM element) until we hit the page surface.
+        // This is done in reversed order so we have the page at the top.
+        // Note that we select the column closest around the block we're focusing,
+        // because it's what we naturally expect in the GUI.
+        // Similarly, we select the row furthest from the focused block; the last row before we switch to the page.
+        var runawayCounter = 0;
+        while (currSurface != null) {
+
+            //note that we don't let properties be surfaces for config widgets; we start at block-level
+            var validSurface = currSurface.isPage()
+                || (currSurface.isRow() && currSurface.parent.isContainer())
+                || (currSurface.isColumn() && !firstColumn && (firstColumn = currSurface))
+                || (currSurface.isBlock());
+
+            if (validSurface) {
+
+                //check if we have a widget registered for the current element
+                var widget = Widget.Class.create(currElement);
+
+                //if we have a valid widget, call the callback
+                if (widget) {
+                    widgetCallback(widget, currSurface, currElement);
+                }
+            }
+
+            // we 'go up' element by element until we reach the element of the surface,
+            // then we go up surface by surface
+            if (currElement.is(currSurface.element)) {
+                currSurface = currSurface.parent;
+                currElement = currSurface ? currSurface.element : null;
+            }
+            else {
+                //otherwise, we leave the surface be and iterate the elements first
+                //(this should only happen at the block-level)
+                currElement = currElement.parent();
+            }
+
+            if (++runawayCounter > 1000) {
+                Logger.error('Infinite loop detected, breaking forcefully. This shouldn\'t happen.');
+                break;
+            }
+        }
+    };
+
+    var initWidget = function (widget, surface, element, rootSurface, rootElement, event, panelInfo)
+    {
+        //we'll iterate the array in reverse order, but when focusing a block,
+        //we don't want users to be able to save the page (it causes all kinds of problems),
+        //so we disable the 'page-entry' if a block is focused
+        var disabled = surface.isPage() && !rootSurface.isPage();
+
+        //we'll expand all panels by default, except the page, row and column (but the page will be disabled)
+        var collapsed = surface.isRow() || surface.isColumn() || disabled;
+
+        //if we can find a specialized title, use it, otherwise just use the name of the surface
+        var panelTitle = widget.getWindowName() ? widget.getWindowName().toLowerCase() : surface.name;
+
+        var panelID = createConfigPanel(panelTitle, collapsed, disabled);
+
+        // store the id of the panel in the data structure
+        panelInfo.id = panelID;
+
+        widget.focus(surface, element, rootElement, event);
+
+        var optionsToAdd = widget.getConfigs(surface, element);
+        if (optionsToAdd && optionsToAdd.length > 0) {
+
+            //since we have a 'weight' setting, make sure we sort the array first
+            optionsToAdd.sort(configOptionsSorter);
+
+            for (var w = 0; w < optionsToAdd.length; w++) {
+                appendToConfigPanel(panelID, optionsToAdd[w]);
+            }
+
+            //we use prepend because we're reversing the order
+            appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID, true);
+        }
+
+        return panelID;
     };
 }
 ]);

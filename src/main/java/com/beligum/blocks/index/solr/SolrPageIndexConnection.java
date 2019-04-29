@@ -17,6 +17,7 @@
 package com.beligum.blocks.index.solr;
 
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
@@ -33,6 +34,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.parser.QueryParser;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 import java.io.IOException;
@@ -70,7 +72,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
          * This will assume everything goes well and try to revert the changes made if it doesn't
          * by loading in the existing data before making changes and re-entering the saved data
          * if things go wrong. This mode is not safe at all, but offers a lot more throughput
-         *
+         * <p>
          * WARNING: this mode doesn't support full index deletion rollback using deleteAll() !!!
          */
         OPPORTUNISTIC_MODE
@@ -168,11 +170,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            SolrPageIndexEntry newIndexEntry = new SolrPageIndexEntry(page);
-
             this.saveRollbackBackup(PageIndexEntry.uriField.serialize(page));
 
-            this.updateJsonDoc(newIndexEntry);
+            this.updateJsonDoc(new SolrPageIndexEntry(page));
         }
         catch (Exception e) {
             throw new IOException("Error while updating a Solr resource; " + resource, e);
@@ -369,6 +369,43 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                     throw new IllegalStateException("Unexpected value: " + this.txType);
             }
         }
+
+        try {
+            SolrQuery query = new SolrQuery();
+            query.setQuery("*:*");
+            QueryResponse response = this.solrClient.query(query);
+            SolrDocumentList docList = response.getResults();
+            Logger.info("-------------------\nAll " + docList.getNumFound() + " docs");
+            for (int i = 0; i < docList.getNumFound(); i++) {
+                Logger.info(docList.get(i).jsonStr());
+            }
+            Logger.info("-------------------");
+        }
+        catch (SolrServerException e) {
+            Logger.error(e);
+        }
+
+        try {
+            Logger.info("##### DEBUG CODE");
+            SolrQuery query = new SolrQuery();
+            //query.setQuery("*:*");
+            //query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":null}");
+            query.setParam("q", "{!parent which=" + PageIndexEntry.parentUriField.getName() + ":null}");
+            //query.setParam("q", "{!join from=" + PageIndexEntry.parentUriField.getName() + " to=" + PageIndexEntry.uriField.getName() + "}*");
+//            query.setParam("fl", "*,[child]");
+//            query.setParam("q", "{!graph from=uri to=parentUri maxDepth=1}typeOf:ror\\:BlogPost");
+            QueryResponse response = this.solrClient.query(query);
+            Logger.info("------ Response: \n"+response.jsonStr());
+            SolrDocumentList docList = response.getResults();
+            Logger.info("------------------- Selected " + docList.getNumFound() + " docs: \n");
+            for (int i = 0; i < docList.getNumFound(); i++) {
+                Logger.info(docList.get(i).jsonStr());
+            }
+            Logger.info("-------------------");
+        }
+        catch (SolrServerException e) {
+            Logger.error(e);
+        }
     }
     @Override
     protected void rollback() throws IOException
@@ -505,6 +542,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
         // this effectively executes the update command
         this.solrClient.request(request);
+
+        Logger.info("##### Indexed doc: \n\n " + indexEntry.toString() + "\n\n");
     }
     private void saveRollbackBackup(String id) throws IOException, SolrServerException
     {

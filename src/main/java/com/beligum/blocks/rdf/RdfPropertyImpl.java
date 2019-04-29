@@ -149,7 +149,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     }
                 }
 
-                // auto-init some widget configs for public properties if none were set
+                // auto-init some widget configs for public properties if none were set, but good guesses can be made
                 if (this.rdfResource.isPublic) {
 
                     if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
@@ -161,11 +161,11 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                         else {
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT)) {
                                 this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT,
-                                                  RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurieName(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "").getAbsoluteUrl());
+                                                  RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "").getAbsoluteUrl());
                             }
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT)) {
                                 this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT,
-                                                  RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurieName(), URI.create("")).getAbsoluteUrl());
+                                                  RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
                             }
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS)) {
                                 this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);

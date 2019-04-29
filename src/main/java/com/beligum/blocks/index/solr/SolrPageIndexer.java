@@ -60,7 +60,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by bram on 3/24/19.
- *
+ * <p>
  * Interesting reads:
  * http://blog-archive.griddynamics.com/2013/09/solr-block-join-support.html
  * https://issues.apache.org/jira/browse/SOLR-12768
@@ -339,51 +339,51 @@ public class SolrPageIndexer implements PageIndexer
 
                         if (p.getDataType() != null) {
 
+                            // Two remarks:
                             // - If the datatype of the property is a class (eg. a Resource),
-                            //   we'll skip this property, because we only need to map the inner property types
+                            //   this field will be indexed as an URI, but note that we don't need to
+                            //   create the "proxy field" because we only need to map the inner properties of that proxy
                             //   to Solr types, not entire classes (these will be iterated separately by the outer loop)
                             // - If the property is rdfs:Class, the property is most likely rdf:type and needs to included as well
-                            if (p.getDataType().isDatatype() || p.getDataType().isProperty() || p.getDataType().equals(RDFS.Class)) {
 
-                                //translate the property to a solr field
-                                SolrField rdfField = new SolrField(p);
+                            //translate the property to a solr field
+                            SolrField rdfField = new SolrField(p);
 
-                                //we need at least a name and a type
-                                if (rdfField.getName() != null && rdfField.getType() != null) {
+                            //we need at least a name and a type
+                            if (rdfField.getName() != null && rdfField.getType() != null) {
 
-                                    ImmutableMap<String, Object> rdfFieldMap = rdfField.toMap();
+                                ImmutableMap<String, Object> rdfFieldMap = rdfField.toMap();
 
-                                    //if the field is known, make sure it didn't change
-                                    if (existingFields.containsKey(rdfField.getName())) {
+                                //if the field is known, make sure it didn't change
+                                if (existingFields.containsKey(rdfField.getName())) {
 
-                                        //delete it from the set so we can check for stale fields in the loop below
-                                        existingFieldsTracker.remove(rdfField.getName());
+                                    //delete it from the set so we can check for stale fields in the loop below
+                                    existingFieldsTracker.remove(rdfField.getName());
 
-                                        //now compare the properties of the two
-                                        Map<String, Object> existingField = existingFields.get(rdfField.getName());
+                                    //now compare the properties of the two
+                                    Map<String, Object> existingField = existingFields.get(rdfField.getName());
 
-                                        //note: using difference to be able to log what changed
-                                        MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
-                                        if (!difference.areEqual()) {
-                                            Logger.info("Replacing field in Solr schema because it seemed to have changed; " + rdfField.getName() + " (" + rdfField.getType() + ") " +
-                                                        difference);
-                                            new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
-                                        }
-                                    }
-                                    else if (newFieldsTracker.contains(rdfField)) {
-                                        Logger.debug("Not adding field to Solr schema because it was already created; " + rdfField.getName() + " (" + rdfField.getType() + ")");
-                                    }
-                                    //if the field is unknown, add it
-                                    else {
-                                        Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
-                                        new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
-                                        newFieldsTracker.add(rdfField);
+                                    //note: using difference to be able to log what changed
+                                    MapDifference<String, Object> difference = Maps.difference(existingField, rdfFieldMap);
+                                    if (!difference.areEqual()) {
+                                        Logger.info("Replacing field in Solr schema because it seemed to have changed; " + rdfField.getName() + " (" + rdfField.getType() + ") " +
+                                                    difference);
+                                        new SchemaRequest.ReplaceField(rdfFieldMap).process(this.solrClient);
                                     }
                                 }
+                                else if (newFieldsTracker.contains(rdfField)) {
+                                    Logger.debug("Not adding field to Solr schema because it was already created; " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                                }
+                                //if the field is unknown, add it
                                 else {
-                                    throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + rdfField.getName() + " (" +
-                                                          rdfField.getType() + ")");
+                                    Logger.info("Adding field to Solr schema because it doesn't exist yet; " + rdfField.getName() + " (" + rdfField.getType() + ")");
+                                    new SchemaRequest.AddField(rdfFieldMap).process(this.solrClient);
+                                    newFieldsTracker.add(rdfField);
                                 }
+                            }
+                            else {
+                                throw new IOException("Unable to translate an RDF property to a valid Solr field, this should probably be fixed; " + rdfField.getName() + " (" +
+                                                      rdfField.getType() + ")");
                             }
                         }
                         else {
@@ -427,13 +427,13 @@ public class SolrPageIndexer implements PageIndexer
     /**
      * Note: to load this config into a standalone Solr server:
      * - first of all, add a symlink to the main pages/index folder in the configsets folder:
-     *   ln -s /home/bram/Projects/republic/website/storage/pages/index /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
+     * ln -s /home/bram/Projects/republic/website/storage/pages/index /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
      * - use the Admin gui (http://localhost:8983/solr/) to add a core:
-     *   name: pages
-     *   instanceDir: /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
-     *   data: data
-     *   config: solrconfig.xml
-     *   schema: schema.xml
+     * name: pages
+     * instanceDir: /home/bram/Programs/solr-8.0.0/server/solr/configsets/pages
+     * data: data
+     * config: solrconfig.xml
+     * schema: schema.xml
      */
     private SolrClient initEmbedded(String coreName) throws IOException
     {

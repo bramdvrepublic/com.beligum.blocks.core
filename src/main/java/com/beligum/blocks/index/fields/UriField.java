@@ -14,7 +14,7 @@ import java.net.URI;
 /**
  * Created by bram on Apr 12, 2019
  */
-public class UriField extends JsonField
+public class UriField extends InternalField
 {
     //-----CONSTANTS-----
 

@@ -79,7 +79,7 @@
 //    {
 //        RdfIndexer.IndexResult retVal = null;
 //
-//        String fieldName = property.getCurieName().toString();
+//        String fieldName = property.getCurie().toString();
 //
 //        if (value instanceof Literal && !property.getDataType().equals(XSD.anyURI)) {
 //            Literal objLiteral = (Literal) value;

@@ -77,7 +77,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     ClassFilter classFilter = (ClassFilter) filter;
 
-                    retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(classFilter.rdfClass.getCurieName().toString()).append("> . \n");
+                    retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(classFilter.rdfClass.getCurie().toString()).append("> . \n");
 
                     break;
                 case FIELD:
@@ -94,7 +94,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
                         throw new IllegalStateException("Wildcards in property filters are not supported yet; " + propertyFilter);
                     }
 
-                    retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(propertyFilter.property.getCurieName().toString()).append(" ")
+                    retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(propertyFilter.property.getCurie().toString()).append(" ")
                           .append(propertyFilter.value).append(" .\n");
 
                     break;

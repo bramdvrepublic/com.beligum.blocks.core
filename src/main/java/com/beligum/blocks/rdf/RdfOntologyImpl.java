@@ -194,26 +194,26 @@ public abstract class RdfOntologyImpl extends AbstractRdfResourceImpl implements
                 throw new RdfInitializationException("Encountered a sub-ontology; since RdfOntology doesn't implement RdfOntologyMember, this shoudln't happen; please fix this; " + member);
             case CLASS:
                 RdfClass rdfClass = (RdfClass) member;
-                this.allClasses.put(rdfClass.getCurieName(), rdfClass);
+                this.allClasses.put(rdfClass.getCurie(), rdfClass);
                 if (rdfClass.isPublic()) {
-                    this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
+                    this.publicClasses.put(rdfClass.getCurie(), rdfClass);
                 }
 
                 for (RdfProperty p : rdfClass.getProperties()) {
-                    this.allClassProperties.put(p.getCurieName(), p);
+                    this.allClassProperties.put(p.getCurie(), p);
                     //note that the public selection is made on class level, not property level,
                     //so it's possible to "expose" properties by adding them to a public class
                     if (rdfClass.isPublic()) {
-                        this.publicClassProperties.put(p.getCurieName(), p);
+                        this.publicClassProperties.put(p.getCurie(), p);
                     }
                 }
 
                 break;
             case PROPERTY:
                 RdfProperty rdfProperty = (RdfProperty) member;
-                this.allProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                this.allProperties.put(rdfProperty.getCurie(), rdfProperty);
                 if (rdfProperty.isPublic()) {
-                    this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
+                    this.publicProperties.put(rdfProperty.getCurie(), rdfProperty);
                 }
                 break;
             case DATATYPE:

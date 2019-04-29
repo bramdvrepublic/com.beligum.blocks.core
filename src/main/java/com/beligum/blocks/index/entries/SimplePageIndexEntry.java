@@ -57,7 +57,7 @@
 //
 //        this.setParentId(parentId);
 //        this.setResource(resource == null ? null : resource.toString());
-//        this.setTypeOf(typeOf == null ? null : typeOf.getCurieName().toString());
+//        this.setTypeOf(typeOf == null ? null : typeOf.getCurie().toString());
 //        this.setLabel(title);
 //        this.setLanguage(language == null ? null : language.getLanguage());
 //        this.setCanonicalAddress(canonicalAddress == null ? null : canonicalAddress.toString());

@@ -541,7 +541,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                 //if this class was never used, delete it from the database cause it's won't be processed because of an explicit type selection
                 if (!addedClasses.contains(rdfClass) && !lonelyClasses.contains(rdfClass)) {
                     stmt.executeUpdate("DELETE FROM " + SQL_TABLE_NAME +
-                                       " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getRdfClass().getCurieName() + "';");
+                                       " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getRdfClass().getCurie() + "';");
                 }
             }
         }
@@ -765,14 +765,14 @@ public class ReindexThread extends Thread implements LongRunningThread
 
                         //this is the number of results we can expect
                         maxPages = stmt.executeQuery("SELECT COUNT(*) FROM " + SQL_TABLE_NAME +
-                                                     " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';")
+                                                     " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurie() + "';")
                                        .getLong(1);
 
                         Logger.info("Launching reindexation of RDF class " + this.rdfClass + " with " + maxPages + " members.");
 
                         //iterate all URIs of pages in this class
                         ResultSet resultSet = stmt.executeQuery("SELECT " + SQL_COLUMN_ID_NAME + ", " + SQL_COLUMN_URI_NAME + " FROM " + SQL_TABLE_NAME +
-                                                                " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurieName() + "';");
+                                                                " WHERE " + SQL_COLUMN_TYPE_NAME + "='" + rdfClass.getCurie() + "';");
                         long txBatchCounter = 0;
                         boolean aborted = false;
                         while (resultSet.next()) {

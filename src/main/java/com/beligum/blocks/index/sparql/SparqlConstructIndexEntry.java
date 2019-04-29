@@ -71,7 +71,7 @@ public class SparqlConstructIndexEntry extends AbstractIndexEntry
     {
         String retVal = null;
 
-        Model filteredModel = model.filter(null, SimpleValueFactory.getInstance().createIRI(property.getFullName().toString()), null);
+        Model filteredModel = model.filter(null, SimpleValueFactory.getInstance().createIRI(property.getUri().toString()), null);
         if (!filteredModel.isEmpty()) {
             retVal = filteredModel.iterator().next().getObject().stringValue();
         }

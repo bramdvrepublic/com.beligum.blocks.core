@@ -136,7 +136,7 @@ public class ReadWritePage extends DefaultPage
                                                  //this approach is discussable (instead of using the OWL ontology directly),
                                                  // but the general approach is to use the local ontology as much as possible,
                                                  // so let's be consequent in our decisions...
-                                                 valueFactory.createIRI(Meta.sameAs.getFullName().toString()),
+                                                 valueFactory.createIRI(Meta.sameAs.getUri().toString()),
                                                  valueFactory.createIRI(externalResourceId.toString()));
 
                                 rdfDepsModel.addAll(externalRdfModel);

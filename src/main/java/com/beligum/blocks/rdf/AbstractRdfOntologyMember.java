@@ -59,12 +59,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     @Override
     public URI getUri()
     {
-        return this.getFullName();
+        return this.ontology.resolve(this.getName());
     }
     @Override
     public URI getCurie()
     {
-        return this.getCurieName();
+        return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
     }
     @Override
     public boolean isPublic()
@@ -80,16 +80,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     public RdfOntology getOntology()
     {
         return ontology;
-    }
-    @Override
-    public URI getFullName()
-    {
-        return this.ontology.resolve(this.getName());
-    }
-    @Override
-    public URI getCurieName()
-    {
-        return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
     }
     @Override
     public String getLabelKey()
@@ -147,7 +137,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     @Override
     public String toString()
     {
-        return "" + this.getCurieName();
+        return "" + this.getCurie();
     }
     /**
      * Note that we overload the equals() method of AbstractRdfResourceImpl to use the CURIE instead of the name
@@ -162,12 +152,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
         RdfClassImpl rdfClass = (RdfClassImpl) o;
 
-        return getCurieName() != null ? getCurieName().equals(rdfClass.getCurieName()) : rdfClass.getCurieName() == null;
+        return getCurie() != null ? getCurie().equals(rdfClass.getCurie()) : rdfClass.getCurie() == null;
     }
     @Override
     public int hashCode()
     {
-        return getCurieName() != null ? getCurieName().hashCode() : 0;
+        return getCurie() != null ? getCurie().hashCode() : 0;
     }
 
     //-----INNER CLASSES-----
@@ -263,7 +253,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
             int i = 0;
             this.rdfResource.isSameAs = new URI[this.sameAs.size()];
             for (T m : this.sameAs) {
-                this.rdfResource.isSameAs[i++] = m.getFullName();
+                this.rdfResource.isSameAs[i++] = m.getUri();
             }
 
             // --- here, we all done initializing/checking the resource ---

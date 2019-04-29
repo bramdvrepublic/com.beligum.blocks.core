@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.Value;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Created by bram on Apr 13, 2019
@@ -69,4 +70,24 @@ public class JsonProxyField implements IndexEntryField
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+
+    //-----MGMT METHODS-----
+    @Override
+    public String toString()
+    {
+        return this.getName();
+    }
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (!(o instanceof JsonField)) return false;
+        JsonField that = (JsonField) o;
+        return Objects.equals(getName(), that.getName());
+    }
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getName());
+    }
 }

@@ -465,7 +465,7 @@ public abstract class PageSource extends AbstractSource implements Source
             //note that this can "update" the property name to use the curie variant if it was in the default ontology scope
             //I hope that's okay...
             retVal.attr(HtmlParser.RDF_PROPERTY_ATTR, property.getCurie().toString())
-                  .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurieName().toString());
+                  .attr(HtmlParser.RDF_DATATYPE_ATTR, property.getDataType().getCurie().toString());
 
             String existingValue = retVal.attr(HtmlParser.RDF_CONTENT_ATTR);
             if (onlyUpdateIfBlank || deleteIfBlank) {
@@ -492,7 +492,7 @@ public abstract class PageSource extends AbstractSource implements Source
     }
     private Elements getPropertyElements(RdfProperty property)
     {
-        String cssQuery = "[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getCurieName() + "]";
+        String cssQuery = "[" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getCurie() + "]";
         // if the property is inside the main ontology, we need to search for the non-prefixed name as well
         if (property.getOntology().equals(Settings.instance().getRdfMainOntologyNamespace())) {
             cssQuery += ", [" + HtmlParser.RDF_PROPERTY_ATTR + "=" + property.getName() + "]";

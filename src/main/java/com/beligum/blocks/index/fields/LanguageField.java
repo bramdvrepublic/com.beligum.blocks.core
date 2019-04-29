@@ -12,7 +12,7 @@ import java.util.Locale;
 /**
  * Created by bram on Apr 12, 2019
  */
-public class LanguageField extends JsonField
+public class LanguageField extends InternalField
 {
     //-----CONSTANTS-----
 

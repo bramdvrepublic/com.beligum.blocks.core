@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.Models;
 
+import javax.xml.bind.annotation.XmlTransient;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -34,6 +35,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     private static final IRI TYPEOF_PROPERTY_IRI = RdfTools.uriToIri(TYPEOF_PROPERTY.getUri());
 
     //-----VARIABLES-----
+    @XmlTransient
     private ObjectNode jsonNode;
 
     //-----CONSTRUCTORS-----
@@ -156,7 +158,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         Model rootModel = rdfModel.filter(rootResourceIri, null, null);
 
         // Extract the type from the graph so we know what we're talking about
-        RdfClass type = RdfFactory.lookup(Models.objectIRI(rootModel.filter(rootResourceIri, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
+        RdfClass type = this.extractModelTypeof(rootResourceIri, rootModel);
         if (type == null) {
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
@@ -171,12 +173,14 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         // We'll iterate the subjects and check all non-root ones and build a map of sub-nodes first.
         // This will do a recursive call and parse those other submodels to JSON nodes.
         // This way, they're ready to be attached to the root node below
-        for (Resource subjectIri : rdfModel.subjects()) {
+        for (Resource subject : rdfModel.subjects()) {
 
-            //skip this, we'll parse it in the loop below
+            IRI subjectIri = (IRI) subject;
+
+            //skip the root resource, we'll parse it in the loop below, we're looking for sub-objects
             if (!subjectIri.equals(rootResourceIri)) {
 
-                URI subjectUri = RdfTools.iriToUri((IRI) subjectIri);
+                URI subjectUri = RdfTools.iriToUri(subjectIri);
 
                 //we'll skip the triples that describe the public page since these only describe some marginal RDFa properties,
                 //and only get us in trouble later on because they don't have typeOf, etc.
@@ -185,9 +189,14 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                     // zoom-in on the subject and recursively call the parser
                     Model subModel = rdfModel.filter(subjectIri, null, null);
 
-                    // note: this create() is a means to have a polymorphic constructor (it creates the same new class instance as this instance)
-                    // also note that the language of sub objects is always the same as the language of the parent
-                    subObjects.put(subjectUri, this.create(absolutePublicPageUri, subjectUri, language, subModel, this));
+                    // Note that we skip the subModels that don't have a typeof, because
+                    // regular <a> tags get sereialized to their own subject as well and would crash later on
+                    RdfClass subModelType = this.extractModelTypeof(subjectIri, subModel);
+                    if (subModelType != null) {
+                        // note: this create() is a means to have a polymorphic constructor (it creates the same new class instance as this instance)
+                        // also note that the language of sub objects is always the same as the language of the parent
+                        subObjects.put(subjectUri, this.create(absolutePublicPageUri, subjectUri, language, subModel, this));
+                    }
                 }
             }
         }
@@ -212,31 +221,30 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
 
                     URI resourceUri = URI.create(value.stringValue());
 
+                    // we start out by adding the resource URI as the "real" value of this property
+                    this.addProperty(this.jsonNode, value, field, language);
+
                     // check if it's a subresource that was present in the RDF model and already parsed into an object
+                    // if so, we'll use that as the "proxy" of this object (which is in fact the entire sub-object, not a proxy)
                     if (subObjects.containsKey(resourceUri)) {
-                        this.addProperty(this.jsonNode, subObjects.get(resourceUri), field, language);
+                        this.addProperty(this.jsonNode, subObjects.get(resourceUri).getJsonNode(), field.getProxyField(), language);
                     }
-                    else {
-                        // we start out by adding the resource URI as the "real" value of this property
-                        this.addProperty(this.jsonNode, value, field, language);
+                    // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
+                    // using a separate "_proxy" suffixed field
+                    else if (property.getDataType().getEndpoint() != null) {
 
-                        // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
-                        // using a separate "_proxy" suffixed field
-                        if (property.getDataType().getEndpoint() != null) {
+                        ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
+                        if (resourceValue != null) {
 
-                            ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
-                            if (resourceValue != null) {
+                            // now iterate all internal fields of this object and copy them to the Json node
+                            ObjectNode resourceNode = this.copyInternalFields(Json.getObjectMapper().createObjectNode(), true);
 
-                                // now iterate all internal fields of this object and copy them to the Json node
-                                ObjectNode resourceNode = this.copyInternalFields(Json.getObjectMapper().createObjectNode(), true);
-
-                                // lastly, hook the sub-node in the main node using the "_proxy" suffix
-                                this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
-                            }
-                            //we didn't get a resource value from the endpoint; this shouldn't really happen because how did we get our hands on the URI in the first place anyway?
-                            else {
-                                throw new IOException("Unable to serialize resource value because it's resource endpoint returned null; " + triple);
-                            }
+                            // lastly, hook the sub-node in the main node using the "_proxy" suffix
+                            this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
+                        }
+                        //we didn't get a resource value from the endpoint; this shouldn't really happen because how did we get our hands on the URI in the first place anyway?
+                        else {
+                            throw new IOException("Unable to serialize resource value because it's resource endpoint returned null; " + triple);
                         }
                     }
                 }
@@ -246,12 +254,12 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                 }
             }
             else {
-                Logger.error("Encountered an unknown or invalid RDF predicate '" + property + "' while mapping to JSON." +
-                             " This property will be ignored and excluded from the JSON object (you may want to resolve this); " + triple);
+                Logger.error("Encountered an unknown or invalid RDF predicate '" + triple.getPredicate() + "' while mapping to JSON." +
+                             " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
             }
         }
 
-        Logger.info("done");
+        Logger.info("############### done");
     }
     private void findChildBoundaries(JsonNode fieldValue, JsonNodeVisitor visitor) throws IOException
     {
@@ -386,5 +394,9 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         }
 
         return field;
+    }
+    private RdfClass extractModelTypeof(IRI resource, Model model)
+    {
+        return RdfFactory.lookup(Models.objectIRI(model.filter(resource, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
     }
 }
