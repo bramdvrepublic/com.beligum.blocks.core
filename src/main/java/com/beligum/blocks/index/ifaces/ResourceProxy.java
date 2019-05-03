@@ -1,7 +1,13 @@
 package com.beligum.blocks.index.ifaces;
 
+import com.beligum.base.server.R;
+import com.beligum.blocks.config.LanguageAdapter;
+import com.beligum.blocks.config.RdfClassAdapter;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 
+import javax.xml.bind.annotation.adapters.XmlAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Locale;
@@ -45,13 +51,15 @@ public interface ResourceProxy extends Serializable
     String getResource();
 
     /**
-     * The string representation (CURIE) of the RDF type of the resource.
+     * The RDF type of the resource.
      */
+    @XmlJavaTypeAdapter(RdfClassAdapter.class)
     RdfClass getTypeOf();
 
     /**
      * The language of this resource
      */
+    @XmlJavaTypeAdapter(LanguageAdapter.class)
     Locale getLanguage();
 
     /**

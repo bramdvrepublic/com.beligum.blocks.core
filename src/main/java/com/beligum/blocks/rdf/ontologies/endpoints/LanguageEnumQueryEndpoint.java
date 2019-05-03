@@ -36,6 +36,10 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
     private static Map<String, EnumSuggestion> languageSuggestions;
 
     //-----CONSTRUCTORS-----
+    public LanguageEnumQueryEndpoint()
+    {
+        this(null);
+    }
     public LanguageEnumQueryEndpoint(RdfClass resourceType)
     {
         super(resourceType);

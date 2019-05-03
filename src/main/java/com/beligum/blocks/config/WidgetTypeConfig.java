@@ -16,12 +16,14 @@
 
 package com.beligum.blocks.config;
 
+import com.beligum.base.filesystem.ConstantsFileEntry;
+
 import java.util.HashMap;
 
 /**
  * Created by bram on 3/7/16.
  */
-public class WidgetTypeConfig extends HashMap<String, String>
+public class WidgetTypeConfig extends HashMap<ConstantsFileEntry, String>
 {
     //-----CONSTANTS-----
 
@@ -34,17 +36,6 @@ public class WidgetTypeConfig extends HashMap<String, String>
     public WidgetTypeConfig()
     {
         super();
-    }
-    /**
-     * Create a configuration filled with the supplied tuples
-     */
-    public WidgetTypeConfig(String[][] args)
-    {
-        this();
-
-        for (String[] arg : args) {
-            this.put(arg[0], arg[1]);
-        }
     }
 
     //-----PUBLIC METHODS-----

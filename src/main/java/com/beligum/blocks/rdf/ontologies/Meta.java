@@ -62,7 +62,7 @@ public class Meta extends RdfOntologyImpl
         rdfFactory.register(sameAs)
                   .label(Entries.meta_label_sameAs)
                   .dataType(XSD.anyURI)
-                  .widgetType(WidgetType.InlineEditor)
+                  .widgetType(WidgetType.Uri)
                   .isDefault(true);
 
         rdfFactory.register(created)

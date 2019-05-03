@@ -47,6 +47,10 @@ public class EnumQueryEndpoint implements RdfEndpoint
     protected Map<String, EnumSuggestion> suggestions;
 
     //-----CONSTRUCTORS-----
+    public EnumQueryEndpoint()
+    {
+        this(null);
+    }
     public EnumQueryEndpoint(RdfClass resourceType)
     {
         this.resourceType = resourceType;
@@ -85,7 +89,7 @@ public class EnumQueryEndpoint implements RdfEndpoint
     {
         Iterable<ResourceProxy> retVal = new ArrayList<>();
 
-        if (this.resourceType.equals(resourceType)) {
+        if (this.resourceType == null || this.resourceType.equals(resourceType)) {
             //Note: two little stunts to modify the returned language of the title, based on the passed-in language in this method
             if (!StringUtils.isEmpty(query)) {
                 retVal = Arrays.asList(new ResourceProxy[] { new LangFilteredEnumSuggestion(this.getSuggestions().get(query), language) });

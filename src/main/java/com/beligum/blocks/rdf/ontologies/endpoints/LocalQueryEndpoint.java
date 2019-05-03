@@ -67,12 +67,10 @@ public class LocalQueryEndpoint implements RdfEndpoint
         }
 
         // This will group of the resource URI, selecting the best matching language
-        mainQuery.language(language, ResourceIndexEntry.resourceField);
-
-        IndexSearchRequest subQuery = IndexSearchRequest.createFor(mainQuery.getIndexConnection());
-        subQuery.wildcard(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR);
-        subQuery.wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR);
-        mainQuery.filter(subQuery, IndexSearchRequest.FilterBoolean.AND);
+        mainQuery.filter(IndexSearchRequest.createFor(mainQuery.getIndexConnection())
+                                           .wildcard(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR)
+                                           .wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR),
+                         IndexSearchRequest.FilterBoolean.AND);
 
         mainQuery.maxResults(maxResults);
 
@@ -81,8 +79,6 @@ public class LocalQueryEndpoint implements RdfEndpoint
     @Override
     public ResourceProxy getResource(RdfOntologyMember resourceType, URI resourceId, Locale language) throws IOException
     {
-        ResourceProxy retVal = null;
-
         //resources are indexed with relative id's, so make sure the URI is relative
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 

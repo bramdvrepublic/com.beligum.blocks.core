@@ -20,15 +20,14 @@ import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.WidgetTypeConfig;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.XSD;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.endpoints.RdfEndpointRoutes;
 
 import java.net.URI;
+import java.util.Map;
 
 /**
  * Created by bram on 2/25/16.
@@ -39,7 +38,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
     //-----VARIABLES-----
     protected RdfClassImpl dataType;
-    protected RdfEndpoint endpoint;
     protected WidgetType widgetType;
     protected WidgetTypeConfig widgetConfig;
 
@@ -61,13 +59,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.assertNoProxy();
 
         return dataType;
-    }
-    @Override
-    public RdfEndpoint getEndpoint()
-    {
-        this.assertNoProxy();
-
-        return endpoint;
     }
     @Override
     public WidgetType getWidgetType()
@@ -112,7 +103,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         }
         public Builder widgetConfig(ConstantsFileEntry key, String value)
         {
-            this.rdfResource.widgetConfig.put(key.getValue(), value);
+            this.rdfResource.widgetConfig.put(key, value);
 
             return this;
         }
@@ -141,11 +132,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     throw new RdfInitializationException("Widget type of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
                 }
                 else {
-                    //this is a double-check to make sure we accidently don't select the wrong inputtype for date/time
-                    if ((this.rdfResource.dataType.equals(XSD.date) && !this.rdfResource.widgetType.equals(WidgetType.Date))
-                        || (this.rdfResource.dataType.equals(XSD.time) && !this.rdfResource.widgetType.equals(WidgetType.Time))
-                        || (this.rdfResource.dataType.equals(XSD.dateTime) && !this.rdfResource.widgetType.equals(WidgetType.DateTime))) {
-                        throw new RdfInitializationException("Encountered RDF property with a datatype-widgetType mismatch; " + this);
+                    //make sure the configured dataType is compatible with the configured widgetType
+                    if (!this.rdfResource.widgetType.isCompatibleDatatype(this.rdfResource.dataType)) {
+                        throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible datatype for widgetType '" + this.rdfResource.widgetType + "'" +
+                                                             "\n  compatible datatypes are: " + this.rdfResource.widgetType.getCompatibleDatatypes() +
+                                                             "\n  compatible superclass is: " + this.rdfResource.widgetType.getCompatibleSuperclass() +
+                                                             "\n  ;" + this);
                     }
                 }
 
@@ -159,25 +151,50 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                                                                  "' that has a missing endpoint. This is not allowed; " + this);
                         }
                         else {
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT)) {
-                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT,
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
                                                   RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "").getAbsoluteUrl());
                             }
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT)) {
-                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT,
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
                                                   RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
                             }
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS)) {
-                                this.widgetConfig(core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
                             }
                         }
                     }
-                }
-            }
+                    else if (this.rdfResource.widgetType.equals(WidgetType.Enum)) {
 
-            //make it uniform; no nulls
-            if (this.rdfResource.widgetConfig == null) {
-                this.rdfResource.widgetConfig = new WidgetTypeConfig();
+                        // Terms.technique.setWidgetConfig(new InputTypeConfig(new String[][] {
+                        //                        { gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
+                        //                          //let's re-use the same endpoint for the enum as for the resources so we can re-use it's backend code
+                        //                          gen.com.beligum.blocks.endpoints.RdfEndpointRoutes.getResources(Terms.technique.getCurieName(), -1, false, "").getAbsoluteUrl()
+                        //                        },
+                        //                        }));
+
+                        if (this.rdfResource.endpoint == null) {
+                            throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                 " that has a missing endpoint. This is not allowed; " + this);
+                        }
+                        else {
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT,
+                                                  RdfEndpointRoutes.getResources(this.rdfResource.getCurie(), -1, false, "").getAbsoluteUrl());
+                            }
+                        }
+
+                    }
+                }
+
+                // now validate the configured configs
+                for (Map.Entry<ConstantsFileEntry, String> config : this.rdfResource.widgetConfig.entrySet()) {
+                    if (!this.rdfResource.widgetType.isCompatibleConfigKey(config.getKey())) {
+                        throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible widget config '"+config.getKey()+"' for widgetType '" + this.rdfResource.widgetType + "'" +
+                                                             "\n  compatible config keys are: " + this.rdfResource.widgetType.getCompatibleConfigKeys() +
+                                                             "\n  ;" + this);
+                    }
+                }
             }
 
             //Note: this call will add us to the ontology

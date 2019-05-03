@@ -18,10 +18,14 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
+import com.beligum.blocks.rdf.ontologies.RDF;
+import com.beligum.blocks.rdf.ontologies.XSD;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
+import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.*;
 
 /**
  * This represents a widget in the blocks sidebar. To be used to link RDF data types to input-widgets.
@@ -32,19 +36,58 @@ public enum WidgetType
 {
     //-----CONSTANTS-----
     //this mapping makes sure we can use them in JS/CSS/...
-    Undefined(core.Entries.INPUT_TYPE_UNDEFINED),
-    Editor(core.Entries.INPUT_TYPE_EDITOR),
-    InlineEditor(core.Entries.INPUT_TYPE_INLINE_EDITOR),
-    Enum(core.Entries.INPUT_TYPE_ENUM),
-    Boolean(core.Entries.INPUT_TYPE_BOOLEAN),
-    Number(core.Entries.INPUT_TYPE_NUMBER),
-    Date(core.Entries.INPUT_TYPE_DATE),
-    Time(core.Entries.INPUT_TYPE_TIME),
-    DateTime(core.Entries.INPUT_TYPE_DATETIME),
-    Color(core.Entries.INPUT_TYPE_COLOR),
-    Uri(core.Entries.INPUT_TYPE_URI),
-    Resource(core.Entries.INPUT_TYPE_RESOURCE),
-    Object(core.Entries.INPUT_TYPE_OBJECT),
+    Undefined(core.Entries.WIDGET_TYPE_UNDEFINED),
+
+    Editor(core.Entries.WIDGET_TYPE_EDITOR, new RdfClass[] { RDF.HTML }, null, new ConstantsFileEntry[0]),
+
+    //note: dependent on the type of value, it is language-oriented or not (eg. an identifier doesn't have a language)
+    InlineEditor(core.Entries.WIDGET_TYPE_INLINE_EDITOR, new RdfClass[] { XSD.string, RDF.langString }),
+
+    // For why we also include xsd:language, see LanguageEnumQueryEndpoint
+    Enum(core.Entries.WIDGET_TYPE_ENUM, new RdfClass[] { XSD.string, XSD.language }, null, new ConstantsFileEntry[] {
+                    // the enpoint to fetch all the possible values of this enum
+                    WIDGET_CONFIG_ENUM_ENDPOINT
+    }),
+
+    Boolean(core.Entries.WIDGET_TYPE_BOOLEAN, new RdfClass[] { XSD.boolean_ }),
+
+    Number(core.Entries.WIDGET_TYPE_NUMBER, new RdfClass[] { XSD.byte_, XSD.unsignedByte,
+                                                             XSD.int_, XSD.unsignedInt,
+                                                             XSD.short_, XSD.unsignedShort,
+                                                             XSD.long_, XSD.unsignedLong,
+                                                             XSD.float_, XSD.double_ }),
+
+    Date(core.Entries.WIDGET_TYPE_DATE, new RdfClass[] { XSD.date }),
+
+    Time(core.Entries.WIDGET_TYPE_TIME, new RdfClass[] { XSD.time }),
+
+    DateTime(core.Entries.WIDGET_TYPE_DATETIME, new RdfClass[] { XSD.dateTime }),
+
+    Color(core.Entries.WIDGET_TYPE_COLOR, new RdfClass[] { XSD.string }),
+
+    Uri(core.Entries.WIDGET_TYPE_URI, new RdfClass[] { XSD.anyURI }),
+
+    Resource(core.Entries.WIDGET_TYPE_RESOURCE, new RdfClass[] { XSD.anyURI }, RdfClass.class, new ConstantsFileEntry[] {
+                    // the autocomplete endpoint for the resource admin inputbox
+                    WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
+                    // the endpoint to request more information about the true resource value returned by the autocomplete
+                    WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
+                    // the maximum number of suggestions or enum entries to render out
+                    WIDGET_CONFIG_RESOURCE_MAXRESULTS,
+                    // enables or disables the image rendering of a resource
+                    // (when an image is available in the ResourceProxy)
+                    // Default: true
+                    WIDGET_CONFIG_RESOURCE_ENABLE_IMG,
+                    // enables or disables the link rendering of a resource
+                    // (when an link is available in the ResourceProxy)
+                    // Default: true
+                    WIDGET_CONFIG_RESOURCE_ENABLE_HREF,
+                    // enables or disables the resource admin widget to be
+                    // rendered as a combobox instead of an autocomplete
+                    // Default: false
+                    WIDGET_CONFIG_RESOURCE_ENABLE_COMBOBOX }),
+
+    Object(core.Entries.WIDGET_TYPE_OBJECT, new RdfClass[0], RdfClass.class),
     ;
 
     /**
@@ -60,11 +103,29 @@ public enum WidgetType
 
     //-----VARIABLES-----
     private ConstantsFileEntry constantEntry;
+    private Set<RdfClass> compatibleDatatypes;
+    private Class<? extends RdfResource> compatibleSuperclass;
+    private Set<ConstantsFileEntry> compatibleConfigKeys;
 
     //-----CONSTRUCTORS-----
     WidgetType(ConstantsFileEntry constantEntry)
     {
+        this(constantEntry, new RdfClass[0], null, new ConstantsFileEntry[0]);
+    }
+    WidgetType(ConstantsFileEntry constantEntry, RdfClass[] compatibleDatatypes)
+    {
+        this(constantEntry, compatibleDatatypes, null, new ConstantsFileEntry[0]);
+    }
+    WidgetType(ConstantsFileEntry constantEntry, RdfClass[] compatibleDatatypes, Class<? extends RdfResource> compatibleSuperclass)
+    {
+        this(constantEntry, compatibleDatatypes, compatibleSuperclass, new ConstantsFileEntry[0]);
+    }
+    WidgetType(ConstantsFileEntry constantEntry, RdfClass[] compatibleDatatypes, Class<? extends RdfResource> compatibleSuperclass, ConstantsFileEntry[] compatibleConfigKeys)
+    {
         this.constantEntry = constantEntry;
+        this.compatibleDatatypes = new HashSet<>(Arrays.asList(compatibleDatatypes));
+        this.compatibleSuperclass = compatibleSuperclass;
+        this.compatibleConfigKeys = new LinkedHashSet<>(Arrays.asList(compatibleConfigKeys));
     }
 
     //-----STATIC METHODS-----
@@ -81,6 +142,32 @@ public enum WidgetType
     public String getConstant()
     {
         return constantEntry.getValue();
+    }
+    public Set<RdfClass> getCompatibleDatatypes()
+    {
+        return compatibleDatatypes;
+    }
+    public boolean isCompatibleDatatype(RdfClass datatype)
+    {
+        boolean retVal = this.compatibleDatatypes.contains(datatype);
+
+        if (!retVal && this.compatibleSuperclass != null) {
+            retVal = this.compatibleSuperclass.isAssignableFrom(datatype.getClass());
+        }
+
+        return retVal;
+    }
+    public Class<?> getCompatibleSuperclass()
+    {
+        return compatibleSuperclass;
+    }
+    public Set<ConstantsFileEntry> getCompatibleConfigKeys()
+    {
+        return compatibleConfigKeys;
+    }
+    public boolean isCompatibleConfigKey(ConstantsFileEntry config)
+    {
+        return this.compatibleConfigKeys.contains(config);
     }
 
     //-----PROTECTED METHODS-----

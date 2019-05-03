@@ -385,7 +385,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var id = Commons.generateId();
             var _this = this;
 
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -973,7 +973,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var name = Commons.generateId();
 
             // Create container for radios with label to add to sidebar
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '" />');
             if (labelText) {
                 //TODO the name is never used as Id (only as common name for all radio buttons), maybe add it somewhere?
                 var label = ($('<label for="' + name + '">' + labelText + '</label>')).appendTo(formGroup);
@@ -1170,7 +1170,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var resetBtn = null;
             var selectBtn = null;
 
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -1349,7 +1349,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             var id = Commons.generateId();
 
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -1513,7 +1513,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             // Create selectbox to add to sidebar
             var id = Commons.generateId();
-            var content = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+            var content = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '" />');
             content.append($('<label for="' + id + '">' + labelText + '</label>'));
             var dropdown = $('<div class="dropdown"/>').appendTo(content);
             var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">' + BlocksMessages.comboboxEmptySelection + '</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
@@ -1691,7 +1691,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             // Create selectbox to add to sidebar
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '" />');
 
             // Create checkboxes for each value
             var id = Commons.generateId();
@@ -1785,16 +1785,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param element
          * @param contentAttr
          * @param formGroupExtraClass
-         * @param acEndpointOptions
+         * @param acOptions
          * @param labelText
          * @param initialValue
          * @param setterFunction
          * @returns {*|jQuery|HTMLElement}
          */
-        createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acEndpointOptions, labelText, initialValue, setterFunction)
+        createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acOptions, labelText, initialValue, setterFunction)
         {
             var id = Commons.generateId();
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (formGroupExtraClass) {
                 formGroup.addClass(formGroupExtraClass);
             }
@@ -1811,7 +1811,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     datumTokenizer: Bloodhound.tokenizers.whitespace,
                     remote: {
                         //note: the prepare function below will add the correct query at the end
-                        url: acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT],
+                        url: acOptions.acEndpoint,
                         prepare: function (query, settings)
                         {
                             settings.url = settings.url + encodeURIComponent(query);
@@ -1829,13 +1829,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 name: id,
                 source: engine,
                 //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
-                limit: parseInt(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS]) - 1,
+                limit: acOptions.acMaxResults - 1,
                 //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
                 display: 'label',
                 templates: {
-                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.autocompleteResultsEmpty + '</p></div>',
+                    empty: '<div class="tt-suggestion "' + BlocksConstants.WIDGET_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.autocompleteResultsEmpty + '</p></div>',
                     //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-                    suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
+                    suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
                 }
             };
             input.typeahead(options, dataSet);
@@ -1843,7 +1843,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             //gets called when a real selection is done
             input.bind('typeahead:select', function (ev, suggestion)
             {
-                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.resource))
+                $.getJSON(acOptions.valueEndpoint + encodeURIComponent(suggestion.resource))
                     .done(function (data)
                     {
                         setterFunction(element, data);
@@ -1888,7 +1888,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             //this gives us a chance to skip this if it would be needed
             if (firstValue) {
                 //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
-                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
+                $.getJSON(acOptions.valueEndpoint + encodeURIComponent(firstValue))
                     .done(function (data)
                     {
                         //init autocomplete input box
@@ -1926,7 +1926,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             var id = Commons.generateId();
 
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -1987,7 +1987,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             var id = Commons.generateId();
 
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -2071,7 +2071,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         },
         createListGroup: function (labelText, sortable, reorderListener)
         {
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"/>');
+            var formGroup = $('<div class="' + BlocksConstants.WIDGET_TYPE_WRAPPER_CLASS + '"/>');
             var id = Commons.generateId();
             if (labelText) {
                 var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);

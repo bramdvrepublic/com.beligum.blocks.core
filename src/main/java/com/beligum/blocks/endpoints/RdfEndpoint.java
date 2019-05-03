@@ -21,6 +21,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.endpoints.LocalQueryEndpoint;
 import com.google.common.base.Predicate;
@@ -135,12 +136,12 @@ public class RdfEndpoint
         Iterable<ResourceProxy> retVal = new ArrayList<>();
 
         //support a search-all-types-query when this is empty
-        RdfClass resourceClassFilter = null;
+        RdfOntologyMember resourceFilter = null;
         com.beligum.blocks.rdf.ifaces.RdfEndpoint endpoint = null;
         if (resourceTypeCurie != null && !StringUtils.isEmpty(resourceTypeCurie.toString())) {
-            resourceClassFilter = RdfFactory.getClass(resourceTypeCurie);
-            if (resourceClassFilter != null) {
-                endpoint = resourceClassFilter.getEndpoint();
+            resourceFilter = RdfFactory.lookup(resourceTypeCurie, RdfOntologyMember.class);
+            if (resourceFilter != null) {
+                endpoint = resourceFilter.getEndpoint();
             }
         }
         else {
@@ -153,7 +154,7 @@ public class RdfEndpoint
                 queryType = com.beligum.blocks.rdf.ifaces.RdfEndpoint.QueryType.STARTS_WITH;
             }
 
-            retVal = endpoint.search(resourceClassFilter, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
+            retVal = endpoint.search(resourceFilter, query, queryType, R.i18n().getOptimalRefererLocale(), maxResults);
         }
         else {
             Logger.warn("Encountered unknown resource type; " + resourceTypeCurie);

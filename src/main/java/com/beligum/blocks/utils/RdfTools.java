@@ -39,7 +39,7 @@ import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 
-import static gen.com.beligum.blocks.core.constants.blocks.core.INPUT_TYPE_TIME_TZONE_CLASS;
+import static gen.com.beligum.blocks.core.constants.blocks.core.WIDGET_TYPE_TIME_TZONE_CLASS;
 
 /**
  * Created by wouter on 27/04/15.
@@ -225,7 +225,7 @@ public class RdfTools
     {
         return new StringBuilder()
                         .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(INPUT_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
+                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }
@@ -241,7 +241,7 @@ public class RdfTools
                         .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime))
                         .append(" - ")
                         .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(INPUT_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
+                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }

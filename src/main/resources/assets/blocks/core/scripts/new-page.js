@@ -68,9 +68,9 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
         //sync this with the label field of com.beligum.blocks.fs.index.entries.PageIndexEntry
         display: 'label',
         templates: {
-            empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.emptySearchResultsTitle + '</p></div>',
+            empty: '<div class="tt-suggestion "' + BlocksConstants.WIDGET_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.emptySearchResultsTitle + '</p></div>',
             //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-            suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
+            suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
         }
     };
     input.typeahead(options, dataSet);

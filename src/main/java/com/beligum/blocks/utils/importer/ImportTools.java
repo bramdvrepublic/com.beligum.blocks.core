@@ -194,7 +194,7 @@ public abstract class ImportTools
                 break;
             case Boolean:
                 content = value.toString();
-                html = "<div class=\"" + gen.com.beligum.blocks.core.constants.blocks.core.Entries.INPUT_TYPE_BOOLEAN_VALUE_CLASS + "\"></div>";
+                html = "<div class=\"" + gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_TYPE_BOOLEAN_VALUE_CLASS + "\"></div>";
                 break;
             case Number:
                 content = value.toString();
@@ -258,7 +258,7 @@ public abstract class ImportTools
 
             case Color:
                 content = "#" + Integer.toHexString(((Color) value).getRGB()).substring(2);
-                html = "<div class=\"" + gen.com.beligum.blocks.core.constants.blocks.core.Entries.INPUT_TYPE_COLOR_VALUE_CLASS.getValue() + "\" style=\"background-color: " + content + "\"></div>";
+                html = "<div class=\"" + gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_TYPE_COLOR_VALUE_CLASS.getValue() + "\" style=\"background-color: " + content + "\"></div>";
                 break;
 
             case Uri:

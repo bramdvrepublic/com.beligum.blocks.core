@@ -170,6 +170,7 @@ public class PageRouter
         if (this.assertUnfinished()) {
             this.doDetectAliases();
             this.doDetectTranslatedLink();
+            this.doDetectSingleLanguageRoot();
             this.doDetectMissingLanguage();
         }
 
@@ -463,6 +464,25 @@ public class PageRouter
             }
             catch (IOException e) {
                 throw new InternalServerErrorException("Error while detecting translated link for " + this.requestedUri, e);
+            }
+        }
+    }
+    /**
+     * If the user entered a valid language as the root path, but forgot the trailing slash, the default action is to redirect to a path with a language added,
+     * eg. /en will redirect to /en/en, but this is weird behavior. So this method below implements a heuristic to auto-add the trailing slash and redirect
+     * /en to /en/ instead.
+     */
+    private void doDetectSingleLanguageRoot()
+    {
+        if (this.assertUnfinished()) {
+            // if we cut off the first slash (always present, see above) and there's no other
+            // slash present, we're dealing with a root path
+            String relativePath = this.requestedUri.getPath().substring(1);
+            if (!relativePath.contains("/")) {
+                if (R.configuration().getLocaleForLanguage(relativePath) != null) {
+                    this.targetUri = UriBuilder.fromUri(this.requestedUri).path("/").build();
+                    this.needsRedirection = true;
+                }
             }
         }
     }
