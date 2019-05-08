@@ -17,7 +17,6 @@
 package com.beligum.blocks.rdf;
 
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.index.summarizers.SimpleResourceSummarizer;
@@ -195,9 +194,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         }
         public Builder property(RdfProperty property) throws RdfInitializationException
         {
+            return this.property(property, new RdfProperty.Option[0]);
+        }
+        public Builder property(RdfProperty property, RdfProperty.Option... options) throws RdfInitializationException
+        {
             // we'll skip the overwrite check when we're dealing with the default class because overwrites will happen
             // because of the default public fields registering
-            return this.addProperty(property, this.rdfResource.equals(Settings.DEFAULT_CLASS));
+            return this.addProperty(property, options, this.rdfResource.equals(Settings.DEFAULT_CLASS));
         }
         public Builder summarizer(ResourceSummarizer resourceSummarizer)
         {
@@ -220,60 +223,62 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         @Override
         RdfClass create() throws RdfInitializationException
         {
-            //enforce a naming policy on the classes of our local public ontologies
-            if (this.rdfResource.ontology.isPublic) {
-                if (Character.isLowerCase(this.rdfResource.name.charAt(0))) {
-                    throw new RdfInitializationException("Encountered RDF class with lowercase name; our policy enforces all RDF classes should start with an uppercase letter; " + this);
-                }
-                else {
-                    //every public class (in a public ontology) should at least have a few standard properties, so auto-add them if they're missing
-                    if (this.rdfResource.isPublic) {
+            if (this.rdfResource.isProxy()) {
+                //enforce a naming policy on the classes of our local public ontologies
+                if (this.rdfResource.ontology.isPublic) {
+                    if (Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                        throw new RdfInitializationException("Encountered RDF class with lowercase name; our policy enforces all RDF classes should start with an uppercase letter; " + this);
+                    }
+                    else {
+                        //every public class (in a public ontology) should at least have a few standard properties, so auto-add them if they're missing
+                        if (this.rdfResource.isPublic) {
 
-                        // If this class is public, add all default properties to it
-                        // Note that the default label property and the RDF.type property are
-                        // marked default automatically before calling this
-                        RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
-                        for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
-                            if (p.isProperty()) {
-                                // If we hit the label property (note that this should always happen because the label property
-                                // is marked default in RdfFactory), we'll skip adding it if we have a main property. This will
-                                // allow us to specify another property (class-scoped instead of application-scoped) as the most
-                                // important one (eg. important for sub-resources) without automatically adding the label to
-                                // all classes (only the ones without a main property).
-                                // Note that the main property getter will return the label property if the main property is null
-                                // Also note that the default summarizer behavior is adapted to this
-                                if (p.equals(labelProperty) && this.rdfResource.mainProperty != null) {
-                                    //NOOP, don't add
-                                }
-                                else {
-                                    //skip the overwrite check so the addition doesn't throw an exception
-                                    this.addProperty((RdfProperty) p, true);
+                            // If this class is public, add all default properties to it
+                            // Note that the default label property and the RDF.type property are
+                            // marked default automatically before calling this
+                            RdfProperty labelProperty = Settings.instance().getRdfLabelProperty();
+                            for (RdfOntologyMember p : this.rdfFactory.defaultMemberRegistry) {
+                                if (p.isProperty()) {
+                                    // If we hit the label property (note that this should always happen because the label property
+                                    // is marked default in RdfFactory), we'll skip adding it if we have a main property. This will
+                                    // allow us to specify another property (class-scoped instead of application-scoped) as the most
+                                    // important one (eg. important for sub-resources) without automatically adding the label to
+                                    // all classes (only the ones without a main property).
+                                    // Note that the main property getter will return the label property if the main property is null
+                                    // Also note that the default summarizer behavior is adapted to this
+                                    if (p.equals(labelProperty) && this.rdfResource.mainProperty != null) {
+                                        //NOOP, don't add
+                                    }
+                                    else {
+                                        //skip the overwrite check so the addition doesn't throw an exception
+                                        this.addProperty((RdfProperty) p, new RdfProperty.Option[0], true);
 
-                                    //this will make sure the label property is the main property if no explicit main property is set
-                                    if (p.equals(labelProperty) && this.rdfResource.mainProperty == null) {
-                                        this.rdfResource.mainProperty = labelProperty;
+                                        //this will make sure the label property is the main property if no explicit main property is set
+                                        if (p.equals(labelProperty) && this.rdfResource.mainProperty == null) {
+                                            this.rdfResource.mainProperty = labelProperty;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            //revert to default if null (this behaviour is expected in our implementation)
-            if (this.rdfResource.summarizer == null) {
-                this.rdfResource.summarizer = new SimpleResourceSummarizer();
-            }
+                //revert to default if null (this behaviour is expected in our implementation)
+                if (this.rdfResource.summarizer == null) {
+                    this.rdfResource.summarizer = new SimpleResourceSummarizer();
+                }
 
-            //note: instead of iterating the properties of the superclasses and adding them to this class,
-            //we overloaded the getProperties() method to include the properties of the superclass instead.
-            //This way, we work around the need for the superclasses to be initialized when this resource is created.
+                //note: instead of iterating the properties of the superclasses and adding them to this class,
+                //we overloaded the getProperties() method to include the properties of the superclass instead.
+                //This way, we work around the need for the superclasses to be initialized when this resource is created.
+            }
 
             //Note: this call will add us to the ontology
             return super.create();
         }
 
-        private Builder addProperty(RdfProperty property, boolean skipOverwriteCheck) throws RdfInitializationException
+        private Builder addProperty(RdfProperty property, RdfProperty.Option[] options, boolean skipOverwriteCheck) throws RdfInitializationException
         {
             RdfPropertyImpl pImpl = (RdfPropertyImpl) property;
 
@@ -287,7 +292,12 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                 }
             }
             else {
-                this.rdfResource.properties.add(pImpl);
+                // Instead of adding the property to the list of properties of the class,
+                // we create a clone of the root property, so we can tweak some options of the property
+                // on a per-class basis (like public, weight, ...).
+                // note: if the options are empty, we might as well use the root property to save some memory (hoping the larger
+                // part of the ontology won't have options)
+                this.rdfResource.properties.add(options.length == 0 ? pImpl : pImpl.buildClone(options));
             }
 
             return this;

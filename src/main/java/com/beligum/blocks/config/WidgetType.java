@@ -63,6 +63,8 @@ public enum WidgetType
 
     DateTime(core.Entries.WIDGET_TYPE_DATETIME, new RdfClass[] { XSD.dateTime }),
 
+    Duration(WIDGET_TYPE_DURATION, new RdfClass[] { XSD.long_ }),
+
     Color(core.Entries.WIDGET_TYPE_COLOR, new RdfClass[] { XSD.string }),
 
     Uri(core.Entries.WIDGET_TYPE_URI, new RdfClass[] { XSD.anyURI }),

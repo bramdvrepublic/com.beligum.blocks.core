@@ -30,8 +30,8 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //protected because of the builder, see below
     protected boolean isPublic;
+    // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     //-----CONSTRUCTORS-----
     /**
@@ -42,21 +42,30 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     }
 
     //-----PUBLIC METHODS-----
+    @Override
     public boolean isOntology()
     {
         return this.getType().equals(Type.ONTOLOGY);
     }
+    @Override
     public boolean isClass()
     {
         return this.getType().equals(Type.CLASS);
     }
+    @Override
     public boolean isProperty()
     {
         return this.getType().equals(Type.PROPERTY);
     }
+    @Override
     public boolean isDatatype()
     {
         return this.getType().equals(Type.DATATYPE);
+    }
+    @Override
+    public boolean isPublic()
+    {
+        return isPublic;
     }
 
     //-----PROTECTED METHODS-----
@@ -73,11 +82,12 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     public boolean equals(Object o)
     {
         if (this == o) return true;
-        if (!(o instanceof RdfResource)) return false;
+        if (!(o instanceof AbstractRdfResourceImpl)) return false;
 
-        RdfResource rdfResource = (RdfResource) o;
+        AbstractRdfResourceImpl that = (AbstractRdfResourceImpl) o;
 
-        return getName() != null ? getName().equals(rdfResource.getName()) : rdfResource.getName() == null;
+        return getName() != null ? getName().equals(that.getName()) : that.getName() == null;
+
     }
     @Override
     public int hashCode()

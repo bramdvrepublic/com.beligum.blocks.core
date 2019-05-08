@@ -11,6 +11,7 @@ import java.net.URI;
 public interface RdfOntologyMember extends RdfResource
 {
     //-----CONSTANTS-----
+    int DEFAULT_WEIGHT = 0;
 
     //-----VARIABLES-----
 
@@ -69,4 +70,12 @@ public interface RdfOntologyMember extends RdfResource
      */
     @JsonIgnore
     RdfEndpoint getEndpoint();
+
+    /**
+     * The weight of an ontology member defines it's order;
+     * higher values bubble up towards to top of ordered lists,
+     * whereas low values sink to the bottom.
+     * Default value is RdfOntologyMember.DEFAULT_WEIGHT
+     */
+    int getWeight();
 }

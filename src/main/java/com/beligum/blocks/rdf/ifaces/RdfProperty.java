@@ -19,6 +19,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.WidgetTypeConfig;
+import com.beligum.blocks.rdf.RdfPropertyImpl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -57,4 +58,49 @@ public interface RdfProperty extends RdfOntologyMember
      */
     WidgetTypeConfig getWidgetConfig();
 
+    /**
+     * This allows us to pass certain options to specific properties of specific classes instead
+     * of adding them globally.
+     */
+    interface Option
+    {
+        void apply(RdfPropertyImpl property);
+    }
+    class PublicOption implements Option
+    {
+        public static final PublicOption TRUE = new PublicOption(true);
+        public static final PublicOption FALSE = new PublicOption(false);
+
+        boolean value;
+
+        private PublicOption(boolean value)
+        {
+            this.value = value;
+        }
+
+        @Override
+        public void apply(RdfPropertyImpl property)
+        {
+            property.setPublic(this.value);
+        }
+    }
+    class WeightOption implements Option
+    {
+        int value;
+
+        private WeightOption(int value)
+        {
+            this.value = value;
+        }
+        public static WeightOption create(int value)
+        {
+            return new WeightOption(value);
+        }
+
+        @Override
+        public void apply(RdfPropertyImpl property)
+        {
+            property.setWeight(this.value);
+        }
+    }
 }

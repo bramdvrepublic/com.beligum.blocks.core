@@ -27,7 +27,7 @@ import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.endpoints.RdfEndpointRoutes;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bram on 2/25/16.
@@ -40,11 +40,24 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected RdfClassImpl dataType;
     protected WidgetType widgetType;
     protected WidgetTypeConfig widgetConfig;
+    // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
+
+    // Note: we explicitly use a list instead of a map to allow doubles
+    protected List<Map.Entry<RdfPropertyImpl, Option[]>> clones;
+    protected RdfPropertyImpl clonedFrom;
 
     //-----CONSTRUCTORS-----
     RdfPropertyImpl(RdfOntologyImpl ontology, String name)
     {
         super(ontology, name, false);
+
+        this.clones = new ArrayList<>();
+    }
+    private RdfPropertyImpl(RdfPropertyImpl toClone, Option[] options)
+    {
+        super(toClone.ontology, toClone.name, toClone.isPublic);
+
+        this.initFromToClone(toClone, options);
     }
 
     //-----PUBLIC METHODS-----
@@ -74,10 +87,79 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         return widgetConfig;
     }
+    //Note: make public so we can set if from Option.apply()
+    public void setPublic(boolean value)
+    {
+        this.isPublic = value;
+    }
+    //Note: make public so we can set if from Option.apply()
+    public void setWeight(int value)
+    {
+        this.weight = value;
+    }
 
     //-----PROTECTED METHODS-----
+    protected RdfPropertyImpl buildClone(Option[] options)
+    {
+        RdfPropertyImpl retVal = null;
+
+        // if this property is already a clone of another property,
+        // don't clone this one, but do a recursive call and clone the root one instead
+        if (this.isClone()) {
+            retVal = this.clonedFrom.buildClone(options);
+        }
+        else {
+            this.clones.add(new AbstractMap.SimpleEntry<>(retVal = new RdfPropertyImpl(this, options), options));
+        }
+
+        return retVal;
+    }
 
     //-----PRIVATE METHODS-----
+    private boolean isClone()
+    {
+        return this.clonedFrom != null;
+    }
+    /**
+     * This is more or less the counterpart of Builder.create() for clones...
+     */
+    private RdfProperty createClone(Option[] options)
+    {
+        if (this.isClone() && this.isProxy()) {
+
+            //note: the parent instance might have changed (at least the proxy should have flipped),
+            // so make sure to re-init the properties
+            this.initFromToClone(this.clonedFrom, options);
+        }
+
+        return this;
+    }
+    /**
+     * Copy all fields from the parent object into this instance
+     */
+    private void initFromToClone(RdfPropertyImpl toClone, Option[] options)
+    {
+        this.ontology = toClone.ontology;
+        //this.name = toClone.name;
+        this.isPublic = toClone.isPublic;
+
+        this.proxy = toClone.proxy;
+        this.label = toClone.label;
+        this.isSameAs = toClone.isSameAs;
+        this.isDefault = toClone.isDefault;
+        this.endpoint = toClone.endpoint;
+
+        this.dataType = toClone.dataType;
+        this.widgetType = toClone.widgetType;
+        this.widgetConfig = toClone.widgetConfig;
+
+        this.clonedFrom = toClone;
+
+        // last but not least: apply the instance-specific options
+        for (Option option : options) {
+            option.apply(this);
+        }
+    }
 
     //-----INNER CLASSES-----
     public static class Builder extends AbstractRdfOntologyMember.Builder<RdfProperty, RdfPropertyImpl, RdfPropertyImpl.Builder>
@@ -117,88 +199,111 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         @Override
         RdfProperty create() throws RdfInitializationException
         {
-            if (this.rdfResource.ontology.isPublic) {
+            RdfProperty retVal = null;
 
-                //enforce a naming policy on the properties of our local public ontologies
-                if (!Character.isLowerCase(this.rdfResource.name.charAt(0))) {
-                    throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
-                }
+            if (this.rdfResource.isClone()) {
+                throw new RdfInitializationException("Encountered RDF property clone; this shouldn't happen as the clones are not supposed to be publicly accessible during creation...; " + this);
+            }
+            else if (this.rdfResource.isProxy()) {
 
-                //enforces the properties in our local public ontologies to have valid datatypes
-                if (this.rdfResource.dataType == null) {
-                    throw new RdfInitializationException("Datatype of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
-                }
-                else if (this.rdfResource.widgetType == null) {
-                    throw new RdfInitializationException("Widget type of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
-                }
-                else {
-                    //make sure the configured dataType is compatible with the configured widgetType
-                    if (!this.rdfResource.widgetType.isCompatibleDatatype(this.rdfResource.dataType)) {
-                        throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible datatype for widgetType '" + this.rdfResource.widgetType + "'" +
-                                                             "\n  compatible datatypes are: " + this.rdfResource.widgetType.getCompatibleDatatypes() +
-                                                             "\n  compatible superclass is: " + this.rdfResource.widgetType.getCompatibleSuperclass() +
-                                                             "\n  ;" + this);
+                if (this.rdfResource.ontology.isPublic) {
+
+                    //enforce a naming policy on the properties of our local public ontologies
+                    if (!Character.isLowerCase(this.rdfResource.name.charAt(0))) {
+                        throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
+                    }
+
+                    //enforces the properties in our local public ontologies to have valid datatypes
+                    if (this.rdfResource.dataType == null) {
+                        throw new RdfInitializationException("Datatype of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
+                    }
+                    else if (this.rdfResource.widgetType == null) {
+                        throw new RdfInitializationException("Widget type of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);
+                    }
+                    else {
+                        //make sure the configured dataType is compatible with the configured widgetType
+                        if (!this.rdfResource.widgetType.isCompatibleDatatype(this.rdfResource.dataType)) {
+                            throw new RdfInitializationException(
+                                            "Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible datatype for widgetType '" + this.rdfResource.widgetType + "'" +
+                                            "\n  compatible datatypes are: " + this.rdfResource.widgetType.getCompatibleDatatypes() +
+                                            "\n  compatible superclass is: " + this.rdfResource.widgetType.getCompatibleSuperclass() +
+                                            "\n  ;" + this);
+                        }
+                    }
+
+                    // auto-init some widget configs for public properties if none were set, but good guesses can be made
+                    if (this.rdfResource.isPublic) {
+
+                        if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
+
+                            if (this.rdfResource.dataType.endpoint == null) {
+                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
+                                                                     "' that has a missing endpoint. This is not allowed; " + this);
+                            }
+                            else {
+                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
+                                                      RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "")
+                                                                       .getAbsoluteUrl());
+                                }
+                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
+                                                      RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
+                                }
+                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                                }
+                            }
+                        }
+                        else if (this.rdfResource.widgetType.equals(WidgetType.Enum)) {
+
+                            // Terms.technique.setWidgetConfig(new InputTypeConfig(new String[][] {
+                            //                        { gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
+                            //                          //let's re-use the same endpoint for the enum as for the resources so we can re-use it's backend code
+                            //                          gen.com.beligum.blocks.endpoints.RdfEndpointRoutes.getResources(Terms.technique.getCurieName(), -1, false, "").getAbsoluteUrl()
+                            //                        },
+                            //                        }));
+
+                            if (this.rdfResource.endpoint == null) {
+                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                     " that has a missing endpoint. This is not allowed; " + this);
+                            }
+                            else {
+                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT,
+                                                      RdfEndpointRoutes.getResources(this.rdfResource.getCurie(), -1, false, "").getAbsoluteUrl());
+                                }
+                            }
+
+                        }
+                    }
+
+                    // now validate the configured configs
+                    for (Map.Entry<ConstantsFileEntry, String> config : this.rdfResource.widgetConfig.entrySet()) {
+                        if (!this.rdfResource.widgetType.isCompatibleConfigKey(config.getKey())) {
+                            throw new RdfInitializationException(
+                                            "Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible widget config '" + config.getKey() + "' for widgetType '" +
+                                            this.rdfResource.widgetType + "'" +
+                                            "\n  compatible config keys are: " + this.rdfResource.widgetType.getCompatibleConfigKeys() +
+                                            "\n  ;" + this);
+                        }
                     }
                 }
 
-                // auto-init some widget configs for public properties if none were set, but good guesses can be made
-                if (this.rdfResource.isPublic) {
+                //Note: this call will add us to the ontology
+                retVal = super.create();
 
-                    if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
-
-                        if (this.rdfResource.dataType.endpoint == null) {
-                            throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
-                                                                 "' that has a missing endpoint. This is not allowed; " + this);
-                        }
-                        else {
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
-                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
-                                                  RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "").getAbsoluteUrl());
-                            }
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
-                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
-                                                  RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
-                            }
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
-                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
-                            }
-                        }
-                    }
-                    else if (this.rdfResource.widgetType.equals(WidgetType.Enum)) {
-
-                        // Terms.technique.setWidgetConfig(new InputTypeConfig(new String[][] {
-                        //                        { gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
-                        //                          //let's re-use the same endpoint for the enum as for the resources so we can re-use it's backend code
-                        //                          gen.com.beligum.blocks.endpoints.RdfEndpointRoutes.getResources(Terms.technique.getCurieName(), -1, false, "").getAbsoluteUrl()
-                        //                        },
-                        //                        }));
-
-                        if (this.rdfResource.endpoint == null) {
-                            throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
-                                                                 " that has a missing endpoint. This is not allowed; " + this);
-                        }
-                        else {
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
-                                this.widgetConfig(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT,
-                                                  RdfEndpointRoutes.getResources(this.rdfResource.getCurie(), -1, false, "").getAbsoluteUrl());
-                            }
-                        }
-
-                    }
-                }
-
-                // now validate the configured configs
-                for (Map.Entry<ConstantsFileEntry, String> config : this.rdfResource.widgetConfig.entrySet()) {
-                    if (!this.rdfResource.widgetType.isCompatibleConfigKey(config.getKey())) {
-                        throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with an incompatible widget config '"+config.getKey()+"' for widgetType '" + this.rdfResource.widgetType + "'" +
-                                                             "\n  compatible config keys are: " + this.rdfResource.widgetType.getCompatibleConfigKeys() +
-                                                             "\n  ;" + this);
-                    }
+                // now we've turned a proxy into a non-proxy, we need to make all clones non-proxy as well,
+                // since this is the "finish line"
+                for (Map.Entry<RdfPropertyImpl, Option[]> clone : this.rdfResource.clones) {
+                    clone.getKey().createClone(clone.getValue());
                 }
             }
+            else {
+                retVal = super.create();
+            }
 
-            //Note: this call will add us to the ontology
-            return super.create();
+            return retVal;
         }
     }
 }

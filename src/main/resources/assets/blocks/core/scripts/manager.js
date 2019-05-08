@@ -599,6 +599,24 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     });
 
+    $(document).on(Broadcaster.EVENTS.BLOCK.CREATED, function (event, eventData)
+    {
+        //note: this is fired in the middle of block creation (as soon as it exists),
+        // but style/scripts resources are still being loaded, so fire it after a small delay;
+        // it looks cleaner and is more noticeable
+        setTimeout(function () {
+
+            eventData.surface.overlay.addClass(BlocksConstants.BLOCK_HIGHLIGHT_CLASS);
+
+            //note: the css animation will fadeout the color of the hightlight background,
+            // so make sure to cleanup and sync and wipe the class when the css animation is done
+            setTimeout(function () {
+                eventData.surface.overlay.removeClass(BlocksConstants.BLOCK_HIGHLIGHT_CLASS);
+            }, parseInt(BlocksConstants.BLOCK_HIGHLIGHT_DURATION_MILLIS));
+
+        }, parseInt(BlocksConstants.BLOCK_HIGHLIGHT_DELAY_MILLIS));
+    });
+
     $(document).on(Broadcaster.EVENTS.BLOCK.FOCUS, function (event, eventData)
     {
         //if the surface in the data is empty, we'll assume the page should be focused

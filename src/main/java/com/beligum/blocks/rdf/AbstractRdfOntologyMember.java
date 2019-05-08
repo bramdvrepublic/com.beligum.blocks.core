@@ -19,12 +19,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     //-----VARIABLES-----
     protected RdfOntologyImpl ontology;
     protected final String name;
-    protected boolean isPublic;
     protected boolean proxy;
     protected MessagesFileEntry label;
     protected URI[] isSameAs;
     protected boolean isDefault;
     protected RdfEndpoint endpoint;
+    protected int weight;
+    // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     //-----CONSTRUCTORS-----
     protected AbstractRdfOntologyMember(RdfOntologyImpl ontology, String name, boolean isPublic)
@@ -48,6 +49,8 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.isSameAs = new URI[] {};
         //this should be activated
         this.isDefault = false;
+        //just default to zero
+        this.weight = DEFAULT_WEIGHT;
     }
 
     //-----PUBLIC METHODS-----
@@ -65,11 +68,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     public URI getCurie()
     {
         return URI.create(ontology.getNamespace().getPrefix() + ":" + this.getName());
-    }
-    @Override
-    public boolean isPublic()
-    {
-        return isPublic;
     }
     @Override
     public boolean isProxy()
@@ -122,6 +120,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
         return endpoint;
     }
+    @Override
+    public int getWeight()
+    {
+        this.assertNoProxy();
+
+        return weight;
+    }
 
     //-----PROTECTED METHODS-----
     protected void assertNoProxy()
@@ -148,11 +153,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     public boolean equals(Object o)
     {
         if (this == o) return true;
-        if (!(o instanceof RdfClassImpl)) return false;
+        if (!(o instanceof AbstractRdfOntologyMember)) return false;
 
-        RdfClassImpl rdfClass = (RdfClassImpl) o;
+        AbstractRdfOntologyMember that = (AbstractRdfOntologyMember) o;
 
-        return getCurie() != null ? getCurie().equals(rdfClass.getCurie()) : rdfClass.getCurie() == null;
+        return getCurie() != null ? getCurie().equals(that.getCurie()) : that.getCurie() == null;
+
     }
     @Override
     public int hashCode()
@@ -234,6 +240,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             return this.builder;
         }
+        public B weight(int weight)
+        {
+            this.rdfResource.weight = weight;
+
+            return this.builder;
+        }
 
         //-----PROTECTED METHODS-----
         /**
@@ -245,32 +257,42 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
          */
         T create() throws RdfInitializationException
         {
-            if (this.rdfResource.ontology == null) {
-                throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
+            if (this.rdfResource.isProxy()) {
+
+                if (this.rdfResource.ontology == null) {
+                    throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
+                }
+
+                //convert the RdfOntologyMember set to an array of URI
+                int i = 0;
+                this.rdfResource.isSameAs = new URI[this.sameAs.size()];
+                for (T m : this.sameAs) {
+                    this.rdfResource.isSameAs[i++] = m.getUri();
+                }
+
+                // --- here, we all done initializing/checking the resource ---
+
+                //here, all checks passed and the proxy can be converted to a valid instance
+                this.rdfResource.proxy = false;
+
+                // register the member into it's ontology, filling all the right mappings
+                // note that this needs to happen after creation (proxy = false) because it will
+                // call public methods on the resource and they are programmed to throw exceptions
+                // when the instance is still a proxy
+                this.rdfResource.ontology._register(this.rdfResource);
             }
-
-            //convert the RdfOntologyMember set to an array of URI
-            int i = 0;
-            this.rdfResource.isSameAs = new URI[this.sameAs.size()];
-            for (T m : this.sameAs) {
-                this.rdfResource.isSameAs[i++] = m.getUri();
-            }
-
-            // --- here, we all done initializing/checking the resource ---
-
-            //here, all checks passed and the proxy can be converted to a valid instance
-            this.rdfResource.proxy = false;
-
-            // register the member into it's ontology, filling all the right mappings
-            // note that this needs to happen after creation (proxy = false) because it will
-            // call public methods on the resource and they are programmed to throw exceptions
-            // when the instance is still a proxy
-            this.rdfResource.ontology._register(this.rdfResource);
 
             //this cast is needed because <V extends AbstractRdfOntologyMember> instead of <V extends T>
             return (T) this.rdfResource;
         }
 
         //-----PRIVATE METHODS-----
+
+        //-----MGMT METHODS-----
+        @Override
+        public String toString()
+        {
+            return "Builder for " + rdfResource;
+        }
     }
 }
