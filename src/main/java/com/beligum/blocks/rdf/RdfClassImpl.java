@@ -24,9 +24,14 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import org.apache.commons.collections.iterators.IteratorChain;
 
+import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -103,7 +108,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         this.assertNoProxy();
 
         //this does nothing more than restrict the member values to the interface
-        return Iterables.transform(this.getPropertiesWithoutProxyCheck(),
+        Iterable<RdfProperty> retVal = Iterables.transform(this.getPropertiesWithoutProxyCheck(),
                                    new Function<RdfPropertyImpl, RdfProperty>()
                                    {
                                        @Override
@@ -113,6 +118,25 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
                                        }
                                    }
         );
+
+        // basically, this creates an iterable with the main property removed,
+        // and re-introduced as the first element (instead of sorting)
+        if (this.mainProperty != null) {
+            retVal = Iterables.concat(Collections.singleton(mainProperty),
+                                      Iterables.filter(retVal, new Predicate<RdfProperty>()
+                                      {
+                                          @Override
+                                          public boolean apply(@Nullable RdfProperty input)
+                                          {
+                                              //skip this element if it's the main property
+                                              //because we introduced it as the first in the list
+                                              return !input.equals(mainProperty);
+                                          }
+                                      })
+            );
+        }
+
+        return retVal;
     }
     @Override
     public boolean hasProperty(RdfProperty property)

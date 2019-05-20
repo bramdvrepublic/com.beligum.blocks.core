@@ -468,14 +468,23 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             type: 'POST',
             url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
             data: pageHtml,
+            // we're sending json
             contentType: 'application/json; charset=UTF-8',
+            // we're expecting json back (explicitly needed for validation error handling)
+            dataType: 'json',
         })
             .done(function (data, textStatus, response)
             {
             })
             .fail(function (xhr, textStatus, exception)
             {
-                Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                // if we have a public error message, use it
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    Notification.error(xhr.responseJSON.error.message, xhr);
+                }
+                else {
+                    Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                }
             })
             .always(function ()
             {

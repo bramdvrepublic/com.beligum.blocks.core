@@ -26,6 +26,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfInstantiationException;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.*;
+import com.beligum.blocks.rdf.ontologies.RDFA;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
@@ -283,6 +284,13 @@ public class RdfFactory
         return getClass(URI.create(uri));
     }
     /**
+     * Convenience method around getClass() with a IRI instead of URI
+     */
+    public static RdfClass getClass(IRI iri)
+    {
+        return lookup(iri, RdfClass.class);
+    }
+    /**
      * Shorthand for lookup(uri, RdfDatatype.class)
      */
     public static RdfDatatype getDatatype(URI uri)
@@ -297,6 +305,13 @@ public class RdfFactory
         return getDatatype(URI.create(uri));
     }
     /**
+     * Convenience method around getDatatype() with a IRI instead of URI
+     */
+    public static RdfDatatype getDatatype(IRI iri)
+    {
+        return lookup(iri, RdfDatatype.class);
+    }
+    /**
      * Shorthand for lookup(uri, RdfProperty.class)
      */
     public static RdfProperty getProperty(URI uri)
@@ -304,11 +319,18 @@ public class RdfFactory
         return lookup(uri, RdfProperty.class);
     }
     /**
-     * Convenience method around getProperty() with a curie string instead of URI
+     * Convenience method around getProperty() with a URI string instead of URI
      */
     public static RdfProperty getProperty(String uri)
     {
         return getProperty(URI.create(uri));
+    }
+    /**
+     * Convenience method around getProperty() with a IRI instead of URI
+     */
+    public static RdfProperty getProperty(IRI iri)
+    {
+        return lookup(iri, RdfProperty.class);
     }
     /**
      * Returns a reference to the local main ontology
@@ -477,6 +499,9 @@ public class RdfFactory
 
                     //make sure we always include the ontology of the configured label property to the public set of ontologies
                     addRelevantOntology(Settings.instance().getRdfLabelProperty().getOntology());
+
+                    //since everything we do originates from RDFa, we need to make sure RDFA is added as well
+                    addRelevantOntology(allOntologies.get(RDFA.NAMESPACE));
 
                     //if we reach this point, we iterated all ontologies and put them in our map above,
                     // so it's safe to wipe the static map and release it's memory

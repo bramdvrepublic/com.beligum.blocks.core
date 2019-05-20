@@ -19,8 +19,12 @@ package com.beligum.blocks.rdf.importers;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -190,6 +194,7 @@ public abstract class AbstractImporter implements Importer
                 }
 
                 //After all the filtering above, check if we need to change the statement: remove it from the model and add it again later on
+                Statement validStmt = null;
                 if (newSubject != null || newObject != null || newPredicate != null) {
                     if (newSubject == null) {
                         newSubject = stmt.getSubject();
@@ -201,19 +206,23 @@ public abstract class AbstractImporter implements Importer
                         newObject = stmt.getObject();
                     }
 
-                    Statement modifiedStmt = null;
                     if (stmt.getContext() == null) {
-                        modifiedStmt = factory.createStatement(newSubject, newPredicate, newObject);
+                        validStmt = factory.createStatement(newSubject, newPredicate, newObject);
                     }
                     else {
-                        modifiedStmt = factory.createStatement(newSubject, newPredicate, newObject, stmt.getContext());
+                        validStmt = factory.createStatement(newSubject, newPredicate, newObject, stmt.getContext());
                     }
-
-                    filteredModel.add(modifiedStmt);
                 }
                 else {
-                    filteredModel.add(stmt);
+                    validStmt = stmt;
                 }
+
+                RdfProperty property = RdfFactory.getProperty(stmt.getPredicate());
+                if (property != null && property.getValidator() != null) {
+                    property.getValidator().validate(property);
+                }
+
+                filteredModel.add(validStmt);
             }
         }
 

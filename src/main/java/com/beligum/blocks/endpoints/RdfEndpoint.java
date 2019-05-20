@@ -68,7 +68,7 @@ public class RdfEndpoint
     @Path("/classes/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(RDF_CLASS_READ_ALL_PERM)
-    public Response getClasses() throws IOException
+    public Response getClasses()
     {
         //TODO maybe we should think about specifying the ontology to get the classes of?
         return Response.ok(RdfFactory.getLocalOntology().getPublicClasses()).build();
@@ -78,7 +78,7 @@ public class RdfEndpoint
     @Path("/properties/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
-    public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
+    public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
     {
         Iterable<RdfProperty> retVal = null;
 
@@ -111,7 +111,7 @@ public class RdfEndpoint
     @Path("/properties/main")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
-    public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
+    public Response getMainProperty(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
     {
         RdfProperty retVal = null;
 

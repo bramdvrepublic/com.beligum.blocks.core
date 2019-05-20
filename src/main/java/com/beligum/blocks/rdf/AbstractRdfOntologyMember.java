@@ -25,6 +25,7 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     protected boolean isDefault;
     protected RdfEndpoint endpoint;
     protected int weight;
+    protected RdfValidator validator;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     //-----CONSTRUCTORS-----
@@ -51,6 +52,8 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.isDefault = false;
         //just default to zero
         this.weight = DEFAULT_WEIGHT;
+        //by default we have no validator
+        this.validator = null;
     }
 
     //-----PUBLIC METHODS-----
@@ -126,6 +129,13 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.assertNoProxy();
 
         return weight;
+    }
+    @Override
+    public RdfValidator getValidator()
+    {
+        this.assertNoProxy();
+
+        return validator;
     }
 
     //-----PROTECTED METHODS-----
@@ -243,6 +253,12 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         public B weight(int weight)
         {
             this.rdfResource.weight = weight;
+
+            return this.builder;
+        }
+        public B validator(RdfValidator validator)
+        {
+            this.rdfResource.validator = validator;
 
             return this.builder;
         }

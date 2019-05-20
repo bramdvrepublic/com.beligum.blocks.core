@@ -417,9 +417,8 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         //don't let it throw an exception if the file doesn't exist, just return null
         if (this.getFileContext().util().exists(modelFile)) {
             try (InputStream is = this.getFileContext().open(modelFile)) {
-                Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
                 //note that all RDF needs absolute addresses
-                retVal = rdfImporter.importDocument(this.getPublicAbsoluteAddress(), is);
+                retVal = this.createImporter(this.getRdfExportFileFormat()).importDocument(this.getPublicAbsoluteAddress(), is);
             }
         }
 

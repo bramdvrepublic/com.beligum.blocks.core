@@ -40,6 +40,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected RdfClassImpl dataType;
     protected WidgetType widgetType;
     protected WidgetTypeConfig widgetConfig;
+    protected int multiplicity;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     // Note: we explicitly use a list instead of a map to allow doubles
@@ -87,6 +88,13 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         return widgetConfig;
     }
+    @Override
+    public int getMultiplicity()
+    {
+        this.assertNoProxy();
+
+        return multiplicity;
+    }
     //Note: make public so we can set if from Option.apply()
     public void setPublic(boolean value)
     {
@@ -96,6 +104,11 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     public void setWeight(int value)
     {
         this.weight = value;
+    }
+    //Note: make public so we can set if from Option.apply()
+    public void setMultiplicity(int value)
+    {
+        this.multiplicity = value;
     }
 
     //-----PROTECTED METHODS-----
@@ -148,11 +161,15 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.isSameAs = toClone.isSameAs;
         this.isDefault = toClone.isDefault;
         this.endpoint = toClone.endpoint;
+        this.weight = toClone.weight;
+        this.validator = toClone.validator;
 
         this.dataType = toClone.dataType;
         this.widgetType = toClone.widgetType;
         this.widgetConfig = toClone.widgetConfig;
+        this.multiplicity = toClone.multiplicity;
 
+        // save a reference to the member we cloned from
         this.clonedFrom = toClone;
 
         // last but not least: apply the instance-specific options
@@ -186,6 +203,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         public Builder widgetConfig(ConstantsFileEntry key, String value)
         {
             this.rdfResource.widgetConfig.put(key, value);
+
+            return this;
+        }
+        public Builder multiplicity(int value)
+        {
+            this.rdfResource.multiplicity = value;
 
             return this;
         }

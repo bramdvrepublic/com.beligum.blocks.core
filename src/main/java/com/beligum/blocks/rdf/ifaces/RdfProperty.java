@@ -59,6 +59,13 @@ public interface RdfProperty extends RdfOntologyMember
     WidgetTypeConfig getWidgetConfig();
 
     /**
+     * If this property is used inside a class, the multiplicity controls the (maximum) number
+     * of instances of this property is allowed inside that class.
+     * Note that this should be a non-negative number.
+     */
+    int getMultiplicity();
+
+    /**
      * This allows us to pass certain options to specific properties of specific classes instead
      * of adding them globally.
      */
@@ -68,14 +75,18 @@ public interface RdfProperty extends RdfOntologyMember
     }
     class PublicOption implements Option
     {
-        public static final PublicOption TRUE = new PublicOption(true);
-        public static final PublicOption FALSE = new PublicOption(false);
+        private static final PublicOption TRUE = new PublicOption(true);
+        private static final PublicOption FALSE = new PublicOption(false);
 
         boolean value;
 
         private PublicOption(boolean value)
         {
             this.value = value;
+        }
+        public static PublicOption get(boolean value)
+        {
+            return value ? TRUE : FALSE;
         }
 
         @Override
@@ -92,7 +103,7 @@ public interface RdfProperty extends RdfOntologyMember
         {
             this.value = value;
         }
-        public static WeightOption create(int value)
+        public static WeightOption get(int value)
         {
             return new WeightOption(value);
         }
@@ -101,6 +112,25 @@ public interface RdfProperty extends RdfOntologyMember
         public void apply(RdfPropertyImpl property)
         {
             property.setWeight(this.value);
+        }
+    }
+    class MultiplicityOption implements Option
+    {
+        int value;
+
+        private MultiplicityOption(int value)
+        {
+            this.value = value;
+        }
+        public static MultiplicityOption get(int value)
+        {
+            return new MultiplicityOption(value);
+        }
+
+        @Override
+        public void apply(RdfPropertyImpl property)
+        {
+            property.setMultiplicity(this.value);
         }
     }
 }

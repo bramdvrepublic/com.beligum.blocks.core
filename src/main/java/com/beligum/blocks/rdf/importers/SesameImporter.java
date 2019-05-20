@@ -17,6 +17,7 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.exceptions.RdfValidationException;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.importers.semargl.SesameRDFaParser;
 import org.eclipse.rdf4j.model.Model;
@@ -53,6 +54,10 @@ public class SesameImporter extends AbstractImporter
     {
         try {
             return this.parseInputStream(baseUri, inputStream);
+        }
+        //don't wrap the validation exception in a IOException or the wrong exception handler will fire
+        catch (RdfValidationException e) {
+            throw e;
         }
         catch (Exception e) {
             throw new IOException("Exception caught while parsing RDF import file; " + baseUri, e);

@@ -78,4 +78,13 @@ public interface RdfOntologyMember extends RdfResource
      * Default value is RdfOntologyMember.DEFAULT_WEIGHT
      */
     int getWeight();
+
+    /**
+     * The validator of this ontology member or null if no validation is required.
+     * By definition, all non-null validators of all ontology members will be called
+     * during instantiating/saving a member, allowing them to throw exceptions if any
+     * attempts are made to create invalid members.
+     */
+    @JsonIgnore
+    RdfValidator getValidator();
 }

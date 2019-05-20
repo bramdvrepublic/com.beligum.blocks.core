@@ -469,15 +469,20 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             // standard event bubbling.
             // See https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
             if (!enableClickEvents) {
-                // we don't want to leave this on permanently, because it blocks
-                // literally everthing (eg. all sidebar controls too). So let's fire it
-                // and reset it after a short amount of time, when we're sure the click
-                // event should have happened.
-                window.addEventListener('click', _blockClick, true);
-                setTimeout(function ()
-                {
-                    window.removeEventListener('click', _blockClick, true);
-                }, 100);
+                // there's one exception: if we click on the CREATE_BLOCK_CLASS button,
+                // (or if there's no surface at all) we need to let the click pass through
+                // to show the help-popover
+                if (!mousedownSurface || !mousedownSurface.isNew()) {
+                    // we don't want to leave this on permanently, because it blocks
+                    // literally everthing (eg. all sidebar controls too). So let's fire it
+                    // and reset it after a short amount of time, when we're sure the click
+                    // event should have happened.
+                    window.addEventListener('click', _blockClick, true);
+                    setTimeout(function ()
+                    {
+                        window.removeEventListener('click', _blockClick, true);
+                    }, 100);
+                }
             }
 
             //note that we use the mousedown event as the parent event,
