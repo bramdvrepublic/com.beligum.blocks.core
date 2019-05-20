@@ -55,7 +55,8 @@ public enum WidgetType
                                                              XSD.int_, XSD.unsignedInt,
                                                              XSD.short_, XSD.unsignedShort,
                                                              XSD.long_, XSD.unsignedLong,
-                                                             XSD.float_, XSD.double_ }),
+                                                             XSD.float_,
+                                                             XSD.double_ }),
 
     Date(core.Entries.WIDGET_TYPE_DATE, new RdfClass[] { XSD.date }),
 
@@ -63,7 +64,7 @@ public enum WidgetType
 
     DateTime(core.Entries.WIDGET_TYPE_DATETIME, new RdfClass[] { XSD.dateTime }),
 
-    Duration(WIDGET_TYPE_DURATION, new RdfClass[] { XSD.long_ }),
+    Duration(core.Entries.WIDGET_TYPE_DURATION, new RdfClass[] { XSD.long_ }),
 
     Color(core.Entries.WIDGET_TYPE_COLOR, new RdfClass[] { XSD.string }),
 

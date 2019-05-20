@@ -612,21 +612,36 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
     /**
      * If we click on a block, but we actually clicked on the free room around that block
      * (the 'stretched' space of a block to make it align with it's parent row), we'll click
-     * on the column-element instead of the block-element and we need to fix this because the
-     * clicked element will be a level 'too high' and out of sync with the surface we want to focus
+     * on the column-element (or the blocks-layout element if we click the very last element)
+     * instead of the block-element and we need to fix this because the clicked element will be
+     * a level (or more) 'too high' and out of sync with the surface we want to focus
      */
     var validateClickedElement = function (focusedSurface, clickedElement)
     {
         var retVal = clickedElement;
 
+        // if the clicked element is not 'inside' the surface, some additional work is needed
         if (clickedElement.closest(focusedSurface.element).length === 0) {
             // Additional tweaking:
             // when we click in the margin of a block and that block
-            // has only one property, we'll simulate the click on that property
-            // instead. This is needed eg. for blocks-text that registers itself
-            // on the first property inside the block, not on the block itself.
-            if (focusedSurface.children.length === 1) {
-                retVal = focusedSurface.children[0].element;
+            // has only one registered child (can be instantiated),
+            // we'll simulate the click on that child instead.
+            // This is needed eg. for blocks-text and the editor of blocks-fact-entry
+            // that registers themselves on the properties inside the block, not on the block itself.
+            // Also note that to be 100% correct, this needs to be a recursive call on the children,
+            // but since the focusedSurface is always a block and we only allow blocks to have
+            // properties as children (and properties have no children), we only need to go one level down
+            var registeredChildren = [];
+            for (var i = 0; i < focusedSurface.children.length; i++) {
+                var child = focusedSurface.children[i];
+                var widget = Widget.Class.create(child.element);
+                if (widget) {
+                    registeredChildren.push(child.element);
+                }
+            }
+
+            if (registeredChildren.length === 1) {
+                retVal = registeredChildren[0];
             }
             else {
                 retVal = focusedSurface.element;
