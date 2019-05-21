@@ -276,24 +276,43 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     // auto-init some widget configs for public properties if none were set, but good guesses can be made
                     if (this.rdfResource.isPublic) {
 
-                        if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
+                        if (this.rdfResource.widgetType.equals(WidgetType.Immutable)) {
 
-                            if (this.rdfResource.dataType.endpoint == null) {
-                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
-                                                                     "' that has a missing endpoint. This is not allowed; " + this);
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_IMMUTABLE_ENDPOINT)) {
+                                if (this.rdfResource.endpoint == null) {
+                                    throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                         " that has a missing endpoint. This is not allowed; " + this);
+                                }
+                                else {
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_IMMUTABLE_ENDPOINT,
+                                                      RdfEndpointRoutes.getResource(this.rdfResource.getCurie(), URI.create("")).getAbsoluteUrl());
+                                }
                             }
-                            else {
-                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
-                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
-                                                      RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "")
-                                                                       .getAbsoluteUrl());
+
+                        }
+                        else if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
+
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                            }
+
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT) ||
+                                !this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+
+                                if (this.rdfResource.dataType.endpoint == null) {
+                                    throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
+                                                                         "' that has a missing endpoint. This is not allowed; " + this);
                                 }
-                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
-                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
-                                                      RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
-                                }
-                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
-                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                                else {
+                                    if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
+                                        this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
+                                                          RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "")
+                                                                           .getAbsoluteUrl());
+                                    }
+                                    if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                                        this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
+                                                          RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
+                                    }
                                 }
                             }
                         }
@@ -306,12 +325,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                             //                        },
                             //                        }));
 
-                            if (this.rdfResource.endpoint == null) {
-                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
-                                                                     " that has a missing endpoint. This is not allowed; " + this);
-                            }
-                            else {
-                                if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                                if (this.rdfResource.endpoint == null) {
+                                    throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                         " that has a missing endpoint. This is not allowed; " + this);
+                                }
+                                else {
                                     this.widgetConfig(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT,
                                                       RdfEndpointRoutes.getResources(this.rdfResource.getCurie(), -1, false, "").getAbsoluteUrl());
                                 }

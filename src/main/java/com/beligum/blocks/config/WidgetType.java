@@ -38,6 +38,20 @@ public enum WidgetType
     //this mapping makes sure we can use them in JS/CSS/...
     Undefined(core.Entries.WIDGET_TYPE_UNDEFINED),
 
+    // Note: for now, we assume this will only be used to add primitive types, but adding extra compatible classes
+    // should only be a matter of implementing the JS side
+    Immutable(WIDGET_TYPE_IMMUTABLE, new RdfClass[] { XSD.string,
+                                                      XSD.byte_, XSD.unsignedByte,
+                                                      XSD.int_, XSD.unsignedInt,
+                                                      XSD.short_, XSD.unsignedShort,
+                                                      XSD.long_, XSD.unsignedLong,
+                                                      XSD.float_,
+                                                      XSD.double_ }, null, new ConstantsFileEntry[] {
+                    // the endpoint to fetch the initial value on creation
+                    // note that the value should be returned by ResourceProxy.getResource()
+                    WIDGET_CONFIG_IMMUTABLE_ENDPOINT
+    }),
+
     Editor(core.Entries.WIDGET_TYPE_EDITOR, new RdfClass[] { RDF.HTML }, null, new ConstantsFileEntry[0]),
 
     //note: dependent on the type of value, it is language-oriented or not (eg. an identifier doesn't have a language)
@@ -45,7 +59,7 @@ public enum WidgetType
 
     // For why we also include xsd:language, see LanguageEnumQueryEndpoint
     Enum(core.Entries.WIDGET_TYPE_ENUM, new RdfClass[] { XSD.string, XSD.language }, null, new ConstantsFileEntry[] {
-                    // the enpoint to fetch all the possible values of this enum
+                    // the endpoint to fetch all the possible values of this enum
                     WIDGET_CONFIG_ENUM_ENDPOINT
     }),
 

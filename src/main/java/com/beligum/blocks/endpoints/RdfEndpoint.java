@@ -173,11 +173,11 @@ public class RdfEndpoint
     {
         ResourceProxy retVal = null;
 
-        RdfClass rdfClass = RdfFactory.getClass(resourceTypeCurie);
-        if (rdfClass != null) {
-            com.beligum.blocks.rdf.ifaces.RdfEndpoint endpoint = rdfClass.getEndpoint();
+        RdfOntologyMember rdfResource = RdfFactory.lookup(resourceTypeCurie, RdfOntologyMember.class);
+        if (rdfResource != null) {
+            com.beligum.blocks.rdf.ifaces.RdfEndpoint endpoint = rdfResource.getEndpoint();
             if (endpoint != null) {
-                retVal = endpoint.getResource(rdfClass, resourceUri, R.i18n().getOptimalRefererLocale());
+                retVal = endpoint.getResource(rdfResource, resourceUri, R.i18n().getOptimalRefererLocale());
             }
         }
         else {
