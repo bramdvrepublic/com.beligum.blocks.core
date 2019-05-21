@@ -32,13 +32,13 @@ public class RdfValidationException extends PublicApplicationException
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public RdfValidationException(MessagesFileEntry message)
+    public RdfValidationException(MessagesFileEntry message, Object... params)
     {
-        super(message);
+        super(message, params);
     }
-    public RdfValidationException(MessagesFileEntry message, Throwable cause)
+    public RdfValidationException(MessagesFileEntry message, Throwable cause, Object... params)
     {
-        super(message, cause);
+        super(message, cause, params);
     }
 
     //-----PUBLIC METHODS-----

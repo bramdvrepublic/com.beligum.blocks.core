@@ -85,6 +85,14 @@ public interface RdfClass extends RdfOntologyMember
      */
     RdfProperty getMainProperty();
 
+    /**
+     * The validator of this class or null if no validation is required.
+     * By definition, all non-null validators of all classes will be called
+     * during instantiating/saving a member, allowing them to throw exceptions if any
+     * attempts are made to create invalid classes.
+     */
+    @JsonIgnore
+    RdfClassValidator getValidator();
 
     //-----INNER CLASSES-----
     class _JsonSerializer extends JsonSerializer<RdfClass>

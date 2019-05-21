@@ -489,6 +489,10 @@ public class Settings
     {
         return R.configuration().getBoolean(RDF_PREFIX + ".enable-create-sync-strict", false);
     }
+    public boolean getEnableRdfValidation()
+    {
+        return R.configuration().getBoolean(RDF_PREFIX + ".enable-validation", true);
+    }
     public boolean getEnableRestrictedDefaultRead()
     {
         return R.configuration().getBoolean(SECURITY_ACLS_PREFIX + ".enable-restricted-default-read", false);

@@ -19,12 +19,8 @@ package com.beligum.blocks.rdf.importers;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.ifaces.Format;
-import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfResource;
-import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.rdf.ifaces.*;
+import com.beligum.blocks.rdf.validation.RdfModelImpl;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -217,13 +213,13 @@ public abstract class AbstractImporter implements Importer
                     validStmt = stmt;
                 }
 
-                RdfProperty property = RdfFactory.getProperty(stmt.getPredicate());
-                if (property != null && property.getValidator() != null) {
-                    property.getValidator().validate(property);
-                }
-
                 filteredModel.add(validStmt);
             }
+        }
+
+        // if the settings say so, validate the incoming (filtered) model
+        if (Settings.instance().getEnableRdfValidation()) {
+            new RdfModelImpl(filteredModel).validate();
         }
 
         //DEBUG

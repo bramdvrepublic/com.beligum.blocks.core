@@ -21,6 +21,7 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.index.ifaces.ResourceSummarizer;
 import com.beligum.blocks.index.summarizers.SimpleResourceSummarizer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfClassValidator;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.base.Function;
@@ -50,6 +51,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     protected Set<RdfPropertyImpl> properties;
     protected ResourceSummarizer summarizer;
     protected RdfProperty mainProperty;
+    protected RdfClassValidator validator;
 
     //-----CONSTRUCTORS-----
     RdfClassImpl(RdfOntologyImpl ontology, String name)
@@ -159,6 +161,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
         return mainProperty;
     }
+    @Override
+    public RdfClassValidator getValidator()
+    {
+        this.assertNoProxy();
+
+        return validator;
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -240,6 +249,12 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             else {
                 this.rdfResource.mainProperty = mainProperty;
             }
+
+            return this;
+        }
+        public Builder validator(RdfClassValidator validator)
+        {
+            this.rdfResource.validator = validator;
 
             return this;
         }

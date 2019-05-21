@@ -23,6 +23,7 @@ import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfPropertyValidator;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.endpoints.RdfEndpointRoutes;
 
@@ -41,6 +42,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected WidgetType widgetType;
     protected WidgetTypeConfig widgetConfig;
     protected int multiplicity;
+    protected RdfPropertyValidator validator;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     // Note: we explicitly use a list instead of a map to allow doubles
@@ -52,6 +54,9 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     {
         super(ontology, name, false);
 
+        this.multiplicity = DEFAULT_MULTIPLICITY;
+        // by default a property has no validator
+        this.validator = null;
         this.clones = new ArrayList<>();
     }
     private RdfPropertyImpl(RdfPropertyImpl toClone, Option[] options)
@@ -95,6 +100,14 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
         return multiplicity;
     }
+    @Override
+    public RdfPropertyValidator getValidator()
+    {
+        this.assertNoProxy();
+
+        return validator;
+    }
+
     //Note: make public so we can set if from Option.apply()
     public void setPublic(boolean value)
     {
@@ -162,12 +175,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.isDefault = toClone.isDefault;
         this.endpoint = toClone.endpoint;
         this.weight = toClone.weight;
-        this.validator = toClone.validator;
 
         this.dataType = toClone.dataType;
         this.widgetType = toClone.widgetType;
         this.widgetConfig = toClone.widgetConfig;
         this.multiplicity = toClone.multiplicity;
+        this.validator = toClone.validator;
 
         // save a reference to the member we cloned from
         this.clonedFrom = toClone;
@@ -209,6 +222,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         public Builder multiplicity(int value)
         {
             this.rdfResource.multiplicity = value;
+
+            return this;
+        }
+        public Builder validator(RdfPropertyValidator validator)
+        {
+            this.rdfResource.validator = validator;
 
             return this;
         }
@@ -313,6 +332,11 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     }
                 }
 
+                //validate the multiplicity
+                if (this.rdfResource.multiplicity < MINIMUM_MULTIPLICITY || this.rdfResource.multiplicity > MAXIMUM_MULTIPLICITY) {
+                    throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with an invalid multiplicity value; " + this.rdfResource.multiplicity);
+                }
+
                 //Note: this call will add us to the ontology
                 retVal = super.create();
 
@@ -322,6 +346,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                     clone.getKey().createClone(clone.getValue());
                 }
             }
+            // no clone and no proxy; this means this property has already been created before, so let's just do a super call
+            // (which will most probably also do nothing)
             else {
                 retVal = super.create();
             }

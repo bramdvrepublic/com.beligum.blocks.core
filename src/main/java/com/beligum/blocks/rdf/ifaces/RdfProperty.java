@@ -36,6 +36,17 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
  */
 public interface RdfProperty extends RdfOntologyMember
 {
+    //-----CONSTANTS-----
+    // My gut feeling says it makes sense to set this to 0 and not 1,
+    // let's see where that feeling leads us...
+    int MINIMUM_MULTIPLICITY = 0;
+    int MAXIMUM_MULTIPLICITY = Integer.MAX_VALUE;
+    /**
+     * By default, we don't like to impose restrictions, so let's allow the maximum
+     */
+    int DEFAULT_MULTIPLICITY = MAXIMUM_MULTIPLICITY;
+
+    //-----PUBLIC METHODS-----
     /**
      * The full datatype (can also be XSD) of this property. This is used by the client side code, together with the WidgetType (see below),
      * to instance an appropriate input method and validation for entering a value for this property.
@@ -64,6 +75,15 @@ public interface RdfProperty extends RdfOntologyMember
      * Note that this should be a non-negative number.
      */
     int getMultiplicity();
+
+    /**
+     * The validator of this property or null if no validation is required.
+     * By definition, all non-null validators of all properties will be called
+     * during instantiating/saving a member, allowing them to throw exceptions if any
+     * attempts are made to create invalid properties.
+     */
+    @JsonIgnore
+    RdfPropertyValidator getValidator();
 
     /**
      * This allows us to pass certain options to specific properties of specific classes instead

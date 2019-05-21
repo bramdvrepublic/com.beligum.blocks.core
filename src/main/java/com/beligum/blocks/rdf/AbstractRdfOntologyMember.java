@@ -25,7 +25,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
     protected boolean isDefault;
     protected RdfEndpoint endpoint;
     protected int weight;
-    protected RdfValidator validator;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     //-----CONSTRUCTORS-----
@@ -52,8 +51,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.isDefault = false;
         //just default to zero
         this.weight = DEFAULT_WEIGHT;
-        //by default we have no validator
-        this.validator = null;
     }
 
     //-----PUBLIC METHODS-----
@@ -129,13 +126,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
         this.assertNoProxy();
 
         return weight;
-    }
-    @Override
-    public RdfValidator getValidator()
-    {
-        this.assertNoProxy();
-
-        return validator;
     }
 
     //-----PROTECTED METHODS-----
@@ -256,12 +246,6 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
             return this.builder;
         }
-        public B validator(RdfValidator validator)
-        {
-            this.rdfResource.validator = validator;
-
-            return this.builder;
-        }
 
         //-----PROTECTED METHODS-----
         /**
@@ -277,6 +261,11 @@ public abstract class AbstractRdfOntologyMember extends AbstractRdfResourceImpl 
 
                 if (this.rdfResource.ontology == null) {
                     throw new RdfInitializationException("Trying to create an RdfClass '" + this.rdfResource.getName() + "' without ontology, can't continue because too much depends on this.");
+                }
+
+                //validate the multiplicity
+                if (this.rdfResource.weight < MINIMUM_WEIGHT || this.rdfResource.weight > MAXIMUM_WEIGHT) {
+                    throw new RdfInitializationException("Encountered RDF ontology member '" + this.rdfResource.getName() + "' with an invalid weight value; " + this.rdfResource.weight);
                 }
 
                 //convert the RdfOntologyMember set to an array of URI
