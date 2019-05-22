@@ -464,9 +464,11 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         dialog.open();
 
+        var params = {};
+        params[BlocksConstants.PAGE_URL_PARAM] = document.URL;
         $.ajax({
             type: 'POST',
-            url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
+            url: BlocksConstants.SAVE_PAGE_ENDPOINT + '?' + $.param(params),
             data: pageHtml,
             // we're sending json
             contentType: 'application/json; charset=UTF-8',

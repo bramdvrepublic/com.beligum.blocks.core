@@ -78,7 +78,7 @@ public class RdfEndpoint
     @Path("/properties/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(RDF_PROPERTY_READ_ALL_PERM)
-    public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie)
+    public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_INCLUDE_PRIVATE_PARAM) @DefaultValue("false") boolean includePrivate)
     {
         Iterable<RdfProperty> retVal = null;
 
@@ -90,7 +90,7 @@ public class RdfEndpoint
                     @Override
                     public boolean apply(RdfProperty property)
                     {
-                        return property.isPublic();
+                        return includePrivate || property.isPublic();
                     }
                 });
             }

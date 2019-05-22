@@ -299,6 +299,7 @@ public class PageAdminEndpoint
      */
     @GET
     @Path("/block")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresPermissions(logical = Logical.OR,
                          value = { PAGE_UPDATE_ALL_PERM,
@@ -345,6 +346,7 @@ public class PageAdminEndpoint
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     //keep these in sync with the code in the PageRouter
     //Note: security is handled by R.resourceManager().save()
     public Response savePage(@QueryParam(PAGE_URL_PARAM) URI url, String content) throws IOException
@@ -367,6 +369,7 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     //Note: security is handled by R.resourceManager().delete()
     public Response deletePage(String uri) throws Exception
@@ -384,6 +387,7 @@ public class PageAdminEndpoint
     @DELETE
     @Path("/delete/all")
     @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     //Note: security is handled by R.resourceManager().delete()
     public Response deletePageAndTranslations(String uri) throws Exception

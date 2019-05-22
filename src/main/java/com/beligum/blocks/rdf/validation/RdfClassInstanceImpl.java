@@ -56,7 +56,9 @@ public class RdfClassInstanceImpl implements RdfClassInstance
     public void validate() throws RdfValidationException
     {
         // first of all, if this entire class has a validator, it must be valid
-        if (this.getType().getValidator() != null) {
+        // Note that we can't validate classes with no type. This will happen for eg. the public pages (ie. not the RDF resources described by them)
+        // because they are included here since they will always have the rdfa:usesVocabulary property
+        if (this.getType() != null && this.getType().getValidator() != null) {
             this.getType().getValidator().validate(this);
         }
 

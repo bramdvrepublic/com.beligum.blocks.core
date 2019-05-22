@@ -482,8 +482,7 @@ public class Settings
     }
     /**
      * If strict mode is active, no blocks that only consist of non-rdf properties can be added to pages that are not of default type.
-     * Note that this is an extra flag on top of "rdf create sync" mode and is only checked
-     * when that flag is active.
+     * Note that this is an extra flag on top of "rdf create sync" mode and is only checked when that flag is active.
      */
     public boolean getEnableRdfCreateSyncStrict()
     {

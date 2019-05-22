@@ -138,7 +138,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
              */
             isContainer: function (element)
             {
-                return element.hasClass(BlocksConstants.CONTAINER_CLASS);
+                return element.length > 0 && element.hasClass(BlocksConstants.CONTAINER_CLASS);
             },
 
             /**
@@ -146,7 +146,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
              */
             isRow: function (element)
             {
-                return element.hasClass(BlocksConstants.ROW_CLASS);
+                return element.length > 0 && element.hasClass(BlocksConstants.ROW_CLASS);
             },
 
             /**
@@ -154,7 +154,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
              */
             isColumn: function (element)
             {
-                return element.is('[class*="' + blocks.elements.Column.CLASS_PREFIX + '"]');
+                return element.length > 0 && element.is('[class*="' + blocks.elements.Column.CLASS_PREFIX + '"]');
             },
 
             /**
@@ -162,7 +162,8 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
              */
             isBlock: function (element)
             {
-                return element[0].tagName.indexOf("-") > 0;
+                // note: eg the #document node doesn't have a tagName
+                return element.length > 0 && element[0].tagName && element[0].tagName.indexOf("-") > 0;
             },
 
             /**
@@ -170,7 +171,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
              */
             isProperty: function (element)
             {
-                return element.hasAttribute("property") || element.hasAttribute("data-property");
+                return element.length > 0 && element.hasAttribute("property") || element.hasAttribute("data-property");
             },
 
             /**
@@ -707,7 +708,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
 
                 // if we have a parent layout element, it looks a lot nicer (more intuitive)
                 // to sync the side of this surface to the side of that parent
-                // (see _layoutChildVertically() and _layoutChildHorizontally())
+                // (see layoutVertically() and layoutHorizontally())
                 if (this.layoutParents[blocks.elements.Surface.SIDE.TOP.id]) {
                     this.top = this.layoutParents[blocks.elements.Surface.SIDE.TOP.id].top;
                 }

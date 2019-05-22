@@ -74,3 +74,42 @@
 // Utility classes
 @import "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/responsive-utilities.less";
+
+// If we changed the primary bootstrap color, the dialog box colors don't play along
+// because they're hard coded. Update this to streamline the look.
+// Note: !important because the bootstrap-dialog.css is included later.
+.bootstrap-dialog {
+  &.type-default {
+    .modal-header {
+      background-color: @header-bg-color !important;
+    }
+    .bootstrap-dialog-title {
+      color: @header-color !important;
+    }
+  }
+  &.type-info {
+    .modal-header {
+      background-color: @brand-info !important;
+    }
+  }
+  &.type-primary {
+    .modal-header {
+      background-color: @brand-primary !important;
+    }
+  }
+  &.type-success {
+    .modal-header {
+      background-color: @brand-success !important;
+    }
+  }
+  &.type-warning {
+    .modal-header {
+      background-color: @brand-warning !important;
+    }
+  }
+  &.type-danger {
+    .modal-header {
+      background-color: @brand-danger !important;
+    }
+  }
+}

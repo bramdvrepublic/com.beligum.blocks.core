@@ -123,23 +123,26 @@ public class ReadWritePage extends DefaultPage
                     //should always be ok because of the check above
                     if (predicate != null) {
                         RdfClass dataType = predicate.getDataType();
-                        RdfEndpoint endpoint = dataType.getEndpoint();
-                        //this means the predicate's datatype has an external endpoint, so it's a valid external resource
-                        if (endpoint != null && endpoint.isExternal()) {
-                            URI localResourceId = URI.create(value.stringValue());
-                            Model externalRdfModel = endpoint.getExternalRdfModel(dataType, localResourceId, source.getLanguage());
-                            //if we have a valid model, add it to the dependency list, together with a "equals" statement
-                            if (!externalRdfModel.isEmpty()) {
-                                URI externalResourceId = endpoint.getExternalResourceId(localResourceId, source.getLanguage());
-                                //this is more or less the glue between the external ontology and the local one
-                                rdfDepsModel.add(valueFactory.createIRI(localResourceId.toString()),
-                                                 //this approach is discussable (instead of using the OWL ontology directly),
-                                                 // but the general approach is to use the local ontology as much as possible,
-                                                 // so let's be consequent in our decisions...
-                                                 valueFactory.createIRI(Meta.sameAs.getUri().toString()),
-                                                 valueFactory.createIRI(externalResourceId.toString()));
+                        // will happen for eg. rdfa:usesVocabulary
+                        if (dataType != null) {
+                            RdfEndpoint endpoint = dataType.getEndpoint();
+                            //this means the predicate's datatype has an external endpoint, so it's a valid external resource
+                            if (endpoint != null && endpoint.isExternal()) {
+                                URI localResourceId = URI.create(value.stringValue());
+                                Model externalRdfModel = endpoint.getExternalRdfModel(dataType, localResourceId, source.getLanguage());
+                                //if we have a valid model, add it to the dependency list, together with a "equals" statement
+                                if (!externalRdfModel.isEmpty()) {
+                                    URI externalResourceId = endpoint.getExternalResourceId(localResourceId, source.getLanguage());
+                                    //this is more or less the glue between the external ontology and the local one
+                                    rdfDepsModel.add(valueFactory.createIRI(localResourceId.toString()),
+                                                     //this approach is discussable (instead of using the OWL ontology directly),
+                                                     // but the general approach is to use the local ontology as much as possible,
+                                                     // so let's be consequent in our decisions...
+                                                     valueFactory.createIRI(Meta.sameAs.getUri().toString()),
+                                                     valueFactory.createIRI(externalResourceId.toString()));
 
-                                rdfDepsModel.addAll(externalRdfModel);
+                                    rdfDepsModel.addAll(externalRdfModel);
+                                }
                             }
                         }
                     }

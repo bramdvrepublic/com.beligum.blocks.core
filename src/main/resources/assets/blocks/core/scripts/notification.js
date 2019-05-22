@@ -17,7 +17,7 @@
 /**
  * Wrapper around the BootstrapDialog plugin to centralize a number of frequently-used notifications modal dialogs.
  */
-base.plugin("blocks.core.Notification", [function ()
+base.plugin("blocks.core.Notification", ["base.core.Commons", "constants.blocks.core", "messages.blocks.core", function (Commons, BlocksConstants, BlocksMessages)
 {
     this.info = function (message, object)
     {
@@ -27,12 +27,12 @@ base.plugin("blocks.core.Notification", [function ()
         Logger.info.apply(Logger, logArgs);
 
         BootstrapDialog.show({
-            title: "Info",
+            title: BlocksMessages.info,
             message: message,
-            type: BootstrapDialog.TYPE_INFO,
+            type: BootstrapDialog.TYPE_PRIMARY,
             buttons: [
                 {
-                    label: 'Ok',
+                    label: BlocksMessages.ok,
                     cssClass: '',
                     action: function (dialogRef)
                     {
@@ -42,6 +42,7 @@ base.plugin("blocks.core.Notification", [function ()
             ]
         })
     };
+
     this.warn = function (message, object)
     {
         //this will blindly pass all other arguments to the Logger method and prepend it with the message again (which is actually unnecesary)
@@ -50,12 +51,12 @@ base.plugin("blocks.core.Notification", [function ()
         Logger.warn.apply(Logger, logArgs);
 
         BootstrapDialog.show({
-            title: "Warning",
+            title: BlocksMessages.warning,
             message: message,
             type: BootstrapDialog.TYPE_WARNING,
             buttons: [
                 {
-                    label: 'Close',
+                    label: BlocksMessages.close,
                     cssClass: '',
                     action: function (dialogRef)
                     {
@@ -65,6 +66,7 @@ base.plugin("blocks.core.Notification", [function ()
             ]
         })
     };
+
     this.error = function (message, object)
     {
         //this will blindly pass all other arguments to the Logger method and prepend it with the message again (which is actually unnecesary)
@@ -73,12 +75,12 @@ base.plugin("blocks.core.Notification", [function ()
         Logger.error.apply(Logger, logArgs);
 
         BootstrapDialog.show({
-            title: "Error",
+            title: BlocksMessages.error,
             message: message,
             type: BootstrapDialog.TYPE_DANGER,
             buttons: [
                 {
-                    label: 'Close',
+                    label: BlocksMessages.close,
                     cssClass: '',
                     action: function (dialogRef)
                     {
@@ -88,4 +90,53 @@ base.plugin("blocks.core.Notification", [function ()
             ]
         })
     };
+
+    this.confirm = function (question, callback, highlightTrueBtn, trueLabel, falseLabel)
+    {
+        if (!trueLabel) {
+            trueLabel = BlocksMessages.yes;
+        }
+        if (!falseLabel) {
+            falseLabel = BlocksMessages.no;
+        }
+
+        var trueClass = '';
+        var falseClass = '';
+        if (!Commons.isUnset(highlightTrueBtn)) {
+            if (highlightTrueBtn) {
+                trueClass = 'btn-primary';
+            }
+            else {
+                falseClass = 'btn-primary';
+            }
+        }
+
+        BootstrapDialog.show({
+            title: BlocksMessages.confirm,
+            message: question,
+            type: BootstrapDialog.TYPE_DEFAULT,
+            closable: false,
+            draggable: false,
+            data: {
+                callback: callback
+            },
+            buttons: [
+                {
+                    label: falseLabel,
+                    cssClass: falseClass,
+                    action: function(dialog) {
+                        typeof dialog.getData('callback') === 'function' && dialog.getData('callback')(false);
+                        dialog.close();
+                    }
+                }, {
+                    label: trueLabel,
+                    cssClass: trueClass,
+                    action: function(dialog) {
+                        typeof dialog.getData('callback') === 'function' && dialog.getData('callback')(true);
+                        dialog.close();
+                    }
+                }]
+        })
+    };
+
 }]);
