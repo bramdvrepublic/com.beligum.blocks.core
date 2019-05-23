@@ -213,6 +213,10 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             return this;
         }
+        public Builder widgetConfig(ConstantsFileEntry key, ConstantsFileEntry value)
+        {
+            return this.widgetConfig(key, value == null ? null : value.toString());
+        }
         public Builder widgetConfig(ConstantsFileEntry key, String value)
         {
             this.rdfResource.widgetConfig.put(key, value);

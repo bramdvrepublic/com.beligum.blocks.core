@@ -78,7 +78,18 @@ public enum WidgetType
 
     DateTime(core.Entries.WIDGET_TYPE_DATETIME, new RdfClass[] { XSD.dateTime }),
 
-    Duration(core.Entries.WIDGET_TYPE_DURATION, new RdfClass[] { XSD.long_ }),
+    Duration(core.Entries.WIDGET_TYPE_DURATION, new RdfClass[] { XSD.long_ }, null, new ConstantsFileEntry[] {
+                    // the format of the human readable string of the value;
+                    // can be any of these:
+                    // WIDGET_CONFIG_DURATION_FORMAT_FULL
+                    //   the duration will be written out in full, eg. 7 days, 3 hours, 3 minutes, 3 seconds, 7 milliseconds
+                    //   note: this is the default
+                    // WIDGET_CONFIG_DURATION_FORMAT_SHORT
+                    //   the duration will be coded, eg. 7.23:59:59.999
+                    // WIDGET_CONFIG_DURATION_FORMAT_ISO
+                    //   the duration will be formatted in ISO 8601, eg. P1Y2M3DT4H5M6S
+                    WIDGET_CONFIG_DURATION_FORMAT
+    }),
 
     Color(core.Entries.WIDGET_TYPE_COLOR, new RdfClass[] { XSD.string }),
 
