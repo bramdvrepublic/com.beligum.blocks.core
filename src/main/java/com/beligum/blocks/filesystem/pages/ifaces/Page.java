@@ -17,7 +17,7 @@
 package com.beligum.blocks.filesystem.pages.ifaces;
 
 import com.beligum.blocks.filesystem.ifaces.BlocksResource;
-import com.beligum.blocks.filesystem.log.ifaces.LogWriter;
+import com.beligum.blocks.filesystem.logging.ifaces.LogWriter;
 import com.beligum.blocks.filesystem.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.rdf.ifaces.Exporter;

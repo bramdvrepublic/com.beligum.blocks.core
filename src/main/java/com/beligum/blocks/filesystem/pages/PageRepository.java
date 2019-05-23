@@ -28,7 +28,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.index.ifaces.IndexConnection;
-import com.beligum.blocks.filesystem.log.PageLogEntry;
+import com.beligum.blocks.filesystem.logging.PageLogEntry;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.lang.ArrayUtils;
