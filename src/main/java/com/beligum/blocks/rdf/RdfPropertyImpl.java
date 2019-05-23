@@ -259,6 +259,11 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                         throw new RdfInitializationException("Encountered RDF property with uppercase name; our policy enforces all RDF properties should start with a lowercase letter; " + this);
                     }
 
+                    // auto-set the datatype if we only have one allowed datatype
+                    if (this.rdfResource.dataType == null && this.rdfResource.widgetType != null && this.rdfResource.widgetType.getCompatibleDatatypes().size() == 1) {
+                        this.rdfResource.dataType = (RdfClassImpl) this.rdfResource.widgetType.getCompatibleDatatypes().iterator().next();
+                    }
+
                     //enforces the properties in our local public ontologies to have valid datatypes
                     if (this.rdfResource.dataType == null) {
                         throw new RdfInitializationException("Datatype of RDF property '" + this.rdfResource.getName() + "' inside a public ontology is null. This is not allowed; " + this);

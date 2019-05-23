@@ -91,6 +91,8 @@ public enum WidgetType
                     WIDGET_CONFIG_DURATION_FORMAT
     }),
 
+    Timecode(core.Entries.WIDGET_TYPE_TIMECODE, new RdfClass[] { XSD.float_ }),
+
     Color(core.Entries.WIDGET_TYPE_COLOR, new RdfClass[] { XSD.string }),
 
     Uri(core.Entries.WIDGET_TYPE_URI, new RdfClass[] { XSD.anyURI }),
