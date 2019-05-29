@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.index.reindex;
+package com.beligum.blocks.index.reindex.tasks;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import org.apache.hadoop.fs.Path;
+import com.beligum.blocks.index.reindex.ReindexTask;
 
 import java.io.IOException;
 
 /**
  * Created by bram on 11/05/17.
  */
-public class PageReimportTask extends ReindexTask
+public class PageReindexTask extends ReindexTask
 {
     //-----CONSTANTS-----
 
@@ -38,17 +37,8 @@ public class PageReimportTask extends ReindexTask
     @Override
     protected void runTaskFor(Resource resource, ResourceRepository.IndexOption indexConnectionsOption) throws IOException
     {
-        Page page = resource.unwrap(Page.class);
-        if (page == null) {
-            throw new IOException("Unable to reimport this resource, it's not a valid Page; " + resource);
-        }
-
-        Path originalFile = page.getLocalStoragePath();
-        if (!page.getFileContext().util().exists(originalFile)) {
-            throw new IOException("Original HTML file for this page is missing, can't fix it; " + page.getPublicAbsoluteAddress());
-        }
-
-        resource.getRepository().save(page, null);
+        //effectively reindex the page
+        resource.getRepository().reindex(resource, indexConnectionsOption);
     }
 
     //-----PROTECTED METHODS-----

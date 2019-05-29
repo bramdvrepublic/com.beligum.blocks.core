@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.index.reindex;
+package com.beligum.blocks.index.reindex.tasks;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
+import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.utils.importer.ImportTools;
 import com.beligum.blocks.filesystem.LockFile;

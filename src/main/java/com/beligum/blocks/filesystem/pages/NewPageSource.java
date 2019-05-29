@@ -27,6 +27,7 @@ import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Joiner;
 import org.apache.commons.lang.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 
@@ -62,6 +63,10 @@ public class NewPageSource extends PageSource
     public NewPageSource(Source source) throws IOException
     {
        super(source);
+    }
+    public NewPageSource(Document document) throws IOException
+    {
+        super(document);
     }
 
     //-----PUBLIC METHODS-----
@@ -189,7 +194,7 @@ public class NewPageSource extends PageSource
         // not only when the page is saved for the first time
         //if (StringUtils.isEmpty(prefixAttr)) {
             //Note: separate multiple prefixes by a space, like so: prefix="dc: http://purl.org/dc/terms/ schema: http://schema.org/"
-        htmlTag.attr(HTML_ROOT_PREFIX_ATTR, Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlRdfContext.getDefaultRdfPrefixes()));
+        htmlTag.attr(HTML_ROOT_PREFIX_ATTR, HtmlRdfContext.getDefaultRdfPrefixesAttribute());
         //}
     }
     private HtmlAnalyzer findTranslationAnalyzer() throws IOException

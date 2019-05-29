@@ -25,13 +25,16 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
+import com.beligum.blocks.index.reindex.ReindexTask;
+import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
 import com.beligum.blocks.index.reindex.*;
-import com.beligum.blocks.index.reindex.PageFixTask;
+import com.beligum.blocks.index.reindex.tasks.PageFixTask;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -463,6 +466,7 @@ public class PageAdminEndpoint
                 final Map<String, Class<? extends ReindexTask>> taskMappings = ImmutableMap.<String, Class<? extends ReindexTask>>builder()
                                 .put("pageReindex", PageReindexTask.class)
                                 .put("pageFix", PageFixTask.class)
+                                .put("pageUpgrade", PageUpgradeTask.class)
                                 .build();
                 Class<? extends ReindexTask> taskClass = null;
                 if (task != null) {

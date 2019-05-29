@@ -406,8 +406,6 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     }
     private XAException newXAException(int error, Throwable cause)
     {
-        XAException e = new XAException(error);
-        e.initCause(cause);
-        return e;
+        return (XAException) new XAException(error).initCause(cause);
     }
 }

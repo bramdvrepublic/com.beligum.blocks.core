@@ -135,6 +135,13 @@ public abstract class PageSource extends AbstractSource implements Source
             this.parseHtml(is);
         }
     }
+    protected PageSource(Document document) throws IOException
+    {
+        //note: the language will be set in parseHtml()
+        super(preparseUri(URI.create(document.baseUri())), MimeTypes.HTML, null);
+
+        this.parseHtml(document);
+    }
     protected PageSource(URI uri, InputStream html) throws IOException
     {
         //note: the language will be set in parseHtml()
@@ -242,7 +249,8 @@ public abstract class PageSource extends AbstractSource implements Source
 
             //let's use the user endpoint url to designate the editor
             //hope it's okay to save this as a relative URI (sinc we try to save all RDFa URIs as relative)
-            String editorUri = R.securityManager().getPersonUri(editor, false).toString();
+            //if we don't have an editor (eg. during async tasks), we pass null (which will delete @content), hope that's ok?
+            String editorUri = editor == null ? null : R.securityManager().getPersonUri(editor, false).toString();
 
             PermissionRole currentRole = R.securityManager().getCurrentRole();
 
@@ -306,6 +314,16 @@ public abstract class PageSource extends AbstractSource implements Source
     {
         this.document = Jsoup.parse(source, null, this.getUri().toString());
 
+        parseDocument();
+    }
+    protected void parseHtml(Document document) throws IOException
+    {
+        this.document = document;
+
+        parseDocument();
+    }
+    protected void parseDocument() throws IOException
+    {
         // Clean the document (doesn't work because it strips the head out)
         //Whitelist whitelist = Whitelist.relaxed();
         //doc = new Cleaner(whitelist).clean(doc);
@@ -475,7 +493,12 @@ public abstract class PageSource extends AbstractSource implements Source
                 else {
                     if (StringUtils.isBlank(existingValue)) {
                         if (onlyUpdateIfBlank) {
-                            retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                            if (value == null) {
+                                retVal.removeAttr(HtmlParser.RDF_CONTENT_ATTR);
+                            }
+                            else {
+                                retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                            }
                         }
                         else {
                             retVal.remove();
@@ -484,7 +507,12 @@ public abstract class PageSource extends AbstractSource implements Source
                 }
             }
             else {
-                retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                if (value == null) {
+                    retVal.removeAttr(HtmlParser.RDF_CONTENT_ATTR);
+                }
+                else {
+                    retVal.attr(HtmlParser.RDF_CONTENT_ATTR, value);
+                }
             }
         }
 

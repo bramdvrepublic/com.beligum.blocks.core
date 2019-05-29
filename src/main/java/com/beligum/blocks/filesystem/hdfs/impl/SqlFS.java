@@ -790,6 +790,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                             if (this.cachedRoConnection instanceof AlwaysOpenConnection) {
                                 Logger.info("Closing ro connection of SqlFS");
                                 ((AlwaysOpenConnection) this.cachedRoConnection).forceClose();
+                                Logger.info("Closed ro connection of SqlFS");
                             }
                             else {
                                 this.cachedRoConnection.close();
@@ -812,6 +813,7 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                             if (this.cachedRwConnection instanceof AlwaysOpenConnection) {
                                 Logger.info("Closing rw connection of SqlFS");
                                 ((AlwaysOpenConnection) this.cachedRwConnection).forceClose();
+                                Logger.info("Closed rw connection of SqlFS");
                             }
                             else {
                                 this.cachedRwConnection.close();
@@ -835,6 +837,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     if (activeConn > 0) {
                         Logger.error("Still got " + activeConn + " left after closing up the RO connection pool manager, hope this is ok...");
                     }
+                    else {
+                        Logger.info("Closed entire ro connection pool of SqlFS");
+                    }
                 }
                 catch (SQLException e) {
                     Logger.error("Error while closing the RO connection pool manager; " + this.getUri(), e);
@@ -851,6 +856,9 @@ public class SqlFS extends AbstractFileSystem implements Closeable, XAttrFS
                     int activeConn = this.rwConnectionPoolManager.getActiveConnections();
                     if (activeConn > 0) {
                         Logger.error("Still got " + activeConn + " left after closing up the RW connection pool manager, hope this is ok...");
+                    }
+                    else {
+                        Logger.info("Closed entire rw connection pool of SqlFS");
                     }
                 }
                 catch (SQLException e) {

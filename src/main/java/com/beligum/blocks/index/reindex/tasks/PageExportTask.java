@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.index.reindex;
+package com.beligum.blocks.index.reindex.tasks;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
@@ -25,6 +25,8 @@ import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.hdfs.impl.SqlFS;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.reindex.ReindexTask;
+import com.beligum.blocks.index.reindex.ReindexThread;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;

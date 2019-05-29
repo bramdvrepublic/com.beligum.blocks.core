@@ -20,6 +20,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import net.htmlparser.jericho.Attribute;
 import net.htmlparser.jericho.Attributes;
@@ -94,6 +95,10 @@ public class HtmlRdfContext
         }
 
         return cachedDefaultRdfPrefixAttr;
+    }
+    public static String getDefaultRdfPrefixesAttribute()
+    {
+        return Joiner.on(" ").withKeyValueSeparator(": ").join(HtmlRdfContext.getDefaultRdfPrefixes());
     }
 
     //-----PUBLIC METHODS-----

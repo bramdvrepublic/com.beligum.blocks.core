@@ -113,8 +113,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //            query.setParam("q", "{!child of=" + PageIndexEntry.parentId.getName() + ":null}");
             //            QueryResponse response = this.solrClient.query(query);
             //            Logger.info("Got " + response.getResults().getNumFound() + " docs: " + json);
-            //            for (int i = 0; i < response.getResults().getNumFound(); i++) {
-            //                Logger.info(response.getResults().get(i).jsonStr());
+            //            for (SolrDocument doc : response.getResults()) {
+            //                Logger.info(doc.jsonStr());
             //            }
             //
             //            //{"id":"/en/blah","rdf:type":"http://www.reinvention.be/ontology/Page","rdfs:label":"rdfs label test 5"}
@@ -125,8 +125,8 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             //            response = this.solrClient.query(query);
             //            SolrDocumentList docList = response.getResults();
             //            Logger.info("Got " + docList.getNumFound() + " docs: " + json);
-            //            for (int i = 0; i < docList.getNumFound(); i++) {
-            //                Logger.info(docList.get(i).jsonStr());
+            //            for (SolrDocument doc : docList) {
+            //                Logger.info(doc.jsonStr());
             //            }
 
             String pageId = PageIndexEntry.uriField.serialize(key);
@@ -273,7 +273,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
                 //this will block if there's currently another TX active,
                 // effectively serializing transactions so we can use the native commit/rollback mechanism
-                this.pageIndexer.acquireCentralTxLock();
+                this.pageIndexer.acquireCentralTxLock(this);
 
                 // Note: there is no such thing as a Solr "begin" method;
                 // changes are just queued and made visible when we call commit (either hard or soft)
@@ -337,13 +337,13 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                         // Make sure the data gets saved eventually
                         // we'll manually schedule a hard commit ourself so the periodic auto-commit if Solr (which we disabled)
                         // can't slip in between our commits
-                        this.pageIndexer.scheduleHardCommit();
+                        this.pageIndexer.scheduleHardCommit(this);
 
                         // If all went well, release the lock. Note that rollback() will be called
                         // when this method throws an exception, so the lock should always be released
-                        this.pageIndexer.releaseCentralTxLock();
+                        this.pageIndexer.releaseCentralTxLock(this);
                     }
-                    catch (SolrServerException e) {
+                    catch (Throwable e) {
                         throw new IOException(e);
                     }
 
@@ -355,12 +355,12 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                         this.solrClient.commit(false, false, true);
 
                         // make sure the data gets saved eventually
-                        this.pageIndexer.scheduleHardCommit();
+                        this.pageIndexer.scheduleHardCommit(this);
 
                         // All went well; wipe the temp-stored rollback backup entry
                         this.flushRollbackBackup();
                     }
-                    catch (SolrServerException e) {
+                    catch (Throwable e) {
                         throw new IOException(e);
                     }
 
@@ -370,41 +370,45 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             }
         }
 
-        try {
-            SolrQuery query = new SolrQuery();
-            query.setQuery("*:*");
-            QueryResponse response = this.solrClient.query(query);
-            SolrDocumentList docList = response.getResults();
-            Logger.info("-------------------\nAll " + docList.getNumFound() + " docs");
-            for (int i = 0; i < docList.getNumFound(); i++) {
-                Logger.info(docList.get(i).jsonStr());
-            }
-            Logger.info("-------------------");
-        }
-        catch (SolrServerException e) {
-            Logger.error(e);
-        }
+        final boolean DEBUG = false;
+        if (DEBUG) {
 
-        try {
-            Logger.info("##### DEBUG CODE");
-            SolrQuery query = new SolrQuery();
-            //query.setQuery("*:*");
-            //query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":null}");
-            query.setParam("q", "{!parent which=" + PageIndexEntry.parentUriField.getName() + ":null}");
-            //query.setParam("q", "{!join from=" + PageIndexEntry.parentUriField.getName() + " to=" + PageIndexEntry.uriField.getName() + "}*");
-//            query.setParam("fl", "*,[child]");
-//            query.setParam("q", "{!graph from=uri to=parentUri maxDepth=1}typeOf:ror\\:BlogPost");
-            QueryResponse response = this.solrClient.query(query);
-            Logger.info("------ Response: \n"+response.jsonStr());
-            SolrDocumentList docList = response.getResults();
-            Logger.info("------------------- Selected " + docList.getNumFound() + " docs: \n");
-            for (int i = 0; i < docList.getNumFound(); i++) {
-                Logger.info(docList.get(i).jsonStr());
+            try {
+                SolrQuery query = new SolrQuery();
+                query.setQuery("*:*");
+                QueryResponse response = this.solrClient.query(query);
+                SolrDocumentList docList = response.getResults();
+                Logger.info("-------------------\nAll " + docList.getNumFound() + " docs");
+                for (SolrDocument doc : docList) {
+                    Logger.info(doc.jsonStr());
+                }
+                Logger.info("-------------------");
             }
-            Logger.info("-------------------");
-        }
-        catch (SolrServerException e) {
-            Logger.error(e);
+            catch (Throwable e) {
+                Logger.error(e);
+            }
+
+            try {
+                Logger.info("##### DEBUG CODE");
+                SolrQuery query = new SolrQuery();
+                //query.setQuery("*:*");
+                //query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":null}");
+                query.setParam("q", "{!parent which=" + PageIndexEntry.parentUriField.getName() + ":null}");
+                //query.setParam("q", "{!join from=" + PageIndexEntry.parentUriField.getName() + " to=" + PageIndexEntry.uriField.getName() + "}*");
+                //            query.setParam("fl", "*,[child]");
+                //            query.setParam("q", "{!graph from=uri to=parentUri maxDepth=1}typeOf:ror\\:BlogPost");
+                QueryResponse response = this.solrClient.query(query);
+                Logger.info("------ Response: \n" + response.jsonStr());
+                SolrDocumentList docList = response.getResults();
+                Logger.info("------------------- Selected " + docList.getNumFound() + " docs: \n");
+                for (SolrDocument doc : docList) {
+                    Logger.info(doc.jsonStr());
+                }
+                Logger.info("-------------------");
+            }
+            catch (Throwable e) {
+                Logger.error(e);
+            }
         }
     }
     @Override
@@ -421,18 +425,20 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
                         // Content you have previously added may have been committed due to autoCommit, buffer full, other client performing a commit etc.
                         // Also note that rollbacks reset changes made by all clients. Use this method carefully when multiple clients, or multithreaded clients are in use.
                         //
-                        // Note: we explicitly disabled autoCommit (both hard and soft)
+                        // Note: we explicitly disabled autoCommit (both hard and soft), see SolrPageIndexer
                         this.solrClient.rollback();
 
                         //Note: don't cancel the scheduled hard commit because other threads/requests might have
                         // started it and have nothing to do with us.
-
-                        // If all went well, release the lock. Note that rollback() will be called
-                        // when this method throws an exception, so the lock should always be released
-                        this.pageIndexer.releaseCentralTxLock();
                     }
                     catch (SolrServerException e) {
                         throw new IOException(e);
+                    }
+                    finally {
+                        // Always release the lock.
+                        // Note that rollback() will be called when commit throws an exception,
+                        // so the lock should always be released
+                        this.pageIndexer.releaseCentralTxLock(this);
                     }
 
                     break;

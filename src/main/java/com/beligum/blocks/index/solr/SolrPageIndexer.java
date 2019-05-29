@@ -19,6 +19,7 @@ package com.beligum.blocks.index.solr;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.locks.Mutex;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.hdfs.TX;
@@ -56,6 +57,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -86,8 +88,10 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
-    private ReentrantLock centralTxLock;
-    private Object hardCommitLock;
+    private final Object centralTxLock;
+    private SolrPageIndexConnection centralTxConnection;
+    //private final ReentrantLock centralTxLock;
+    private final Object hardCommitLock;
     private Timer hardCommitTimer;
 
     //-----CONSTRUCTORS-----
@@ -104,7 +108,8 @@ public class SolrPageIndexer implements PageIndexer
         // during debugging and for possible future use (eg. it works)
         this.useSchemaless = false;
 
-        this.centralTxLock = new ReentrantLock();
+        //this.centralTxLock = new ReentrantLock();
+        this.centralTxLock = new Object();
         this.hardCommitLock = new Object();
 
         this.init();
@@ -155,15 +160,44 @@ public class SolrPageIndexer implements PageIndexer
     {
         return this.solrClient;
     }
-    protected void acquireCentralTxLock()
+    protected void acquireCentralTxLock(SolrPageIndexConnection connection)
     {
-        this.centralTxLock.lock();
+        Logger.info("try acquire: " + System.identityHashCode(this));
+
+        synchronized (this.centralTxLock) {
+            if (this.centralTxConnection != null) {
+                throw new IllegalStateException("Acquiring central TX lock, but the connection is not null; this shouldn't happen; " + this.centralTxConnection);
+            }
+            else {
+                this.centralTxConnection = connection;
+            }
+        }
+
+        //this.centralTxLock.lock();
+
+        Logger.info("acquired: " + System.identityHashCode(this));
     }
-    protected void releaseCentralTxLock()
+    protected void releaseCentralTxLock(SolrPageIndexConnection connection)
     {
-        this.centralTxLock.unlock();
+        Logger.info("try release: " + System.identityHashCode(this));
+
+        synchronized (this.centralTxLock) {
+            if (this.centralTxConnection == null) {
+                throw new IllegalStateException("Releasing central TX lock, but the connection is null; this shouldn't happen");
+            }
+            else if (this.centralTxConnection != connection) {
+                throw new IllegalStateException("Releasing central TX lock, but the supplied connection doesn't match; this shouldn't happen; "+this.centralTxConnection);
+            }
+            else {
+                this.centralTxConnection = null;
+            }
+        }
+
+        //this.centralTxLock.unlock();
+
+        Logger.info("released: " + System.identityHashCode(this));
     }
-    protected void scheduleHardCommit()
+    protected void scheduleHardCommit(SolrPageIndexConnection connection)
     {
         // if a timer is already scheduled, no need to boot a second;
         // this effectively "groups" commits.
@@ -179,7 +213,7 @@ public class SolrPageIndexer implements PageIndexer
                             try {
                                 // note: we'll be "interfering" with manual commits, so make sure
                                 // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...
-                                acquireCentralTxLock();
+                                acquireCentralTxLock(connection);
 
                                 solrClient.commit(true, true);
                             }
@@ -191,7 +225,7 @@ public class SolrPageIndexer implements PageIndexer
                                 hardCommitTimer = null;
 
                                 //this might potentially throw an exception, so put it last
-                                releaseCentralTxLock();
+                                releaseCentralTxLock(connection);
                             }
                         }
                     }, HARD_COMMIT_TIMEOUT);
@@ -199,7 +233,7 @@ public class SolrPageIndexer implements PageIndexer
             }
         }
     }
-    protected void cancelHardCommit()
+    protected void cancelHardCommit(SolrPageIndexConnection connection)
     {
         if (this.hardCommitTimer != null) {
             synchronized (this.hardCommitLock) {
@@ -207,7 +241,7 @@ public class SolrPageIndexer implements PageIndexer
                     try {
                         // note: we'll be "interfering" with manual commits, so make sure
                         // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...
-                        acquireCentralTxLock();
+                        acquireCentralTxLock(connection);
 
                         //really cancel the active task
                         this.hardCommitTimer.cancel();
@@ -217,7 +251,7 @@ public class SolrPageIndexer implements PageIndexer
                         hardCommitTimer = null;
 
                         //this might potentially throw an exception, so put it last
-                        releaseCentralTxLock();
+                        releaseCentralTxLock(connection);
                     }
                 }
             }
