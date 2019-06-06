@@ -321,7 +321,7 @@ public class PageAdminEndpoint
         R.i18n().setManualLocale(lang);
 
         //signal the block-to-be-created we want all it's resources for update mode
-        R.cacheManager().getRequestCache().put(CacheKeys.RESOURCE_ACTION, ResourceAction.UPDATE);
+        R.requestContext().getRequestCache().put(CacheKeys.RESOURCE_ACTION, ResourceAction.UPDATE);
 
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to instance this resource or you'll re-instance the template, instead of an instance.

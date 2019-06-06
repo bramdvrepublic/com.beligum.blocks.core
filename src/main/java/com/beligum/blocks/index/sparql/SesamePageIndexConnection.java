@@ -76,9 +76,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     private ExecutorService fetchPageExecutor;
 
     //-----CONSTRUCTORS-----
-    SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction) throws IOException
+    SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction, String txResourceName) throws IOException
     {
-        super(transaction);
+        super(transaction, txResourceName);
 
         this.pageIndexer = pageIndexer;
 

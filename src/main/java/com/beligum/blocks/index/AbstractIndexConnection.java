@@ -64,12 +64,12 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     private Xid currentXid;
 
     //-----CONSTRUCTORS-----
-    protected AbstractIndexConnection(TX transaction)
+    protected AbstractIndexConnection(TX transaction, String txResourceName)
     {
         super();
 
         this.transaction = transaction;
-        this.txResourceName = this.getClass().getSimpleName();
+        this.txResourceName = txResourceName;
         this.state = TransactionState.NONE;
         this.active = false;
     }

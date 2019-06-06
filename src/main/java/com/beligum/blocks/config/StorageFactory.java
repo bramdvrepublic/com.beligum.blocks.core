@@ -99,7 +99,7 @@ public class StorageFactory
 
         return fileContext;
     }
-    public static PageIndexer getJsonIndexer() throws IOException
+    public static PageIndexer getJsonIndexer()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.JSON_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
@@ -119,7 +119,7 @@ public class StorageFactory
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return getJsonIndexer().connect(null);
     }
-    public static PageIndexer getSparqlIndexer() throws IOException
+    public static PageIndexer getSparqlIndexer()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.SPARQL_PAGE_INDEXER, new CacheFunction<CacheKey, PageIndexer>()
         {
@@ -138,7 +138,7 @@ public class StorageFactory
         //Note that we don't supply a transaction to a query connection since we assume querying is read-only
         return getSparqlIndexer().connect(null);
     }
-    public static TransactionManager getTransactionManager() throws IOException
+    public static TransactionManager getTransactionManager()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.TRANSACTION_MANAGER, new CacheFunction<CacheKey, TransactionManager>()
         {
@@ -202,21 +202,21 @@ public class StorageFactory
             }
         });
     }
-    public static CustomBitronixResourceProducer getBitronixResourceProducer() throws IOException
+    public static CustomBitronixResourceProducer getBitronixResourceProducer()
     {
         //make sure there's a transaction manager first..
         getTransactionManager();
 
         return (CustomBitronixResourceProducer) ResourceRegistrar.get(SimpleXAResourceProducer.UNIQUE_NAME);
     }
-    public static TX getCurrentRequestTx() throws IOException
+    public static TX getCurrentRequestTx()
     {
         TX retVal = null;
 
-        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
+        Cache<CacheKey, Object> txCache = R.requestContext().getRequestCache();
 
         if (txCache != null) {
-            retVal = cacheManager().getRequestCache().getAndInitIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, TX>()
+            retVal = txCache.getAndInitIfAbsent(CacheKeys.REQUEST_TRANSACTION, new CacheFunction<CacheKey, TX>()
             {
                 @Override
                 public TX apply(CacheKey cacheKey) throws IOException
@@ -245,12 +245,11 @@ public class StorageFactory
 
         return retVal;
     }
-    public static boolean hasCurrentRequestTx() throws IOException
+    public static boolean hasCurrentRequestTx()
     {
         boolean retVal = false;
 
-        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
-
+        Cache<CacheKey, Object> txCache = R.requestContext().getRequestCache();
         if (txCache != null) {
             try (AutoLock lock = txCache.acquireReadLock(CacheKeys.REQUEST_TRANSACTION)) {
                 retVal = txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
@@ -259,13 +258,13 @@ public class StorageFactory
 
         return retVal;
     }
-    public static TX getCurrentScopeTx() throws IOException
+    public static TX getCurrentScopeTx()
     {
         return R.requestContext().isActive() ? getCurrentRequestTx() : getCurrentThreadTx();
     }
     public static void releaseCurrentRequestTx(boolean forceRollback) throws IOException
     {
-        Cache<CacheKey, Object> txCache = R.cacheManager().getRequestCache();
+        Cache<CacheKey, Object> txCache = R.requestContext().getRequestCache();
 
         //happens when the server hasn't started up yet or we're not in a request context
         if (txCache != null) {
@@ -329,11 +328,11 @@ public class StorageFactory
     {
         return createCurrentThreadTx(null, 0);
     }
-    public static TX getCurrentThreadTx() throws IOException
+    public static TX getCurrentThreadTx()
     {
         return currentThreadTx.get();
     }
-    public static boolean hasCurrentThreadTx() throws IOException
+    public static boolean hasCurrentThreadTx()
     {
         return currentThreadTx.get() != null;
     }
@@ -383,7 +382,7 @@ public class StorageFactory
             return tx.getXdiskSession();
         }
     }
-    public static XAFileSystem getXADiskTransactionManager() throws IOException
+    public static XAFileSystem getXADiskTransactionManager()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.XADISK_FILE_SYSTEM, new CacheFunction<CacheKey, Object>()
         {
@@ -454,7 +453,7 @@ public class StorageFactory
 
         return (Configuration) cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG);
     }
-    public static FileContext getPageStoreFileSystem() throws IOException
+    public static FileContext getPageStoreFileSystem()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGESTORE_FS, new CacheFunction<CacheKey, FileContext>()
         {
@@ -480,18 +479,18 @@ public class StorageFactory
             }
         });
     }
-    public static Configuration getPageViewFileSystemConfig() throws IOException
+    public static Configuration getPageViewFileSystemConfig()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, new CacheFunction<CacheKey, Configuration>()
         {
             @Override
-            public Configuration apply(CacheKey cacheKey) throws IOException
+            public Configuration apply(CacheKey cacheKey)
             {
                 return HdfsUtils.createHdfsConfig(Settings.instance().getPagesViewUri(), null, Settings.instance().getPagesHdfsProperties());
             }
         });
     }
-    public static FileContext getPageViewFileSystem() throws IOException
+    public static FileContext getPageViewFileSystem()
     {
         return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.HDFS_PAGEVIEW_FS, new CacheFunction<CacheKey, FileContext>()
         {
@@ -509,22 +508,16 @@ public class StorageFactory
     }
 
     //-----PROTECTED METHODS-----
-    protected static Set<Indexer> getIndexerRegistry() throws IOException
+    protected static Set<Indexer> getIndexerRegistry()
     {
-        try {
-            return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
+        {
+            @Override
+            public Set<Indexer> apply(CacheKey cacheKey)
             {
-                @Override
-                public Set<Indexer> apply(CacheKey cacheKey) throws IOException
-                {
-                    return new HashSet<>();
-                }
-            });
-        }
-        catch (IOException e) {
-            //throw new RuntimeException("Error while creating a HashSet, this shouldn't happen", e);
-            throw e;
-        }
+                return new HashSet<>();
+            }
+        });
     }
 
     //-----PRIVATE METHODS-----

@@ -43,6 +43,7 @@ public class SesamePageIndexer implements PageIndexer
     //-----CONSTANTS-----
     private static final String DATA_SUBDIR = "data";
     private static final String INDEX_SUBDIR = "index";
+    private static final String TX_RESOURCE_NAME = SesamePageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
     private Object repositoryLock;
@@ -59,7 +60,17 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public synchronized IndexConnection connect(TX tx) throws IOException
     {
-        return new SesamePageIndexConnection(this, tx);
+        IndexConnection retVal = null;
+
+        if (tx != null) {
+            retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
+        }
+
+        if (retVal == null) {
+            retVal = new SesamePageIndexConnection(this, tx, TX_RESOURCE_NAME);
+        }
+
+        return retVal;
     }
     @Override
     public synchronized void reboot() throws IOException

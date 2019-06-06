@@ -84,6 +84,7 @@ public class SolrPageIndexer implements PageIndexer
     private static final SolrPageIndexConnection.TxType DEFAULT_SYNC_MODE = SolrPageIndexConnection.TxType.EMBEDDED_FULL_SYNC_MODE;
     // note: 15 sec is the default hard commit timeout in Solr (see updateHandler.autoCommit.maxTime)
     private static final long HARD_COMMIT_TIMEOUT = 15 * 1000;
+    private static final String TX_RESOURCE_NAME = SolrPageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
     private SolrClient solrClient;
@@ -123,7 +124,17 @@ public class SolrPageIndexer implements PageIndexer
     @Override
     public synchronized IndexConnection connect(TX tx) throws IOException
     {
-        return new SolrPageIndexConnection(this, tx, DEFAULT_SYNC_MODE);
+        IndexConnection retVal = null;
+
+        if (tx != null) {
+            retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
+        }
+
+        if (retVal == null) {
+            retVal = new SolrPageIndexConnection(this, tx, TX_RESOURCE_NAME, DEFAULT_SYNC_MODE);
+        }
+
+        return retVal;
     }
     @Override
     public synchronized void reboot() throws IOException
@@ -143,19 +154,24 @@ public class SolrPageIndexer implements PageIndexer
         // Issue a hard commit or wait until the autoCommit interval expires.
         // Stop the Solr servers.
         if (this.solrClient != null) {
+            //make sure we sync with running transactions and timers
+            synchronized (this.centralTxLock) {
+                if (this.solrClient != null) {
 
-            Logger.info("Shutting down Solr server...");
+                    Logger.info("Shutting down Solr server...");
 
-            try {
-                this.solrClient.commit(true, true);
+                    try {
+                        this.solrClient.commit(true, true);
+                    }
+                    catch (SolrServerException e) {
+                        Logger.error("Error while flushing the Solr client while shutting down", e);
+                    }
+
+                    //note that this will shutdown the core container when the instance is an embedded server
+                    this.solrClient.close();
+                    this.solrClient = null;
+                }
             }
-            catch (SolrServerException e) {
-                Logger.error("Error while flushing the Solr client while shutting down", e);
-            }
-
-            //note that this will shutdown the core container when the instance is an embedded server
-            this.solrClient.close();
-            this.solrClient = null;
         }
     }
 
@@ -207,7 +223,10 @@ public class SolrPageIndexer implements PageIndexer
                                 // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...
                                 acquireCentralTxLock(connection);
 
-                                solrClient.commit(true, true);
+                                // it's possible this indexer has been shut down in the mean time
+                                if (solrClient != null) {
+                                    solrClient.commit(true, true);
+                                }
                             }
                             catch (Exception e) {
                                 Logger.error("Error while hard committing the Solr searcher, this is bad and should be fixed", e);

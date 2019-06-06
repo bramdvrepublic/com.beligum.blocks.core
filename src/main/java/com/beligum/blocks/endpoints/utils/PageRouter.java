@@ -839,7 +839,7 @@ public class PageRouter
     private void setResourceAction(ResourceAction action)
     {
         //this one is used by HtmlParser to doIsValid if we need to include certain tags
-        R.cacheManager().getRequestCache().put(CacheKeys.RESOURCE_ACTION, action);
+        R.requestContext().getRequestCache().put(CacheKeys.RESOURCE_ACTION, action);
     }
 
     //-----MGMT METHODS-----

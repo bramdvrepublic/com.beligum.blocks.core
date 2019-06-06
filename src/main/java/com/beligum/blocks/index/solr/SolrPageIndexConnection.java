@@ -90,9 +90,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private Object rollbackBackupLock = new Object();
 
     //-----CONSTRUCTORS-----
-    SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, TxType txType) throws IOException
+    SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, String txResourceName, TxType txType) throws IOException
     {
-        super(transaction);
+        super(transaction, txResourceName);
 
         this.pageIndexer = pageIndexer;
         this.solrClient = pageIndexer.getSolrClient();
@@ -373,7 +373,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             }
         }
 
-        final boolean DEBUG = true;
+        final boolean DEBUG = false;
         if (DEBUG) {
 
             try {

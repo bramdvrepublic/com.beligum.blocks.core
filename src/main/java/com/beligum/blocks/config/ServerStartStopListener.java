@@ -133,7 +133,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
                         throw new IOException("Encountered unsupported transaction manager implementation; check and see how to close this down properly; "+transactionManager);
                     }
                 }
-                catch (IOException e) {
+                catch (Throwable e) {
                     Logger.error("Error while shutting down transaction manager", e);
                 }
             }
@@ -143,7 +143,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 try {
                     StorageFactory.getXADiskTransactionManager().shutdown();
                 }
-                catch (IOException e) {
+                catch (Throwable e) {
                     Logger.error("Exception caught while shutting down XADisk", e);
                 }
             }
@@ -155,7 +155,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
                         ((AutoCloseable) pageViewFs.getDefaultFileSystem()).close();
                     }
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     Logger.error("Error while shutting down page store filesystem", e);
                 }
             }
@@ -167,7 +167,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
                         ((AutoCloseable) pageStoreFs.getDefaultFileSystem()).close();
                     }
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     Logger.error("Error while shutting down page store filesystem", e);
                 }
             }
@@ -185,7 +185,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
                     indexIter.remove();
                 }
             }
-            catch (IOException e) {
+            catch (Throwable e) {
                 Logger.error("Error while iterating the indexers during shutdown", e);
             }
         }
