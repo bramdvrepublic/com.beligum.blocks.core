@@ -130,13 +130,10 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
         }
 
-        retVal.setRows(this.getPageSize());
+        // zero based offset of matching documents to retrieve
         retVal.setStart(this.getPageOffset());
-
-
-        //        if (this.getMaxResults() != null) {
-        //            TODO...
-        //        }
+        // number of documents to return starting at "start"
+        retVal.setRows(Math.min(this.getPageSize(), new Long(this.getMaxResults()).intValue()));
 
         return retVal;
     }

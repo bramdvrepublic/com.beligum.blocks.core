@@ -419,51 +419,56 @@ public class PageRouter
     {
         if (this.assertUnfinished()) {
 
-            try {
-                IndexConnection queryConnection = this.getMainPageQueryConnection();
+            Collection<Locale> allLanguages = R.configuration().getLanguages().values();
 
-                //more or less the same remark here as with doDetectAliases()
-                String searchUri = this.requestedUri.getPath();
+            // if we only have one language configured, we can't have translated links
+            if (allLanguages.size() > 1) {
 
-                IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
+                try {
+                    IndexConnection queryConnection = this.getMainPageQueryConnection();
 
-                //part a: first, we go hunting for the uri that _does_ exist
-                Collection<Locale> allLanguages = R.configuration().getLanguages().values();
-                for (Locale locale : allLanguages) {
-                    if (!locale.equals(this.locale)) {
-                        //replace the language of the uri by the language of the loop
-                        UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
-                        R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
-                        //we'll search for a page that has the translated request uri as it's address
-                        searchRequest.filter(ResourceIndexEntry.uriField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
+                    //more or less the same remark here as with doDetectAliases()
+                    String searchUri = this.requestedUri.getPath();
+
+                    IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
+
+                    //part a: first, we go hunting for the uri that _does_ exist
+                    for (Locale locale : allLanguages) {
+                        if (!locale.equals(this.locale)) {
+                            //replace the language of the uri by the language of the loop
+                            UriBuilder uriBuilder = UriBuilder.fromUri(searchUri);
+                            R.i18n().getUrlLocale(this.requestedUri, uriBuilder, locale);
+                            //we'll search for a page that has the translated request uri as it's address
+                            searchRequest.filter(ResourceIndexEntry.uriField, StringFunctions.getRightOfDomain(uriBuilder.build()).toString(), IndexSearchRequest.FilterBoolean.OR);
+                        }
+                    }
+
+                    searchRequest.maxResults(allLanguages.size());
+
+                    IndexSearchResult results = queryConnection.search(searchRequest);
+                    //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
+                    if (!results.isEmpty()) {
+                        //since all resources should be the same, we take the first match
+                        String resourceUri = results.iterator().next().getResource();
+                        searchRequest = IndexSearchRequest.createFor(queryConnection);
+                        searchRequest.filter(PageIndexEntry.resourceField, resourceUri, IndexSearchRequest.FilterBoolean.AND);
+                        searchRequest.filter(PageIndexEntry.languageField, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
+                        results = queryConnection.search(searchRequest);
+
+                        //TODO do we still need this? See the language filter above
+                        ResourceProxy selectedEntry2 = PageIndexEntry.selectBestLanguage(results);
+
+                        //this means we found something, so save the redirection url
+                        if (selectedEntry2 != null) {
+                            //we'll redirect to the id (eg. the public URI of the page) of the found resource
+                            this.targetUri = selectedEntry2.getUri();
+                            this.needsRedirection = true;
+                        }
                     }
                 }
-
-                searchRequest.maxResults(allLanguages.size());
-
-                IndexSearchResult results = queryConnection.search(searchRequest);
-                //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
-                if (!results.isEmpty()) {
-                    //since all resources should be the same, we take the first match
-                    String resourceUri = results.iterator().next().getResource();
-                    searchRequest = IndexSearchRequest.createFor(queryConnection);
-                    searchRequest.filter(PageIndexEntry.resourceField, resourceUri, IndexSearchRequest.FilterBoolean.AND);
-                    searchRequest.filter(PageIndexEntry.languageField, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
-                    results = queryConnection.search(searchRequest);
-
-                    //TODO do we still need this? See the language filter above
-                    ResourceProxy selectedEntry2 = PageIndexEntry.selectBestLanguage(results);
-
-                    //this means we found something, so save the redirection url
-                    if (selectedEntry2 != null) {
-                        //we'll redirect to the id (eg. the public URI of the page) of the found resource
-                        this.targetUri = selectedEntry2.getUri();
-                        this.needsRedirection = true;
-                    }
+                catch (IOException e) {
+                    throw new InternalServerErrorException("Error while detecting translated link for " + this.requestedUri, e);
                 }
-            }
-            catch (IOException e) {
-                throw new InternalServerErrorException("Error while detecting translated link for " + this.requestedUri, e);
             }
         }
     }

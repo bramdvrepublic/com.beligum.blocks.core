@@ -88,9 +88,14 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
+    // Note: don't make this a Mutex or a ReentrantLock because those have an additional
+    // restriction that only the thread that locks them can release them, whereas we want
+    // a locking mechanism that is synced on the IndexConnection. If this connection instance
+    // is passed to another thread and released from there (happens during asynchronous reindexing),
+    // that's a valid situation, but crashed when using thread-synched mutexes.
     private final Object centralTxLock;
+    // This will hold the current IndexConnection that's holding the centralTxLock
     private SolrPageIndexConnection centralTxConnection;
-    //private final ReentrantLock centralTxLock;
     private final Object hardCommitLock;
     private Timer hardCommitTimer;
 
@@ -108,7 +113,6 @@ public class SolrPageIndexer implements PageIndexer
         // during debugging and for possible future use (eg. it works)
         this.useSchemaless = false;
 
-        //this.centralTxLock = new ReentrantLock();
         this.centralTxLock = new Object();
         this.hardCommitLock = new Object();
 
@@ -162,8 +166,6 @@ public class SolrPageIndexer implements PageIndexer
     }
     protected void acquireCentralTxLock(SolrPageIndexConnection connection)
     {
-        Logger.info("try acquire: " + System.identityHashCode(this));
-
         synchronized (this.centralTxLock) {
             if (this.centralTxConnection != null) {
                 throw new IllegalStateException("Acquiring central TX lock, but the connection is not null; this shouldn't happen; " + this.centralTxConnection);
@@ -172,15 +174,9 @@ public class SolrPageIndexer implements PageIndexer
                 this.centralTxConnection = connection;
             }
         }
-
-        //this.centralTxLock.lock();
-
-        Logger.info("acquired: " + System.identityHashCode(this));
     }
     protected void releaseCentralTxLock(SolrPageIndexConnection connection)
     {
-        Logger.info("try release: " + System.identityHashCode(this));
-
         synchronized (this.centralTxLock) {
             if (this.centralTxConnection == null) {
                 throw new IllegalStateException("Releasing central TX lock, but the connection is null; this shouldn't happen");
@@ -192,10 +188,6 @@ public class SolrPageIndexer implements PageIndexer
                 this.centralTxConnection = null;
             }
         }
-
-        //this.centralTxLock.unlock();
-
-        Logger.info("released: " + System.identityHashCode(this));
     }
     protected void scheduleHardCommit(SolrPageIndexConnection connection)
     {
