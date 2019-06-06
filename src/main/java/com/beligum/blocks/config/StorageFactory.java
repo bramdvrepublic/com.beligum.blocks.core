@@ -509,7 +509,7 @@ public class StorageFactory
     }
 
     //-----PROTECTED METHODS-----
-    protected static Set<Indexer> getIndexerRegistry()
+    protected static Set<Indexer> getIndexerRegistry() throws IOException
     {
         try {
             return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.REGISTERED_INDEXERS, new CacheFunction<CacheKey, Set<Indexer>>()
@@ -522,8 +522,8 @@ public class StorageFactory
             });
         }
         catch (IOException e) {
-            Logger.error("Error while creating a HashSet, this shouldn't happen", e);
-            return null;
+            //throw new RuntimeException("Error while creating a HashSet, this shouldn't happen", e);
+            throw e;
         }
     }
 

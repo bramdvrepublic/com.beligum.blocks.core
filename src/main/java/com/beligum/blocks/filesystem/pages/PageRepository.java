@@ -449,13 +449,21 @@ public class PageRepository extends AbstractResourceRepository
     }
     private void index(Page page) throws IOException
     {
-        this.index(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
+        this.index(page, null, null);
     }
     private void index(Page page, IndexConnection pageIndexer, IndexConnection triplestoreIndexer) throws IOException
     {
         //Note: transaction handling is done through the global XA transaction
         //Note: order is important!
+
+        if (pageIndexer == null) {
+            pageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
+        }
         pageIndexer.update(page);
+
+        if (triplestoreIndexer == null) {
+            triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
+        }
         triplestoreIndexer.update(page);
     }
     private void unindex(Page page) throws IOException

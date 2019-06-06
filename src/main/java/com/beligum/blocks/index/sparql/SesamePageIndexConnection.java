@@ -69,27 +69,24 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         SINGLE_TERM_QUERY
     }
 
-    private static final String TX_RESOURCE_NAME = "SesamePageIndexConnection";
-
     //-----VARIABLES-----
     private SesamePageIndexer pageIndexer;
-    private TX transaction;
     private SailRepositoryConnection connection;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
-    private boolean active;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction) throws IOException
+    SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction) throws IOException
     {
+        super(transaction);
+
         this.pageIndexer = pageIndexer;
-        this.transaction = transaction;
 
         try {
             this.connection = pageIndexer.getRDFRepository().getConnection();
         }
         catch (RepositoryException e) {
-            throw new IOException("Error occurred while booting sesame page indexer transaction", e);
+            throw new IOException(e);
         }
 
         this.fetchPageMethod = FetchPageMethod.SINGLE_TERM_QUERY;
@@ -103,6 +100,9 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         this.active = true;
+
+        // make sure this connection is released, eventually
+        this.registerConnection();
     }
 
     //-----PUBLIC METHODS-----
@@ -524,29 +524,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         return retVal;
-    }
-    private boolean isRegistered()
-    {
-        return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
-    }
-    private synchronized void assertActive() throws IOException
-    {
-        if (!this.active) {
-            throw new IOException("Can't proceed, an active Sesame index connection was asserted");
-        }
-    }
-    private synchronized void assertTransaction() throws IOException
-    {
-        if (this.transaction == null) {
-            throw new IOException("Transaction asserted, but none was initialized, can't continue");
-        }
-        else {
-            //only need to do it once (at the beginning of a method using a tx)
-            if (!this.isRegistered()) {
-                //attach this connection to the transaction manager
-                this.transaction.registerResource(TX_RESOURCE_NAME, this);
-            }
-        }
     }
     private URI toUri(Value value, boolean tryLocalRdfCurie, boolean tryLocalDomain)
     {

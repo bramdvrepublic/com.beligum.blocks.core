@@ -16,10 +16,14 @@
 
 package com.beligum.blocks.index;
 
+import com.beligum.base.server.R;
+import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.Indexer;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -52,16 +56,22 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     private static final int DEFAULT_TRANSACTION_TIMEOUT_SECS = 10;
 
     //-----VARIABLES-----
+    protected TX transaction;
+    protected boolean active;
     private int transactionTimeout = DEFAULT_TRANSACTION_TIMEOUT_SECS;
+    private String txResourceName;
     private TransactionState state;
     private Xid currentXid;
 
     //-----CONSTRUCTORS-----
-    protected AbstractIndexConnection()
+    protected AbstractIndexConnection(TX transaction)
     {
         super();
 
+        this.transaction = transaction;
+        this.txResourceName = this.getClass().getSimpleName();
         this.state = TransactionState.NONE;
+        this.active = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -344,9 +354,57 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         //currently completely disabled
         return currentXid == null || state != TransactionState.PREPARED ? new Xid[0] : new Xid[] {currentXid};
     }
+    /**
+     * This is just a wrapper around close() so we can register ourself as a RequestClosable
+     */
+    @Override
+    public void close(RequestEvent event) throws Exception
+    {
+        this.close();
+    }
 
     //-----PROTECTED METHODS-----
     protected abstract Indexer getResourceManager();
+
+    protected void registerConnection() throws IOException
+    {
+        // As of Stralo v1.0, we started registering ourself on creation (in the constructor) as a quick fix
+        // for dangling open connections (slowing down the closing of the server).
+        // Otherwise, when opening up connections to the index for read-only requests,
+        // the connections would (possibly) remain active forever.
+
+        // this means we're dealing with a read-only connection, so let's register ourself in the request (instead of the transaction),
+        // so we're sure we're closed eventually.
+        if (this.transaction == null) {
+            R.requestContext().registerClosable(this);
+        }
+        else {
+            this.assertTransaction();
+        }
+    }
+    protected boolean isRegistered()
+    {
+        return this.transaction != null && this.transaction.getRegisteredResource(this.txResourceName) != null;
+    }
+    protected synchronized void assertActive() throws IOException
+    {
+        if (!this.active) {
+            throw new IOException("Can't proceed, an active Sesame index connection was asserted");
+        }
+    }
+    protected synchronized void assertTransaction() throws IOException
+    {
+        if (this.transaction == null) {
+            throw new IOException("Transaction asserted, but none was initialized, can't continue");
+        }
+        else {
+            //only need to do it once (at the beginning of a method using a tx)
+            if (!this.isRegistered()) {
+                //attach this connection to the transaction manager
+                this.transaction.registerResource(this.txResourceName, this);
+            }
+        }
+    }
 
     //-----PRIVATE METHODS-----
     private synchronized void setXid(Xid xid) throws XAException

@@ -17,6 +17,7 @@
 package com.beligum.blocks.index.solr;
 
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.hdfs.TX;
 import com.beligum.blocks.index.AbstractIndexConnection;
@@ -39,6 +40,8 @@ import org.apache.solr.servlet.SolrRequestParsers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by bram on 2/22/16.
@@ -78,26 +81,26 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         OPPORTUNISTIC_MODE
     }
 
-    private static final String TX_RESOURCE_NAME = SolrPageIndexConnection.class.getSimpleName();
-
     //-----VARIABLES-----
     private SolrPageIndexer pageIndexer;
     private SolrClient solrClient;
-    private TX transaction;
     private TxType txType;
-    private boolean active;
 
     private RollbackBackup rollbackBackup = null;
     private Object rollbackBackupLock = new Object();
 
     //-----CONSTRUCTORS-----
-    public SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, TxType txType) throws IOException
+    SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, TxType txType) throws IOException
     {
+        super(transaction);
+
         this.pageIndexer = pageIndexer;
         this.solrClient = pageIndexer.getSolrClient();
-        this.transaction = transaction;
         this.txType = txType;
         this.active = true;
+
+        // make sure this connection is released, eventually
+        this.registerConnection();
     }
 
     //-----PUBLIC METHODS-----
@@ -370,7 +373,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             }
         }
 
-        final boolean DEBUG = false;
+        final boolean DEBUG = true;
         if (DEBUG) {
 
             try {
@@ -464,34 +467,12 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     }
 
     //-----PRIVATE METHODS-----
-    private synchronized void assertActive() throws IOException
-    {
-        if (!this.active) {
-            throw new IOException("Can't proceed, an active Lucene index connection was asserted");
-        }
-    }
-    private synchronized void assertTransaction() throws IOException
-    {
-        if (this.transaction == null) {
-            throw new IOException("Transaction asserted, but none was initialized, can't continue");
-        }
-        else {
-            //only need to do it once (at the beginning of a method using a tx)
-            if (!this.isRegistered()) {
-                //attach this connection to the transaction manager
-                this.transaction.registerResource(TX_RESOURCE_NAME, this);
-            }
-        }
-    }
-    private boolean isRegistered()
-    {
-        return this.transaction != null && this.transaction.getRegisteredResource(TX_RESOURCE_NAME) != null;
-    }
     private void updateJsonDoc(SolrPageIndexEntry indexEntry) throws IOException, SolrServerException
     {
         // now all sub-objects are attached to each other, recursively iterate them to find all the paths to
         // the sub-objects, so we can report to Solr where to split its children
         StringBuilder solrSplit = new StringBuilder();
+        Set<String> splitRefs = new HashSet<>();
         indexEntry.iterateObjectNodes(new JsonPageIndexEntry.JsonNodeVisitor()
         {
             @Override
@@ -502,10 +483,14 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             @Override
             public void visit(String fieldName, JsonNode fieldValue, String path)
             {
-                if (solrSplit.length() > 0) {
-                    solrSplit.append("|");
+                // don't add it again if it was added already, it causes errors saying "... has a parent node at my level or lower"
+                if (!splitRefs.contains(path)) {
+                    if (solrSplit.length() > 0) {
+                        solrSplit.append("|");
+                    }
+                    solrSplit.append(path);
+                    splitRefs.add(path);
                 }
-                solrSplit.append(path);
             }
         });
 

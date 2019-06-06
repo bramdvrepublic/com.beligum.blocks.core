@@ -17,6 +17,7 @@
 package com.beligum.blocks.index.ifaces;
 
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.blocks.filesystem.ifaces.XAClosableResource;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/21/16.
  */
-public interface IndexConnection extends XAClosableResource
+public interface IndexConnection extends XAClosableResource, RequestCloseable
 {
     //-----CONSTANTS-----
     /**

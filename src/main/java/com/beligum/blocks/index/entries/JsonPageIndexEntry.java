@@ -324,12 +324,9 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF class with a null summarizer; this shouldn't happen; " + type);
         }
 
-        // Instead of omitting the fields without a value, we explicitly choose to set them to null
-        // (at least for the core internal fields). Note that Solr might still decide to filter these out
-        // (eg. see RemoveBlankFieldUpdateProcessorFactory updateProcessor), but this way, we can decide
-        // to include them, so we can search for them explicitly, eg. analogous to:
-        // https://www.elastic.co/guide/en/elasticsearch/reference/2.1/null-value.html
-        return this.copyInternalFields(object, false);
+        // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
+        // for why we changed our mind from filling in empty fields with null to just omitting them.
+        return this.copyInternalFields(object, true);
     }
     private ObjectNode copyInternalFields(ObjectNode object, boolean omitEmptyFields)
     {

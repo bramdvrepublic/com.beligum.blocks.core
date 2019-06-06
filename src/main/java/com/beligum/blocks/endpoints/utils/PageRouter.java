@@ -433,6 +433,8 @@ public class PageRouter
                     IndexSearchRequest searchRequest = IndexSearchRequest.createFor(queryConnection);
 
                     //part a: first, we go hunting for the uri that _does_ exist
+                    // Note that this only works if we have more than one language configured (checked above)
+                    // because otherwise we'll end up with an empty query and search for all pages.
                     for (Locale locale : allLanguages) {
                         if (!locale.equals(this.locale)) {
                             //replace the language of the uri by the language of the loop

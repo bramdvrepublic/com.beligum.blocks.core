@@ -38,6 +38,7 @@ import org.glassfish.jersey.server.spi.Container;
 import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Created by bram on 11/10/14.
@@ -103,10 +104,41 @@ public class ServerStartStopListener implements ServerLifecycleListener
     {
         if (Settings.instance().hasBlocksCoreConfig()) {
 
-            //start all possible running async tasks
+            // stop all possible running async tasks
             PageAdminEndpoint.endAllAsyncTasksNow();
 
-            //don't boot it up if it's not there
+            // shut down all transactions by stopping the transaction manager
+            // Note that it makes sense to stop the high-level (grouping) transactions first,
+            // before force-closing the lower-level systems that are used (grouped) in those tx...
+            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
+                try {
+                    TransactionManager transactionManager = StorageFactory.getTransactionManager();
+                    if (transactionManager instanceof BitronixTransactionManager) {
+
+                        BitronixTransactionManager bitronixTransactionManager = (BitronixTransactionManager) transactionManager;
+
+                        //Since manually registered resource pools are left untouched by BitronixTransactionManager.shutdown(),
+                        // we need to do this manually
+                        XAResourceProducer customProducer = StorageFactory.getBitronixResourceProducer();
+                        if (customProducer!=null) {
+                            //hope this order is ok
+                            customProducer.close();
+                            ResourceRegistrar.unregister(customProducer);
+                        }
+
+                        bitronixTransactionManager.shutdown();
+                    }
+                    else {
+                        // since there's no public close method on a transaction manager, let's throw an exception
+                        throw new IOException("Encountered unsupported transaction manager implementation; check and see how to close this down properly; "+transactionManager);
+                    }
+                }
+                catch (IOException e) {
+                    Logger.error("Error while shutting down transaction manager", e);
+                }
+            }
+
+            // don't boot it up if it's not there
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 try {
                     StorageFactory.getXADiskTransactionManager().shutdown();
@@ -114,18 +146,6 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 catch (IOException e) {
                     Logger.error("Exception caught while shutting down XADisk", e);
                 }
-            }
-
-            Iterator<Indexer> indexIter = StorageFactory.getIndexerRegistry().iterator();
-            while (indexIter.hasNext()) {
-                Indexer indexer = indexIter.next();
-                try {
-                    indexer.shutdown();
-                }
-                catch (IOException e) {
-                    Logger.error("Exception caught while shutting down indexer; " + indexer, e);
-                }
-                indexIter.remove();
             }
 
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
@@ -152,30 +172,21 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 }
             }
 
-            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
-                try {
-                    TransactionManager transactionManager = StorageFactory.getTransactionManager();
-                    if (transactionManager instanceof BitronixTransactionManager) {
-                        BitronixTransactionManager bitronixTransactionManager = (BitronixTransactionManager) transactionManager;
-
-                        //Since manually registered resource pools are left untouched by BitronixTransactionManager.shutdown(),
-                        // we need to do this manually
-                        XAResourceProducer customProducer = StorageFactory.getBitronixResourceProducer();
-                        if (customProducer!=null) {
-                            //hope this order is ok
-                            customProducer.close();
-                            ResourceRegistrar.unregister(customProducer);
-                        }
-
-                        bitronixTransactionManager.shutdown();
+            try {
+                Iterator<Indexer> indexIter = StorageFactory.getIndexerRegistry().iterator();
+                while (indexIter.hasNext()) {
+                    Indexer indexer = indexIter.next();
+                    try {
+                        indexer.shutdown();
                     }
-                    else {
-                        //TODO no public close method on a transaction manager??
+                    catch (IOException e) {
+                        Logger.error("Exception caught while shutting down indexer; " + indexer, e);
                     }
+                    indexIter.remove();
                 }
-                catch (IOException e) {
-                    Logger.error("Error while shutting down transaction manager", e);
-                }
+            }
+            catch (IOException e) {
+                Logger.error("Error while iterating the indexers during shutdown", e);
             }
         }
     }

@@ -284,6 +284,8 @@ public class SolrPageIndexer implements PageIndexer
                                                                   // The autoCommit (real commit to disk) value of 15s is just the default value that's repeated here, just to be sure.
                                                                   // See https://stackoverflow.com/questions/5623307/solrj-disable-autocommit
                                                                   // but also https://lucidworks.com/2013/08/23/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+                                                                  // Also note that an update is forced when the buffer's thresholds (ramBufferSizeMB and maxBufferedDocs) are reached,
+                                                                  // but the defaults are large enough to not be reached during normal doc-per-doc saves, so we should be okay.
                                                                   "  \"set-property\": {" +
                                                                   // Note: we disable periodic hard commit because it might slip in between our soft commit in EMBEDDED_FULL_SYNC_MODE
                                                                   // Instead, we'll schedule "grouped" hard commits ourself.
