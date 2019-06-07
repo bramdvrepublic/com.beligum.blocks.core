@@ -40,7 +40,9 @@ import org.apache.solr.servlet.SolrRequestParsers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -86,8 +88,10 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private SolrClient solrClient;
     private TxType txType;
 
-    private RollbackBackup rollbackBackup = null;
-    private Object rollbackBackupLock = new Object();
+    // Note that we can have multiple backups because this connection is part of a transaction
+    // that can be re-used multiple times
+    private List<RollbackBackup> rollbackBackups = new ArrayList<>();
+    private final Object rollbackBackupLock = new Object();
 
     //-----CONSTRUCTORS-----
     SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, String txResourceName, TxType txType) throws IOException
@@ -173,7 +177,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         try {
             Page page = resource.unwrap(Page.class);
 
-            this.saveRollbackBackup(PageIndexEntry.uriField.serialize(page));
+            if (this.txType.equals(TxType.OPPORTUNISTIC_MODE)) {
+                this.saveRollbackBackup(PageIndexEntry.uriField.serialize(page));
+            }
 
             this.updateJsonDoc(new SolrPageIndexEntry(page));
         }
@@ -192,7 +198,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
 
             String pageId = PageIndexEntry.uriField.serialize(page);
 
-            this.saveRollbackBackup(pageId);
+            if (this.txType.equals(TxType.OPPORTUNISTIC_MODE)) {
+                this.saveRollbackBackup(pageId);
+            }
 
             this.solrClient.deleteById(pageId);
         }
@@ -534,53 +542,45 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         // this effectively executes the update command
         this.solrClient.request(request);
 
-        Logger.info("##### Indexed doc: \n\n " + indexEntry.toString() + "\n\n");
+        final boolean DEBUG = false;
+        if (DEBUG) {
+            Logger.info("##### Indexed doc: \n\n " + indexEntry.toString() + "\n\n");
+        }
     }
     private void saveRollbackBackup(String id) throws IOException, SolrServerException
     {
         synchronized (rollbackBackupLock) {
-            if (this.rollbackBackup == null) {
-                //note: this returns null if nothing was found
-                SolrDocument existingIndexEntry = this.solrClient.getById(id);
 
-                this.rollbackBackup = new RollbackBackup(id, existingIndexEntry == null ? null : new SolrPageIndexEntry(existingIndexEntry.jsonStr()));
-            }
-            else {
-                throw new IOException("Encountered a situation where the rollback backup was already set, this shouldn't happen; " + this.rollbackBackup);
-            }
+            //note: this returns null if nothing was found
+            SolrDocument existingIndexEntry = this.solrClient.getById(id);
+
+            this.rollbackBackups.add(new RollbackBackup(id, existingIndexEntry == null ? null : new SolrPageIndexEntry(existingIndexEntry.jsonStr())));
         }
     }
     private void restoreRollbackBackup() throws IOException, SolrServerException
     {
         synchronized (rollbackBackupLock) {
-            //note: the object itself shouldn't be null in this phase (it's content might, though)
-            if (this.rollbackBackup != null) {
+
+            for (RollbackBackup rollbackBackup : this.rollbackBackups) {
 
                 //if the indexEntry is null, it means the index didn't have a prior entry
-                if (this.rollbackBackup.indexEntry != null) {
-                    this.updateJsonDoc(this.rollbackBackup.indexEntry);
+                if (rollbackBackup.indexEntry != null) {
+                    this.updateJsonDoc(rollbackBackup.indexEntry);
                 }
                 else {
-                    this.solrClient.deleteById(this.rollbackBackup.id);
+                    this.solrClient.deleteById(rollbackBackup.id);
                 }
+            }
 
-                this.rollbackBackup = null;
-            }
-            else {
-                throw new IOException("Encountered a situation where the rollback backup to be restored was not set, this shouldn't happen");
-            }
+            this.rollbackBackups.clear();
         }
     }
     private void flushRollbackBackup() throws IOException
     {
         synchronized (rollbackBackupLock) {
-            //note: the object itself shouldn't be null in this phase (it's content might, though)
-            if (this.rollbackBackup != null) {
-                this.rollbackBackup = null;
-            }
-            else {
-                throw new IOException("Encountered a situation where the rollback backup to be flushed was not set, this shouldn't happen");
-            }
+
+            this.rollbackBackups.clear();
+
         }
     }
 

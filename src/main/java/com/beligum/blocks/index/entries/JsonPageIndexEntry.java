@@ -258,8 +258,6 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                              " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
             }
         }
-
-        Logger.info("############### done");
     }
     private void findChildBoundaries(JsonNode fieldValue, JsonNodeVisitor visitor) throws IOException
     {

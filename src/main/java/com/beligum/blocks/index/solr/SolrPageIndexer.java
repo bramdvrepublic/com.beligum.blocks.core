@@ -89,12 +89,15 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
-    // Note: don't make this a Mutex or a ReentrantLock because those have an additional
-    // restriction that only the thread that locks them can release them, whereas we want
-    // a locking mechanism that is synced on the IndexConnection. If this connection instance
-    // is passed to another thread and released from there (happens during asynchronous reindexing),
-    // that's a valid situation, but crashed when using thread-synched mutexes.
-    private final Object centralTxLock;
+    // Note: because a mutex has the notion of "thread ownership", it implicitly requires that
+    // the locking thread is the same as the releasing thread. This might not always be the case,
+    // since the actual "owner" of the lock is the indexconnection instance that requests the lock.
+    // But in our cases, it will probably always be the case (eg. that index connections are not passed
+    // on in between threads)
+    // Also note that this is a Mutex and not a ReentrantLock, because we don't allow re-entry of the same thread
+    // on the lock since this would mean the 'transaction' of that connection is started again,
+    // and probably means a programming error.
+    private final Mutex centralTxLock;
     // This will hold the current IndexConnection that's holding the centralTxLock
     private SolrPageIndexConnection centralTxConnection;
     private final Object hardCommitLock;
@@ -114,7 +117,7 @@ public class SolrPageIndexer implements PageIndexer
         // during debugging and for possible future use (eg. it works)
         this.useSchemaless = false;
 
-        this.centralTxLock = new Object();
+        this.centralTxLock = new Mutex();
         this.hardCommitLock = new Object();
 
         this.init();
@@ -126,6 +129,7 @@ public class SolrPageIndexer implements PageIndexer
     {
         IndexConnection retVal = null;
 
+        // if the transaction already contains a connection of this type, no need to start a new one
         if (tx != null) {
             retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
         }
@@ -155,7 +159,9 @@ public class SolrPageIndexer implements PageIndexer
         // Stop the Solr servers.
         if (this.solrClient != null) {
             //make sure we sync with running transactions and timers
-            synchronized (this.centralTxLock) {
+            this.centralTxLock.lock();
+
+            try {
                 if (this.solrClient != null) {
 
                     Logger.info("Shutting down Solr server...");
@@ -172,6 +178,9 @@ public class SolrPageIndexer implements PageIndexer
                     this.solrClient = null;
                 }
             }
+            finally {
+                this.centralTxLock.unlock();
+            }
         }
     }
 
@@ -182,26 +191,34 @@ public class SolrPageIndexer implements PageIndexer
     }
     protected void acquireCentralTxLock(SolrPageIndexConnection connection)
     {
-        synchronized (this.centralTxLock) {
-            if (this.centralTxConnection != null) {
-                throw new IllegalStateException("Acquiring central TX lock, but the connection is not null; this shouldn't happen; " + this.centralTxConnection);
-            }
-            else {
-                this.centralTxConnection = connection;
-            }
+        this.centralTxLock.lock();
+
+        if (this.centralTxConnection != null) {
+            throw new IllegalStateException("Acquiring central TX lock, but the connection is not null; this shouldn't happen; " + this.centralTxConnection);
+        }
+        else {
+            this.centralTxConnection = connection;
         }
     }
     protected void releaseCentralTxLock(SolrPageIndexConnection connection)
     {
-        synchronized (this.centralTxLock) {
-            if (this.centralTxConnection == null) {
-                throw new IllegalStateException("Releasing central TX lock, but the connection is null; this shouldn't happen");
+        if (!this.centralTxLock.isLocked()) {
+            throw new IllegalStateException("Releasing central TX lock, but it's not locked; this shouldn't happen; " + connection);
+        }
+        else {
+            try {
+                if (this.centralTxConnection == null) {
+                    throw new IllegalStateException("Releasing central TX lock, but the connection is null; releasing it anyway, but this shouldn't happen; " + connection);
+                }
+                else if (this.centralTxConnection != connection) {
+                    throw new IllegalStateException("Releasing central TX lock, but the supplied connection doesn't match; releasing it anyway, but this shouldn't happen; " + connection);
+                }
+                else {
+                    this.centralTxConnection = null;
+                }
             }
-            else if (this.centralTxConnection != connection) {
-                throw new IllegalStateException("Releasing central TX lock, but the supplied connection doesn't match; this shouldn't happen; "+this.centralTxConnection);
-            }
-            else {
-                this.centralTxConnection = null;
+            finally {
+                this.centralTxLock.unlock();
             }
         }
     }

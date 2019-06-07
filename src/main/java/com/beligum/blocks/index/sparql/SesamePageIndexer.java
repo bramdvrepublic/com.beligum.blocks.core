@@ -62,6 +62,7 @@ public class SesamePageIndexer implements PageIndexer
     {
         IndexConnection retVal = null;
 
+        // if the transaction already contains a connection of this type, no need to start a new one
         if (tx != null) {
             retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
         }
