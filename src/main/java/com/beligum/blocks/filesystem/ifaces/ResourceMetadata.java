@@ -2,6 +2,7 @@ package com.beligum.blocks.filesystem.ifaces;
 
 import com.beligum.blocks.security.ifaces.Acl;
 
+import javax.xml.bind.annotation.XmlTransient;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public interface ResourceMetadata
     /**
      * Same as getCreated(), but in the local time zone
      */
+    @XmlTransient
     java.time.LocalDateTime getCreatedLocal();
 
     /**
@@ -40,6 +42,7 @@ public interface ResourceMetadata
     /**
      * Same as getLastModified(), but in the local time zone
      */
+    @XmlTransient
     java.time.LocalDateTime getLastModifiedLocal();
 
     /**
@@ -70,5 +73,6 @@ public interface ResourceMetadata
     /**
      * Returns true if the ACLs in this metadata object all equal to the ones of the supplied metadata object
      */
+    @XmlTransient
     boolean hasSameAcls(ResourceMetadata other);
 }

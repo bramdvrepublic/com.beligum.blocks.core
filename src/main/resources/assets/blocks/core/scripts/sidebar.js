@@ -79,7 +79,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 }
             }
             else {
-                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+                Notification.error(msg + "; " + xhr.status + " " + xhr.statusText, xhr);
             }
         });
     };
@@ -296,7 +296,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                     container.removeClass(BlocksConstants.LOADING_CLASS);
                 }
                 else {
-                    Notification.error('Error while loading the finder; ' + xhr.status + " " + xhr.statusText, xhr);
+                    Notification.error('Error while loading the finder');
                     container.removeClass(BlocksConstants.LOADING_CLASS);
                 }
             }

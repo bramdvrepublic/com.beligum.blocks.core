@@ -1,5 +1,6 @@
 package com.beligum.blocks.filesystem.pages;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.filesystem.AbstractResourceMetadata;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -8,6 +9,8 @@ import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
+import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -15,9 +18,7 @@ import org.jsoup.nodes.Element;
 import java.io.IOException;
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 public class DefaultPageMetadata extends AbstractResourceMetadata implements PageMetadata
 {
@@ -103,6 +104,30 @@ public class DefaultPageMetadata extends AbstractResourceMetadata implements Pag
         retVal = retVal && ((this.getUpdateAcl() != null && this.getUpdateAcl().equals(other.getUpdateAcl())) || (this.getUpdateAcl() == null && other.getUpdateAcl() == null));
         retVal = retVal && ((this.getDeleteAcl() != null && this.getDeleteAcl().equals(other.getDeleteAcl())) || (this.getDeleteAcl() == null && other.getDeleteAcl() == null));
         retVal = retVal && ((this.getManageAcl() != null && this.getManageAcl().equals(other.getManageAcl())) || (this.getManageAcl() == null && other.getManageAcl() == null));
+
+        return retVal;
+    }
+    @Override
+    public Map<Locale, URI> getTranslations()
+    {
+        Map<Locale, URI> retVal = null;
+
+        try {
+            Map<Locale, Page> translations = this.page.getTranslations();
+            if (translations != null) {
+                retVal = Maps.transformValues(translations, new Function<Page, URI>()
+                {
+                    @Override
+                    public URI apply(Page input)
+                    {
+                        return input == null ? null : input.getPublicAbsoluteAddress();
+                    }
+                });
+            }
+        }
+        catch (IOException e) {
+            Logger.error("Error while fetching the translations of a page; " + this.page);
+        }
 
         return retVal;
     }

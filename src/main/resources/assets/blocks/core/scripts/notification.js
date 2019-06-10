@@ -91,6 +91,17 @@ base.plugin("blocks.core.Notification", ["base.core.Commons", "constants.blocks.
         })
     };
 
+    this.jsonError = function (message, xhr, textStatus, exception)
+    {
+        // if we have a public error message, use it (see the JSON error class in base-core for details)
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+            this.error(xhr.responseJSON.error.message, xhr);
+        }
+        else {
+            this.error(message + (exception ? "<br>" + exception : ""), xhr);
+        }
+    };
+
     this.confirm = function (question, callback, highlightTrueBtn, trueLabel, falseLabel)
     {
         if (!trueLabel) {

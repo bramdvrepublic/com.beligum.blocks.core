@@ -480,13 +480,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             })
             .fail(function (xhr, textStatus, exception)
             {
-                // if we have a public error message, use it
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                    Notification.error(xhr.responseJSON.error.message, xhr);
-                }
-                else {
-                    Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
-                }
+                Notification.jsonError(BlocksMessages.savePageError, xhr, textStatus, exception);
             })
             .always(function ()
             {
@@ -502,16 +496,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     {
         //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
+        var dialog = undefined;
+
         var onConfirm = function (deleteAllTranslations)
         {
-            var dialog = new BootstrapDialog({
-                type: BootstrapDialog.TYPE_DEFAULT,
-                title: BlocksMessages.deletingPageDialogTitle,
-                message: BlocksMessages.deletingPageDialogMessage,
-                buttons: []
-            });
-
-            dialog.open();
+            dialog.setTitle(BlocksMessages.deletingPageDialogTitle);
+            dialog.setMessage(BlocksMessages.deletingPageDialogMessage);
+            dialog.getModalFooter().find('button').addClass('hidden');
 
             $.ajax({
                 type: 'DELETE',
@@ -521,6 +512,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             })
                 .done(function (url, textStatus, response)
                 {
+                    // We'll be reloading the page, so temporarily disable the notification when the user navigates away
                     if (BlocksConstants.ENABLE_LEAVE_EDIT_CONFIRM_CONFIG == 'true') {
                         window.onbeforeunload = undefined;
                     }
@@ -534,8 +526,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 })
                 .fail(function (xhr, textStatus, exception)
                 {
+                    // first close the dialog, then show the notification
                     dialog.close();
-                    Notification.error(BlocksMessages.deletingPageErrorMessage + (exception ? "; " + exception : ""), xhr);
+                    Notification.jsonError(BlocksMessages.deletingPageErrorMessage, xhr, textStatus, exception);
                 })
                 .always(function ()
                 {
@@ -546,47 +539,85 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 });
         };
 
-        BootstrapDialog.show({
-            title: BlocksMessages.deletePageDialogTitle,
+        var btnIdSingle = 'btn-ok-single';
+        var btnIdAll = 'btn-ok-all';
+        var btnIdCancel = 'btn-close';
+        dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_DEFAULT,
-            message: BlocksMessages.deletePageDialogMessage,
+            title: BlocksMessages.loading,
+            message: BlocksMessages.pleaseWait + '...',
+
+            // note that these start out hidden...
             buttons: [
                 {
-                    id: 'btn-ok-single',
+                    id: btnIdSingle,
                     label: BlocksMessages.deletePageDialogConfirmSingle,
-                    cssClass: 'btn-danger',
+                    cssClass: 'btn-danger hidden',
                     action: function (dialogRef)
                     {
                         onConfirm(false);
-                        dialogRef.close();
                     }
 
                 },
                 {
-                    id: 'btn-ok-all',
+                    id: btnIdAll,
                     label: BlocksMessages.deletePageDialogConfirmAll,
-                    cssClass: 'btn-danger',
+                    cssClass: 'btn-danger hidden',
                     action: function (dialogRef)
                     {
                         onConfirm(true);
-                        dialogRef.close();
                     }
 
                 },
                 {
-                    id: 'btn-close',
+                    id: btnIdCancel,
                     label: BlocksMessages.cancel,
+                    cssClass: 'btn-default hidden',
                     action: function (dialogRef)
                     {
-                        dialogRef.close();
+                        dialog.close();
                     }
-                },
+                }
             ],
             onhide: function ()
             {
                 //TODO Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             }
         });
+
+        dialog.open();
+
+        // do a little round trip to check if this page has translations so we can ease up the dialog if it doesn't have any
+        var data = {};
+        data[BlocksConstants.PAGE_URL_PARAM] = window.location.href;
+        Logger.info(data);
+        $.getJSON(BlocksConstants.GET_PAGE_META_ENDPOINT, data)
+            .done(function (data)
+            {
+                dialog.setTitle(BlocksMessages.deletePageDialogTitle);
+
+                // un-hide the single and cancel button, and selectively un-hide the delete all if we have translations
+                dialog.getModalFooter().find('#'+btnIdSingle).removeClass('hidden');
+                dialog.getModalFooter().find('#'+btnIdCancel).removeClass('hidden');
+
+                // the 'translations' property will hold a map with language->URI pairs of translations of this page
+                if (data && data.translations && !$.isEmptyObject(data.translations)) {
+                    var num = 0;
+                    $.each(data.translations, function(key, value) { num++ });
+                    dialog.setMessage(Commons.format(BlocksMessages.deletePageAllDialogMessage, num));
+
+                    dialog.getModalFooter().find('#'+btnIdAll).removeClass('hidden');
+                }
+                else {
+                    dialog.setMessage(BlocksMessages.deletePageSingleDialogMessage);
+                }
+            })
+            .fail(function (xhr, textStatus, exception)
+            {
+                // first close the dialog, then show the notification
+                dialog.close();
+                Notification.jsonError(BlocksMessages.deletingPageErrorMessage, xhr, textStatus, exception);
+            });
     });
 
     $(document).on(Broadcaster.EVENTS.PAGE.CHANGED.HTML, function (event, eventData)
@@ -615,13 +646,15 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         //note: this is fired in the middle of block creation (as soon as it exists),
         // but style/scripts resources are still being loaded, so fire it after a small delay;
         // it looks cleaner and is more noticeable
-        setTimeout(function () {
+        setTimeout(function ()
+        {
 
             eventData.surface.overlay.addClass(BlocksConstants.BLOCK_HIGHLIGHT_CLASS);
 
             //note: the css animation will fadeout the color of the hightlight background,
             // so make sure to cleanup and sync and wipe the class when the css animation is done
-            setTimeout(function () {
+            setTimeout(function ()
+            {
                 eventData.surface.overlay.removeClass(BlocksConstants.BLOCK_HIGHLIGHT_CLASS);
             }, parseInt(BlocksConstants.BLOCK_HIGHLIGHT_DURATION_MILLIS));
 
@@ -963,7 +996,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             })
             .fail(function (xhr, textStatus, exception)
             {
-                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+                Notification.jsonError(BlocksMessages.newBlockError, xhr, textStatus, exception);
 
                 if (boxDialog) {
                     boxDialog.close();
@@ -971,7 +1004,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             })
     };
 
-    var createNewBlock = function(name, dialog, callback)
+    var createNewBlock = function (name, dialog, callback)
     {
         if (dialog) {
             //not always very fast, so show the wait dialog
@@ -1019,7 +1052,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             })
             .fail(function (xhr, textStatus, exception)
             {
-                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
+                Notification.jsonError(BlocksMessages.newBlockError, xhr, textStatus, exception);
             })
             .always(function ()
             {
@@ -1072,7 +1105,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
-                        Notification.error(BlocksMessages.loadResourcesError + (exception ? "; " + exception : ""), xhr, textStatus, exception);
+                        Notification.jsonError(BlocksMessages.loadResourcesError, xhr, textStatus, exception);
                     });
             }
             else {

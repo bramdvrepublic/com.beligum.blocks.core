@@ -703,7 +703,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 })
                 .fail(function (xhr, textStatus, exception)
                 {
-                    Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                    Notification.jsonError(BlocksMessages.generalServerDataError, xhr, textStatus, exception);
                 });
 
             return retVal;
@@ -1850,7 +1850,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
-                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                        Notification.jsonError(BlocksMessages.generalServerDataError, xhr, textStatus, exception);
                     });
             });
             input.on("change keyup", function (event)
@@ -1902,7 +1902,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
-                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                        Notification.jsonError(BlocksMessages.generalServerDataError, xhr, textStatus, exception);
                     });
             }
             else {

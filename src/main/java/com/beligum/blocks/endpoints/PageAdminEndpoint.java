@@ -25,6 +25,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
+import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
 import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
@@ -345,7 +347,29 @@ public class PageAdminEndpoint
 
         return Response.ok(retVal).build();
     }
+    /**
+     * Requests metadata information about the selected page.
+     * See the returned object for details about its format and content.
+     */
+    @GET
+    @Path("/meta")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(logical = Logical.OR,
+                         value = { PAGE_META_ALL_PERM })
+    public Response getMetadata(@QueryParam(PAGE_URL_PARAM) URI url) throws IOException
+    {
+        ResourceMetadata retVal = null;
 
+        if (url != null) {
+            Page page = R.resourceManager().get(url, Page.class);
+            if (page != null) {
+                retVal = page.getMetadata();
+            }
+        }
+
+        return Response.ok(retVal).build();
+    }
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
