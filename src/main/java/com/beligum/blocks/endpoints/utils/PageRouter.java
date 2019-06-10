@@ -198,6 +198,11 @@ public class PageRouter
     {
         return this.targetUri;
     }
+    // Note: if RDFA was requested (it's also in the supported formats), keep on serving html
+    public boolean isRdfTypeRequest()
+    {
+        return this.getTargetRdfType() != null && !this.getTargetRdfType().equals(Format.RDFA);
+    }
     public Format getTargetRdfType()
     {
         return this.rdfType;
@@ -284,7 +289,7 @@ public class PageRouter
                 //let's check if the passed type is a supported RDF type
                 this.rdfType = Format.fromMimeType(this.queryParameters.getFirst(ResourceRequest.TYPE_QUERY_PARAM));
 
-                //Important: don't do this because (in case of the type parameter) it would cache this rdf version as the regular page
+                //Important: don't do this (strip off the type param) because it would cache this rdf version as the regular page
                 //this.requestedUri = UriBuilder.fromUri(this.requestedUri).replaceQueryParam(ResourceRequest.TYPE_QUERY_PARAM, null).build();
             }
             else {
@@ -294,6 +299,14 @@ public class PageRouter
                     //note that we strip the possible parameters and charset from the media type
                     //and reconstruct the mimetype from its parts so the match is as broad as possible
                     this.rdfType = Format.fromMimeType(mainType.getType() + "/" + mainType.getSubtype());
+
+                    // this will force a redirect to the explicit type-parameterized address (see above handling).
+                    // If not, this URI would be able to overwrite the cache of the regular HTML page if it was requested first.
+                    // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/57
+                    if (this.isRdfTypeRequest()) {
+                        this.needsRedirection = true;
+                        this.targetUri = UriBuilder.fromUri(this.requestedUri).queryParam(ResourceRequest.TYPE_QUERY_PARAM, this.rdfType.getMimeType()).build();
+                    }
                 }
             }
         }

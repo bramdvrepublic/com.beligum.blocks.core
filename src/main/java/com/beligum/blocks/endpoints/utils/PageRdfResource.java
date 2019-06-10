@@ -44,7 +44,12 @@ public class PageRdfResource extends FilteredResource
     @Override
     public MimeType getMimeType()
     {
-        return this.rdfFormat.getContentType();
+        // Note that we changed this from .getContentType() to .getMimeType() to better indicate to the client
+        // what kind of content is returned. The previous philosophy was to stipulate the serialized data type in the
+        // response, but actually data got lost because of generalization. We now expect the client knows how to
+        // deal with RDF-specific mime types (because it asked for it)
+        //return this.rdfFormat.getContentType();
+        return this.rdfFormat.getMimeType();
     }
     @Override
     public boolean isReadOnly()

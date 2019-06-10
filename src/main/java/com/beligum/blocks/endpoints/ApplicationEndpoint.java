@@ -80,8 +80,7 @@ public class ApplicationEndpoint
             R.cacheManager().getFlashCache().resurrect();
         }
         //if we got a valid RDF type query parameter, return RDF instead,
-        //but if RDFA was requested (it's also in the supported formats), keep on serving html
-        else if (requestRouter.getTargetRdfType() != null && !requestRouter.getTargetRdfType().equals(Format.RDFA)) {
+        else if (requestRouter.isRdfTypeRequest()) {
             //invoke the extra check for explicit RDF-ization of the page
             R.securityManager().checkPermission(PAGE_READ_ALL_RDF_PERM);
 
