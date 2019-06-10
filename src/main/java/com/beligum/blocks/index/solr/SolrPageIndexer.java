@@ -89,15 +89,25 @@ public class SolrPageIndexer implements PageIndexer
     //-----VARIABLES-----
     private SolrClient solrClient;
     private boolean useSchemaless;
+
+    // This is a mutex instead of regular synchronization because we lock and release in two different
+    // methods and the in between state needs to be locked.
+    //
     // Note: because a mutex has the notion of "thread ownership", it implicitly requires that
     // the locking thread is the same as the releasing thread. This might not always be the case,
-    // since the actual "owner" of the lock is the indexconnection instance that requests the lock.
+    // since the actual "owner" of the lock is the index connection object that requests the lock.
     // But in our cases, it will probably always be the case (eg. that index connections are not passed
     // on in between threads)
+    // ---> update: no, it looks like the default implementation of Mutex (copy/pasted from the reference implementation
+    // in the JavaDoc of AbstractQueuedSynchronizer), sets the owner thread, but never checks against it (as opposed
+    // to so the Sync of ReentrantLock). Future work may be to create an implementation that checks against the connection
+    // object instead of the owning thread, but for now, this works just fine...
+    //
     // Also note that this is a Mutex and not a ReentrantLock, because we don't allow re-entry of the same thread
     // on the lock since this would mean the 'transaction' of that connection is started again,
-    // and probably means a programming error.
+    // and probably is a programming error.
     private final Mutex centralTxLock;
+
     // This will hold the current IndexConnection that's holding the centralTxLock
     private SolrPageIndexConnection centralTxConnection;
     private final Object hardCommitLock;
