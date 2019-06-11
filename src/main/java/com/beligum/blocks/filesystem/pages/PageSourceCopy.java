@@ -68,15 +68,8 @@ public class PageSourceCopy extends PageSource
         if (!this.linkToSource) {
             String aboutUri = this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
             if (StringUtils.isEmpty(aboutUri)) {
-                throw new IOException("Encountered empty html @about attribute while copying a page source; " + this.document);
+                throw new IOException("Encountered empty html @"+HTML_ROOT_SUBJECT_ATTR+" attribute while copying a page source; " + this.document);
             }
-            // Filmout
-//            else {
-//                //FIXME needs the about of the target page resource id.
-//                this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
-//
-//                //                    this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, RdfTools.createRelativeResourceId(typeOf).toString());
-//            }
             else {
                 //since we're making a copy of a page, it makes sense to use the class of that page
                 String typeOfStr = this.htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
@@ -85,7 +78,9 @@ public class PageSourceCopy extends PageSource
                     throw new IOException("Unable to parse the html @typeof attribute to a valid RDF class; " + this.document);
                 }
                 else {
-                    this.htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, RdfTools.createRelativeResourceId(typeOf).toString());
+                    // remove the resource attribute; a new one will be generated (uniformly) on first save
+                    // for details, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/52
+                    this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
                 }
             }
         }
