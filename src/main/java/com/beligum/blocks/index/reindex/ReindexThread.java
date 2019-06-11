@@ -24,7 +24,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfClassNode;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.RdfFactory;

@@ -16,7 +16,7 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 
 import java.io.IOException;
 

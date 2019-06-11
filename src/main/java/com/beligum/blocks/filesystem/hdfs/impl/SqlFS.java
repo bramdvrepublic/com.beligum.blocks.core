@@ -18,7 +18,7 @@ package com.beligum.blocks.filesystem.hdfs.impl;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.BlobImpl;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.ConnectionPoolManager;
 import com.beligum.blocks.filesystem.hdfs.impl.sql.AlwaysOpenConnection;

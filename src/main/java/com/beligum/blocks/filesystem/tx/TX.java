@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.hdfs;
+package com.beligum.blocks.filesystem.tx;
 
 import bitronix.tm.BitronixTransaction;
 import bitronix.tm.internal.TransactionStatusChangeListener;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.bitronix.CustomBitronixResourceProducer;
+import com.beligum.blocks.filesystem.tx.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.ifaces.XAClosableResource;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 

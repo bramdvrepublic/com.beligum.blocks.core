@@ -22,7 +22,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.locks.Mutex;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.PageIndexer;
@@ -30,7 +30,6 @@ import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontologies.RDFS;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapDifference;
@@ -57,8 +56,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by bram on 3/24/19.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.filesystem.hdfs.bitronix;
+package com.beligum.blocks.filesystem.tx.bitronix;
 
 import javax.transaction.xa.XAResource;
 

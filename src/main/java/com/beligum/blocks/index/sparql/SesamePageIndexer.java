@@ -20,7 +20,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.PageIndexer;
 import org.eclipse.rdf4j.repository.RepositoryException;

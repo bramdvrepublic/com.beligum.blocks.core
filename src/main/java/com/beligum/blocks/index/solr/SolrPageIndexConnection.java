@@ -17,9 +17,8 @@
 package com.beligum.blocks.index.solr;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.index.ifaces.*;
@@ -35,7 +34,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.parser.QueryParser;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 import java.io.IOException;

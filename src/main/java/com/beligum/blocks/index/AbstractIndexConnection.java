@@ -17,9 +17,8 @@
 package com.beligum.blocks.index;
 
 import com.beligum.base.server.R;
-import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.hdfs.TX;
+import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.Indexer;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -384,7 +383,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     }
     protected boolean isRegistered()
     {
-        return this.transaction != null && this.transaction.getRegisteredResource(this.txResourceName) != null;
+        return this.transaction != null && this.transaction.getRegisteredResource(this.txResourceName) == this;
     }
     protected synchronized void assertActive() throws IOException
     {
