@@ -155,7 +155,7 @@ public class PageRouter
      */
     public PageRouter(boolean anonymous) throws InternalServerErrorException
     {
-        this.unsafeUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
+        this.unsafeUri = R.requestManager().getCurrentRequest().getRequestContext().getUriInfo().getRequestUri();
         this.locale = R.i18n().getOptimalLocale(this.unsafeUri);
         this.needsRedirection = false;
         this.allowCreateAll = anonymous ? false : R.securityManager().isPermitted(Permissions.PAGE_CREATE_ALL_PERM);
@@ -261,7 +261,7 @@ public class PageRouter
             //Note: the reason this works while creating a page (eg. the page_url and page_class_name query params),
             //      is because that callback is caught by the /admin/page/template endpoint and those parameters
             //      are in the flash cache once this request comes in.
-            this.queryParameters = PageSource.transferCleanedQueryParams(uriBuilder, R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
+            this.queryParameters = PageSource.transferCleanedQueryParams(uriBuilder, R.requestManager().getCurrentRequest().getRequestContext().getUriInfo().getQueryParameters());
 
             this.requestedUri = uriBuilder.build();
 
@@ -293,7 +293,7 @@ public class PageRouter
                 //this.requestedUri = UriBuilder.fromUri(this.requestedUri).replaceQueryParam(ResourceRequest.TYPE_QUERY_PARAM, null).build();
             }
             else {
-                List<MediaType> acceptableMediaTypes = R.requestContext().getJaxRsRequest().getAcceptableMediaTypes();
+                List<MediaType> acceptableMediaTypes = R.requestManager().getCurrentRequest().getRequestContext().getAcceptableMediaTypes();
                 if (acceptableMediaTypes != null && !acceptableMediaTypes.isEmpty()) {
                     MediaType mainType = acceptableMediaTypes.iterator().next();
                     //note that we strip the possible parameters and charset from the media type
@@ -526,7 +526,7 @@ public class PageRouter
                 //if a request comes in without URL language, we launch some heuristics to fill it in:
                 // 1) check if the page we come from is one of ours and if it is, use the same language for continuity
                 Locale redirectLocale = null;
-                String referer = R.requestContext().getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER);
+                String referer = R.requestManager().getCurrentRequest().getRequestContext().getHeaders().getFirst(HttpHeaders.REFERER);
                 if (!StringUtils.isEmpty(referer)) {
                     URI refererUri = URI.create(referer);
                     if (referer.startsWith(R.configuration().getSiteDomain().toString())) {
@@ -781,7 +781,7 @@ public class PageRouter
     {
         //note: no synchronization needed, this is assumed to be all one thread
         if (this.cachedQueryConnection == null) {
-            this.cachedQueryConnection = StorageFactory.getJsonQueryConnection();
+            this.cachedQueryConnection = StorageFactory.getJsonIndexer().connect();
         }
 
         return this.cachedQueryConnection;
@@ -852,7 +852,7 @@ public class PageRouter
     private void setResourceAction(ResourceAction action)
     {
         //this one is used by HtmlParser to doIsValid if we need to include certain tags
-        R.requestContext().getRequestCache().put(CacheKeys.RESOURCE_ACTION, action);
+        R.requestManager().getCurrentRequest().getRequestCache().put(CacheKeys.RESOURCE_ACTION, action);
     }
 
     //-----MGMT METHODS-----

@@ -69,6 +69,7 @@ public class TX implements AutoCloseable
             this.transactionManager = transactionManager;
 
             //Modify the timeout value that is associated with transactions started by the current thread with the begin method.
+            // note: setting it to zero will reset the tx timeout to its default value
             this.transactionManager.setTransactionTimeout((int) (timeoutMillis / 1000.0));
 
             //instance a new transaction and associate it with the current thread.
@@ -308,7 +309,7 @@ public class TX implements AutoCloseable
                     ((XAClosableResource) r).close();
                 }
                 catch (IOException e) {
-                    Logger.error("Error while closing an index connection in request transaction close; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                    Logger.error("Error while closing an index connection in request transaction close", e);
                     lastError = e;
                 }
             }

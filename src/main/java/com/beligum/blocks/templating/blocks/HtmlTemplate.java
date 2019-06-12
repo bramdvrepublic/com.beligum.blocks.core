@@ -391,7 +391,7 @@ public abstract class HtmlTemplate
                 //so we'll switch to a default of false and break if we find a matching action
                 retVal = false;
 
-                ResourceAction currentResourceAction = R.cacheManager().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
+                ResourceAction currentResourceAction = R.requestManager().getCurrentRequest().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
                 //this means we'll return false if we're not doing anything
                 if (currentResourceAction != null) {
                     while (iter.hasNext()) {

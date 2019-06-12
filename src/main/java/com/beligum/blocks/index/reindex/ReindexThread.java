@@ -21,6 +21,7 @@ import com.beligum.base.resources.ifaces.ResourceFilter;
 import com.beligum.base.resources.ifaces.ResourceIterator;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.server.R;
+import com.beligum.base.server.ifaces.Request;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfClassNode;
 import com.beligum.blocks.config.StorageFactory;
@@ -742,7 +743,8 @@ public class ReindexThread extends Thread implements LongRunningThread
                 int queueSize = 100;
                 ExecutorService reindexExecutor = createBlockingExecutor(nThreads, queueSize);
 
-                TX transaction = null;
+                //TX transaction = null;
+                Request requestContext = null;
                 long startStamp = System.currentTimeMillis();
                 long taskCounter = 0;
                 long[] reindexCounter = new long[] { 0l };
@@ -751,15 +753,16 @@ public class ReindexThread extends Thread implements LongRunningThread
                 List<String> deleteQueries = Collections.synchronizedList(new LinkedList<>());
 
                 try {
-                    //instance a transaction that's connected to this thread
-                    transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
+                    //instance a fake request context that's connected to this thread
+                    // note: we'll do in-between flushes, so 1 hour should be sufficient
+                    requestContext = R.requestManager().createEmulatedRequest(Sync.ONE_HOUR);
 
                     //We'll group the two index connections, connected to the new transaction, together into one option
                     // that will get passed to the reindex() method to re-use our general transaction
                     //Note that the connections get released when the transaction is released (see below)
                     //Also note this means we'll have a transaction per rdf class
-                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
-                                                                                                                     StorageFactory.getSparqlIndexer().connect(transaction));
+                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(),
+                                                                                                                     StorageFactory.getSparqlIndexer().connect());
 
                     try (Statement stmt = dbConnection.createStatement()) {
 
@@ -805,8 +808,8 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 reindexExecutor = createBlockingExecutor(nThreads, queueSize);
 
                                 //commit and close the active transaction
-                                StorageFactory.releaseCurrentThreadTx(false);
-                                transaction = null;
+                                requestContext.destroy(false);
+                                requestContext = null;
                                 txBatchCounter = 0;
 
                                 //if all went well, we'll flush the successful entries from the db
@@ -821,9 +824,9 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 }
 
                                 //start a new transaction
-                                transaction = StorageFactory.createCurrentThreadTx(this, Sync.ONE_DAY);
-                                indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(transaction),
-                                                                                                  StorageFactory.getSparqlIndexer().connect(transaction));
+                                requestContext = R.requestManager().createEmulatedRequest(Sync.ONE_HOUR);
+                                indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(),
+                                                                                                  StorageFactory.getSparqlIndexer().connect());
                             }
 
                             //Logger.info("Submitting reindexation of " + publicUri);
@@ -840,17 +843,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                     }
                 }
                 catch (Throwable e) {
-                    try {
-                        if (transaction != null) {
-                            transaction.setRollbackOnly();
-                        }
-                    }
-                    catch (Exception e1) {
-                        Logger.error("Internal error while rolling back reindexation transaction for RDF class " + rdfClass + "; this shouldn't happen.", e);
-                    }
-                    finally {
-                        throw new RuntimeException("Error while reindexing rdfClass " + rdfClass, e);
-                    }
+                    throw new RuntimeException("Error while reindexing rdfClass " + rdfClass, e);
                 }
                 finally {
                     //                    Logger.info("Done launching reindexation of " + pageCounter + " pages of RDF class " + this.rdfClass +
@@ -884,9 +877,9 @@ public class ReindexThread extends Thread implements LongRunningThread
                                     "\tMean reindexation time: " + (int) (reindexCounter[0] / (timeDiff / 1000.0)) + " pages/sec\n");
                     }
 
-                    if (transaction != null) {
+                    if (requestContext != null) {
                         try {
-                            StorageFactory.releaseCurrentThreadTx(false);
+                            requestContext.destroy(!success);
                         }
                         catch (Throwable e) {
                             finishError = true;

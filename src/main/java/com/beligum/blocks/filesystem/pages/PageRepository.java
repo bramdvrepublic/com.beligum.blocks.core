@@ -289,8 +289,8 @@ public class PageRepository extends AbstractResourceRepository
         }
 
         //we need to reuse the connection or we'll run into trouble when deleting multiple translations
-        IndexConnection mainPageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
-        IndexConnection triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
+        IndexConnection mainPageIndexer = StorageFactory.getJsonIndexer().connect();
+        IndexConnection triplestoreIndexer = StorageFactory.getSparqlIndexer().connect();
 
         //first, delete the translations, then delete the first one
         if (deleteAllTranslations) {
@@ -329,10 +329,10 @@ public class PageRepository extends AbstractResourceRepository
 
         //fallback to regular request-scoped transactions if nothing special was passed
         if (mainPageConnection == null) {
-            mainPageConnection = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
+            mainPageConnection = StorageFactory.getJsonIndexer().connect();
         }
         if (triplestoreConnection == null) {
-            triplestoreConnection = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
+            triplestoreConnection = StorageFactory.getSparqlIndexer().connect();
         }
 
         Page page = resource.unwrap(Page.class);
@@ -457,18 +457,18 @@ public class PageRepository extends AbstractResourceRepository
         //Note: order is important!
 
         if (pageIndexer == null) {
-            pageIndexer = StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx());
+            pageIndexer = StorageFactory.getJsonIndexer().connect();
         }
         pageIndexer.update(page);
 
         if (triplestoreIndexer == null) {
-            triplestoreIndexer = StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx());
+            triplestoreIndexer = StorageFactory.getSparqlIndexer().connect();
         }
         triplestoreIndexer.update(page);
     }
     private void unindex(Page page) throws IOException
     {
-        this.unindex(page, StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()), StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()));
+        this.unindex(page, StorageFactory.getJsonIndexer().connect(), StorageFactory.getSparqlIndexer().connect());
     }
     private void unindex(Page page, IndexConnection pageIndexer, IndexConnection triplestoreIndexer) throws IOException
     {

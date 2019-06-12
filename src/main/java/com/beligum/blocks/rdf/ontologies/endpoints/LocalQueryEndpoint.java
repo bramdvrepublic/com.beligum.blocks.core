@@ -59,7 +59,7 @@ public class LocalQueryEndpoint implements RdfEndpoint
     @Override
     public Iterable<ResourceProxy> search(RdfOntologyMember resourceType, String query, QueryType queryType, Locale language, int maxResults) throws IOException
     {
-        IndexSearchRequest mainQuery = IndexSearchRequest.createFor(StorageFactory.getJsonQueryConnection());
+        IndexSearchRequest mainQuery = IndexSearchRequest.createFor(StorageFactory.getJsonIndexer().connect());
 
         //let's support search-all-type queries when this is null
         if (resourceType != null && resourceType.isClass()) {
@@ -82,7 +82,7 @@ public class LocalQueryEndpoint implements RdfEndpoint
         //resources are indexed with relative id's, so make sure the URI is relative
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
-        IndexConnection indexConn = StorageFactory.getJsonQueryConnection();
+        IndexConnection indexConn = StorageFactory.getJsonIndexer().connect();
         IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
                                                                              // This will group of the resource URI, selecting the best matching language
                                                                              .language(language, ResourceIndexEntry.resourceField)

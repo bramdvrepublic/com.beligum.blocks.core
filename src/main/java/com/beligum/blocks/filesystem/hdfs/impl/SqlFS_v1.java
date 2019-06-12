@@ -1077,7 +1077,7 @@ public class SqlFS_v1 extends AbstractFileSystem implements Closeable, XAttrFS
     {
         Connection retVal = null;
 
-        TX tx = StorageFactory.getCurrentScopeTx();
+        TX tx = StorageFactory.getCurrentRequestTx();
         if (tx == null) {
             if (!readOnly) {
                 throw new IOException("We're not in an active transaction context, so I can't instance an XA database connection inside the current transaction scope");

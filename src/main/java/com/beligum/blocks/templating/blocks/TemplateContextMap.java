@@ -16,6 +16,8 @@
 
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.cache.CacheKey;
+import com.beligum.base.cache.CacheKeyString;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.Logger;
@@ -79,10 +81,12 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         }
 
         @Override
-        public TemplateController get(Object key)
+        public TemplateController get(Object objKey)
         {
             TemplateController retVal = null;
-            if (!R.requestContext().getRequestCache().containsKey(key)) {
+
+            CacheKey key = objKey == null ? null : new CacheKeyString(String.valueOf(objKey));
+            if (!R.requestManager().getCurrentRequest().getRequestCache().containsKey(key)) {
                 if (key != null) {
                     Class<TemplateController> controllerClass = (Class<TemplateController>) this.mapping.get(key);
                     if (controllerClass != null) {
@@ -95,10 +99,10 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
                     }
                 }
 
-                R.requestContext().getRequestCache().put(key, retVal);
+                R.requestManager().getCurrentRequest().getRequestCache().put(key, retVal);
             }
             else {
-                retVal = (TemplateController) R.requestContext().getRequestCache().get(key);
+                retVal = R.requestManager().getCurrentRequest().getRequestCache().get(key);
             }
 
             return retVal;

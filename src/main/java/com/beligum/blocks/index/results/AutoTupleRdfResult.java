@@ -95,7 +95,7 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
         return retVal;
     }
     @Override
-    public void close(RequestEvent event) throws Exception
+    public void close(boolean forceRollback) throws Exception
     {
         this.close();
     }

@@ -104,7 +104,7 @@ public class ApplicationEndpoint
             //browser, causing trouble on save. This happens eg. when the user hits the back button by accident,
             //navigating away, then hitting forward again and hitting save, ending up with possibly good information being
             // overwritten by stale page html
-            ResourceAction resourceAction = R.cacheManager().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
+            ResourceAction resourceAction = R.requestManager().getCurrentRequest().getRequestCache().get(CacheKeys.RESOURCE_ACTION);
             if (!(resourceAction == null || resourceAction.equals(ResourceAction.READ) || resourceAction.equals(ResourceAction.NONE))) {
                 NetworkFunctions.disableCaching(retVal);
             }

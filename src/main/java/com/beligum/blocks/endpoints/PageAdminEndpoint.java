@@ -26,13 +26,11 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.filesystem.pages.ifaces.PageMetadata;
 import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
 import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
 import com.beligum.blocks.index.reindex.*;
@@ -139,7 +137,7 @@ public class PageAdminEndpoint
 
             //makes the map non-immutable so we can remove the 'internal' params
             MultivaluedMap<String, String> extraParams = new MultivaluedHashMap<>();
-            extraParams.putAll(R.requestContext().getJaxRsRequest().getUriInfo().getQueryParameters());
+            extraParams.putAll(R.requestManager().getCurrentRequest().getRequestContext().getUriInfo().getQueryParameters());
             extraParams.remove(NEW_PAGE_URL_PARAM);
             extraParams.remove(NEW_PAGE_TEMPLATE_PARAM);
             extraParams.remove(NEW_PAGE_COPY_URL_PARAM);
@@ -323,7 +321,7 @@ public class PageAdminEndpoint
         R.i18n().setManualLocale(lang);
 
         //signal the block-to-be-created we want all it's resources for update mode
-        R.requestContext().getRequestCache().put(CacheKeys.RESOURCE_ACTION, ResourceAction.UPDATE);
+        R.requestManager().getCurrentRequest().getRequestCache().put(CacheKeys.RESOURCE_ACTION, ResourceAction.UPDATE);
 
         // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
         // so make sure you don't use that key to instance this resource or you'll re-instance the template, instead of an instance.
@@ -445,8 +443,8 @@ public class PageAdminEndpoint
 
                 //Note: transaction handling is done through the global XA transaction
                 //Note: the page index must be indexed first, because it's used to search the translations during triplestore indexing!
-                getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
-                getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()).update(page);
+                getJsonIndexer().connect().update(page);
+                getSparqlIndexer().connect().update(page);
 
                 retVal = Response.ok("Index of item successfull; " + uri);
             }
@@ -578,8 +576,8 @@ public class PageAdminEndpoint
     //        synchronized (currentIndexAllLock) {
     //        if (currentIndexAllThread == null) {
     //            try {
-    //                StorageFactory.getJsonIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
-    //                StorageFactory.getSparqlIndexer().connect(StorageFactory.getCurrentScopeTx()).deleteAll();
+    //                StorageFactory.getJsonIndexer().connect().deleteAll();
+    //                StorageFactory.getSparqlIndexer().connect().deleteAll();
     //            }
     //            finally {
     //                //simulate a transaction commit for each action or we'll end up with errors.

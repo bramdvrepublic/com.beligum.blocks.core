@@ -132,11 +132,12 @@ public class SolrPageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public synchronized IndexConnection connect(TX tx) throws IOException
+    public synchronized IndexConnection connect() throws IOException
     {
         IndexConnection retVal = null;
 
         // if the transaction already contains a connection of this type, no need to start a new one
+        TX tx = StorageFactory.getCurrentRequestTx();
         if (tx != null) {
             retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
         }

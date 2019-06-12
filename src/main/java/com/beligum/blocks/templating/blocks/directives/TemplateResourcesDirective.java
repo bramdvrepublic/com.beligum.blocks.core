@@ -102,7 +102,7 @@ public class TemplateResourcesDirective extends Directive
     //Note: storing this in the context meant trouble (multiple factory calls during one request?)
     public static TemplateResources getContextResources(InternalContextAdapter context) throws IOException
     {
-        return R.cacheManager().getRequestCache().getAndPutIfAbsent(CacheKey.BLOCKS_TEMPLATE_RES, new CacheFunction<com.beligum.base.cache.CacheKey, TemplateResources>()
+        return R.requestManager().getCurrentRequest().getRequestCache().getAndPutIfAbsent(CacheKey.BLOCKS_TEMPLATE_RES, new CacheFunction<com.beligum.base.cache.CacheKey, TemplateResources>()
         {
             @Override
             public TemplateResources apply(com.beligum.base.cache.CacheKey cacheKey) throws IOException

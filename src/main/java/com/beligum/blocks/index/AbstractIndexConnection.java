@@ -357,7 +357,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
      * This is just a wrapper around close() so we can register ourself as a RequestClosable
      */
     @Override
-    public void close(RequestEvent event) throws Exception
+    public void close(boolean forceRollback) throws Exception
     {
         this.close();
     }
@@ -375,7 +375,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         // this means we're dealing with a read-only connection, so let's register ourself in the request (instead of the transaction),
         // so we're sure we're closed eventually.
         if (this.transaction == null) {
-            R.requestContext().registerClosable(this);
+            R.requestManager().getCurrentRequest().registerClosable(this);
         }
         else {
             this.assertTransaction();
