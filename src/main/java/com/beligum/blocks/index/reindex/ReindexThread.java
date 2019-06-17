@@ -755,7 +755,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                 try {
                     //instance a fake request context that's connected to this thread
                     // note: we'll do in-between flushes, so 1 hour should be sufficient
-                    requestContext = R.requestManager().createEmulatedRequest(Sync.ONE_HOUR);
+                    requestContext = R.requestManager().createSimulatedRequest(Sync.ONE_HOUR);
 
                     //We'll group the two index connections, connected to the new transaction, together into one option
                     // that will get passed to the reindex() method to re-use our general transaction
@@ -824,7 +824,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                                 }
 
                                 //start a new transaction
-                                requestContext = R.requestManager().createEmulatedRequest(Sync.ONE_HOUR);
+                                requestContext = R.requestManager().createSimulatedRequest(Sync.ONE_HOUR);
                                 indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(),
                                                                                                   StorageFactory.getSparqlIndexer().connect());
                             }

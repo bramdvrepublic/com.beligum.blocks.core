@@ -56,6 +56,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by bram on 3/24/19.
@@ -95,6 +97,7 @@ public class SolrPageIndexer implements PageIndexer
     // since the actual "owner" of the lock is the index connection object that requests the lock.
     // But in our cases, it will probably always be the case (eg. that index connections are not passed
     // on in between threads)
+    //
     // ---> update: no, it looks like the default implementation of Mutex (copy/pasted from the reference implementation
     // in the JavaDoc of AbstractQueuedSynchronizer), sets the owner thread, but never checks against it (as opposed
     // to so the Sync of ReentrantLock). Future work may be to create an implementation that checks against the connection
@@ -103,7 +106,7 @@ public class SolrPageIndexer implements PageIndexer
     // Also note that this is a Mutex and not a ReentrantLock, because we don't allow re-entry of the same thread
     // on the lock since this would mean the 'transaction' of that connection is started again,
     // and probably is a programming error.
-    private final Mutex centralTxLock;
+    private final ReentrantLock centralTxLock;
 
     // This will hold the current IndexConnection that's holding the centralTxLock
     private SolrPageIndexConnection centralTxConnection;
@@ -111,7 +114,7 @@ public class SolrPageIndexer implements PageIndexer
     private Timer hardCommitTimer;
 
     //-----CONSTRUCTORS-----
-    public SolrPageIndexer(StorageFactory.Lock storageFactoryLock) throws IOException
+    public SolrPageIndexer() throws IOException
     {
         //The default INFO log level is too verbose for solr in production
         //note: this only needs to be done once, don't put it in init()
@@ -124,7 +127,7 @@ public class SolrPageIndexer implements PageIndexer
         // during debugging and for possible future use (eg. it works)
         this.useSchemaless = false;
 
-        this.centralTxLock = new Mutex();
+        this.centralTxLock = new ReentrantLock();
         this.hardCommitLock = new Object();
 
         this.init();
@@ -243,6 +246,8 @@ public class SolrPageIndexer implements PageIndexer
                         @Override
                         public void run()
                         {
+                            Logger.info("Executing Solr hard commit");
+
                             try {
                                 // note: we'll be "interfering" with manual commits, so make sure
                                 // to sync with any running EMBEDDED_FULL_SYNC_MODE transactions...

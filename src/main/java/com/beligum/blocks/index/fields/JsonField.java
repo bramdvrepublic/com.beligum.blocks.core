@@ -27,7 +27,7 @@ public class JsonField implements IndexEntryField
         this.rdfProperty = rdfProperty;
         this.hasProxyField = false;
     }
-    protected JsonField(String name)
+    public JsonField(String name)
     {
         this.name = name;
         this.rdfProperty = null;

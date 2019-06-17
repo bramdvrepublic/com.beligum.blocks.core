@@ -112,6 +112,8 @@ public class ServerStartStopListener implements ServerLifecycleListener
             // before force-closing the lower-level systems that are used (grouped) in those tx...
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
                 try {
+                    Logger.info("Stopping transaction manager");
+
                     TransactionManager transactionManager = StorageFactory.getTransactionManager();
                     if (transactionManager instanceof BitronixTransactionManager) {
 
@@ -136,20 +138,28 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 catch (Throwable e) {
                     Logger.error("Error while shutting down transaction manager", e);
                 }
+                finally {
+                    Logger.info("Stopped transaction manager");
+                }
             }
 
             // don't boot it up if it's not there
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 try {
+                    Logger.info("Stopping XADisk");
                     StorageFactory.getXADiskTransactionManager().shutdown();
                 }
                 catch (Throwable e) {
                     Logger.error("Exception caught while shutting down XADisk", e);
                 }
+                finally {
+                    Logger.info("Stopped XADisk");
+                }
             }
 
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS)) {
                 try {
+                    Logger.info("Stopping HDFS pageview FS");
                     FileContext pageViewFs = StorageFactory.getPageViewFileSystem();
                     if (pageViewFs.getDefaultFileSystem() instanceof AutoCloseable) {
                         ((AutoCloseable) pageViewFs.getDefaultFileSystem()).close();
@@ -158,10 +168,14 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 catch (Throwable e) {
                     Logger.error("Error while shutting down page store filesystem", e);
                 }
+                finally {
+                    Logger.info("Stopped HDFS pageview FS");
+                }
             }
 
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS)) {
                 try {
+                    Logger.info("Stopping HDFS pagestore FS");
                     FileContext pageStoreFs = StorageFactory.getPageStoreFileSystem();
                     if (pageStoreFs.getDefaultFileSystem() instanceof AutoCloseable) {
                         ((AutoCloseable) pageStoreFs.getDefaultFileSystem()).close();
@@ -170,9 +184,13 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 catch (Throwable e) {
                     Logger.error("Error while shutting down page store filesystem", e);
                 }
+                finally {
+                    Logger.info("Stopped HDFS pagestore FS");
+                }
             }
 
             try {
+                Logger.info("Stopping all indexers");
                 Iterator<Indexer> indexIter = StorageFactory.getIndexerRegistry().iterator();
                 while (indexIter.hasNext()) {
                     Indexer indexer = indexIter.next();
@@ -187,6 +205,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
             }
             catch (Throwable e) {
                 Logger.error("Error while iterating the indexers during shutdown", e);
+            }
+            finally {
+                Logger.info("Stopped all indexers");
             }
         }
     }

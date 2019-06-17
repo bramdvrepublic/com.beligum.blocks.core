@@ -365,7 +365,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     //-----PROTECTED METHODS-----
     protected abstract Indexer getResourceManager();
 
-    protected void registerConnection() throws IOException
+    protected void bootConnection() throws IOException
     {
         // As of Stralo v1.0, we started registering ourself on creation (in the constructor) as a quick fix
         // for dangling open connections (slowing down the closing of the server).
@@ -375,7 +375,11 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
         // this means we're dealing with a read-only connection, so let's register ourself in the request (instead of the transaction),
         // so we're sure we're closed eventually.
         if (this.transaction == null) {
+
             R.requestManager().getCurrentRequest().registerClosable(this);
+
+            // when we don't have a TX, we need to call begin() manually
+            this.begin();
         }
         else {
             this.assertTransaction();

@@ -22,6 +22,7 @@ import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
+import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -449,9 +450,8 @@ public class PageAdminEndpoint
                 retVal = Response.ok("Index of item successfull; " + uri);
             }
             else {
-                retVal =
-                                Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
-                                            ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
+                retVal = Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " +
+                                     ERROR_STAMP_FORMATTER.format(longRunningThread.getStartStamp()));
             }
         }
 
@@ -540,6 +540,22 @@ public class PageAdminEndpoint
                                 }
                             }
                         });
+
+//                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
+//                        {
+//                            @Override
+//                            public void close(boolean forceRollback) throws Exception
+//                            {
+//                                new Timer().schedule(new TimerTask()
+//                                {
+//                                    @Override
+//                                    public void run()
+//                                    {
+//                                        longRunningThread.start();
+//                                    }
+//                                }, 1000);
+//                            }
+//                        });
 
                         longRunningThread.start();
 

@@ -51,6 +51,7 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
     protected Set<RdfPropertyImpl> properties;
     protected ResourceSummarizer summarizer;
     protected RdfProperty mainProperty;
+    protected RdfProperty parentProperty;
     protected RdfClassValidator validator;
 
     //-----CONSTRUCTORS-----
@@ -162,6 +163,13 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         return mainProperty;
     }
     @Override
+    public RdfProperty getParentProperty()
+    {
+        this.assertNoProxy();
+
+        return parentProperty;
+    }
+    @Override
     public RdfClassValidator getValidator()
     {
         this.assertNoProxy();
@@ -248,6 +256,17 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             }
             else {
                 this.rdfResource.mainProperty = mainProperty;
+            }
+
+            return this;
+        }
+        public Builder parentProperty(RdfProperty parentProperty) throws RdfInitializationException
+        {
+            if (!this.rdfResource.properties.contains(parentProperty)) {
+                throw new RdfInitializationException("Can't set parent property of class " + this + " to " + parentProperty + " because it's not a property of this class.");
+            }
+            else {
+                this.rdfResource.parentProperty = parentProperty;
             }
 
             return this;

@@ -78,6 +78,8 @@ public class PageUpgradeTask extends ReindexTask
     @Override
     protected void runTaskFor(Resource resource, ResourceRepository.IndexOption indexConnectionsOption) throws IOException
     {
+        com.beligum.base.utils.Logger.info("Checking page for upgrade " + resource);
+
         // cut short older versions that shouldn't be upgraded (yet)
         if (this.upgradeAllowed()) {
 
@@ -90,8 +92,6 @@ public class PageUpgradeTask extends ReindexTask
             if (!page.getFileContext().util().exists(originalFile)) {
                 throw new IOException("Original HTML file for this page is missing, can't fix it; " + page.getPublicAbsoluteAddress());
             }
-
-            //TODO title in <title>
 
             boolean somethingChanged = false;
             Document document = null;
@@ -148,7 +148,6 @@ public class PageUpgradeTask extends ReindexTask
             }
 
             if (somethingChanged) {
-                com.beligum.base.utils.Logger.info("Upgrading page " + page);
                 new PageAdminEndpoint().savePage(URI.create(document.baseUri()), document.outerHtml());
             }
         }

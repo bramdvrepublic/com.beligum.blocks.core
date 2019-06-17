@@ -80,14 +80,14 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     {
         super(transaction, txResourceName);
 
+        // note: bootConnection() will call begin() on success, so make sure everything is in place before calling it
         this.pageIndexer = pageIndexer;
 
-        try {
-            this.connection = pageIndexer.getRDFRepository().getConnection();
-        }
-        catch (RepositoryException e) {
-            throw new IOException(e);
-        }
+        // make sure this connection is released, eventually
+        // watch out: this needs to happen before the real connection is made,
+        // because this will throw an exception if the TX has timed out already,
+        // so make sure you don't leave the connection below dangling!
+        this.bootConnection();
 
         this.fetchPageMethod = FetchPageMethod.SINGLE_TERM_QUERY;
 
@@ -100,9 +100,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         this.active = true;
-
-        // make sure this connection is released, eventually
-        this.registerConnection();
     }
 
     //-----PUBLIC METHODS-----
@@ -464,9 +461,18 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void begin() throws IOException
     {
-        //note: we can't check on registeredTransaction because this gets called from the registerResource() method below
-        if (this.connection != null) {
-            this.connection.begin();
+         if (this.connection == null) {
+             // this is the 'real' connection we're wrapping
+             try {
+                 this.connection = this.pageIndexer.getRDFRepository().getConnection();
+                 this.connection.begin();
+             }
+             catch (RepositoryException e) {
+                 throw new IOException(e);
+             }
+        }
+        else {
+            throw new IOException("Launching a Solr connection, but the inner connection doesn't seem to be null; this shouldn't happen");
         }
     }
     @Override

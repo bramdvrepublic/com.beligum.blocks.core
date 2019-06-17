@@ -86,6 +86,14 @@ public interface RdfClass extends RdfOntologyMember
     RdfProperty getMainProperty();
 
     /**
+     * When creating a hierarchical ontology, we need a means to link parents and children together.
+     * This is a feature to specify the parent property of a [N-1] relationship.
+     *
+     * For details, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/68
+     */
+    RdfProperty getParentProperty();
+
+    /**
      * The validator of this class or null if no validation is required.
      * By definition, all non-null validators of all classes will be called
      * during instantiating/saving a member, allowing them to throw exceptions if any

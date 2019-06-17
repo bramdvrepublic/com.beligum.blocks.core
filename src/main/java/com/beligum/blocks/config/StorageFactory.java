@@ -25,6 +25,7 @@ import com.beligum.base.cache.CacheFunction;
 import com.beligum.base.cache.CacheKey;
 import com.beligum.base.resources.ifaces.AutoLock;
 import com.beligum.base.server.R;
+import com.beligum.base.server.ifaces.Request;
 import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -82,8 +83,6 @@ public class StorageFactory
      */
     private static final ThreadLocal<TX> currentThreadTx = new InheritableThreadLocal();
 
-    private static final Lock lock = new Lock();
-
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
@@ -104,7 +103,7 @@ public class StorageFactory
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new SolrPageIndexer(lock);
+                PageIndexer indexer = new SolrPageIndexer();
 
                 getIndexerRegistry().add(indexer);
 
@@ -123,7 +122,7 @@ public class StorageFactory
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new SesamePageIndexer(lock);
+                PageIndexer indexer = new SesamePageIndexer();
                 getIndexerRegistry().add(indexer);
 
                 return indexer;
@@ -213,10 +212,15 @@ public class StorageFactory
                 public TX apply(CacheKey cacheKey) throws IOException
                 {
                     try {
-                        TX tx = new TX(getTransactionManager());
+
+                        Request request = R.requestManager().getCurrentRequest();
+
+                        // by connecting the timeout of the transaction to the timeout of the (http or fake) request,
+                        // all resources in this request will timeout together with the request itself.
+                        TX tx = new TX(getTransactionManager(), null, request.getTimeout());
 
                         // always make sure the TX gets closed at the end of the request
-                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
+                        request.registerClosable(new RequestCloseable()
                         {
                             @Override
                             public void close(boolean forceRollback) throws Exception
@@ -272,10 +276,12 @@ public class StorageFactory
         boolean retVal = false;
 
         if (R.requestManager().hasCurrentRequest()) {
+
             Cache<CacheKey, Object> txCache = R.requestManager().getCurrentRequest().getRequestCache();
             try (AutoLock lock = txCache.acquireReadLock(CacheKeys.REQUEST_TRANSACTION)) {
                 retVal = txCache.containsKey(CacheKeys.REQUEST_TRANSACTION);
             }
+
         }
 
         return retVal;

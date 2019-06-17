@@ -2481,6 +2481,7 @@ public class SolrConfigs
     //our internal fields
     public static final String CORE_SCHEMA_FIELD_URI = ResourceIndexEntry.uriField.getName();
     public static final String CORE_SCHEMA_FIELD_TOKENISED_URI = ResourceIndexEntry.tokenisedUriField.getName();
+    public static final String CORE_SCHEMA_FIELD_PROXY = ResourceIndexEntry.proxyField.getName();
     public static final String CORE_SCHEMA_FIELD_LABEL = ResourceIndexEntry.labelField.getName();
     public static final String CORE_SCHEMA_FIELD_DESCRIPTION = ResourceIndexEntry.descriptionField.getName();
     public static final String CORE_SCHEMA_FIELD_IMAGE = ResourceIndexEntry.imageField.getName();
@@ -2614,6 +2615,12 @@ public class SolrConfigs
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"false\" required=\"true\" multiValued=\"false\" />\n" +
                                              "    <copyField source=\"" + CORE_SCHEMA_FIELD_URI + "\" dest=\"" + CORE_SCHEMA_FIELD_TOKENISED_URI + "\"/>\n" +
+                                             // note: the proxy field is not the same as the field containing the proxy!
+                                             // this field just indicates if the document is a proxy or not (boolean)
+                                             // the field with a "_proxy" suffix (not in this schema) contains the real proxy sub-object
+                                             "    <field name=\"" + CORE_SCHEMA_FIELD_PROXY + "\" type=\"" + CORE_SCHEMA_TYPE_BOOLEAN +
+                                             // note: by default, the proxy is not touched, so make sure it has a default set here
+                                             "\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" default=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_LABEL + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +
                                              "\" indexed=\"true\" stored=\"true\" required=\"false\" multiValued=\"false\" />\n" +
                                              "    <field name=\"" + CORE_SCHEMA_FIELD_DESCRIPTION + "\" type=\"" + CORE_SCHEMA_TYPE_TEXT_GENERAL +

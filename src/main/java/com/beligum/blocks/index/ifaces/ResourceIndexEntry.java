@@ -16,19 +16,9 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.base.server.R;
-import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.fields.*;
-import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.Sets;
-import org.eclipse.rdf4j.model.IRI;
 
-import java.net.URI;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -43,6 +33,7 @@ public interface ResourceIndexEntry extends ResourceProxy
     //note: sync the names of these below with the getter names of AbstractIndexEntry and the setters of the implementations
     UriField uriField = new UriField();
     TokenizedUriField tokenisedUriField = new TokenizedUriField();
+    ProxyField proxyField = new ProxyField();
     ResourceField resourceField = new ResourceField();
     TypeOfField typeOfField = new TypeOfField();
     LanguageField languageField = new LanguageField();
@@ -56,6 +47,7 @@ public interface ResourceIndexEntry extends ResourceProxy
      */
     Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(uriField,
                                                            tokenisedUriField,
+                                                           proxyField,
                                                            resourceField,
                                                            typeOfField,
                                                            languageField,

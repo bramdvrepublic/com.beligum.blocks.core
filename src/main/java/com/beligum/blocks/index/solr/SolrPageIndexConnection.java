@@ -96,19 +96,29 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         super(transaction, txResourceName);
 
+        // note: bootConnection() will call begin() on success, so make sure everything is in place before calling it
         this.pageIndexer = pageIndexer;
-        this.solrClient = pageIndexer.getSolrClient();
         this.txType = txType;
-        this.active = true;
 
         // make sure this connection is released, eventually
-        this.registerConnection();
+        // watch out: this needs to happen before the real connection is made,
+        // because this will throw an exception if the TX has timed out already,
+        // so make sure you don't leave the connection below dangling!
+        this.bootConnection();
+
+        this.active = true;
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
+        // q= {!join from=parentUri to=uri}*
+        // --> this is the one, I think... {!join from=uri to=parentUri}*:*
+        // fl= *,[child]
+        // q= {!graph from=uri to=parentUri}*
+        // q= {!child of=parentUri:[* TO *]}
+
         this.assertActive();
 
         PageIndexEntry retVal = null;
@@ -277,6 +287,14 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void begin() throws IOException
     {
+        if (this.solrClient == null) {
+            // this is the 'real' connection we're wrapping
+            this.solrClient = pageIndexer.getSolrClient();
+        }
+        else {
+            throw new IOException("Launching a Solr connection, but the inner connection doesn't seem to be null; this shouldn't happen");
+        }
+
         switch (this.txType) {
             case EMBEDDED_FULL_SYNC_MODE:
 
@@ -400,9 +418,14 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             try {
                 Logger.info("##### DEBUG CODE");
                 SolrQuery query = new SolrQuery();
+                //https://stackoverflow.com/questions/10651548/negation-in-solr-query
+                //{!parent which="+(*:*) -(parentUri:*)"}
+                //{!parent which="*:* AND NOT(parentUri:*)"}
                 //query.setQuery("*:*");
+                //query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":[* TO *]}");
                 //query.setParam("q", "{!child of=" + PageIndexEntry.parentUriField.getName() + ":null}");
-                query.setParam("q", "{!parent which=" + PageIndexEntry.parentUriField.getName() + ":null}");
+                query.setParam("q", "{!child of=\"-(" + PageIndexEntry.parentUriField.getName() + ":*)\"}*");
+                //query.setParam("q", "{!parent which=" + PageIndexEntry.parentUriField.getName() + ":null}");
                 //query.setParam("q", "{!join from=" + PageIndexEntry.parentUriField.getName() + " to=" + PageIndexEntry.uriField.getName() + "}*");
                 //            query.setParam("fl", "*,[child]");
                 //            query.setParam("q", "{!graph from=uri to=parentUri maxDepth=1}typeOf:ror\\:BlogPost");
@@ -508,7 +531,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         // From the docs: if you have a unique key field, but you feel confident that you can safely bypass the uniqueness check
         // (eg: you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once)
         // you can specify the overwrite="false" option when adding your documents.
-        //true is the default, but this way, we clearly indicate what we're doing
+        // --> true is the default, but this way, we clearly indicate what we're doing
         request.setParam(UpdateRequestHandler.OVERWRITE, "true");
 
         //the mime type is not strictly necessary (see comment above) but let's add it anyway

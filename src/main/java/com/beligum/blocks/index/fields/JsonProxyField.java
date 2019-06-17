@@ -9,6 +9,8 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
+ * This is a field that has "_proxy" as suffix and is a snapshot of the same field before the suffix.
+ *
  * Created by bram on Apr 13, 2019
  */
 public class JsonProxyField implements IndexEntryField

@@ -49,7 +49,7 @@ public class SesamePageIndexer implements PageIndexer
     private Object repositoryLock;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexer(StorageFactory.Lock storageFactoryLock)
+    public SesamePageIndexer()
     {
         this.repositoryLock = new Object();
 

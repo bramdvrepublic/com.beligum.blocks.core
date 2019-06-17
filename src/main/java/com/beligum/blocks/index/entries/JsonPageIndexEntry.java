@@ -144,7 +144,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
      * Iterate the entire RDF model and search for the root resource uri as the base RDF model to create
      * an JSON node from. Then, iterate all other RDF to see if we can add them as subnodes to the root node.
      */
-    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, JsonPageIndexEntry parent, Model rdfModel) throws IOException
+    private void parse(URI absolutePublicPageUri, URI absoluteRootResourceUri, Locale language, JsonPageIndexEntry parentObj, Model rdfModel) throws IOException
     {
         //this will hold a reference to all json-objects for all different subjects in the model
         Map<URI, JsonPageIndexEntry> subObjects = new LinkedHashMap<>();
@@ -163,8 +163,31 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
+//        if (type.getParentProperty() != null) {
+//            if (parentObj != null) {
+//                throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
+//            }
+//            else {
+//                Model rdfParentUriModel = rootModel.filter(rootResourceIri, RdfTools.uriToIri(type.getParentProperty().getUri()), null);
+//                if (rdfParentUriModel != null && rdfParentUriModel.size() > 0) {
+//                    if (rdfParentUriModel.size() > 1) {
+//                        throw new IOException("Encountered an RDF parent property which value is more than one; this shouldn't happen; " + rdfParentUriModel);
+//                    }
+//                    Value rdfParentUriValue = rdfParentUriModel.iterator().next().getObject();
+//                    if (rdfParentUriValue instanceof IRI || type.getParentProperty().getDataType().equals(XSD.anyURI)) {
+//                        this.setParentUri(URI.create(rdfParentUriValue.stringValue()));
+//                    }
+//                    else {
+//                        throw new IOException("Encountered an RDF parent property, but it doesn't seem to hold a resource URI value. This is a configuration error and needs to be fixed; " +
+//                                              rdfParentUriModel);
+//                    }
+//                }
+//            }
+//        }
+
         //create a new object and fill it with the first internal fields like uri, resource, etc
-        this.jsonNode = this.initializeInternalFields(Json.getObjectMapper().createObjectNode(), absoluteRootResourceUri, language, type, parent, rootModel);
+        this.jsonNode = Json.getObjectMapper().createObjectNode();
+        this.initializeInternalFields(this.jsonNode, absoluteRootResourceUri, language, type, parentObj, rootModel);
 
         //save the node, mapped to it's subject, so we can look it op when it's referenced from other triples
         subObjects.put(absoluteRootResourceUri, this);
@@ -227,7 +250,13 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                     // check if it's a subresource that was present in the RDF model and already parsed into an object
                     // if so, we'll use that as the "proxy" of this object (which is in fact the entire sub-object, not a proxy)
                     if (subObjects.containsKey(resourceUri)) {
-                        this.addProperty(this.jsonNode, subObjects.get(resourceUri).getJsonNode(), field.getProxyField(), language);
+
+                        ObjectNode subObject = subObjects.get(resourceUri).getJsonNode();
+
+                        // make sure we flag the node as a proxy
+                        this.setIsProxy(subObject);
+
+                        this.addProperty(this.jsonNode, subObject, field.getProxyField(), language);
                     }
                     // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
                     // using a separate "_proxy" suffixed field
@@ -236,8 +265,21 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
                         if (resourceValue != null) {
 
-                            // now iterate all internal fields of this object and copy them to the Json node
-                            ObjectNode resourceNode = this.copyInternalFields(Json.getObjectMapper().createObjectNode(), true);
+                            // convert the ResourceProxy object to a Json node
+                            ObjectNode resourceNode = this.copyInternalFields(resourceValue, Json.getObjectMapper().createObjectNode(), true);
+
+                            if (type.getParentProperty() != null && type.getParentProperty().equals(property)) {
+                                if (this.getParentUri() != null) {
+                                    throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
+                                }
+                                else {
+                                    this.setParentUri(resourceValue.getUri());
+                                    this.addProperty(this.jsonNode, resourceNode, new JsonField("parent"), language);
+                                }
+                            }
+
+                            // make sure we flag the node as a proxy
+                            this.setIsProxy(resourceNode);
 
                             // lastly, hook the sub-node in the main node using the "_proxy" suffix
                             this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
@@ -258,6 +300,10 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                              " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
             }
         }
+
+        // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
+        // for why we changed our mind from filling in empty fields with null to just omitting them.
+        this.copyInternalFields(this, this.jsonNode, true);
     }
     private void findChildBoundaries(JsonNode fieldValue, JsonNodeVisitor visitor) throws IOException
     {
@@ -299,12 +345,17 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             //NOOP: no need to go down, the node is not a container (object or array)
         }
     }
-    private ObjectNode initializeInternalFields(ObjectNode object, URI rootResourceUri, Locale language, RdfClass type, JsonPageIndexEntry parent, Model rootModel) throws IOException
+    private void initializeInternalFields(ObjectNode object, URI rootResourceUri, Locale language, RdfClass type, JsonPageIndexEntry parent, Model rootModel) throws IOException
     {
         this.setResource(PageIndexEntry.resourceField.create(rootResourceUri));
         this.setTypeOf(type);
         this.setLanguage(language);
-        this.setParentUri(PageIndexEntry.parentUriField.create(parent));
+        if (this.getParentUri() != null) {
+            throw new IOException("Overwriting parentUri during initialization, this probably means something is wrong; " + this);
+        }
+        else {
+            this.setParentUri(PageIndexEntry.parentUriField.create(parent));
+        }
 
         ResourceSummarizer summarizer = type.getSummarizer();
         if (summarizer != null) {
@@ -321,18 +372,16 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         else {
             throw new IOException("Encountered an RDF class with a null summarizer; this shouldn't happen; " + type);
         }
-
-        // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
-        // for why we changed our mind from filling in empty fields with null to just omitting them.
-        return this.copyInternalFields(object, true);
     }
-    private ObjectNode copyInternalFields(ObjectNode object, boolean omitEmptyFields)
+    private ObjectNode copyInternalFields(ResourceProxy resourceProxy, ObjectNode object, boolean omitEmptyFields)
     {
         // now iterate all internal fields of this object and copy them to the Json node
         for (IndexEntryField e : INTERNAL_FIELDS) {
+            // Virtual fields shouldn't be copied to the serialized JSON representation eg. because they
+            // are implemented as Solr copyFields (eg. tokenizedUri)
             if (!e.isVirtual()) {
-                if (e.hasValue(this)) {
-                    object.put(e.getName(), e.getValue(this));
+                if (e.hasValue(resourceProxy)) {
+                    object.put(e.getName(), e.getValue(resourceProxy));
                 }
                 else {
                     if (!omitEmptyFields) {
@@ -343,6 +392,10 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         }
 
         return object;
+    }
+    private void setIsProxy(ObjectNode resourceNode)
+    {
+        resourceNode.put(ResourceIndexEntry.proxyField.getName(), true);
     }
     /**
      * Add the value (of the specified property in the specified language) to the json object,

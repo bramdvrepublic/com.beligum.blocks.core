@@ -98,7 +98,7 @@ base.plugin("blocks.core.Notification", ["base.core.Commons", "constants.blocks.
             this.error(xhr.responseJSON.error.message, xhr);
         }
         else {
-            this.error(message + (exception ? "<br>" + exception : ""), xhr);
+            this.error(message, xhr, exception);
         }
     };
 
