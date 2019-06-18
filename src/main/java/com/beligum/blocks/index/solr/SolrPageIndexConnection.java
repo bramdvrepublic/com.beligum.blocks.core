@@ -18,7 +18,6 @@ package com.beligum.blocks.index.solr;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.index.ifaces.*;
@@ -92,21 +91,22 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     private final Object rollbackBackupLock = new Object();
 
     //-----CONSTRUCTORS-----
-    SolrPageIndexConnection(SolrPageIndexer pageIndexer, TX transaction, String txResourceName, TxType txType) throws IOException
+    SolrPageIndexConnection(SolrPageIndexer pageIndexer, String txResourceName, TxType txType, boolean forceTx) throws IOException
     {
-        super(transaction, txResourceName);
+        super(pageIndexer.getTxFactory(), txResourceName);
 
-        // note: bootConnection() will call begin() on success, so make sure everything is in place before calling it
         this.pageIndexer = pageIndexer;
         this.txType = txType;
 
-        // make sure this connection is released, eventually
-        // watch out: this needs to happen before the real connection is made,
-        // because this will throw an exception if the TX has timed out already,
-        // so make sure you don't leave the connection below dangling!
-        this.bootConnection();
+        // this is the 'real' connection we're wrapping
+        this.solrClient = pageIndexer.getSolrClient();
 
         this.active = true;
+
+        // if we need to force a TX (for tread lock-owning reasons), boot one right here, right now
+        if (forceTx) {
+            this.assertTransactional();
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -115,6 +115,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     {
         // q= {!join from=parentUri to=uri}*
         // --> this is the one, I think... {!join from=uri to=parentUri}*:*
+        // {!parent which="+(*:*) (-parentUri:[* TO *])"}
         // fl= *,[child]
         // q= {!graph from=uri to=parentUri}*
         // q= {!child of=parentUri:[* TO *]}
@@ -180,7 +181,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     public synchronized void update(Resource resource) throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         try {
             Page page = resource.unwrap(Page.class);
@@ -199,7 +200,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     public synchronized void delete(Resource resource) throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         try {
             Page page = resource.unwrap(Page.class);
@@ -220,7 +221,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     public synchronized void deleteAll() throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         try {
             // WARNING: this doesn't have support for opportunistic rollback
@@ -278,8 +279,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     //Note: this needs to be synchronized for concurrency with the the assertActive() below
     public synchronized void close() throws IOException
     {
+        // note: don't close the client; it's managed by the indexer, not the connection
+
         this.pageIndexer = null;
-        this.transaction = null;
         this.active = false;
     }
 
@@ -287,14 +289,6 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void begin() throws IOException
     {
-        if (this.solrClient == null) {
-            // this is the 'real' connection we're wrapping
-            this.solrClient = pageIndexer.getSolrClient();
-        }
-        else {
-            throw new IOException("Launching a Solr connection, but the inner connection doesn't seem to be null; this shouldn't happen");
-        }
-
         switch (this.txType) {
             case EMBEDDED_FULL_SYNC_MODE:
 
@@ -318,7 +312,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:
                     //NOOP
@@ -337,7 +331,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void commit() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
 
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:
@@ -418,7 +412,9 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
             try {
                 Logger.info("##### DEBUG CODE");
                 SolrQuery query = new SolrQuery();
-                //https://stackoverflow.com/questions/10651548/negation-in-solr-query
+                // https://blog.griddynamics.com/searching-grandchildren-and-siblings-with-solr-block-join/
+                // https://stackoverflow.com/questions/10651548/negation-in-solr-query
+                // https://lucene.apache.org/solr/guide/8_0/searching-nested-documents.html
                 //{!parent which="+(*:*) -(parentUri:*)"}
                 //{!parent which="*:* AND NOT(parentUri:*)"}
                 //query.setQuery("*:*");
@@ -446,7 +442,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
     @Override
     protected void rollback() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
 
             switch (this.txType) {
                 case EMBEDDED_FULL_SYNC_MODE:

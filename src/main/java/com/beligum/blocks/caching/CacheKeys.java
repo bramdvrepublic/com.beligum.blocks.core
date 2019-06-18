@@ -45,6 +45,8 @@ public enum CacheKeys implements CacheKey
     XADISK_FILE_SYSTEM,
     //application cache key to store the TX manager
     TRANSACTION_MANAGER,
+    //application cache key to store the TX factory wrapper
+    TRANSACTION_FACTORY,
     //application cache key to store the request transaction
     REQUEST_TRANSACTION,
     //application cache key to store the triplestore engine

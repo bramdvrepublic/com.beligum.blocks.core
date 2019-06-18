@@ -2468,6 +2468,7 @@ public class SolrConfigs
     public static SolrField _version_ = new SolrField("_version_", CORE_SCHEMA_TYPE_PLONG);
     public static SolrField _root_ = new SolrField("_root_", CORE_SCHEMA_TYPE_STRING);
     public static SolrField _nest_path_ = new SolrField("_nest_path_", CORE_SCHEMA_TYPE_NEST_PATH);
+    public static SolrField _nest_parent_ = new SolrField("_nest_parent_", CORE_SCHEMA_TYPE_STRING);
     public static SolrField _text_ = new SolrField("_text_", CORE_SCHEMA_TYPE_TEXT_SORTABLE);
 
     // Sync this with the field list above !
@@ -2475,6 +2476,7 @@ public class SolrConfigs
                     _version_,
                     _root_,
                     _nest_path_,
+                    _nest_parent_,
                     _text_
     };
 
@@ -2645,6 +2647,7 @@ public class SolrConfigs
 
                                              // For nested documents (relationship tracking)
                                              "    <field name=\"" + _nest_path_.getName() + "\" type=\"" + _nest_path_.getType() + "\" />\n" +
+                                             "    <field name=\"" + _nest_parent_.getName() + "\" type=\"" + _nest_parent_.getType() + "\" />\n" +
 
                                              // This field is there in case the client does not know what fields may be searched to support Google-style search over everything.
                                              // Note that this effectively indexes everything twice, so this is an expensive feature, both in terms of disk space and indexing speed

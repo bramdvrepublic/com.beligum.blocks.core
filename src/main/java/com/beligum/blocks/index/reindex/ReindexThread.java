@@ -761,8 +761,8 @@ public class ReindexThread extends Thread implements LongRunningThread
                     // that will get passed to the reindex() method to re-use our general transaction
                     //Note that the connections get released when the transaction is released (see below)
                     //Also note this means we'll have a transaction per rdf class
-                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(),
-                                                                                                                     StorageFactory.getSparqlIndexer().connect());
+                    ResourceRepository.IndexOption indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(true),
+                                                                                                                     StorageFactory.getSparqlIndexer().connect(true));
 
                     try (Statement stmt = dbConnection.createStatement()) {
 
@@ -825,8 +825,8 @@ public class ReindexThread extends Thread implements LongRunningThread
 
                                 //start a new transaction
                                 requestContext = R.requestManager().createSimulatedRequest(Sync.ONE_HOUR);
-                                indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(),
-                                                                                                  StorageFactory.getSparqlIndexer().connect());
+                                indexConnectionsOption = new PageRepository.IndexConnectionOption(StorageFactory.getJsonIndexer().connect(true),
+                                                                                                  StorageFactory.getSparqlIndexer().connect(true));
                             }
 
                             //Logger.info("Submitting reindexation of " + publicUri);

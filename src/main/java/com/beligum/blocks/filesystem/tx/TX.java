@@ -178,6 +178,14 @@ public class TX implements AutoCloseable
     {
         return this.registeredResources.get(resourceName);
     }
+    public synchronized boolean hasRegisteredResource(String resourceName)
+    {
+        return this.registeredResources.containsKey(resourceName);
+    }
+    public synchronized boolean containsRegisteredResource(String resourceName, XAResource resource)
+    {
+        return this.registeredResources.containsKey(resourceName) && this.registeredResources.get(resourceName).equals(resource);
+    }
     /**
      * Return the registered XADisk instance for this request or null if none was attached (yet)
      */

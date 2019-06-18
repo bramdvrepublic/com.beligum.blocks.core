@@ -19,10 +19,10 @@ package com.beligum.blocks.index.solr;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.base.utils.locks.Mutex;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.tx.TX;
+import com.beligum.blocks.filesystem.tx.TxFactory;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.PageIndexer;
@@ -56,7 +56,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -86,6 +85,7 @@ public class SolrPageIndexer implements PageIndexer
     private static final String TX_RESOURCE_NAME = SolrPageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
+    private TxFactory txFactory;
     private SolrClient solrClient;
     private boolean useSchemaless;
 
@@ -114,8 +114,10 @@ public class SolrPageIndexer implements PageIndexer
     private Timer hardCommitTimer;
 
     //-----CONSTRUCTORS-----
-    public SolrPageIndexer() throws IOException
+    public SolrPageIndexer(TxFactory txFactory) throws IOException
     {
+        this.txFactory = txFactory;
+
         //The default INFO log level is too verbose for solr in production
         //note: this only needs to be done once, don't put it in init()
         if (R.configuration().getProduction()) {
@@ -137,16 +139,26 @@ public class SolrPageIndexer implements PageIndexer
     @Override
     public synchronized IndexConnection connect() throws IOException
     {
+        return this.connect(false);
+    }
+    @Override
+    public synchronized IndexConnection connect(boolean forceTx) throws IOException
+    {
         IndexConnection retVal = null;
 
-        // if the transaction already contains a connection of this type, no need to start a new one
-        TX tx = StorageFactory.getCurrentRequestTx();
-        if (tx != null) {
-            retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
+        // A few options:
+        // - there's no current TX active -> start up a transaction-less connection (tx is null) that will register itself
+        //   as soon as a transaction is needed (eg. a method is called that needs a transaction).
+        // - there is a current TX active and it already has a connection of this class registered;
+        //   use that one.
+        // - there is a current TX active and it doesn't have a connection of this class registered;
+        //   create a new connection.
+        if (this.txFactory.hasCurrentTx()) {
+            retVal = (IndexConnection) this.txFactory.getCurrentTx().getRegisteredResource(TX_RESOURCE_NAME);
         }
 
         if (retVal == null) {
-            retVal = new SolrPageIndexConnection(this, tx, TX_RESOURCE_NAME, DEFAULT_SYNC_MODE);
+            retVal = new SolrPageIndexConnection(this, TX_RESOURCE_NAME, DEFAULT_SYNC_MODE, forceTx);
         }
 
         return retVal;
@@ -196,6 +208,10 @@ public class SolrPageIndexer implements PageIndexer
     }
 
     //-----PROTECTED METHODS-----
+    protected TxFactory getTxFactory()
+    {
+        return txFactory;
+    }
     protected SolrClient getSolrClient()
     {
         return this.solrClient;

@@ -119,6 +119,11 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         //See https://github.com/republic-of-reinvention/com.stralo.framework/issues/13
         //this.logStatement(entryId, Terms.createdBy, RdfTools.createAbsoluteResourceId(Classes.Person, "" + pageEntry.getCreator().getId()));
         String username = pageEntry.getCreator() != null && pageEntry.getCreator().getSubject() != null ? pageEntry.getCreator().getSubject().getPrincipal() : ANONYMOUS_USERNAME;
+        // since adding null as a triple object is illegal, we need to fix this
+        // Note that it looks like null-valued usernames stem from the getPrincipal() call above to be lazy loaded from the DB?
+        if (username == null) {
+            username = ANONYMOUS_USERNAME;
+        }
         this.logStatement(entryId, Log.username, username);
 
         //length is always > 0

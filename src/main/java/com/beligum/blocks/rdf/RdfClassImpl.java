@@ -265,6 +265,9 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
             if (!this.rdfResource.properties.contains(parentProperty)) {
                 throw new RdfInitializationException("Can't set parent property of class " + this + " to " + parentProperty + " because it's not a property of this class.");
             }
+            else if (this.rdfResource.parentProperty != null) {
+
+            }
             else {
                 this.rdfResource.parentProperty = parentProperty;
             }

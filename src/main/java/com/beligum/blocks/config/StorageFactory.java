@@ -32,11 +32,11 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.filesystem.hdfs.HdfsImplDef;
 import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.tx.TX;
+import com.beligum.blocks.filesystem.tx.TxFactory;
 import com.beligum.blocks.filesystem.tx.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.filesystem.tx.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.filesystem.hdfs.impl.FileSystems;
 import com.beligum.blocks.filesystem.ifaces.XAttrFS;
-import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.Indexer;
 import com.beligum.blocks.index.ifaces.PageIndexer;
 import com.beligum.blocks.index.solr.SolrPageIndexer;
@@ -103,17 +103,13 @@ public class StorageFactory
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new SolrPageIndexer();
+                PageIndexer indexer = new SolrPageIndexer(getTxFactory());
 
                 getIndexerRegistry().add(indexer);
 
                 return indexer;
             }
         });
-    }
-    public static IndexConnection getJsonQueryConnection() throws IOException
-    {
-        return getJsonIndexer().connect();
     }
     public static PageIndexer getSparqlIndexer()
     {
@@ -122,7 +118,8 @@ public class StorageFactory
             @Override
             public PageIndexer apply(CacheKey cacheKey) throws IOException
             {
-                PageIndexer indexer = new SesamePageIndexer();
+                PageIndexer indexer = new SesamePageIndexer(getTxFactory());
+
                 getIndexerRegistry().add(indexer);
 
                 return indexer;
@@ -510,6 +507,18 @@ public class StorageFactory
     }
 
     //-----PRIVATE METHODS-----
+    private static TxFactory getTxFactory()
+    {
+        return cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.TRANSACTION_FACTORY, new CacheFunction<CacheKey, TxFactory>()
+        {
+            @Override
+            public TxFactory apply(CacheKey cacheKey) throws IOException
+            {
+                // For now, the TX factory is stateless, no need to register it anywhere
+                return new TxFactory();
+            }
+        });
+    }
 
     //-----INNER CLASSES-----
     /**

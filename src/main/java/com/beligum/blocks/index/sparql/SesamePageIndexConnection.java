@@ -18,7 +18,6 @@ package com.beligum.blocks.index.sparql;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
-import com.beligum.blocks.filesystem.tx.TX;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -76,18 +75,20 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     private ExecutorService fetchPageExecutor;
 
     //-----CONSTRUCTORS-----
-    SesamePageIndexConnection(SesamePageIndexer pageIndexer, TX transaction, String txResourceName) throws IOException
+    SesamePageIndexConnection(SesamePageIndexer pageIndexer, String txResourceName, boolean forceTx) throws IOException
     {
-        super(transaction, txResourceName);
+        super(pageIndexer.getTxFactory(), txResourceName);
 
         // note: bootConnection() will call begin() on success, so make sure everything is in place before calling it
         this.pageIndexer = pageIndexer;
 
-        // make sure this connection is released, eventually
-        // watch out: this needs to happen before the real connection is made,
-        // because this will throw an exception if the TX has timed out already,
-        // so make sure you don't leave the connection below dangling!
-        this.bootConnection();
+        // this is the 'real' connection we're wrapping
+        try {
+            this.connection = this.pageIndexer.getRDFRepository().getConnection();
+        }
+        catch (RepositoryException e) {
+            throw new IOException(e);
+        }
 
         this.fetchPageMethod = FetchPageMethod.SINGLE_TERM_QUERY;
 
@@ -100,6 +101,11 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
 
         this.active = true;
+
+        // if we need to force a TX (for tread lock-owning reasons), boot one right here, right now
+        if (forceTx) {
+            this.assertTransactional();
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -165,7 +171,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     public synchronized void delete(Resource resource) throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         Page page = resource.unwrap(Page.class);
 
@@ -193,7 +199,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     public synchronized void update(Resource resource) throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         Page page = resource.unwrap(Page.class);
 
@@ -247,7 +253,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     public synchronized void deleteAll() throws IOException
     {
         this.assertActive();
-        this.assertTransaction();
+        this.assertTransactional();
 
         this.connection.clear();
     }
@@ -264,8 +270,6 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
             this.connection.close();
             this.connection = null;
         }
-
-        this.transaction = null;
     }
     @Override
     public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
@@ -329,156 +333,146 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
 
         return retVal;
     }
-//    @Override
-//    public IndexSearchResult search(String sparqlQuery, Locale language) throws IOException
-//    {
-//        this.assertActive();
-//
-//        long searchStart = System.currentTimeMillis();
-//        long sparqlTime = 0;
-//        long parseTime = 0;
-//        long luceneTime = 0;
-//        long end = 0;
-//
-//        List<Term> ids = null;
-//        List<IndexEntry> tempResults = null;
-//        org.apache.lucene.search.BooleanQuery luceneIdQuery = null;
-//        switch (fetchPageMethod) {
-//            case BULK_BOOLEAN_QUERY:
-//                luceneIdQuery = new org.apache.lucene.search.BooleanQuery();
-//                break;
-//            case BULK_BITMAP_QUERY:
-//                ids = new ArrayList<>();
-//                break;
-//            case SINGLE_TERM_QUERY:
-//                tempResults = new ArrayList<>();
-//                break;
-//        }
-//
-//        int count = 0;
-//        String siteDomain = R.configuration().getSiteDomain().toString();
-//        String resourceField = PageIndexEntry.resource.name();
-//        String languageStr = language == null ? null : language.getLanguage();
-//        //Connect with the page indexer here so we can re-use the connection for all results
-//        JsonPageIndexerConnection luceneConnection = StorageFactory.getJsonQueryConnection();
-//
-//        TupleQuery query = this.query(sparqlQuery);
-//        try (TupleQueryResult result = query.evaluate()) {
-//            sparqlTime = System.currentTimeMillis();
-//
-//            //watch out: order must be preserved (eg. because we're likely to use sorting or scoring)
-//            while (result.hasNext()) {
-//
-//                //we expect only one binding: the subject URI
-//                Value subject = result.next().getValue(SPARQL_SUBJECT_BINDING_NAME);
-//
-//                if (subject instanceof IRI) {
-//                    //small optimization to avoid all the URI parsing, hope I didn't break something...
-//                    //String subjectStr = this.toUri((IRI)subjectIRI, false, true).toString();
-//                    String subjectStr = subject.stringValue().substring(siteDomain.length());
-//                    if (subjectStr.charAt(0) != '/') {
-//                        subjectStr = "/" + subjectStr;
-//                    }
-//
-//                    switch (fetchPageMethod) {
-//                        case BULK_BOOLEAN_QUERY:
-//                            luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
-//                            break;
-//                        case BULK_BITMAP_QUERY:
-//                            ids.add(new Term(resourceField, subjectStr));
-//                            break;
-//                        case SINGLE_TERM_QUERY:
-//                            this.fetchPageExecutor.submit(new IndexLoader(subjectStr, languageStr, luceneConnection, tempResults, count));
-//                            break;
-//                    }
-//
-//                    count++;
-//                }
-//                else {
-//                    Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
-//                }
-//            }
-//        }
-//        parseTime = System.currentTimeMillis();
-//
-//        IndexSearchResult retVal;
-//        if (fetchPageMethod != FetchPageMethod.SINGLE_TERM_QUERY) {
-//            if (count > 0) {
-//                org.apache.lucene.search.BooleanQuery luceneQuery = new org.apache.lucene.search.BooleanQuery();
-//                switch (fetchPageMethod) {
-//                    case BULK_BOOLEAN_QUERY:
-//                        luceneQuery.add(luceneIdQuery, BooleanClause.Occur.MUST);
-//                        break;
-//                    case BULK_BITMAP_QUERY:
-//                        luceneQuery.add(new TermsQuery(ids), BooleanClause.Occur.MUST);
-//                        break;
-//                }
-//                if (languageStr != null) {
-//                    luceneQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), languageStr)), BooleanClause.Occur.MUST);
-//                }
-//
-//                retVal = luceneConnection.search(luceneQuery, count);
-//            }
-//            else {
-//                retVal = new SimpleIndexSearchResult(new ArrayList<>());
-//            }
-//        }
-//        else {
-//            if (this.fetchPageExecutor != null) {
-//                //request a shutdown
-//                this.fetchPageExecutor.shutdown();
-//
-//                //allow for some time to end
-//                try {
-//                    this.fetchPageExecutor.awaitTermination(1000, TimeUnit.MILLISECONDS);
-//                }
-//                catch (InterruptedException e) {
-//                    Logger.warn("Watch out: wait time for index-fetcher timed out; this shouldn't happen", e);
-//                }
-//                finally {
-//                    retVal = new SimpleIndexSearchResult(tempResults);
-//                    //NOOP: force close check now done in close()
-//                }
-//            }
-//            else {
-//                retVal = new SimpleIndexSearchResult(new ArrayList<>());
-//            }
-//        }
-//
-//        luceneTime = System.currentTimeMillis();
-//        end = System.currentTimeMillis();
-//
-//        //        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
-//        //        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
-//        //        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
-//        //        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
-//        //        Logger.info("\n");
-//
-//        return retVal;
-//    }
+    //    @Override
+    //    public IndexSearchResult search(String sparqlQuery, Locale language) throws IOException
+    //    {
+    //        this.assertActive();
+    //
+    //        long searchStart = System.currentTimeMillis();
+    //        long sparqlTime = 0;
+    //        long parseTime = 0;
+    //        long luceneTime = 0;
+    //        long end = 0;
+    //
+    //        List<Term> ids = null;
+    //        List<IndexEntry> tempResults = null;
+    //        org.apache.lucene.search.BooleanQuery luceneIdQuery = null;
+    //        switch (fetchPageMethod) {
+    //            case BULK_BOOLEAN_QUERY:
+    //                luceneIdQuery = new org.apache.lucene.search.BooleanQuery();
+    //                break;
+    //            case BULK_BITMAP_QUERY:
+    //                ids = new ArrayList<>();
+    //                break;
+    //            case SINGLE_TERM_QUERY:
+    //                tempResults = new ArrayList<>();
+    //                break;
+    //        }
+    //
+    //        int count = 0;
+    //        String siteDomain = R.configuration().getSiteDomain().toString();
+    //        String resourceField = PageIndexEntry.resource.name();
+    //        String languageStr = language == null ? null : language.getLanguage();
+    //        //Connect with the page indexer here so we can re-use the connection for all results
+    //        JsonPageIndexerConnection luceneConnection = StorageFactory.getJsonQueryConnection();
+    //
+    //        TupleQuery query = this.query(sparqlQuery);
+    //        try (TupleQueryResult result = query.evaluate()) {
+    //            sparqlTime = System.currentTimeMillis();
+    //
+    //            //watch out: order must be preserved (eg. because we're likely to use sorting or scoring)
+    //            while (result.hasNext()) {
+    //
+    //                //we expect only one binding: the subject URI
+    //                Value subject = result.next().getValue(SPARQL_SUBJECT_BINDING_NAME);
+    //
+    //                if (subject instanceof IRI) {
+    //                    //small optimization to avoid all the URI parsing, hope I didn't break something...
+    //                    //String subjectStr = this.toUri((IRI)subjectIRI, false, true).toString();
+    //                    String subjectStr = subject.stringValue().substring(siteDomain.length());
+    //                    if (subjectStr.charAt(0) != '/') {
+    //                        subjectStr = "/" + subjectStr;
+    //                    }
+    //
+    //                    switch (fetchPageMethod) {
+    //                        case BULK_BOOLEAN_QUERY:
+    //                            luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
+    //                            break;
+    //                        case BULK_BITMAP_QUERY:
+    //                            ids.add(new Term(resourceField, subjectStr));
+    //                            break;
+    //                        case SINGLE_TERM_QUERY:
+    //                            this.fetchPageExecutor.submit(new IndexLoader(subjectStr, languageStr, luceneConnection, tempResults, count));
+    //                            break;
+    //                    }
+    //
+    //                    count++;
+    //                }
+    //                else {
+    //                    Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
+    //                }
+    //            }
+    //        }
+    //        parseTime = System.currentTimeMillis();
+    //
+    //        IndexSearchResult retVal;
+    //        if (fetchPageMethod != FetchPageMethod.SINGLE_TERM_QUERY) {
+    //            if (count > 0) {
+    //                org.apache.lucene.search.BooleanQuery luceneQuery = new org.apache.lucene.search.BooleanQuery();
+    //                switch (fetchPageMethod) {
+    //                    case BULK_BOOLEAN_QUERY:
+    //                        luceneQuery.add(luceneIdQuery, BooleanClause.Occur.MUST);
+    //                        break;
+    //                    case BULK_BITMAP_QUERY:
+    //                        luceneQuery.add(new TermsQuery(ids), BooleanClause.Occur.MUST);
+    //                        break;
+    //                }
+    //                if (languageStr != null) {
+    //                    luceneQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), languageStr)), BooleanClause.Occur.MUST);
+    //                }
+    //
+    //                retVal = luceneConnection.search(luceneQuery, count);
+    //            }
+    //            else {
+    //                retVal = new SimpleIndexSearchResult(new ArrayList<>());
+    //            }
+    //        }
+    //        else {
+    //            if (this.fetchPageExecutor != null) {
+    //                //request a shutdown
+    //                this.fetchPageExecutor.shutdown();
+    //
+    //                //allow for some time to end
+    //                try {
+    //                    this.fetchPageExecutor.awaitTermination(1000, TimeUnit.MILLISECONDS);
+    //                }
+    //                catch (InterruptedException e) {
+    //                    Logger.warn("Watch out: wait time for index-fetcher timed out; this shouldn't happen", e);
+    //                }
+    //                finally {
+    //                    retVal = new SimpleIndexSearchResult(tempResults);
+    //                    //NOOP: force close check now done in close()
+    //                }
+    //            }
+    //            else {
+    //                retVal = new SimpleIndexSearchResult(new ArrayList<>());
+    //            }
+    //        }
+    //
+    //        luceneTime = System.currentTimeMillis();
+    //        end = System.currentTimeMillis();
+    //
+    //        //        Logger.info("Search took " + (end - searchStart) + "ms to complete with " + this.fetchPageMethod);
+    //        //        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
+    //        //        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
+    //        //        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
+    //        //        Logger.info("\n");
+    //
+    //        return retVal;
+    //    }
 
     //-----PROTECTED METHODS-----
     @Override
     protected void begin() throws IOException
     {
-         if (this.connection == null) {
-             // this is the 'real' connection we're wrapping
-             try {
-                 this.connection = this.pageIndexer.getRDFRepository().getConnection();
-                 this.connection.begin();
-             }
-             catch (RepositoryException e) {
-                 throw new IOException(e);
-             }
-        }
-        else {
-            throw new IOException("Launching a Solr connection, but the inner connection doesn't seem to be null; this shouldn't happen");
+        if (this.isTransactional()) {
+            this.connection.begin();
         }
     }
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
             //Note: see connection.commit() for the nitty-gritty of where I got this from
             this.connection.getSailConnection().flush();
             this.connection.getSailConnection().prepare();
@@ -487,14 +481,14 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     @Override
     protected void commit() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
             this.connection.getSailConnection().commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.isRegistered()) {
+        if (this.isTransactional()) {
             this.connection.getSailConnection().rollback();
         }
     }
@@ -605,43 +599,43 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
     }
 
     //-----INNER CLASSES-----
-//    private class IndexLoader implements Runnable
-//    {
-//        private String subject;
-//        private String language;
-//        private JsonPageIndexerConnection luceneConnection;
-//        private final List<IndexEntry> retVal;
-//        private final int index;
-//
-//        public IndexLoader(String subject, String language, JsonPageIndexerConnection luceneConnection, List<IndexEntry> retVal, int index)
-//        {
-//            this.subject = subject;
-//            this.language = language;
-//            this.luceneConnection = luceneConnection;
-//            this.retVal = retVal;
-//            this.index = index;
-//        }
-//
-//        @Override
-//        public void run()
-//        {
-//            try {
-//                org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
-//                pageQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), this.subject)), BooleanClause.Occur.MUST);
-//                if (this.language != null) {
-//                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), this.language)), BooleanClause.Occur.MUST);
-//                }
-//                IndexSearchResult results = luceneConnection.search(pageQuery, 1);
-//                if (results.size() > 0) {
-//                    retVal.add(results.iterator().next());
-//                }
-//                else {
-//                    Logger.warn("Watch out: encountered a SPARQL result without a matching page index entry; this shouldn't happen; " + this.subject);
-//                }
-//            }
-//            catch (IOException e) {
-//                Logger.error("Error while fetching page from Lucene index; " + this.subject, e);
-//            }
-//        }
-//    }
+    //    private class IndexLoader implements Runnable
+    //    {
+    //        private String subject;
+    //        private String language;
+    //        private JsonPageIndexerConnection luceneConnection;
+    //        private final List<IndexEntry> retVal;
+    //        private final int index;
+    //
+    //        public IndexLoader(String subject, String language, JsonPageIndexerConnection luceneConnection, List<IndexEntry> retVal, int index)
+    //        {
+    //            this.subject = subject;
+    //            this.language = language;
+    //            this.luceneConnection = luceneConnection;
+    //            this.retVal = retVal;
+    //            this.index = index;
+    //        }
+    //
+    //        @Override
+    //        public void run()
+    //        {
+    //            try {
+    //                org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
+    //                pageQuery.add(new TermQuery(new Term(PageIndexEntry.resource.name(), this.subject)), BooleanClause.Occur.MUST);
+    //                if (this.language != null) {
+    //                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.language.name(), this.language)), BooleanClause.Occur.MUST);
+    //                }
+    //                IndexSearchResult results = luceneConnection.search(pageQuery, 1);
+    //                if (results.size() > 0) {
+    //                    retVal.add(results.iterator().next());
+    //                }
+    //                else {
+    //                    Logger.warn("Watch out: encountered a SPARQL result without a matching page index entry; this shouldn't happen; " + this.subject);
+    //                }
+    //            }
+    //            catch (IOException e) {
+    //                Logger.error("Error while fetching page from Lucene index; " + this.subject, e);
+    //            }
+    //        }
+    //    }
 }

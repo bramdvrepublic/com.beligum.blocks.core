@@ -21,6 +21,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.filesystem.tx.TX;
+import com.beligum.blocks.filesystem.tx.TxFactory;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.PageIndexer;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -46,11 +47,13 @@ public class SesamePageIndexer implements PageIndexer
     private static final String TX_RESOURCE_NAME = SesamePageIndexConnection.class.getSimpleName();
 
     //-----VARIABLES-----
+    private TxFactory txFactory;
     private Object repositoryLock;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexer()
+    public SesamePageIndexer(TxFactory txFactory)
     {
+        this.txFactory = txFactory;
         this.repositoryLock = new Object();
 
         this.reinit();
@@ -60,16 +63,26 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public synchronized IndexConnection connect() throws IOException
     {
+        return this.connect(false);
+    }
+    @Override
+    public synchronized IndexConnection connect(boolean forceTx) throws IOException
+    {
         IndexConnection retVal = null;
 
-        // if the transaction already contains a connection of this type, no need to start a new one
-        TX tx = StorageFactory.getCurrentRequestTx();
-        if (tx != null) {
-            retVal = (IndexConnection) tx.getRegisteredResource(TX_RESOURCE_NAME);
+        // A few options:
+        // - there's no current TX active -> start up a transaction-less connection (tx is null) that will register itself
+        //   as soon as a transaction is needed (eg. a method is called that needs a transaction).
+        // - there is a current TX active and it already has a connection of this class registered;
+        //   use that one.
+        // - there is a current TX active and it doesn't have a connection of this class registered;
+        //   create a new connection.
+        if (this.txFactory.hasCurrentTx()) {
+            retVal = (IndexConnection) this.txFactory.getCurrentTx().getRegisteredResource(TX_RESOURCE_NAME);
         }
 
         if (retVal == null) {
-            retVal = new SesamePageIndexConnection(this, tx, TX_RESOURCE_NAME);
+            retVal = new SesamePageIndexConnection(this, TX_RESOURCE_NAME, forceTx);
         }
 
         return retVal;
@@ -147,6 +160,10 @@ public class SesamePageIndexer implements PageIndexer
     }
 
     //-----PROTECTED METHODS-----
+    protected TxFactory getTxFactory()
+    {
+        return txFactory;
+    }
 
     //-----PRIVATE METHODS-----
     private void reinit()

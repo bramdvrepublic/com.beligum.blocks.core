@@ -253,8 +253,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
 
                         ObjectNode subObject = subObjects.get(resourceUri).getJsonNode();
 
-                        // make sure we flag the node as a proxy
-                        this.setIsProxy(subObject);
+                        // Note: don't set this as a proxy because it's not; it holds the true values of this sub-object
 
                         this.addProperty(this.jsonNode, subObject, field.getProxyField(), language);
                     }

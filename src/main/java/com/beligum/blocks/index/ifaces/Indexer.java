@@ -43,6 +43,13 @@ public interface Indexer
     IndexConnection connect() throws IOException;
 
     /**
+     * This is the same as the regular connect(), but it forces the start of a transaction during connection boot, so that we can tightly
+     * control who's the holder of the transaction lock, so it's release doesn't throw a IllegalMonitorStateException.
+     * This is mainly created for simulated request contexts.
+     */
+    IndexConnection connect(boolean forceTx) throws IOException;
+
+    /**
      * Sometimes (eg. after a serious setRollbackOnly) it may help to reboot the indexer (and have the transaction log do it's work).
      * This should basically do a shutdown() and re-initialize().
      */

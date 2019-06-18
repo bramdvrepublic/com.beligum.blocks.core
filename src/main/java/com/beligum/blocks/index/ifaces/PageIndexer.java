@@ -25,9 +25,4 @@ import java.io.IOException;
  */
 public interface PageIndexer extends Indexer
 {
-    /**
-     * This is the overridden general connect() method from the super interface to be able to be more specific in it's return type.
-     */
-    @Override
-    IndexConnection connect() throws IOException;
 }

@@ -18,11 +18,10 @@ package com.beligum.blocks.index;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.filesystem.tx.TX;
+import com.beligum.blocks.filesystem.tx.TxFactory;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.Indexer;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -55,22 +54,33 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     private static final int DEFAULT_TRANSACTION_TIMEOUT_SECS = 10;
 
     //-----VARIABLES-----
-    protected TX transaction;
-    protected boolean active;
-    private int transactionTimeout = DEFAULT_TRANSACTION_TIMEOUT_SECS;
+    protected TxFactory txFactory;
     private String txResourceName;
     private TransactionState state;
+    protected boolean active;
+    private int transactionTimeout = DEFAULT_TRANSACTION_TIMEOUT_SECS;
     private Xid currentXid;
 
     //-----CONSTRUCTORS-----
-    protected AbstractIndexConnection(TX transaction, String txResourceName)
+    protected AbstractIndexConnection(TxFactory txFactory, String txResourceName) throws IOException
     {
-        super();
-
-        this.transaction = transaction;
+        this.txFactory = txFactory;
         this.txResourceName = txResourceName;
         this.state = TransactionState.NONE;
         this.active = false;
+
+        // As of Stralo v1.0, we started registering ourself here as a fix
+        // for dangling open connections. Otherwise, when opening up non-transactional
+        // connections to the index (eg. read-only), the connections would remain active forever.
+        // Note that this means the close() call can happen twice: once when closing the TX,
+        // once when releasing the requestClosable, so make sure to take this into account
+        // during implementation.
+        if (R.requestManager().hasCurrentRequest()) {
+            R.requestManager().getCurrentRequest().registerClosable(this);
+        }
+        else {
+            throw new IOException("Booting up a new index connection, but there's no request context active. This is not allowed because we don't have a way to auto-close ourself; " + this);
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -237,6 +247,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             clearXid();
         }
         catch (Throwable e) {
+            Logger.error("Error happened while committing an index connection transaction, rolling back; " + this, e);
             this.rollback(xid);
             throw newXAException(XAException.XAER_RMERR, e);
         }
@@ -262,6 +273,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
             this.rollback();
         }
         catch (Throwable e) {
+            Logger.error("Error happened while rolling back an index connection transaction, this is bad and should be looked into; " + this, e);
             throw newXAException(XAException.XAER_RMERR, e);
         }
         finally {
@@ -351,7 +363,7 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     public Xid[] recover(int flag) throws XAException
     {
         //currently completely disabled
-        return currentXid == null || state != TransactionState.PREPARED ? new Xid[0] : new Xid[] {currentXid};
+        return currentXid == null || state != TransactionState.PREPARED ? new Xid[0] : new Xid[] { currentXid };
     }
     /**
      * This is just a wrapper around close() so we can register ourself as a RequestClosable
@@ -359,54 +371,51 @@ public abstract class AbstractIndexConnection implements IndexConnection, Serial
     @Override
     public void close(boolean forceRollback) throws Exception
     {
-        this.close();
+        // note: if we're in a transactional state, the regular close() will also be called
+        // when the TX is teared down. This is called (on top of the TX.close()) because we always
+        // register the connection as a requestClosable (see constructor)
+        if (!this.isTransactional()) {
+
+            // it think it makes sense to call rollback manually when we're not in a TX context,
+            // but the caller asks to force a rollback. When we're not in a TX context, it probably
+            // doesn't make a lot of sense to 'rollback', but the implementation should be aware
+            // something went wrong.
+            if (forceRollback) {
+                this.rollback();
+            }
+
+            this.close();
+        }
     }
 
     //-----PROTECTED METHODS-----
     protected abstract Indexer getResourceManager();
 
-    protected void bootConnection() throws IOException
-    {
-        // As of Stralo v1.0, we started registering ourself on creation (in the constructor) as a quick fix
-        // for dangling open connections (slowing down the closing of the server).
-        // Otherwise, when opening up connections to the index for read-only requests,
-        // the connections would (possibly) remain active forever.
-
-        // this means we're dealing with a read-only connection, so let's register ourself in the request (instead of the transaction),
-        // so we're sure we're closed eventually.
-        if (this.transaction == null) {
-
-            R.requestManager().getCurrentRequest().registerClosable(this);
-
-            // when we don't have a TX, we need to call begin() manually
-            this.begin();
-        }
-        else {
-            this.assertTransaction();
-        }
-    }
-    protected boolean isRegistered()
-    {
-        return this.transaction != null && this.transaction.getRegisteredResource(this.txResourceName) == this;
-    }
     protected synchronized void assertActive() throws IOException
     {
         if (!this.active) {
             throw new IOException("Can't proceed, an active Sesame index connection was asserted");
         }
     }
-    protected synchronized void assertTransaction() throws IOException
+    protected synchronized void assertTransactional() throws IOException
     {
-        if (this.transaction == null) {
-            throw new IOException("Transaction asserted, but none was initialized, can't continue");
+        if (this.txFactory == null) {
+            throw new IOException("Transaction asserted, but no transaction factory was initialized, can't continue");
         }
         else {
-            //only need to do it once (at the beginning of a method using a tx)
-            if (!this.isRegistered()) {
-                //attach this connection to the transaction manager
-                this.transaction.registerResource(this.txResourceName, this);
+            // make sure it's only registered once
+            if (!this.isTransactional()) {
+                // note: this will boot a new transaction if none was active
+                this.txFactory.getCurrentTx().registerResource(this.txResourceName, this);
             }
         }
+    }
+    /**
+     * Returns true if this connection is registered as a member of an active transaction
+     */
+    protected boolean isTransactional()
+    {
+        return this.txFactory != null && this.txFactory.hasCurrentTx() && this.txFactory.getCurrentTx().containsRegisteredResource(this.txResourceName, this);
     }
 
     //-----PRIVATE METHODS-----

@@ -235,12 +235,6 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
             return this;
         }
-        //        public Builder indexer(RdfPropertyIndexer indexer)
-        //        {
-        //            this.rdfResource.indexer = indexer;
-        //
-        //            return this;
-        //        }
 
         @Override
         RdfProperty create() throws RdfInitializationException
