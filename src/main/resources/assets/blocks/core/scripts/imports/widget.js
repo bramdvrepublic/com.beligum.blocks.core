@@ -1610,7 +1610,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             for (var i = 0; i < values.length; i++) {
                 var c = values[i];
                 var li = $('<li />').appendTo(dropdownMenu);
-                var title = c.name;
+                // it makes sense to use the value as the label instead of "null" when we have no translation
+                var title = Commons.isUnset(c.name) ? c.value : c.name;
                 //note: this can be activated if you want subtitles
                 var subtitle = null/*c.value*/;
                 //Note: the href enables keyboard navigation
