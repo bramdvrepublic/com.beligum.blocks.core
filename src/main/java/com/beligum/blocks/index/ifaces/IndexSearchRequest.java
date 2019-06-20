@@ -62,8 +62,6 @@ public interface IndexSearchRequest extends Serializable
         FilterBoolean getFilterBoolean();
     }
 
-    //this is the default number of maximum search results that will be returned when no specific value is passed
-    int DEFAULT_MAX_SEARCH_RESULTS = 1000;
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
 
@@ -93,8 +91,6 @@ public interface IndexSearchRequest extends Serializable
 
     Locale getLanguage();
 
-    long getMaxResults();
-
     IndexSearchRequest query(String value, FilterBoolean filterBoolean);
 
     IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean);
@@ -120,7 +116,5 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest language(Locale language);
 
     IndexSearchRequest language(Locale language, IndexEntryField groupingField);
-
-    IndexSearchRequest maxResults(long maxResults);
 
 }

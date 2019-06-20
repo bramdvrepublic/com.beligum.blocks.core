@@ -115,6 +115,50 @@ public interface RdfProperty extends RdfOntologyMember
             property.setPublic(this.value);
         }
     }
+    class MainPropertyOption implements Option
+    {
+        private static final MainPropertyOption TRUE = new MainPropertyOption(true);
+        private static final MainPropertyOption FALSE = new MainPropertyOption(false);
+
+        boolean value;
+
+        private MainPropertyOption(boolean value)
+        {
+            this.value = value;
+        }
+        public static MainPropertyOption get(boolean value)
+        {
+            return value ? TRUE : FALSE;
+        }
+
+        @Override
+        public void apply(RdfPropertyImpl property)
+        {
+            property.setMainProperty(this.value);
+        }
+    }
+    class ParentPropertyOption implements Option
+    {
+        private static final ParentPropertyOption TRUE = new ParentPropertyOption(true);
+        private static final ParentPropertyOption FALSE = new ParentPropertyOption(false);
+
+        boolean value;
+
+        private ParentPropertyOption(boolean value)
+        {
+            this.value = value;
+        }
+        public static ParentPropertyOption get(boolean value)
+        {
+            return value ? TRUE : FALSE;
+        }
+
+        @Override
+        public void apply(RdfPropertyImpl property)
+        {
+            property.setParentProperty(this.value);
+        }
+    }
     class WeightOption implements Option
     {
         int value;

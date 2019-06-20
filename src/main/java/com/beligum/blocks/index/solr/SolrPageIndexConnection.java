@@ -241,7 +241,11 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
         else {
             try {
-                return new SolrIndexSearchResult(indexSearchRequest, this.solrClient.query(((SolrIndexSearchRequest) indexSearchRequest).buildSolrQuery()));
+                SolrQuery solrQuery = ((SolrIndexSearchRequest) indexSearchRequest).getSolrQuery();
+
+                QueryResponse solrResponse = this.solrClient.query(solrQuery);
+
+                return new SolrIndexSearchResult(indexSearchRequest, solrResponse);
             }
             catch (Exception e) {
                 throw new IOException("Error while executing a Solr search; " + indexSearchRequest, e);

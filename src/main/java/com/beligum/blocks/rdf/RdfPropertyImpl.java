@@ -43,6 +43,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected WidgetTypeConfig widgetConfig;
     protected int multiplicity;
     protected RdfPropertyValidator validator;
+    protected boolean isMainProperty;
+    protected boolean isParentProperty;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     // Note: we explicitly use a list instead of a map to allow doubles
@@ -108,10 +110,26 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         return validator;
     }
 
+    // Note: we explicitly don't create a getMainProperty here
+    // because it should be accessed from the class, not the property
+
+    // Note: we explicitly don't create a getParentProperty here
+    // because it should be accessed from the class, not the property
+
     //Note: make public so we can set if from Option.apply()
     public void setPublic(boolean value)
     {
         this.isPublic = value;
+    }
+    //Note: make public so we can set if from Option.apply()
+    public void setMainProperty(boolean value)
+    {
+        this.isMainProperty = value;
+    }
+    //Note: make public so we can set if from Option.apply()
+    public void setParentProperty(boolean value)
+    {
+        this.isParentProperty = value;
     }
     //Note: make public so we can set if from Option.apply()
     public void setWeight(int value)
@@ -168,6 +186,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.ontology = toClone.ontology;
         //this.name = toClone.name;
         this.isPublic = toClone.isPublic;
+        this.isMainProperty = toClone.isMainProperty;
+        this.isParentProperty = toClone.isParentProperty;
 
         this.proxy = toClone.proxy;
         this.label = toClone.label;
@@ -296,7 +316,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                         else if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
 
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
-                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS);
+                                // I guess it makes sense to use the default page size as the default max results
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_PAGE_SIZE);
                             }
 
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT) ||
@@ -308,8 +329,9 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                                 }
                                 else {
                                     if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
+                                        // I guess it makes sense to use the default page size as the default max results
                                         this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
-                                                          RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, true, "")
+                                                          RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_PAGE_SIZE, true, "")
                                                                            .getAbsoluteUrl());
                                     }
                                     if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {

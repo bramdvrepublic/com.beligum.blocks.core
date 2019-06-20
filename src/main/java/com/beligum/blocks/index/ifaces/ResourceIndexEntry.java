@@ -33,7 +33,7 @@ public interface ResourceIndexEntry extends ResourceProxy
     //note: sync the names of these below with the getter names of AbstractIndexEntry and the setters of the implementations
     UriField uriField = new UriField();
     TokenizedUriField tokenisedUriField = new TokenizedUriField();
-    ProxyField proxyField = new ProxyField();
+    ResourceTypeField resourceTypeField = new ResourceTypeField();
     ResourceField resourceField = new ResourceField();
     TypeOfField typeOfField = new TypeOfField();
     LanguageField languageField = new LanguageField();
@@ -47,7 +47,7 @@ public interface ResourceIndexEntry extends ResourceProxy
      */
     Set<IndexEntryField> INTERNAL_FIELDS = Sets.newHashSet(uriField,
                                                            tokenisedUriField,
-                                                           proxyField,
+                                                           resourceTypeField,
                                                            resourceField,
                                                            typeOfField,
                                                            languageField,
@@ -56,10 +56,37 @@ public interface ResourceIndexEntry extends ResourceProxy
                                                            descriptionField,
                                                            imageField);
 
+    /**
+     * This provides us with some more metadata about the type of index entry,
+     * without having it to add to the (much more general) ResourceProxy interface.
+     */
+    enum Type
+    {
+        /**
+         * Used when the resource is of no special type
+         */
+        DEFAULT,
+
+        /**
+         * Used when the resource is a sub-resource inside a parent
+         */
+        SUB,
+
+        /**
+         * Used when the resource is an indexed proxy of another resource
+         */
+        PROXY;
+    }
+
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * Specifies the type of this resource, see Type enum for details
+     */
+    Type getResourceType();
 
 }

@@ -41,6 +41,7 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     protected String label;
     protected String description;
     protected URI image;
+    protected Type resourceType;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexEntry()
@@ -123,6 +124,15 @@ public abstract class AbstractIndexEntry implements ResourceIndexEntry
     public void setImage(URI image)
     {
         this.image = image;
+    }
+    @Override
+    public Type getResourceType()
+    {
+        return resourceType;
+    }
+    public void setResourceType(Type resourceType)
+    {
+        this.resourceType = resourceType;
     }
 
     //-----PROTECTED METHODS-----

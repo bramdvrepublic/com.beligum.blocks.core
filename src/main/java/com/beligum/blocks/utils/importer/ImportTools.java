@@ -307,7 +307,7 @@ public abstract class ImportTools
                 addDataType = false;
                 factEntryHtml.append(" resource=\"" + resourceInfo.getResource() + "\"");
                 if (resourceInfo != null) {
-                    html = RdfTools.serializeResourceHtml(resourceInfo).toString();
+                    html = RdfTools.serializeResourceHtml(property, resourceInfo).toString();
                 }
                 else {
                     throw new IOException("Unable to find resource; " + resourceId);

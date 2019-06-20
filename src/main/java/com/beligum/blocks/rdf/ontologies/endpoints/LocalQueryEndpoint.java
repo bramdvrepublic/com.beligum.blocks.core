@@ -72,7 +72,7 @@ public class LocalQueryEndpoint implements RdfEndpoint
                                            .wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR),
                          IndexSearchRequest.FilterBoolean.AND);
 
-        mainQuery.maxResults(maxResults);
+        mainQuery.pageSize(maxResults);
 
         return Iterables.filter(mainQuery.getIndexConnection().search(mainQuery), ResourceProxy.class);
     }
@@ -89,9 +89,9 @@ public class LocalQueryEndpoint implements RdfEndpoint
                                                                              //at least one of the id or resource should match (or both)
                                                                              .filter(ResourceIndexEntry.uriField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
                                                                              .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                             .maxResults(1));
+                                                                             .pageSize(1));
 
-        return PageIndexEntry.selectBestLanguage(matchingPages);
+        return matchingPages.getTotalHits() > 0 ? matchingPages.iterator().next() : null;
 
 //        if (selectedEntry != null) {
 //            //we just wrap the index extry in a resource info wrapper

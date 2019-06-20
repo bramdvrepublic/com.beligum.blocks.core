@@ -30,7 +30,7 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected boolean isPublic;
+    boolean isPublic;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
 
     //-----CONSTRUCTORS-----

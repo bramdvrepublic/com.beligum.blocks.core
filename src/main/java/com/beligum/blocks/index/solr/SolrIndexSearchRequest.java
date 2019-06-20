@@ -1,5 +1,6 @@
 package com.beligum.blocks.index.solr;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.JsonPageIndexEntry;
 import com.beligum.blocks.index.ifaces.*;
@@ -19,8 +20,10 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private SolrQuery solrQuery;
     private StringBuilder queryBuilder;
     private StringBuilder filterQueryBuilder;
+    private String languageGroupFilter;
 
     //-----CONSTRUCTORS-----
     public SolrIndexSearchRequest(IndexConnection indexConnection)
@@ -29,6 +32,9 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         this.queryBuilder = new StringBuilder();
         this.filterQueryBuilder = new StringBuilder();
+
+        //Note: in Solr, a query is always necessary, so we start out with searching for everything
+        this.solrQuery = new SolrQuery("*:*");
     }
 
     //-----PUBLIC METHODS-----
@@ -36,6 +42,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value);
+        this.updateMainQuery();
 
         return super.query(value, filterBoolean);
     }
@@ -43,6 +50,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
+        this.updateFilterQueries();
 
         return super.filter(type, filterBoolean);
     }
@@ -50,6 +58,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+        this.updateFilterQueries();
 
         return super.filter(field, value, filterBoolean);
     }
@@ -57,6 +66,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
+
+        this.updateFilterQueries();
 
         return super.filter(property, value, filterBoolean);
     }
@@ -67,9 +78,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             SolrIndexSearchRequest solrSubRequest = (SolrIndexSearchRequest) subRequest;
             if (solrSubRequest.queryBuilder.length() > 0) {
                 this.appendBoolean(this.queryBuilder, filterBoolean).append("(").append(solrSubRequest.queryBuilder).append(")");
+                this.updateMainQuery();
             }
             if (solrSubRequest.filterQueryBuilder.length() > 0) {
                 this.appendBoolean(this.filterQueryBuilder, filterBoolean).append("(").append(solrSubRequest.filterQueryBuilder).append(")");
+                this.updateFilterQueries();
             }
         }
         else {
@@ -82,6 +95,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
         this.appendWildcard(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+        this.updateFilterQueries();
 
         return super.wildcard(field, value, filterBoolean);
     }
@@ -89,53 +103,94 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
         this.appendWildcard(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
+        this.updateFilterQueries();
 
         return super.wildcard(property, value, filterBoolean);
     }
+    @Override
+    public IndexSearchRequest language(Locale language)
+    {
+        super.language(language);
+
+        this.filter(PageIndexEntry.languageField, this.getLanguage().getLanguage(), FilterBoolean.AND);
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest language(Locale language, IndexEntryField field)
+    {
+        super.language(language, field);
+
+        // Explanation: group all results with the same groupField (probably always "resource") and use the function below to decide
+        // which one to take. The function will select entries where the returned value of the configured function is the highest ('max=').
+        // That function will calculate the maximum ('max()') of two inner functions: the first will check if the language of the entry
+        // is the requested entry (returns 3, highest score). The second will check if the language of the entry equals the default
+        // site language (returns 2, second highest). In all other cases, 1 is returned, which means the entry has no special language.
+        this.languageGroupFilter = "{!collapse" +
+
+                                   // group on this field
+                                   " field=" + this.languageGroupField +
+
+                                   // remove documents with a null value in the collapse field
+                                   // note that this shouldn't happen because the language field must always be filled in
+                                   " nullPolicy=ignore" +
+
+                                   // use the highest value of the function below as the best entry
+                                   " max=" +
+                                   "max(" +
+                                   "if(eq(" + PageIndexEntry.languageField + ",'" + this.language.getLanguage() + "'),3,1)" +
+                                   "," +
+                                   "if(eq(" + PageIndexEntry.languageField + ",'" + R.configuration().getDefaultLanguage() + "'),2,1)" +
+                                   ")" +
+
+                                   // close the collapse
+                                   "}";
+
+        this.updateFilterQueries();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest sort(RdfProperty property, boolean sortAscending)
+    {
+        super.sort(property, sortAscending);
+
+        this.updateSort();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest sort(IndexEntryField field, boolean sortAscending)
+    {
+        super.sort(field, sortAscending);
+
+        this.updateSort();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest pageSize(int pageSize)
+    {
+        super.pageSize(pageSize);
+
+        this.updateBounds();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest pageOffset(int pageOffset)
+    {
+        super.pageOffset(pageOffset);
+
+        this.updateBounds();
+
+        return this;
+    }
 
     //-----PROTECTED METHODS-----
-    SolrQuery buildSolrQuery()
+    SolrQuery getSolrQuery()
     {
-        //Note: in Solr, a query is always necessary, so we start out with searching for everything
-        SolrQuery retVal = new SolrQuery("*:*");
-
-        //make sure this happens before calling the retVal.setFilterQueries() below
-        if (this.getLanguage() != null) {
-
-            // do this here because we'll just add a filter in strict mode
-            switch (this.languageFilterType) {
-                case STRICT:
-                    this.filter(PageIndexEntry.languageField, this.getLanguage().getLanguage(), FilterBoolean.AND);
-                    break;
-                case PREFERRED:
-                    StringBuilder langFilterQuery = new StringBuilder();
-                    // see https://lucene.apache.org/solr/guide/7_7/collapse-and-expand-results.html
-                    langFilterQuery.append("!collapse field=").append(this.languageGroupField);
-                    retVal.addFilterQuery(langFilterQuery.toString());
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + this.languageFilterType);
-            }
-        }
-
-        if (this.queryBuilder.length() > 0) {
-            retVal.setQuery(this.queryBuilder.toString());
-        }
-
-        if (this.filterQueryBuilder.length() > 0) {
-            retVal.setFilterQueries(this.filterQueryBuilder.toString());
-        }
-
-        for (Map.Entry<String, Boolean> e : this.sortFields.entrySet()) {
-            retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
-        }
-
-        // zero based offset of matching documents to retrieve
-        retVal.setStart(this.getPageOffset());
-        // number of documents to return starting at "start"
-        retVal.setRows(Math.min(this.getPageSize(), new Long(this.getMaxResults()).intValue()));
-
-        return retVal;
+        return this.solrQuery;
     }
 
     //-----PRIVATE METHODS-----
@@ -193,11 +248,50 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return stringBuilder;
     }
+    private void updateMainQuery()
+    {
+        if (this.queryBuilder.length() > 0) {
+            this.solrQuery.setQuery(this.queryBuilder.toString());
+        }
+        else {
+            this.solrQuery.setQuery("*:*");
+        }
+    }
+    private void updateFilterQueries()
+    {
+        if (this.filterQueryBuilder.length() > 0) {
+            this.solrQuery.setFilterQueries(this.filterQueryBuilder.toString());
+        }
+        else {
+            this.solrQuery.setFilterQueries();
+        }
+
+        // the above call overwrites all filters, so make sure to add the language grouping filter
+        // again if we have one
+        if (this.languageGroupFilter != null) {
+            this.solrQuery.addFilterQuery(this.languageGroupFilter);
+        }
+    }
+    private void updateSort()
+    {
+        this.solrQuery.clearSorts();
+        for (Map.Entry<String, Boolean> e : this.sortFields.entrySet()) {
+            this.solrQuery.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+        }
+    }
+    private void updateBounds()
+    {
+        // zero based offset of matching documents to retrieve
+        this.solrQuery.setStart(this.getPageOffset());
+
+        // number of documents to return starting at "start"
+        this.solrQuery.setRows(this.getPageSize());
+    }
 
     //-----MGMT METHODS-----
     @Override
     public String toString()
     {
-        return this.buildSolrQuery().toString();
+        return this.getSolrQuery().toString();
     }
 }

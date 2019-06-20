@@ -112,14 +112,14 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
         //this does nothing more than restrict the member values to the interface
         Iterable<RdfProperty> retVal = Iterables.transform(this.getPropertiesWithoutProxyCheck(),
-                                   new Function<RdfPropertyImpl, RdfProperty>()
-                                   {
-                                       @Override
-                                       public RdfProperty apply(RdfPropertyImpl member)
-                                       {
-                                           return member;
-                                       }
-                                   }
+                                                           new Function<RdfPropertyImpl, RdfProperty>()
+                                                           {
+                                                               @Override
+                                                               public RdfProperty apply(RdfPropertyImpl member)
+                                                               {
+                                                                   return member;
+                                                               }
+                                                           }
         );
 
         // basically, this creates an iterable with the main property removed,
@@ -249,31 +249,32 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
 
             return this;
         }
-        public Builder mainProperty(RdfProperty mainProperty) throws RdfInitializationException
-        {
-            if (!this.rdfResource.properties.contains(mainProperty)) {
-                throw new RdfInitializationException("Can't set main property of class " + this + " to " + mainProperty + " because it's not a property of this class.");
-            }
-            else {
-                this.rdfResource.mainProperty = mainProperty;
-            }
-
-            return this;
-        }
-        public Builder parentProperty(RdfProperty parentProperty) throws RdfInitializationException
-        {
-            if (!this.rdfResource.properties.contains(parentProperty)) {
-                throw new RdfInitializationException("Can't set parent property of class " + this + " to " + parentProperty + " because it's not a property of this class.");
-            }
-            else if (this.rdfResource.parentProperty != null) {
-
-            }
-            else {
-                this.rdfResource.parentProperty = parentProperty;
-            }
-
-            return this;
-        }
+        // Note: mainProperty() and parentProperty() are implemented as RDF property options
+        //        public Builder mainProperty(RdfProperty mainProperty) throws RdfInitializationException
+        //        {
+        //            if (!this.rdfResource.properties.contains(mainProperty)) {
+        //                throw new RdfInitializationException("Can't set main property of class " + this + " to " + mainProperty + " because it's not a property of this class.");
+        //            }
+        //            else {
+        //                this.rdfResource.mainProperty = mainProperty;
+        //            }
+        //
+        //            return this;
+        //        }
+        //        public Builder parentProperty(RdfProperty parentProperty) throws RdfInitializationException
+        //        {
+        //            if (!this.rdfResource.properties.contains(parentProperty)) {
+        //                throw new RdfInitializationException("Can't set parent property of class " + this + " to " + parentProperty + " because it's not a property of this class.");
+        //            }
+        //            else if (this.rdfResource.parentProperty != null) {
+        //
+        //            }
+        //            else {
+        //                this.rdfResource.parentProperty = parentProperty;
+        //            }
+        //
+        //            return this;
+        //        }
         public Builder validator(RdfClassValidator validator)
         {
             this.rdfResource.validator = validator;
@@ -285,6 +286,31 @@ public class RdfClassImpl extends AbstractRdfOntologyMember implements RdfClass
         RdfClass create() throws RdfInitializationException
         {
             if (this.rdfResource.isProxy()) {
+
+                // detect and validate the main and parent properties
+                for (RdfPropertyImpl p : this.rdfResource.properties) {
+                    if (p.isMainProperty) {
+                        if (this.rdfResource.mainProperty != null) {
+                            throw new RdfInitializationException("Can't set main property of class " + this.rdfResource + " to " + p + " because it would overwrite an existing main property; " +
+                                                                 this.rdfResource.mainProperty);
+                        }
+                        else {
+                            this.rdfResource.mainProperty = p;
+                        }
+                    }
+
+                    // note that we don't use else here, a property can be both main and parent, right?
+                    if (p.isParentProperty) {
+                        if (this.rdfResource.parentProperty != null) {
+                            throw new RdfInitializationException("Can't set parent property of class " + this.rdfResource + " to " + p + " because it would overwrite an existing parent property; " +
+                                                                 this.rdfResource.parentProperty);
+                        }
+                        else {
+                            this.rdfResource.parentProperty = p;
+                        }
+                    }
+                }
+
                 //enforce a naming policy on the classes of our local public ontologies
                 if (this.rdfResource.ontology.isPublic) {
                     if (Character.isLowerCase(this.rdfResource.name.charAt(0))) {

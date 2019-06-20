@@ -3,6 +3,7 @@ package com.beligum.blocks.index.entries;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.index.fields.JsonField;
+import com.beligum.blocks.index.fields.ResourceTypeField;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -163,27 +164,27 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
-//        if (type.getParentProperty() != null) {
-//            if (parentObj != null) {
-//                throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
-//            }
-//            else {
-//                Model rdfParentUriModel = rootModel.filter(rootResourceIri, RdfTools.uriToIri(type.getParentProperty().getUri()), null);
-//                if (rdfParentUriModel != null && rdfParentUriModel.size() > 0) {
-//                    if (rdfParentUriModel.size() > 1) {
-//                        throw new IOException("Encountered an RDF parent property which value is more than one; this shouldn't happen; " + rdfParentUriModel);
-//                    }
-//                    Value rdfParentUriValue = rdfParentUriModel.iterator().next().getObject();
-//                    if (rdfParentUriValue instanceof IRI || type.getParentProperty().getDataType().equals(XSD.anyURI)) {
-//                        this.setParentUri(URI.create(rdfParentUriValue.stringValue()));
-//                    }
-//                    else {
-//                        throw new IOException("Encountered an RDF parent property, but it doesn't seem to hold a resource URI value. This is a configuration error and needs to be fixed; " +
-//                                              rdfParentUriModel);
-//                    }
-//                }
-//            }
-//        }
+        //        if (type.getParentProperty() != null) {
+        //            if (parentObj != null) {
+        //                throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
+        //            }
+        //            else {
+        //                Model rdfParentUriModel = rootModel.filter(rootResourceIri, RdfTools.uriToIri(type.getParentProperty().getUri()), null);
+        //                if (rdfParentUriModel != null && rdfParentUriModel.size() > 0) {
+        //                    if (rdfParentUriModel.size() > 1) {
+        //                        throw new IOException("Encountered an RDF parent property which value is more than one; this shouldn't happen; " + rdfParentUriModel);
+        //                    }
+        //                    Value rdfParentUriValue = rdfParentUriModel.iterator().next().getObject();
+        //                    if (rdfParentUriValue instanceof IRI || type.getParentProperty().getDataType().equals(XSD.anyURI)) {
+        //                        this.setParentUri(URI.create(rdfParentUriValue.stringValue()));
+        //                    }
+        //                    else {
+        //                        throw new IOException("Encountered an RDF parent property, but it doesn't seem to hold a resource URI value. This is a configuration error and needs to be fixed; " +
+        //                                              rdfParentUriModel);
+        //                    }
+        //                }
+        //            }
+        //        }
 
         //create a new object and fill it with the first internal fields like uri, resource, etc
         this.jsonNode = Json.getObjectMapper().createObjectNode();
@@ -254,6 +255,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         ObjectNode subObject = subObjects.get(resourceUri).getJsonNode();
 
                         // Note: don't set this as a proxy because it's not; it holds the true values of this sub-object
+                        subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.SUB));
 
                         this.addProperty(this.jsonNode, subObject, field.getProxyField(), language);
                     }
@@ -269,7 +271,9 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
 
                             if (type.getParentProperty() != null && type.getParentProperty().equals(property)) {
                                 if (this.getParentUri() != null) {
-                                    throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
+                                    throw new IOException(
+                                                    "Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " +
+                                                    type);
                                 }
                                 else {
                                     this.setParentUri(resourceValue.getUri());
@@ -278,7 +282,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                             }
 
                             // make sure we flag the node as a proxy
-                            this.setIsProxy(resourceNode);
+                            resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.PROXY));
 
                             // lastly, hook the sub-node in the main node using the "_proxy" suffix
                             this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
@@ -298,6 +302,11 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                 Logger.error("Encountered an unknown or invalid RDF predicate '" + triple.getPredicate() + "' while mapping to JSON." +
                              " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
             }
+        }
+
+        // flag the node as default when no specific resource type is set
+        if (!this.jsonNode.has(ResourceIndexEntry.resourceTypeField.getName())) {
+            this.jsonNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(ResourceIndexEntry.Type.DEFAULT));
         }
 
         // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
@@ -391,10 +400,6 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
         }
 
         return object;
-    }
-    private void setIsProxy(ObjectNode resourceNode)
-    {
-        resourceNode.put(ResourceIndexEntry.proxyField.getName(), true);
     }
     /**
      * Add the value (of the specified property in the specified language) to the json object,

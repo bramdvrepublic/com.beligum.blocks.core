@@ -41,63 +41,6 @@ public interface PageIndexEntry extends ResourceIndexEntry
 
     //-----PUBLIC METHODS-----
 
-    /**
-     * Goes through the supplied page search results and selects the single most fitting result, taking into account the supplied language.
-     * Note that we always try to return a result. Language selection is based on the supplied language and the configured default language.
-     *
-     * @param searchResult the search results to look through
-     * @param language the requested language (note that the selected result may not be this language)
-     * @return the best fitting result
-     */
-    static ResourceProxy selectBestForLanguage(IndexSearchResult searchResult, Locale language)
-    {
-        ResourceProxy retVal = null;
-
-        for (ResourceProxy entry : searchResult) {
-
-            if (retVal == null) {
-                retVal = entry;
-            }
-            else {
-                int entryLangScore = PageIndexEntry.getLanguageScore(entry, language);
-                int selectedLangScore = PageIndexEntry.getLanguageScore(retVal, language);
-                if (entryLangScore > selectedLangScore) {
-                    retVal = entry;
-                }
-            }
-        }
-
-        return retVal;
-    }
-    static ResourceProxy selectBestLanguage(IndexSearchResult searchResult)
-    {
-        //TODO check this
-        return searchResult.getTotalHits() > 0 ? searchResult.iterator().next() : null;
-    }
-
-    /**
-     * This will return an int value according to the language of the entry;
-     *
-     * 1) entry language = no special language
-     * 2) entry language = default language
-     * 3) entry language = requested language
-     *
-     * --> higher means better
-     */
-    static int getLanguageScore(ResourceProxy entry, Locale requestLanguage)
-    {
-        int retVal = 1;
-
-        if (entry.getLanguage().equals(requestLanguage)) {
-            retVal = 3;
-        }
-        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage())) {
-            retVal = 2;
-        }
-
-        return retVal;
-    }
-
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----

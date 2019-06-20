@@ -23,13 +23,14 @@ import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
+import gen.com.beligum.blocks.core.constants.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 
+import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG;
 import static gen.com.beligum.blocks.core.constants.blocks.core.WIDGET_TYPE_TIME_TZONE_CLASS;
 
 /**
@@ -261,18 +263,26 @@ public class RdfTools
     /**
      * Generate a RDFa-compatible HTML string from the supplied resource info
      */
-    public static CharSequence serializeResourceHtml(ResourceProxy resourceProxy)
+    public static CharSequence serializeResourceHtml(RdfProperty rdfProperty, ResourceProxy resourceProxy)
     {
         CharSequence retVal = null;
 
         StringBuilder labelHtml = new StringBuilder();
         labelHtml.append(resourceProxy.getLabel());
-        if (resourceProxy.getImage() != null) {
+        boolean disableImg = false;
+        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG)) {
+            disableImg = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG));
+        }
+        if (resourceProxy.getImage() != null && !disableImg) {
             //Note: title is for a tooltip
             labelHtml.append("<img src=\"").append(resourceProxy.getImage()).append("\" alt=\"").append(resourceProxy.getLabel()).append("\" title=\"").append(resourceProxy.getLabel()).append("\">");
         }
 
-        if (resourceProxy.getUri() != null) {
+        boolean disableHref = false;
+        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF)) {
+            disableHref = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF));
+        }
+        if (resourceProxy.getUri() != null && !disableHref) {
             StringBuilder linkHtml = new StringBuilder();
             linkHtml.append("<a href=\"").append(resourceProxy.getUri()).append("\"");
             if (resourceProxy.isExternal() || resourceProxy.getUri().isAbsolute()) {

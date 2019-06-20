@@ -21,7 +21,7 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
     //-----CONSTRUCTORS-----
     public SparqlIndexSelectResult(TupleQueryResult result, long elapsedTime)
     {
-        super(IndexSearchRequest.DEFAULT_PAGE_SIZE, IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, elapsedTime);
+        super(IndexSearchRequest.DEFAULT_PAGE_OFFSET, IndexSearchRequest.DEFAULT_PAGE_SIZE, elapsedTime);
 
         // we "materialize" the query at once, so we have it's size and can close it properly
         this.selectResult = QueryResults.asList(result);

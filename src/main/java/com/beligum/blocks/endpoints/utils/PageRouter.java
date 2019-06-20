@@ -380,7 +380,7 @@ public class PageRouter
 
                 IndexSearchResult results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
 
-                ResourceProxy selectedEntry = PageIndexEntry.selectBestLanguage(results);
+                ResourceIndexEntry selectedEntry = results.getTotalHits() > 0 ? results.iterator().next() : null;
 
                 //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
                 URI selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getUri();
@@ -394,7 +394,7 @@ public class PageRouter
                     //So we redirect to the parent's id
                     //Also note that (unlike real resources, see check just below) we can't offer the user the choice to make this page,
                     //because sub-resources are not supposed to have real pages; they only exist in the context of a parent page.
-                    if (selectedEntry.getParentUri() != null) {
+                    if (selectedEntry.getResourceType().equals(ResourceIndexEntry.Type.SUB)) {
                         selectedEntryAddress = selectedEntry.getParentUri();
                     }
                     //when we're editing pages it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
@@ -458,7 +458,7 @@ public class PageRouter
                         }
                     }
 
-                    searchRequest.maxResults(allLanguages.size());
+                    searchRequest.pageSize(allLanguages.size());
 
                     IndexSearchResult results = queryConnection.search(searchRequest);
                     //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
@@ -470,10 +470,8 @@ public class PageRouter
                         searchRequest.filter(PageIndexEntry.languageField, this.locale.getLanguage(), IndexSearchRequest.FilterBoolean.AND);
                         results = queryConnection.search(searchRequest);
 
-                        //TODO do we still need this? See the language filter above
-                        ResourceProxy selectedEntry2 = PageIndexEntry.selectBestLanguage(results);
-
                         //this means we found something, so save the redirection url
+                        ResourceProxy selectedEntry2 = results.getTotalHits() > 0 ? results.iterator().next() : null;
                         if (selectedEntry2 != null) {
                             //we'll redirect to the id (eg. the public URI of the page) of the found resource
                             this.targetUri = selectedEntry2.getUri();

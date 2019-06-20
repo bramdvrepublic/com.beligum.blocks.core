@@ -24,7 +24,6 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     protected Locale language;
     protected LanguageFilterType languageFilterType;
     protected IndexEntryField languageGroupField;
-    protected long maxResults = DEFAULT_MAX_SEARCH_RESULTS;
 
     //-----CONSTRUCTORS-----
     protected AbstractIndexSearchRequest(IndexConnection indexConnection)
@@ -59,11 +58,6 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     public Locale getLanguage()
     {
         return language;
-    }
-    @Override
-    public long getMaxResults()
-    {
-        return maxResults;
     }
 
     //-----BUILDER METHODS-----
@@ -158,13 +152,6 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
         this.language = language;
         this.languageFilterType = LanguageFilterType.PREFERRED;
         this.languageGroupField = field;
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest maxResults(long maxResults)
-    {
-        this.maxResults = maxResults;
 
         return this;
     }

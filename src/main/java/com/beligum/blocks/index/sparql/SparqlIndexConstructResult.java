@@ -25,7 +25,7 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult
     //-----CONSTRUCTORS-----
     public SparqlIndexConstructResult(GraphQueryResult result, long elapsedTime)
     {
-        super(IndexSearchRequest.DEFAULT_PAGE_SIZE, IndexSearchRequest.DEFAULT_MAX_SEARCH_RESULTS, elapsedTime);
+        super(IndexSearchRequest.DEFAULT_PAGE_OFFSET, IndexSearchRequest.DEFAULT_PAGE_SIZE, elapsedTime);
 
         // we "materialize" the query at once, so we have it's size and can close it properly
         this.model = QueryResults.asModel(result);
