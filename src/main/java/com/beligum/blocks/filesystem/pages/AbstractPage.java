@@ -305,7 +305,7 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         IndexSearchRequest searchRequest = IndexSearchRequest.createFor(StorageFactory.getJsonIndexer().connect());
         searchRequest.filter(PageIndexEntry.resourceField, StringFunctions.getRightOfDomain(resourceNoLangUri).toString(), IndexSearchRequest.FilterBoolean.AND);
         searchRequest.pageSize(siteLanguages.size());
-        IndexSearchResult searchResult = searchRequest.getIndexConnection().search(searchRequest);
+        IndexSearchResult<ResourceIndexEntry> searchResult = searchRequest.getIndexConnection().search(searchRequest);
         for (ResourceProxy entry : searchResult) {
             Page transPage = R.resourceManager().get(entry.getUri(), MimeTypes.HTML, Page.class);
             if (transPage != null && !transPage.getLanguage().equals(thisLang)) {

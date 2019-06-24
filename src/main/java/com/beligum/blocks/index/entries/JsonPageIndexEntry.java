@@ -253,7 +253,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         ObjectNode subObject = subObjects.get(resourceUri).getJsonNode();
 
                         // Note: don't set this as a proxy because it's not; it holds the true values of this sub-object
-                        subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.SUB));
+                        subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.SUB_VALUE);
 
                         this.addProperty(this.jsonNode, subObject, field, language);
                     }
@@ -280,7 +280,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                             }
 
                             // make sure we flag the node as a proxy
-                            resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.PROXY));
+                            resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.PROXY_VALUE);
 
                             // lastly, hook the sub-node in the main node using the "_proxy" suffix
                             this.addProperty(this.jsonNode, resourceNode, field, language);
@@ -325,7 +325,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
 
         // flag the node as default when no specific resource type is set
         if (!this.jsonNode.has(ResourceIndexEntry.resourceTypeField.getName())) {
-            this.jsonNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(ResourceIndexEntry.Type.DEFAULT));
+            this.jsonNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.DEFAULT_VALUE);
         }
 
         // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
@@ -381,6 +381,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Overwriting parentUri during initialization, this probably means something is wrong; " + this);
         }
         else {
+            // Note: this handles null-valued parents okay
             this.setParentUri(PageIndexEntry.parentUriField.create(parent));
         }
 

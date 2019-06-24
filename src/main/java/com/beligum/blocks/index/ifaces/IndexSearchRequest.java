@@ -40,26 +40,10 @@ public interface IndexSearchRequest extends Serializable
         NOT
     }
 
-    enum FilterType
-    {
-        CLASS,
-        FIELD,
-        PROPERTY,
-        QUERY,
-        SUB,
-        LANGUAGE
-    }
-
     enum LanguageFilterType
     {
         STRICT,
         PREFERRED
-    }
-
-    interface Filter
-    {
-        FilterType getFilterType();
-        FilterBoolean getFilterBoolean();
     }
 
     int DEFAULT_PAGE_SIZE = 50;
@@ -87,11 +71,6 @@ public interface IndexSearchRequest extends Serializable
     IndexConnection getIndexConnection();
 
     /**
-     * Returns an overview of all configured filters in this instance
-     */
-    List<Filter> getFilters();
-
-    /**
      * Returns the requested page size
      */
     int getPageSize();
@@ -112,6 +91,12 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest query(String value, FilterBoolean filterBoolean);
 
     /**
+     * Sets the general search-all query value of this request.
+     * If fuzzy is true, adjust the value to do a wildcard search.
+     */
+    IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean);
+
+    /**
      * Adds a filter that only selects entries of the specified class.
      * The boolean configures how this filter is linked to previously added filters.
      */
@@ -124,10 +109,24 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean);
 
     /**
+     * Adds a filter that only selects entries that have the exact specified value for the specified field.
+     * If fuzzy is true, adjust the value to do a wildcard search.
+     * The boolean configures how this filter is linked to previously added filters.
+     */
+    IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean);
+
+    /**
      * Adds a filter that only selects entries that have the exact specified value for the specified property.
      * The boolean configures how this filter is linked to previously added filters.
      */
     IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean);
+
+    /**
+     * Adds a filter that only selects entries that have the exact specified value for the specified property.
+     * If fuzzy is true, adjust the value to do a wildcard search.
+     * The boolean configures how this filter is linked to previously added filters.
+     */
+    IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean);
 
     /**
      * Adds a sub-request to the chain of filters.
@@ -136,16 +135,29 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
 
     /**
-     * Adds a filter that only selects entries that have the specified value as a wildcard for the specified field.
+     * Adds a filter that finds all documents without a value for this property.
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean);
 
     /**
-     * Adds a filter that only selects entries that have the specified value as a wildcard for the specified property.
+     * Adds a filter that finds all documents without a value for this field.
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException;
+
+    /**
+     * Adds a filter that searches all fields for the specified value.
+     * The boolean configures how this filter is linked to previously added filters.
+     */
+    IndexSearchRequest all(String value, FilterBoolean filterBoolean);
+
+    /**
+     * Adds a filter that searches all fields for the specified value.
+     * If fuzzy is true, adjust the value to do a wildcard search.
+     * The boolean configures how this filter is linked to previously added filters.
+     */
+    IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean);
 
     /**
      * Requests the results are sorted on the specified property in the specified order

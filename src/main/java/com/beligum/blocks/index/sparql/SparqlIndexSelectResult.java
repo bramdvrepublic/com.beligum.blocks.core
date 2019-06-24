@@ -2,7 +2,6 @@ package com.beligum.blocks.index.sparql;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryResults;
@@ -11,7 +10,7 @@ import org.eclipse.rdf4j.query.TupleQueryResult;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class SparqlIndexSelectResult extends AbstractIndexSearchResult
+public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSelectIndexEntry>
 {
     //-----CONSTANTS-----
 
@@ -39,9 +38,9 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
         return Long.valueOf(this.selectResult.size());
     }
     @Override
-    public java.util.Iterator iterator()
+    public java.util.Iterator<SparqlSelectIndexEntry> iterator()
     {
-        return new Iterator(this.selectResult);
+        return new SparqlSelectIterator(this.selectResult);
     }
 
     //-----PROTECTED METHODS-----
@@ -49,11 +48,11 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class Iterator implements java.util.Iterator<ResourceIndexEntry>
+    private static class SparqlSelectIterator implements java.util.Iterator<SparqlSelectIndexEntry>
     {
         private final java.util.Iterator<BindingSet> bindingIterator;
 
-        public Iterator(List<BindingSet> results)
+        SparqlSelectIterator(List<BindingSet> results)
         {
             this.bindingIterator = results.iterator();
         }
@@ -64,9 +63,9 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult
             return this.bindingIterator.hasNext();
         }
         @Override
-        public ResourceIndexEntry next()
+        public SparqlSelectIndexEntry next()
         {
-            ResourceIndexEntry retVal = null;
+            SparqlSelectIndexEntry retVal = null;
 
             if (this.hasNext()) {
                 try {

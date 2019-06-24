@@ -65,12 +65,12 @@ public interface IndexConnection extends XAClosableResource, RequestCloseable
     /**
      * Search the index using the supplied query, filters and options
      */
-    IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException;
+    IndexSearchResult<ResourceIndexEntry> search(IndexSearchRequest indexSearchRequest) throws IOException;
 
     /**
      * Low-level search request with implementation-specific query string
      */
-    IndexSearchResult search(String query, QueryFormat format) throws IOException;
+    <T extends IndexSearchResult> T search(String query, QueryFormat format) throws IOException;
 
     //-----PROTECTED METHODS-----
 

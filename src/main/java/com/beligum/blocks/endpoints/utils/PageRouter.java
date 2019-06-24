@@ -378,9 +378,13 @@ public class PageRouter
                                                                             //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
                                                                             .filter(PageIndexEntry.resourceField, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
-                IndexSearchResult results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
+                IndexSearchResult<ResourceIndexEntry> results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
 
-                ResourceIndexEntry selectedEntry = results.getTotalHits() > 0 ? results.iterator().next() : null;
+                ResourceIndexEntry selectedEntry = null;
+                Iterator<ResourceIndexEntry> resultIter = results.iterator();
+                if (resultIter.hasNext()) {
+                    selectedEntry = resultIter.next();
+                }
 
                 //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
                 URI selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getUri();
@@ -460,7 +464,7 @@ public class PageRouter
 
                     searchRequest.pageSize(allLanguages.size());
 
-                    IndexSearchResult results = queryConnection.search(searchRequest);
+                    IndexSearchResult<ResourceIndexEntry> results = queryConnection.search(searchRequest);
                     //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
                     if (!results.isEmpty()) {
                         //since all resources should be the same, we take the first match

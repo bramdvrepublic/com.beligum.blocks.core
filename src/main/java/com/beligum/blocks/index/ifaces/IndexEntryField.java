@@ -10,11 +10,6 @@ import java.util.Locale;
 public interface IndexEntryField
 {
     //-----CONSTANTS-----
-    /**
-     * This will be appended to the name of this field if we're creating a "proxy field".
-     * For more info, see https://github.com/republic-of-reinvention/com.stralo.framework/issues/50
-     */
-    String PROXY_FIELD_SUFFIX = "_proxy";
 
     //-----VARIABLES-----
 

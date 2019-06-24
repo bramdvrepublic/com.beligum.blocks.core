@@ -39,37 +39,60 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
     //-----PUBLIC METHODS-----
     @Override
-    public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value);
+        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, fuzzy, true);
         this.updateMainQuery();
 
-        return super.query(value, filterBoolean);
+        return this;
     }
     @Override
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type), false, true);
         this.updateFilterQueries();
 
-        return super.filter(type, filterBoolean);
+        return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, fuzzy, true);
         this.updateFilterQueries();
 
-        return super.filter(field, value, filterBoolean);
+        return this;
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
-
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, fuzzy, true);
         this.updateFilterQueries();
 
-        return super.filter(property, value, filterBoolean);
+        return this;
+    }
+    @Override
+    public IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean)
+    {
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", false, false);
+        this.updateFilterQueries();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
+    {
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", false, false);
+        this.updateFilterQueries();
+
+        return this;
+    }
+    @Override
+    public IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    {
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, "*", value, fuzzy, true);
+        this.updateFilterQueries();
+
+        return this;
     }
     @Override
     public IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException
@@ -89,23 +112,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             throw new IOException("Unsupported sub query type; " + subRequest);
         }
 
-        return super.filter(subRequest, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean)
-    {
-        this.appendWildcard(this.filterQueryBuilder, filterBoolean, field.getName(), value);
-        this.updateFilterQueries();
-
-        return super.wildcard(field, value, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean)
-    {
-        this.appendWildcard(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value);
-        this.updateFilterQueries();
-
-        return super.wildcard(property, value, filterBoolean);
+        return this;
     }
     @Override
     public IndexSearchRequest language(Locale language)
@@ -194,21 +201,19 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PRIVATE METHODS-----
-    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
+    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, boolean fuzzy, boolean escapeValue)
     {
-        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(QueryParser.escape(value)).append(")");
-
-        return stringBuilder;
-    }
-    private StringBuilder appendWildcard(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value)
-    {
-        StringBuilder query = new StringBuilder(QueryParser.escape(value));
-
-        if (!NumberUtils.isNumber(value) && !value.contains("*")) {
-            query.append("*");
+        // calc the flags on the raw incoming value
+        boolean isNumber = !NumberUtils.isNumber(value);
+        boolean hasAsterisk = !value.contains("*");
+        if (escapeValue) {
+            value = QueryParser.escape(value);
+        }
+        if (fuzzy && isNumber && !hasAsterisk) {
+            value = value + "*";
         }
 
-        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(query.toString()).append(")");
+        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(value).append(")");
 
         return stringBuilder;
     }

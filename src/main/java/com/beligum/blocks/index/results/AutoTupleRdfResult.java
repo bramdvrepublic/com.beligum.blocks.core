@@ -17,21 +17,23 @@
 package com.beligum.blocks.index.results;
 
 import com.beligum.blocks.config.WidgetType;
+import com.beligum.blocks.index.ifaces.IndexSearchResult;
 import com.beligum.blocks.index.ifaces.RdfTupleResult;
+import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
+import com.beligum.blocks.index.sparql.SparqlIndexSelectResult;
+import com.beligum.blocks.index.sparql.SparqlSelectIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.glassfish.jersey.server.monitoring.RequestEvent;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
@@ -47,7 +49,7 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
 
     //-----VARIABLES-----
     private RdfProperty property;
-    private TupleQueryResult tupleQueryResult;
+    private Iterator<SparqlSelectIndexEntry> resultIterator;
     private String labelBinding;
     private String valueBinding;
     private Locale language;
@@ -57,10 +59,10 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
     private DateTimeFormatter cachedDateTimeFormatter;
 
     //-----CONSTRUCTORS-----
-    public AutoTupleRdfResult(RdfProperty property, TupleQueryResult tupleQueryResult, String labelBinding, String valueBinding, Locale language)
+    public AutoTupleRdfResult(RdfProperty property, SparqlIndexSelectResult searchResult, String labelBinding, String valueBinding, Locale language)
     {
         this.property = property;
-        this.tupleQueryResult = tupleQueryResult;
+        this.resultIterator = searchResult.iterator();
         this.labelBinding = labelBinding;
         this.valueBinding = valueBinding;
         this.language = language;
@@ -70,17 +72,19 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
     @Override
     public boolean hasNext()
     {
-        return this.tupleQueryResult.hasNext();
+        return this.resultIterator.hasNext();
     }
     @Override
     public Tuple<String, String> next()
     {
         Tuple<String, String> retVal = null;
 
-        if (this.tupleQueryResult != null && this.tupleQueryResult.hasNext()) {
-            BindingSet bindings = this.tupleQueryResult.next();
-            Value key = bindings.getValue(this.labelBinding);
-            Value val = bindings.getValue(this.valueBinding);
+        if (this.resultIterator != null && this.resultIterator.hasNext()) {
+
+            SparqlSelectIndexEntry result = this.resultIterator.next();
+
+            Value key = result.getBindingSet().getValue(this.labelBinding);
+            Value val = result.getBindingSet().getValue(this.valueBinding);
 
             String label = key == null ? null : key.stringValue();
             String value = val == null ? null : val.stringValue();
@@ -93,19 +97,6 @@ public class AutoTupleRdfResult implements RdfTupleResult<String, String>
         }
 
         return retVal;
-    }
-    @Override
-    public void close(boolean forceRollback) throws Exception
-    {
-        this.close();
-    }
-    @Override
-    public void close() throws Exception
-    {
-        if (this.tupleQueryResult != null) {
-            this.tupleQueryResult.close();
-            this.tupleQueryResult = null;
-        }
     }
 
     //-----PROTECTED METHODS-----

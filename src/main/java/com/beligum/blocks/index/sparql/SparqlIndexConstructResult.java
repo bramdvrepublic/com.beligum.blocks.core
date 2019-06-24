@@ -2,7 +2,6 @@ package com.beligum.blocks.index.sparql;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.IRI;
@@ -14,7 +13,7 @@ import org.eclipse.rdf4j.query.QueryResults;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class SparqlIndexConstructResult extends AbstractIndexSearchResult
+public class SparqlIndexConstructResult extends AbstractIndexSearchResult<SparqlConstructIndexEntry>
 {
     //-----CONSTANTS-----
 
@@ -46,9 +45,9 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult
         return Long.valueOf(this.subjects.size());
     }
     @Override
-    public java.util.Iterator iterator()
+    public java.util.Iterator<SparqlConstructIndexEntry> iterator()
     {
-        return new Iterator(this.subjects, this.model);
+        return new SparqlConstructIterator(this.subjects, this.model);
     }
     public Model getModel()
     {
@@ -60,12 +59,12 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    private static class Iterator implements java.util.Iterator<ResourceIndexEntry>
+    private static class SparqlConstructIterator implements java.util.Iterator<SparqlConstructIndexEntry>
     {
         private final java.util.Iterator<Resource> subjectIterator;
         private final Model model;
 
-        public Iterator(Set<Resource> subjects, Model model)
+        SparqlConstructIterator(Set<Resource> subjects, Model model)
         {
             this.subjectIterator = subjects.iterator();
             this.model = model;
@@ -77,9 +76,9 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult
             return this.subjectIterator.hasNext();
         }
         @Override
-        public ResourceIndexEntry next()
+        public SparqlConstructIndexEntry next()
         {
-            ResourceIndexEntry retVal = null;
+            SparqlConstructIndexEntry retVal = null;
 
             if (this.hasNext()) {
                 try {

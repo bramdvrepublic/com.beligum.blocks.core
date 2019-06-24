@@ -272,7 +272,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
     }
     @Override
-    public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
+    public IndexSearchResult<ResourceIndexEntry> search(IndexSearchRequest indexSearchRequest) throws IOException
     {
         this.assertActive();
 
@@ -289,15 +289,13 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
     }
     @Override
-    public IndexSearchResult search(String query, IndexConnection.QueryFormat format) throws IOException
+    public <T extends IndexSearchResult> T search(String query, IndexConnection.QueryFormat format) throws IOException
     {
         this.assertActive();
 
-        IndexSearchResult retVal = null;
+        T retVal = null;
 
         if (format instanceof QueryFormat) {
-
-            long startStamp = System.currentTimeMillis();
 
             // From the RDF4j docs:
             // Three types of SPARQL queries are distinguished:
@@ -315,12 +313,12 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
             switch ((QueryFormat) format) {
                 case SPARQL11_SELECT:
 
-                    retVal = this.selectSearch(query);
+                    retVal = (T) this.selectSearch(query);
 
                     break;
                 case SPARQL11_CONSTRUCT:
 
-                    retVal = this.constructSearch(query);
+                    retVal = (T) this.constructSearch(query);
 
                     break;
                 default:

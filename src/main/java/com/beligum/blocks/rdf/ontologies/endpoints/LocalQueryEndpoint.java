@@ -68,9 +68,12 @@ public class LocalQueryEndpoint implements RdfEndpoint
 
         // This will group of the resource URI, selecting the best matching language
         mainQuery.filter(IndexSearchRequest.createFor(mainQuery.getIndexConnection())
-                                           .wildcard(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR)
-                                           .wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR),
+                                           .filter(ResourceIndexEntry.tokenisedUriField, query, true, IndexSearchRequest.FilterBoolean.OR)
+                                           .filter(ResourceIndexEntry.labelField, query, true, IndexSearchRequest.FilterBoolean.OR),
                          IndexSearchRequest.FilterBoolean.AND);
+
+        // This will group on the resource URI, selecting the best matching language
+        mainQuery.language(language, ResourceIndexEntry.resourceField);
 
         mainQuery.pageSize(maxResults);
 
@@ -83,20 +86,15 @@ public class LocalQueryEndpoint implements RdfEndpoint
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
         IndexConnection indexConn = StorageFactory.getJsonIndexer().connect();
-        IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
-                                                                             // This will group of the resource URI, selecting the best matching language
-                                                                             .language(language, ResourceIndexEntry.resourceField)
-                                                                             //at least one of the id or resource should match (or both)
-                                                                             .filter(ResourceIndexEntry.uriField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                             .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                             .pageSize(1));
+        IndexSearchResult<ResourceIndexEntry> matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
+                                                                                                 // This will group on the resource URI, selecting the best matching language
+                                                                                                 .language(language, ResourceIndexEntry.resourceField)
+                                                                                                 //at least one of the id or resource should match (or both)
+                                                                                                 .filter(ResourceIndexEntry.uriField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                 .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                 .pageSize(1));
 
         return matchingPages.getTotalHits() > 0 ? matchingPages.iterator().next() : null;
-
-//        if (selectedEntry != null) {
-//            //we just wrap the index extry in a resource info wrapper
-//            retVal = new WrappedPageResourceInfo(selectedEntry);
-//        }
     }
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)

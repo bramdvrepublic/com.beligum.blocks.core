@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Created by bram on 5/30/16.
  */
-public abstract class AbstractIndexSearchResult implements IndexSearchResult
+public abstract class AbstractIndexSearchResult<T extends ResourceIndexEntry> implements IndexSearchResult<T>
 {
     //-----CONSTANTS-----
 
@@ -53,7 +53,7 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
      * Note: this is mainly needed for the letter-format result box, which needs to be sorted alphabetically,
      * no matter what was configured by the search box.
      */
-    private List<ResourceIndexEntry> cachedAlphaSortedResults;
+    private List<T> cachedAlphaSortedResults;
 
     //-----CONSTRUCTORS-----
     public AbstractIndexSearchResult(Integer pageIndex, Integer pageSize, Long searchDuration)
@@ -90,7 +90,7 @@ public abstract class AbstractIndexSearchResult implements IndexSearchResult
         return searchDuration == null ? null : String.format("%.3f", searchDuration / 1000.0f);
     }
     @Override
-    public Iterable<ResourceIndexEntry> getAlphaSortedResults()
+    public Iterable<T> getAlphaSortedResults()
     {
         if (this.cachedAlphaSortedResults == null) {
             this.cachedAlphaSortedResults = Lists.newArrayList(this);
