@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.cache.CacheFunction;
 import com.beligum.base.cache.CacheKey;
 import com.beligum.base.cache.CacheKeyString;
 import com.beligum.base.server.R;
@@ -24,6 +25,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PropertyMap;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,18 +60,22 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
     //-----PRIVATE METHODS-----
     public static Map<String, TemplateController> getTemplateControllers()
     {
-        Map<String, TemplateController> retVal = R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATE_CONTROLLERS);
-        if (retVal == null) {
-            Map<String, Class<?>> mapping = new HashMap<>();
-            TemplateCache cachedTemplates = TemplateCache.instance();
-            for (HtmlTemplate tagTemplate : cachedTemplates.getAllTemplates()) {
-                mapping.put(tagTemplate.getTemplateName(), tagTemplate.getControllerClass());
+        return R.cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.TAG_TEMPLATE_CONTROLLERS, new CacheFunction<CacheKey, Map<String, TemplateController>>()
+        {
+            @Override
+            public Map<String, TemplateController> apply(CacheKey cacheKey)
+            {
+                Map<String, Class<?>> mapping = new HashMap<>();
+                TemplateCache cachedTemplates = TemplateCache.instance();
+                for (HtmlTemplate tagTemplate : cachedTemplates.getAllTemplates()) {
+                    if (tagTemplate.getControllerClass() != null) {
+                        mapping.put(tagTemplate.getTemplateName(), tagTemplate.getControllerClass());
+                    }
+                }
+
+                return new RequestLoadedControllerMap(mapping);
             }
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATE_CONTROLLERS, retVal = new RequestLoadedControllerMap(mapping));
-        }
-
-        return retVal;
+        });
     }
     static class RequestLoadedControllerMap extends HashMap<String, TemplateController>
     {
@@ -85,24 +91,31 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         {
             TemplateController retVal = null;
 
-            CacheKey key = objKey == null ? null : new CacheKeyString(String.valueOf(objKey));
-            if (!R.requestManager().getCurrentRequest().getRequestCache().containsKey(key)) {
-                if (key != null) {
-                    Class<TemplateController> controllerClass = (Class<TemplateController>) this.mapping.get(key);
-                    if (controllerClass != null) {
-                        try {
-                            retVal = controllerClass.newInstance();
-                        }
-                        catch (Exception e) {
-                            Logger.error("Error while instantiating tag template controller class " + controllerClass, e);
-                        }
-                    }
-                }
+            final CacheKey key = objKey == null ? null : new CacheKeyString(String.valueOf(objKey));
 
-                R.requestManager().getCurrentRequest().getRequestCache().put(key, retVal);
-            }
-            else {
-                retVal = R.requestManager().getCurrentRequest().getRequestCache().get(key);
+            if (key != null) {
+                retVal = R.requestManager().getCurrentRequest().getRequestCache().getAndInitIfAbsent(key, new CacheFunction<CacheKey, TemplateController>()
+                {
+                    @Override
+                    public TemplateController apply(CacheKey cacheKey)
+                    {
+                        TemplateController retVal = null;
+
+                        // Note: don't use key, but objKey instead because we store the controllers based on the name of their tag name
+                        // and we wrap it above to be able to use the cache interface
+                        Class<TemplateController> controllerClass = (Class<TemplateController>) mapping.get(objKey);
+                        if (controllerClass != null) {
+                            try {
+                                retVal = controllerClass.newInstance();
+                            }
+                            catch (Exception e) {
+                                Logger.error("Error while instantiating tag template controller class " + controllerClass, e);
+                            }
+                        }
+
+                        return retVal;
+                    }
+                });
             }
 
             return retVal;

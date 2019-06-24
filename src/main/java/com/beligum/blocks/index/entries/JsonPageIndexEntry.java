@@ -2,6 +2,7 @@ package com.beligum.blocks.index.entries;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.fields.ResourceTypeField;
 import com.beligum.blocks.index.ifaces.*;
@@ -238,15 +239,12 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                 // If the value is a resource, we'll store its reference:
                 // - if its a sub-resource, the data of it will be in the RDF model and we need to 'instantiate' these in the JSON tree
                 //   by saving the reference to the right property now and create + attach the sub-object later on (see below)
-                // - if it's a reference to a (local or external) resource that has an endpoint, we'll store some metadata about
-                //   that resource in this JSON object (eg. for sorting/filtering on the human readable label of the resource instead of its URI)
-                // - if it's a reference to a resource without an endpoint,
+                // - if it's a reference to a (local or external) resource that has an endpoint, we'll store some metadata (pulled from the ResourceProxy)
+                //   about that resource in this JSON object (eg. for sorting/filtering on the human readable label of the resource instead of its URI)
+                // - in all other cases, store it as a literal
                 if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
 
                     URI resourceUri = URI.create(value.stringValue());
-
-                    // we start out by adding the resource URI as the "real" value of this property
-                    this.addProperty(this.jsonNode, value, field, language);
 
                     // check if it's a subresource that was present in the RDF model and already parsed into an object
                     // if so, we'll use that as the "proxy" of this object (which is in fact the entire sub-object, not a proxy)
@@ -257,17 +255,17 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         // Note: don't set this as a proxy because it's not; it holds the true values of this sub-object
                         subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.SUB));
 
-                        this.addProperty(this.jsonNode, subObject, field.getProxyField(), language);
+                        this.addProperty(this.jsonNode, subObject, field, language);
                     }
                     // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
                     // using a separate "_proxy" suffixed field
                     else if (property.getDataType().getEndpoint() != null) {
 
-                        ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
-                        if (resourceValue != null) {
+                        ResourceProxy resourceProxy = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
+                        if (resourceProxy != null) {
 
                             // convert the ResourceProxy object to a Json node
-                            ObjectNode resourceNode = this.copyInternalFields(resourceValue, Json.getObjectMapper().createObjectNode(), true);
+                            ObjectNode resourceNode = this.copyInternalFields(resourceProxy, Json.getObjectMapper().createObjectNode(), true);
 
                             if (type.getParentProperty() != null && type.getParentProperty().equals(property)) {
                                 if (this.getParentUri() != null) {
@@ -276,7 +274,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                                                     type);
                                 }
                                 else {
-                                    this.setParentUri(resourceValue.getUri());
+                                    this.setParentUri(resourceProxy.getUri());
                                     this.addProperty(this.jsonNode, resourceNode, new JsonField("parent"), language);
                                 }
                             }
@@ -285,12 +283,33 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                             resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.PROXY));
 
                             // lastly, hook the sub-node in the main node using the "_proxy" suffix
-                            this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
+                            this.addProperty(this.jsonNode, resourceNode, field, language);
                         }
                         //we didn't get a resource value from the endpoint; this shouldn't really happen because how did we get our hands on the URI in the first place anyway?
                         else {
                             throw new IOException("Unable to serialize resource value because it's resource endpoint returned null; " + triple);
                         }
+                    }
+                    // You can activate this code below to index resources as sub-objects as well, but it seems to overcomplicate things a lot...
+//                    else if (WidgetType.Resource.equals(property.getWidgetType())) {
+//
+//                        ObjectNode valueNode = Json.getObjectMapper().createObjectNode();
+//
+//                        // note that we only know the resource of the target object is this URI,
+//                        // it's uri property might be different, we just don't know: we have no endpoint,
+//                        // so we can't query it. Note that we index all local uris relatively
+//                        // Also note solr can't make documents without identifier, so it'll generate one automatically,
+//                        // based on the ID of the parent!
+//                        valueNode.put(ResourceIndexEntry.resourceField.getName(), ResourceIndexEntry.resourceField.serialize(value, language));
+//
+//                        // let's not call this a proxy, but a stub instead
+//                        valueNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.STUB));
+//
+//                        this.addProperty(this.jsonNode, valueNode, field, language);
+//                    }
+                    else {
+                        // we'll store xsd:anyURI as a literal value
+                        this.addProperty(this.jsonNode, value, field, language);
                     }
                 }
                 else {

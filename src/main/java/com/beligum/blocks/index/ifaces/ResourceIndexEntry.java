@@ -75,7 +75,7 @@ public interface ResourceIndexEntry extends ResourceProxy
         /**
          * Used when the resource is an indexed proxy of another resource
          */
-        PROXY;
+        PROXY
     }
 
     //-----VARIABLES-----
