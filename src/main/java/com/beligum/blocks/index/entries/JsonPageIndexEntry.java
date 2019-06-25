@@ -165,6 +165,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
+        // Old code, kept around as reference for future adaptations
         //        if (type.getParentProperty() != null) {
         //            if (parentObj != null) {
         //                throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
