@@ -238,6 +238,11 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 else if (eventData.element.closest(UI.pageContent).length === 0) {
                     switchToPage = false;
                 }
+                //option 5) the mousedown event of this click started in the focused block, but the user dragged outside the block and let go
+                // Eg. this happens when you select text and move outside the block. In this case, don't blur, since we started ON the block.
+                else if ($(eventData.originalEvent.target).closest(UI.focusedSurface.element).length > 0) {
+                    switchToPage = false;
+                }
             }
         }
 
