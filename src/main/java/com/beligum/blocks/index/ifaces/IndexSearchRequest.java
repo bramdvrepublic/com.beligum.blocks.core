@@ -94,7 +94,7 @@ public interface IndexSearchRequest extends Serializable
      * Sets the general search-all query value of this request.
      * If fuzzy is true, adjust the value to do a wildcard search.
      */
-    IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean);
+    IndexSearchRequest query(String value,boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean);
 
     /**
      * Adds a filter that only selects entries of the specified class.

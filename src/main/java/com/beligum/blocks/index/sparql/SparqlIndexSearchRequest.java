@@ -62,9 +62,9 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
     //-----PUBLIC METHODS-----
     @Override
-    public IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest query(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
-        this.filters.add(new QueryFilter(value, fuzzy, filterBoolean));
+        this.filters.add(new QueryFilter(value, wildcardPrefix, wildcardSuffix, fuzzysearch, filterBoolean));
 
         return this;
     }
@@ -160,8 +160,14 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     QueryFilter queryFilter = (QueryFilter) filter;
 
-                    if (queryFilter.fuzzy) {
+                    if (queryFilter.fuzzysearch) {
                         throw new IllegalStateException("Fuzzy searches are not supported yet; " + queryFilter);
+                    }
+                    if (queryFilter.wildcardSuffix) {
+                        throw new IllegalStateException("Wildcard (suffix) searches are not supported yet; " + queryFilter);
+                    }
+                    if (queryFilter.wildcardPrefix) {
+                        throw new IllegalStateException("Wildcard (prefix) searches are not supported yet; " + queryFilter);
                     }
 
                     if (!StringUtils.isEmpty(queryFilter.value)) {
@@ -253,14 +259,20 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     public static class QueryFilter extends AbstractFilter
     {
         public final String value;
-        private final boolean fuzzy;
+        private final boolean fuzzysearch;
+        private final boolean wildcardPrefix;
+        private final boolean wildcardSuffix;
 
-        private QueryFilter(String value, boolean fuzzy, FilterBoolean filterBoolean)
+
+
+        private QueryFilter(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
         {
             super(Filter.FilterType.QUERY, filterBoolean);
 
             this.value = value;
-            this.fuzzy = fuzzy;
+            this.fuzzysearch = fuzzysearch;
+            this.wildcardPrefix = wildcardPrefix;
+            this.wildcardSuffix = wildcardSuffix;
         }
     }
 

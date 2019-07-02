@@ -57,7 +57,7 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     @Override
     public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
     {
-        return this.query(value, false, filterBoolean);
+        return this.query(value, false, false, false, filterBoolean);
     }
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)

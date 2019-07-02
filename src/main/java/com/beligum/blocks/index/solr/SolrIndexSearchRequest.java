@@ -39,9 +39,9 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
     //-----PUBLIC METHODS-----
     @Override
-    public IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest query(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, fuzzy, true);
+        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, wildcardSuffix, wildcardPrefix, fuzzysearch, true);
         this.updateMainQuery();
 
         return this;
@@ -49,23 +49,23 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type), false, true);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type), false, false,false, true);
         this.updateFilterQueries();
 
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, fuzzy, true);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, wildcardSuffix, false, false,true);
         this.updateFilterQueries();
 
         return this;
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, fuzzy, true);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, wildcardSuffix, false, false,true);
         this.updateFilterQueries();
 
         return this;
@@ -73,7 +73,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", false, false);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", false, false, false,false);
         this.updateFilterQueries();
 
         return this;
@@ -81,15 +81,15 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", false, false);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", false, false, false,false);
         this.updateFilterQueries();
 
         return this;
     }
     @Override
-    public IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest all(String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, "*", value, fuzzy, true);
+        this.appendFullTextFilter(this.filterQueryBuilder, filterBoolean, value, wildcardSuffix, false, false,true);
         this.updateFilterQueries();
 
         return this;
@@ -201,22 +201,43 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PRIVATE METHODS-----
-    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, boolean fuzzy, boolean escapeValue)
+    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, boolean wildcardSuffix , boolean wildcardPrefix, boolean fuzzysearch, boolean escapeValue)
     {
         // calc the flags on the raw incoming value
-        boolean isNumber = !NumberUtils.isNumber(value);
-        boolean hasAsterisk = !value.contains("*");
-        if (escapeValue) {
-            value = QueryParser.escape(value);
-        }
-        if (fuzzy && isNumber && !hasAsterisk) {
-            value = value + "*";
-        }
-
+        value = this.appendQueryModifiers(value, wildcardSuffix, wildcardPrefix,  fuzzysearch, escapeValue);
         this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(value).append(")");
 
         return stringBuilder;
     }
+
+    private StringBuilder appendFullTextFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String value, boolean wildcardSuffix , boolean wildcardPrefix, boolean fuzzysearch, boolean escapeValue)
+    {
+        // calc the flags on the raw incoming value
+        value = "\""+this.appendQueryModifiers(value, wildcardSuffix, wildcardPrefix,  fuzzysearch, false)+"\"";
+
+        this.appendBoolean(stringBuilder, filterBoolean).append(value);
+
+        return stringBuilder;
+    }
+
+    private String appendQueryModifiers(String value, boolean wildcardSuffix , boolean wildcardPrefix, boolean fuzzysearch, boolean escapeValue){
+        boolean isNumber = !NumberUtils.isNumber(value);
+        boolean hasAsterisk = value.contains("*");
+        if (escapeValue) {
+            value = QueryParser.escape(value);
+        }
+        if (wildcardSuffix && isNumber && !hasAsterisk) {
+            value = value + "*";
+        }
+        if (wildcardPrefix && isNumber && !hasAsterisk) {
+            value = "*" + value;
+        }
+        if (fuzzysearch && isNumber) {
+            value =  value + "~";
+        }
+        return value;
+    }
+
     private StringBuilder appendBoolean(StringBuilder stringBuilder, FilterBoolean filterBoolean)
     {
         if (stringBuilder.length() > 0) {
