@@ -151,6 +151,12 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
                     if (propertyFilter.wildcardSuffix) {
                         throw new IllegalStateException("wildcardSuffix searches are not supported yet; " + propertyFilter);
                     }
+                    if (propertyFilter.wildcardPrefix) {
+                        throw new IllegalStateException("Wildcard (prefix) searches are not supported yet; " + propertyFilter);
+                    }
+                    if (propertyFilter.fuzzysearch) {
+                        throw new IllegalStateException("Fuzzy searches are not supported yet; " + propertyFilter);
+                    }
 
                     retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(propertyFilter.property.getCurie().toString()).append(" ")
                           .append(propertyFilter.value).append(" .\n");
