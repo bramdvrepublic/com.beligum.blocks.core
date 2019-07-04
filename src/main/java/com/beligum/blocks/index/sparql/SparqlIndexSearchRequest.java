@@ -34,6 +34,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         }
 
         FilterType getFilterType();
+
         FilterBoolean getFilterBoolean();
     }
 
@@ -76,14 +77,14 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
-        this.filters.add(new PropertyFilter(property, value, wildcardSuffix, false, false, filterBoolean));
+        this.filters.add(new PropertyFilter(property, value, wildcardSuffix, wildcardPrefix, fuzzysearch, filterBoolean));
 
         return this;
     }
@@ -106,7 +107,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest all(String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
+    public IndexSearchRequest all(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Unimplemented ; " + value);
     }
@@ -159,7 +160,6 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
                 case QUERY:
 
                     QueryFilter queryFilter = (QueryFilter) filter;
-
 
                     if (queryFilter.wildcardSuffix) {
                         throw new IllegalStateException("Wildcard (suffix) searches are not supported yet; " + queryFilter);
@@ -264,8 +264,6 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         private final boolean wildcardPrefix;
         private final boolean wildcardSuffix;
 
-
-
         private QueryFilter(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
         {
             super(Filter.FilterType.QUERY, filterBoolean);
@@ -297,7 +295,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         private final boolean wildcardPrefix;
         private final boolean wildcardSuffix;
 
-        private PropertyFilter(RdfProperty property, String value , boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch,FilterBoolean filterBoolean)
+        private PropertyFilter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
         {
             super(FilterType.PROPERTY, filterBoolean);
 

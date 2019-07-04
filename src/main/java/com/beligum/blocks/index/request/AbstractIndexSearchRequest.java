@@ -4,12 +4,11 @@ import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
-import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 {
@@ -62,17 +61,17 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
     {
-        return this.filter(field, value, false, filterBoolean);
+        return this.filter(field, value, false, false, false, filterBoolean);
     }
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
     {
-        return this.filter(property, value, false, filterBoolean);
+        return this.filter(property, value, false, false, false, filterBoolean);
     }
     @Override
     public IndexSearchRequest all(String value, FilterBoolean filterBoolean)
     {
-        return this.all(value, false, filterBoolean);
+        return this.all(value, false, false, false, filterBoolean);
     }
     @Override
     public IndexSearchRequest sort(RdfProperty property, boolean sortAscending)

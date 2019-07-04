@@ -67,9 +67,10 @@ public class LocalQueryEndpoint implements RdfEndpoint
         }
 
         // This will group of the resource URI, selecting the best matching language
+        //only perform a 'wildcardSuffix' search,  meaning query[wildcard]
         mainQuery.filter(IndexSearchRequest.createFor(mainQuery.getIndexConnection())
-                                           .filter(ResourceIndexEntry.tokenisedUriField, query, true, IndexSearchRequest.FilterBoolean.OR)
-                                           .filter(ResourceIndexEntry.labelField, query, true, IndexSearchRequest.FilterBoolean.OR),
+                                           .filter(ResourceIndexEntry.tokenisedUriField, query, true, false, false, IndexSearchRequest.FilterBoolean.OR)
+                                           .filter(ResourceIndexEntry.labelField, query, true, false, false, IndexSearchRequest.FilterBoolean.OR),
                          IndexSearchRequest.FilterBoolean.AND);
 
         // This will group on the resource URI, selecting the best matching language
