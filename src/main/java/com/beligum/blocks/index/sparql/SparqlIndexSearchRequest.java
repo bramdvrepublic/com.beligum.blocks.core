@@ -76,14 +76,14 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
-        this.filters.add(new PropertyFilter(property, value, fuzzy, filterBoolean));
+        this.filters.add(new PropertyFilter(property, value, wildcardSuffix, false, false, filterBoolean));
 
         return this;
     }
@@ -106,7 +106,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest all(String value, boolean wildcardSuffix, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Unimplemented ; " + value);
     }
@@ -147,8 +147,8 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     PropertyFilter propertyFilter = (PropertyFilter) filter;
 
-                    if (propertyFilter.fuzzy) {
-                        throw new IllegalStateException("Fuzzy searches are not supported yet; " + propertyFilter);
+                    if (propertyFilter.wildcardSuffix) {
+                        throw new IllegalStateException("wildcardSuffix searches are not supported yet; " + propertyFilter);
                     }
 
                     retVal.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(propertyFilter.property.getCurie().toString()).append(" ")
@@ -160,14 +160,15 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     QueryFilter queryFilter = (QueryFilter) filter;
 
-                    if (queryFilter.fuzzysearch) {
-                        throw new IllegalStateException("Fuzzy searches are not supported yet; " + queryFilter);
-                    }
+
                     if (queryFilter.wildcardSuffix) {
                         throw new IllegalStateException("Wildcard (suffix) searches are not supported yet; " + queryFilter);
                     }
                     if (queryFilter.wildcardPrefix) {
                         throw new IllegalStateException("Wildcard (prefix) searches are not supported yet; " + queryFilter);
+                    }
+                    if (queryFilter.fuzzysearch) {
+                        throw new IllegalStateException("Fuzzy searches are not supported yet; " + queryFilter);
                     }
 
                     if (!StringUtils.isEmpty(queryFilter.value)) {
@@ -292,15 +293,19 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     {
         public final RdfProperty property;
         public final String value;
-        private final boolean fuzzy;
+        private final boolean fuzzysearch;
+        private final boolean wildcardPrefix;
+        private final boolean wildcardSuffix;
 
-        private PropertyFilter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
+        private PropertyFilter(RdfProperty property, String value , boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch,FilterBoolean filterBoolean)
         {
             super(FilterType.PROPERTY, filterBoolean);
 
             this.property = property;
             this.value = value;
-            this.fuzzy = fuzzy;
+            this.wildcardSuffix = wildcardSuffix;
+            this.wildcardPrefix = wildcardPrefix;
+            this.fuzzysearch = fuzzysearch;
         }
     }
 
