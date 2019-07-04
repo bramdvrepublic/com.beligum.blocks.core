@@ -114,7 +114,8 @@ public interface IndexSearchRequest extends Serializable
      * Adds a filter that only selects entries that have the exact specified value for the specified field.
      * If fuzzysearch is true, the value is adjusted to perform a fuzzy search.
      * If wildcardSuffix is true, the value is adjusted to value[wildcard].
-     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.     * The boolean configures how this filter is linked to previously added filters.
+     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.
+     * The boolean configures how this filter is linked to previously added filters.
      */
     IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean);
 
@@ -128,7 +129,8 @@ public interface IndexSearchRequest extends Serializable
      * Adds a filter that only selects entries that have the exact specified value for the specified property.
      * If fuzzysearch is true, the value is adjusted to perform a fuzzy search.
      * If wildcardSuffix is true, the value is adjusted to value[wildcard].
-     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.     * The boolean configures how this filter is linked to previously added filters.
+     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.
+     * The boolean configures how this filter is linked to previously added filters.
      */
     IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean);
 
@@ -160,7 +162,8 @@ public interface IndexSearchRequest extends Serializable
      * Adds a filter that searches all fields for the specified value.
      * If fuzzysearch is true, the value is adjusted to perform a fuzzy search.
      * If wildcardSuffix is true, the value is adjusted to value[wildcard].
-     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.     * The boolean configures how this filter is linked to previously added filters.
+     * If wildcardPrefix is true, the value is adjusted to [wildcard]value.
+     * The boolean configures how this filter is linked to previously added filters.
      */
     IndexSearchRequest all(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean);
 
