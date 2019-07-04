@@ -213,6 +213,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     private StringBuilder appendFullTextFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String value, boolean wildcardSuffix , boolean wildcardPrefix, boolean fuzzysearch, boolean escapeValue)
     {
         // calc the flags on the raw incoming value
+        //we do not escape the returned value here,  but rather wrap it in  double quotes.
+        // Solr appears to handle this differently.
         value = "\""+this.appendQueryModifiers(value, wildcardSuffix, wildcardPrefix,  fuzzysearch, false)+"\"";
 
         this.appendBoolean(stringBuilder, filterBoolean).append(value);
