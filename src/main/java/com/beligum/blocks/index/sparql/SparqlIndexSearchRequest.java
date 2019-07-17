@@ -34,6 +34,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         }
 
         FilterType getFilterType();
+
         FilterBoolean getFilterBoolean();
     }
 
@@ -62,9 +63,9 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
     //-----PUBLIC METHODS-----
     @Override
-    public IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest query(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
-        this.filters.add(new QueryFilter(value, fuzzy, filterBoolean));
+        this.filters.add(new QueryFilter(value, wildcardPrefix, wildcardSuffix, fuzzysearch, filterBoolean));
 
         return this;
     }
@@ -76,14 +77,14 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
-        this.filters.add(new PropertyFilter(property, value, fuzzy, filterBoolean));
+        this.filters.add(new PropertyFilter(property, value, wildcardSuffix, wildcardPrefix, fuzzysearch, filterBoolean));
 
         return this;
     }
@@ -106,7 +107,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
     @Override
-    public IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean)
+    public IndexSearchRequest all(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Unimplemented ; " + value);
     }
@@ -147,7 +148,13 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     PropertyFilter propertyFilter = (PropertyFilter) filter;
 
-                    if (propertyFilter.fuzzy) {
+                    if (propertyFilter.wildcardSuffix) {
+                        throw new IllegalStateException("wildcardSuffix searches are not supported yet; " + propertyFilter);
+                    }
+                    if (propertyFilter.wildcardPrefix) {
+                        throw new IllegalStateException("Wildcard (prefix) searches are not supported yet; " + propertyFilter);
+                    }
+                    if (propertyFilter.fuzzysearch) {
                         throw new IllegalStateException("Fuzzy searches are not supported yet; " + propertyFilter);
                     }
 
@@ -160,7 +167,13 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
                     QueryFilter queryFilter = (QueryFilter) filter;
 
-                    if (queryFilter.fuzzy) {
+                    if (queryFilter.wildcardSuffix) {
+                        throw new IllegalStateException("Wildcard (suffix) searches are not supported yet; " + queryFilter);
+                    }
+                    if (queryFilter.wildcardPrefix) {
+                        throw new IllegalStateException("Wildcard (prefix) searches are not supported yet; " + queryFilter);
+                    }
+                    if (queryFilter.fuzzysearch) {
                         throw new IllegalStateException("Fuzzy searches are not supported yet; " + queryFilter);
                     }
 
@@ -253,14 +266,18 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     public static class QueryFilter extends AbstractFilter
     {
         public final String value;
-        private final boolean fuzzy;
+        private final boolean fuzzysearch;
+        private final boolean wildcardPrefix;
+        private final boolean wildcardSuffix;
 
-        private QueryFilter(String value, boolean fuzzy, FilterBoolean filterBoolean)
+        private QueryFilter(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
         {
             super(Filter.FilterType.QUERY, filterBoolean);
 
             this.value = value;
-            this.fuzzy = fuzzy;
+            this.fuzzysearch = fuzzysearch;
+            this.wildcardPrefix = wildcardPrefix;
+            this.wildcardSuffix = wildcardSuffix;
         }
     }
 
@@ -280,15 +297,19 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     {
         public final RdfProperty property;
         public final String value;
-        private final boolean fuzzy;
+        private final boolean fuzzysearch;
+        private final boolean wildcardPrefix;
+        private final boolean wildcardSuffix;
 
-        private PropertyFilter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean)
+        private PropertyFilter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
         {
             super(FilterType.PROPERTY, filterBoolean);
 
             this.property = property;
             this.value = value;
-            this.fuzzy = fuzzy;
+            this.wildcardSuffix = wildcardSuffix;
+            this.wildcardPrefix = wildcardPrefix;
+            this.fuzzysearch = fuzzysearch;
         }
     }
 
