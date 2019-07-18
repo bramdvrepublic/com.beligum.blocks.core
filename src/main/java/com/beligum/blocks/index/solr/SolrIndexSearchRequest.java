@@ -7,14 +7,13 @@ import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.index.request.AbstractIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 {
@@ -35,6 +34,18 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
          * If fuzzySearch is true, the value is adjusted to perform a fuzzy search.
          */
         fuzzy,
+
+        /**
+         * Interprets the value as a list of terms and escapes the Solr-reserved characters in the value.
+         * For now, this is the default search mode.
+         */
+        termSearch,
+
+        /**
+         * Interprets the value as a phrase and surrounds it with double quotes, escaping where necessary.
+         */
+        phraseSearch,
+
     }
 
     private enum InternalValueOption implements IndexSearchRequest.ValueOption
@@ -68,7 +79,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options)
     {
         //this.appendFullTextFilter(this.queryBuilder, filterBoolean, value, wildcardSuffix, wildcardPrefix, fuzzySearch);
-        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, options);
+        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, Arrays.asList(options));
         this.updateQueries();
 
         return this;
@@ -84,7 +95,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, options);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, Arrays.asList(options));
         this.updateQueries();
 
         return this;
@@ -92,7 +103,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, options);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, Arrays.asList(options));
         this.updateQueries();
 
         return this;
@@ -100,7 +111,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", InternalValueOption.noEscape);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", Collections.singleton(InternalValueOption.noEscape));
         this.updateQueries();
 
         return this;
@@ -108,7 +119,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", InternalValueOption.noEscape);
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", Collections.singleton(InternalValueOption.noEscape));
         this.updateQueries();
 
         return this;
@@ -220,40 +231,74 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PRIVATE METHODS-----
-    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, Option... options)
+    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, Iterable<Option>... options)
     {
         // calc the flags on the raw incoming value
         value = this.appendQueryModifiers(value, options);
 
-        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(value).append(")");
+        this.appendBoolean(stringBuilder, filterBoolean).append("(").append(this.escapeField(field)).append(":").append(value).append(")");
 
         return stringBuilder;
     }
 
-    private String appendQueryModifiers(String value, Option... options)
+    private String appendQueryModifiers(String value, Iterable<Option>... options)
     {
+        Iterable<Option> mergedOptions = Iterables.concat(options);
+
+        // we always at least do a trim on the value
+        value = value.trim();
+
         boolean isNumber = !NumberUtils.isNumber(value);
         boolean hasAsterisk = value.contains("*");
 
-        if (!Arrays.asList(options).contains(InternalValueOption.noEscape)) {
-            value = QueryParser.escape(value);
-        }
+        String prefix = "";
+        String suffix = "";
+        boolean doEscape = true;
+        boolean escaped = false;
+        for (Option option : mergedOptions) {
 
-        for (Option option : options) {
+            if (option.equals(ValueOption.termSearch)) {
+
+                value = this.escapeTerm(value);
+
+                escaped = true;
+            }
+            else if (option.equals(ValueOption.phraseSearch)) {
+
+                // this must be done first or the quotes added below would get escaped
+                value = this.escapePhrase(value);
+
+                if (value.startsWith("\"") && value.endsWith("\"")) {
+                    // no need to add quotes here, they're already here
+                }
+                else {
+                    value = "\"" + value + "\"";
+                }
+
+                escaped = true;
+            }
+            else if (option.equals(InternalValueOption.noEscape)) {
+                doEscape = false;
+            }
             // wildcards for numbers don't really make sense, because it expands the search results way too much
             // if the user added their own wildcard in the query, it kind of makes sense to skip it as well
-            if (option.equals(ValueOption.wildcardSuffix) && !isNumber && !hasAsterisk) {
-                value = value + "*";
+            else if (option.equals(ValueOption.wildcardSuffix) && !isNumber && !hasAsterisk) {
+                suffix = "*";
             }
             else if (option.equals(ValueOption.wildcardPrefix) && !isNumber && !hasAsterisk) {
-                value = "*" + value;
+                prefix = "*";
             }
             else if (option.equals(ValueOption.fuzzy)) {
-                value = value + "~";
+                suffix = "~";
             }
         }
 
-        return value;
+        // perform a default escape if it hasn't been don't yet
+        if (doEscape && !escaped) {
+            value = this.escapeDefault(value);
+        }
+
+        return prefix + value + suffix;
     }
 
     private StringBuilder appendBoolean(StringBuilder stringBuilder, FilterBoolean filterBoolean)
@@ -328,6 +373,36 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         // number of documents to return starting at "start"
         this.solrQuery.setRows(this.getPageSize());
+    }
+    private String escapeField(String field)
+    {
+        return QueryParser.escape(field);
+    }
+    private String escapeDefault(String value)
+    {
+        //TODO should we allow certain characters to be added manually by the users instead of escaping everything? (eg. asterisk and balanced quotes?)
+        return this.escapeTerm(value);
+    }
+    private String escapeTerm(String term)
+    {
+        return QueryParser.escape(term);
+    }
+    private String escapePhrase(String phrase)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < phrase.length(); i++) {
+            char c = phrase.charAt(i);
+
+            // inspired by http://api.drupalhelp.net/api/apachesolr/Drupal_Apache_Solr_Service.php/function/DrupalApacheSolrService%3A%3AescapePhrase/7
+            // We should probably make it smarter to allow inner quoting, like in https://www.drupal.org/project/search_api_solr/issues/3017342
+            if (c == '\\' || c == '\"') {
+                sb.append('\\');
+            }
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
 
     //-----MGMT METHODS-----
