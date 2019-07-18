@@ -12,12 +12,38 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 
 public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 {
     //-----CONSTANTS-----
+    public enum ValueOption implements IndexSearchRequest.ValueOption
+    {
+        /**
+         * If wildcardSuffix is true, the value is adjusted to value[wildcard].
+         */
+        wildcardSuffix,
+
+        /**
+         * If wildcardPrefix is true, the value is adjusted to [wildcard]value.
+         */
+        wildcardPrefix,
+
+        /**
+         * If fuzzySearch is true, the value is adjusted to perform a fuzzy search.
+         */
+        fuzzy,
+    }
+
+    private enum InternalValueOption implements IndexSearchRequest.ValueOption
+    {
+        /**
+         * Skips escape of the Solr-reserved characters in the value
+         */
+        noEscape,
+    }
 
     //-----VARIABLES-----
     private SolrQuery solrQuery;
@@ -39,58 +65,51 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
     //-----PUBLIC METHODS-----
     @Override
-    public IndexSearchRequest query(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
+    public IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, wildcardSuffix, wildcardPrefix, fuzzysearch, true);
-        this.updateMainQuery();
+        //this.appendFullTextFilter(this.queryBuilder, filterBoolean, value, wildcardSuffix, wildcardPrefix, fuzzySearch);
+        this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, options);
+        this.updateQueries();
 
         return this;
     }
     @Override
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type), false, false, false, true);
-        this.updateFilterQueries();
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
+        this.updateQueries();
 
         return this;
     }
     @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, wildcardSuffix, wildcardPrefix, fuzzysearch, true);
-        this.updateFilterQueries();
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, options);
+        this.updateQueries();
 
         return this;
     }
     @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
+    public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, wildcardSuffix, wildcardPrefix, fuzzysearch, true);
-        this.updateFilterQueries();
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, options);
+        this.updateQueries();
 
         return this;
     }
     @Override
     public IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", false, false, false, false);
-        this.updateFilterQueries();
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", InternalValueOption.noEscape);
+        this.updateQueries();
 
         return this;
     }
     @Override
     public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", false, false, false, false);
-        this.updateFilterQueries();
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest all(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, FilterBoolean filterBoolean)
-    {
-        this.appendFullTextFilter(this.filterQueryBuilder, filterBoolean, value, wildcardSuffix, wildcardPrefix, fuzzysearch, true);
-        this.updateFilterQueries();
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", InternalValueOption.noEscape);
+        this.updateQueries();
 
         return this;
     }
@@ -101,11 +120,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             SolrIndexSearchRequest solrSubRequest = (SolrIndexSearchRequest) subRequest;
             if (solrSubRequest.queryBuilder.length() > 0) {
                 this.appendBoolean(this.queryBuilder, filterBoolean).append("(").append(solrSubRequest.queryBuilder).append(")");
-                this.updateMainQuery();
+                this.updateQueries();
             }
             if (solrSubRequest.filterQueryBuilder.length() > 0) {
                 this.appendBoolean(this.filterQueryBuilder, filterBoolean).append("(").append(solrSubRequest.filterQueryBuilder).append(")");
-                this.updateFilterQueries();
+                this.updateQueries();
             }
         }
         else {
@@ -153,7 +172,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
                                    // close the collapse
                                    "}";
 
-        this.updateFilterQueries();
+        this.updateQueries();
 
         return this;
     }
@@ -201,45 +220,39 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
 
     //-----PRIVATE METHODS-----
-    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch,
-                                       boolean escapeValue)
+    private StringBuilder appendFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String field, String value, Option... options)
     {
         // calc the flags on the raw incoming value
-        value = this.appendQueryModifiers(value, wildcardSuffix, wildcardPrefix, fuzzysearch, escapeValue);
+        value = this.appendQueryModifiers(value, options);
+
         this.appendBoolean(stringBuilder, filterBoolean).append("(").append(QueryParser.escape(field)).append(":").append(value).append(")");
 
         return stringBuilder;
     }
 
-    private StringBuilder appendFullTextFilter(StringBuilder stringBuilder, FilterBoolean filterBoolean, String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch,
-                                               boolean escapeValue)
-    {
-        // calc the flags on the raw incoming value
-        //we do not escape the returned value here,  but rather wrap it in  double quotes.
-        // Solr appears to handle this differently.
-        value = "\"" + this.appendQueryModifiers(value, wildcardSuffix, wildcardPrefix, fuzzysearch, false) + "\"";
-
-        this.appendBoolean(stringBuilder, filterBoolean).append(value);
-
-        return stringBuilder;
-    }
-
-    private String appendQueryModifiers(String value, boolean wildcardSuffix, boolean wildcardPrefix, boolean fuzzysearch, boolean escapeValue)
+    private String appendQueryModifiers(String value, Option... options)
     {
         boolean isNumber = !NumberUtils.isNumber(value);
         boolean hasAsterisk = value.contains("*");
-        if (escapeValue) {
+
+        if (!Arrays.asList(options).contains(InternalValueOption.noEscape)) {
             value = QueryParser.escape(value);
         }
-        if (wildcardSuffix && isNumber && !hasAsterisk) {
-            value = value + "*";
+
+        for (Option option : options) {
+            // wildcards for numbers don't really make sense, because it expands the search results way too much
+            // if the user added their own wildcard in the query, it kind of makes sense to skip it as well
+            if (option.equals(ValueOption.wildcardSuffix) && !isNumber && !hasAsterisk) {
+                value = value + "*";
+            }
+            else if (option.equals(ValueOption.wildcardPrefix) && !isNumber && !hasAsterisk) {
+                value = "*" + value;
+            }
+            else if (option.equals(ValueOption.fuzzy)) {
+                value = value + "~";
+            }
         }
-        if (wildcardPrefix && isNumber && !hasAsterisk) {
-            value = "*" + value;
-        }
-        if (fuzzysearch && isNumber) {
-            value = value + "~";
-        }
+
         return value;
     }
 
@@ -279,7 +292,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return stringBuilder;
     }
-    private void updateMainQuery()
+    private void updateQueries()
     {
         if (this.queryBuilder.length() > 0) {
             this.solrQuery.setQuery(this.queryBuilder.toString());
@@ -287,9 +300,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
         else {
             this.solrQuery.setQuery("*:*");
         }
-    }
-    private void updateFilterQueries()
-    {
+
         if (this.filterQueryBuilder.length() > 0) {
             this.solrQuery.setFilterQueries(this.filterQueryBuilder.toString());
         }

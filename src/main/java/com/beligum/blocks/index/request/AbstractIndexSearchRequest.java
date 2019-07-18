@@ -54,26 +54,6 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
 
     //-----BUILDER METHODS-----
     @Override
-    public IndexSearchRequest query(String value, FilterBoolean filterBoolean)
-    {
-        return this.query(value, false, false, false, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean)
-    {
-        return this.filter(field, value, false, false, false, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean)
-    {
-        return this.filter(property, value, false, false, false, filterBoolean);
-    }
-    @Override
-    public IndexSearchRequest all(String value, FilterBoolean filterBoolean)
-    {
-        return this.all(value, false, false, false, filterBoolean);
-    }
-    @Override
     public IndexSearchRequest sort(RdfProperty property, boolean sortAscending)
     {
         // this allows us to always implement the sort, even if there's no value

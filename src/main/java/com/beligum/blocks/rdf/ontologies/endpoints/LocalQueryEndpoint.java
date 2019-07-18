@@ -20,6 +20,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.index.ifaces.*;
+import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
@@ -66,12 +67,11 @@ public class LocalQueryEndpoint implements RdfEndpoint
             mainQuery.filter((RdfClass) resourceType, IndexSearchRequest.FilterBoolean.AND);
         }
 
-        // This will group of the resource URI, selecting the best matching language
         //only perform a 'wildcardSuffix' search,  meaning query[wildcard]
-        mainQuery.filter(IndexSearchRequest.createFor(mainQuery.getIndexConnection())
-                                           .filter(ResourceIndexEntry.tokenisedUriField, query, true, false, false, IndexSearchRequest.FilterBoolean.OR)
-                                           .filter(ResourceIndexEntry.labelField, query, true, false, false, IndexSearchRequest.FilterBoolean.OR),
-                         IndexSearchRequest.FilterBoolean.AND);
+        IndexSearchRequest termQuery = IndexSearchRequest.createFor(mainQuery.getIndexConnection())
+                                                         .filter(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR, SolrIndexSearchRequest.ValueOption.wildcardSuffix)
+                                                         .filter(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR, SolrIndexSearchRequest.ValueOption.wildcardSuffix);
+        mainQuery.filter(termQuery, IndexSearchRequest.FilterBoolean.AND);
 
         // This will group on the resource URI, selecting the best matching language
         mainQuery.language(language, ResourceIndexEntry.resourceField);
