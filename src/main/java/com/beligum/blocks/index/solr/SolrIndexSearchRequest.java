@@ -330,9 +330,28 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     }
     private String escapeDefault(String value)
     {
-        // by default, we decided not to escape the raw query value to allow the API caller to use all bells and whistles she wants
+        // this is the most stringent mode: escape everything and don't allow any custom modifiers
         //return this.escapeTerm(value);
-        return value;
+        // this is the most liberal mode: allow everything (but eg. it crashes when using RDF-colons in values, which happens a lot)
+        //return value;
+
+        // by default, we allow a few special characters, but not all of them.
+        // Let's start by allowing the end user to insert:
+        // - custom wildcards (also see appendQueryModifiers() wildcard escaping rules)
+        // - custom double-quotes
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+                || c == '^' || c == '[' || c == ']' /*|| c == '\"'*/ || c == '{' || c == '}' || c == '~'
+                /*|| c == '*'*/ || c == '?' || c == '|' || c == '&' || c == '/') {
+                sb.append('\\');
+            }
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
     private String escapeTerm(String term)
     {
