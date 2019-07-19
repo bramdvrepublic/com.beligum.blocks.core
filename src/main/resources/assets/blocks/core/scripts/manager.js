@@ -233,6 +233,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //          Note: $.closest() begins with the current element, so the block itself is also included.
                 if (eventData.element.closest(UI.focusedSurface.element).length > 0) {
                     switchToPage = false;
+
+                    // Re-use the focused surface, but with a different element if needed
+                    // this happens if we click on a different property inside the already focused surface
+                    if (!UI.focusedSurface.element.is(eventData.element)) {
+                        // note: this will trigger a refresh, not a reload
+                        switchFocus(UI.focusedSurface, eventData.element, eventData.originalEvent);
+                    }
                 }
                 //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
                 else if (eventData.element.closest(UI.pageContent).length === 0) {
