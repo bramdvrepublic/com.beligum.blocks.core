@@ -119,6 +119,13 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
     /**
+     //FIXME document
+     */
+    IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException;
+
+
+    IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses);
+    /**
      * Adds a filter that only selects entries that have the value for the specified property.
      * Note that the way this value is interpreted can be tweaked using the options
      * The boolean configures how this filter is linked to previously added filters.

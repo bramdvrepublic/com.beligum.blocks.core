@@ -84,6 +84,17 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
+
+    @Override
+    public IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException {
+        throw new UnsupportedOperationException("Block joins are not supported in the SPARQL query builder" );
+    }
+
+    @Override
+    public IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses) {
+        throw new UnsupportedOperationException("Joined Graph traversals are not supported in the SPARQL query builder" );
+    }
+
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options)
     {
