@@ -243,6 +243,11 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 else if ($(eventData.originalEvent.target).closest(UI.focusedSurface.element).length > 0) {
                     switchToPage = false;
                 }
+                //option 6) we have a block in focus, but we didn't really click on the element, but on it's padding/margin around it
+                // (to the user, it feels like we clicked 'inside'). Don't focus away.
+                else if (UI.focusedSurface.isInside(eventData.originalEvent.pageX, eventData.originalEvent.pageY)) {
+                    switchToPage = false;
+                }
             }
         }
 
