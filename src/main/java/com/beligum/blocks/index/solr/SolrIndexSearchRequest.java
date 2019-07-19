@@ -13,7 +13,6 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
-import org.apache.solr.search.SolrQueryParser;
 
 import java.io.IOException;
 import java.util.*;
