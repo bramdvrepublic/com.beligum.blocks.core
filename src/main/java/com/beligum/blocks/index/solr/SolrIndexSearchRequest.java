@@ -11,6 +11,7 @@ import com.google.common.collect.Iterables;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
+import org.apache.solr.search.SolrQueryParser;
 
 import java.io.IOException;
 import java.util.*;
@@ -36,8 +37,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
         fuzzy,
 
         /**
-         * Interprets the value as a list of terms and escapes the Solr-reserved characters in the value.
-         * For now, this is the default search mode.
+         * Interprets the value as a list of terms and escapes all Solr-reserved characters in the value.
+         * The default mode doesn't escape any characters.
          */
         termSearch,
 
@@ -51,13 +52,12 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     private enum InternalValueOption implements IndexSearchRequest.ValueOption
     {
         /**
-         * Skips escape of the Solr-reserved characters in the value
+         * Explicitly skips the escaping of the Solr-reserved characters in the value, no matter what
          */
         noEscape,
     }
 
     //-----VARIABLES-----
-    private SolrQuery solrQuery;
     private StringBuilder queryBuilder;
     private StringBuilder filterQueryBuilder;
     private String languageGroupFilter;
@@ -69,18 +69,13 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         this.queryBuilder = new StringBuilder();
         this.filterQueryBuilder = new StringBuilder();
-
-        //Note: in Solr, a query is always necessary, so we start out with searching for everything
-        this.solrQuery = new SolrQuery("*:*");
     }
 
     //-----PUBLIC METHODS-----
     @Override
     public IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options)
     {
-        //this.appendFullTextFilter(this.queryBuilder, filterBoolean, value, wildcardSuffix, wildcardPrefix, fuzzySearch);
         this.appendFilter(this.queryBuilder, filterBoolean, SolrConfigs._text_.getName(), value, Arrays.asList(options));
-        this.updateQueries();
 
         return this;
     }
@@ -88,23 +83,22 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
-        this.updateQueries();
 
         return this;
     }
     @Override
     public IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, Arrays.asList(options));
-        this.updateQueries();
+        // I think it makes sense to force phrase search for field filters, right?
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), value, Arrays.asList(options), Collections.singleton(ValueOption.phraseSearch));
 
         return this;
     }
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options)
     {
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, Arrays.asList(options));
-        this.updateQueries();
+        // I think it makes sense to force phrase search for field filters, right?
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, Arrays.asList(options), Collections.singleton(ValueOption.phraseSearch));
 
         return this;
     }
@@ -112,7 +106,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean)
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), "[* TO *]", Collections.singleton(InternalValueOption.noEscape));
-        this.updateQueries();
 
         return this;
     }
@@ -120,7 +113,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
     {
         this.appendFilter(this.filterQueryBuilder, filterBoolean, field.getName(), "[* TO *]", Collections.singleton(InternalValueOption.noEscape));
-        this.updateQueries();
 
         return this;
     }
@@ -131,11 +123,9 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
             SolrIndexSearchRequest solrSubRequest = (SolrIndexSearchRequest) subRequest;
             if (solrSubRequest.queryBuilder.length() > 0) {
                 this.appendBoolean(this.queryBuilder, filterBoolean).append("(").append(solrSubRequest.queryBuilder).append(")");
-                this.updateQueries();
             }
             if (solrSubRequest.filterQueryBuilder.length() > 0) {
                 this.appendBoolean(this.filterQueryBuilder, filterBoolean).append("(").append(solrSubRequest.filterQueryBuilder).append(")");
-                this.updateQueries();
             }
         }
         else {
@@ -183,51 +173,48 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
                                    // close the collapse
                                    "}";
 
-        this.updateQueries();
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest sort(RdfProperty property, boolean sortAscending)
-    {
-        super.sort(property, sortAscending);
-
-        this.updateSort();
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest sort(IndexEntryField field, boolean sortAscending)
-    {
-        super.sort(field, sortAscending);
-
-        this.updateSort();
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest pageSize(int pageSize)
-    {
-        super.pageSize(pageSize);
-
-        this.updateBounds();
-
-        return this;
-    }
-    @Override
-    public IndexSearchRequest pageOffset(int pageOffset)
-    {
-        super.pageOffset(pageOffset);
-
-        this.updateBounds();
-
         return this;
     }
 
     //-----PROTECTED METHODS-----
-    SolrQuery getSolrQuery()
+    SolrQuery buildSolrQuery()
     {
-        return this.solrQuery;
+        //Note: in Solr, a query is always necessary, so we start out with searching for everything
+        SolrQuery retVal = new SolrQuery("*:*");
+
+        if (this.queryBuilder.length() > 0) {
+            retVal.setQuery(this.queryBuilder.toString());
+        }
+        else {
+            retVal.setQuery("*:*");
+        }
+
+        if (this.filterQueryBuilder.length() > 0) {
+            retVal.setFilterQueries(this.filterQueryBuilder.toString());
+        }
+        else {
+            retVal.setFilterQueries();
+        }
+
+        // the above call overwrites all filters, so make sure to add the language grouping filter
+        // again if we have one
+        if (this.languageGroupFilter != null) {
+            retVal.addFilterQuery(this.languageGroupFilter);
+        }
+
+        // update sort
+        retVal.clearSorts();
+        for (Map.Entry<String, Boolean> e : this.sortFields.entrySet()) {
+            retVal.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+        }
+
+        // zero based offset of matching documents to retrieve
+        retVal.setStart(this.getPageOffset());
+
+        // number of documents to return starting at "start"
+        retVal.setRows(this.getPageSize());
+
+        return retVal;
     }
 
     //-----PRIVATE METHODS-----
@@ -337,51 +324,15 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
 
         return stringBuilder;
     }
-    private void updateQueries()
-    {
-        if (this.queryBuilder.length() > 0) {
-            this.solrQuery.setQuery(this.queryBuilder.toString());
-        }
-        else {
-            this.solrQuery.setQuery("*:*");
-        }
-
-        if (this.filterQueryBuilder.length() > 0) {
-            this.solrQuery.setFilterQueries(this.filterQueryBuilder.toString());
-        }
-        else {
-            this.solrQuery.setFilterQueries();
-        }
-
-        // the above call overwrites all filters, so make sure to add the language grouping filter
-        // again if we have one
-        if (this.languageGroupFilter != null) {
-            this.solrQuery.addFilterQuery(this.languageGroupFilter);
-        }
-    }
-    private void updateSort()
-    {
-        this.solrQuery.clearSorts();
-        for (Map.Entry<String, Boolean> e : this.sortFields.entrySet()) {
-            this.solrQuery.addSort(e.getKey(), e.getValue() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
-        }
-    }
-    private void updateBounds()
-    {
-        // zero based offset of matching documents to retrieve
-        this.solrQuery.setStart(this.getPageOffset());
-
-        // number of documents to return starting at "start"
-        this.solrQuery.setRows(this.getPageSize());
-    }
     private String escapeField(String field)
     {
         return QueryParser.escape(field);
     }
     private String escapeDefault(String value)
     {
-        //TODO should we allow certain characters to be added manually by the users instead of escaping everything? (eg. asterisk and balanced quotes?)
-        return this.escapeTerm(value);
+        // by default, we decided not to escape the raw query value to allow the API caller to use all bells and whistles she wants
+        //return this.escapeTerm(value);
+        return value;
     }
     private String escapeTerm(String term)
     {
@@ -409,6 +360,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     @Override
     public String toString()
     {
-        return this.getSolrQuery().toString();
+        return this.buildSolrQuery().toString();
     }
 }

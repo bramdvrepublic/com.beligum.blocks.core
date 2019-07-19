@@ -241,7 +241,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
         else {
             try {
-                SolrQuery solrQuery = ((SolrIndexSearchRequest) indexSearchRequest).getSolrQuery();
+                SolrQuery solrQuery = ((SolrIndexSearchRequest) indexSearchRequest).buildSolrQuery();
 
                 QueryResponse solrResponse = this.solrClient.query(solrQuery);
 
