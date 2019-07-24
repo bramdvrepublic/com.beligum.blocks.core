@@ -779,9 +779,11 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          */
         _findIntersectingSide: function (vector, stats)
         {
-            // if we have a reliable direction, use it to calc the intersection
-            // this means the user is steadily moving towards an edge
-            if (stats && stats.variance < 0.50) {
+            // if we have a reliable direction (low variance or high speed),
+            // use it to calc the intersection this means the user is steadily moving towards an edge
+            // and can shortcut instead of moving the block all the way to the dropzone
+            if (stats && (stats.variance < 0.50 || stats.speed > 50)) {
+
                 if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
                     return blocks.elements.Surface.SIDE.TOP;
                 }
@@ -800,6 +802,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             }
             // if the direction is not that reliable, calculate the intersecting side by simply using the closest edge
             else {
+
                 var distTop = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.right, this.top);
                 var distBottom = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.bottom, this.right, this.bottom);
                 var distLeft = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.left, this.bottom);
