@@ -332,10 +332,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
     {
         // this is the most stringent mode: escape everything and don't allow any custom modifiers
         //return this.escapeTerm(value);
+
         // this is the most liberal mode: allow everything (but eg. it crashes when using RDF-colons in values, which happens a lot)
         //return value;
 
-        // by default, we allow a few special characters, but not all of them.
+        // by default, we will allow a few special characters, but not all of them.
         // Let's start by allowing the end user to insert:
         // - custom wildcards (also see appendQueryModifiers() wildcard escaping rules)
         // - custom double-quotes

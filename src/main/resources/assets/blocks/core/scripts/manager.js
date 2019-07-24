@@ -291,7 +291,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
             //offer the user a preview of what would happen when the active surface would be moved
             //to the surface we're currently hovering over (in the direction indicated by the vector)
-            eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
+            eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector, eventData.dragStats);
         }
     });
 

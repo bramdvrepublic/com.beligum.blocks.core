@@ -378,14 +378,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @param surface The surface we're currently hovering on
          * @param vector The dragging vector
+         * @param stats The dragging vector statistics
          */
-        previewMoveTo: function (surface, vector)
+        previewMoveTo: function (surface, vector, stats)
         {
             //this clears all previous dropspot indicators (for all surfaces)
             blocks.elements.Surface.clearDropspots();
 
             //find out on which side the vector intersects with the hovered surface
-            var side = surface._findIntersectingSide(vector);
+            var side = surface._findIntersectingSide(vector, stats);
 
             if (side !== blocks.elements.Surface.SIDE.NONE) {
                 //create a list of possible dropspots on the given side
@@ -774,23 +775,52 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * The order that is checked is top, bottom, left, right.
          *
          * @param vector The vector (having x1, y1, x2, y2 properties)
+         * @param stats The vector statistics (having direction, variance, speed properties)
          */
-        _findIntersectingSide: function (vector)
+        _findIntersectingSide: function (vector, stats)
         {
-            if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
-                return blocks.elements.Surface.SIDE.TOP;
+            // if we have a reliable direction, use it to calc the intersection
+            // this means the user is steadily moving towards an edge
+            if (stats && stats.variance < 0.50) {
+                if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
+                    return blocks.elements.Surface.SIDE.TOP;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.BOTTOM;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.LEFT;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.RIGHT;
+                }
+                else {
+                    return blocks.elements.Surface.SIDE.NONE;
+                }
             }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
-                return blocks.elements.Surface.SIDE.BOTTOM;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
-                return blocks.elements.Surface.SIDE.LEFT;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
-                return blocks.elements.Surface.SIDE.RIGHT;
-            }
+            // if the direction is not that reliable, calculate the intersecting side by simply using the closest edge
             else {
-                return blocks.elements.Surface.SIDE.NONE;
+                var distTop = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.right, this.top);
+                var distBottom = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.bottom, this.right, this.bottom);
+                var distLeft = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.left, this.bottom);
+                var distRight = this._perpendicularDistance(vector.x1, vector.y1, this.right, this.top, this.right, this.bottom);
+
+                var distMin = Math.min(distTop, distBottom, distLeft, distRight);
+                if (distMin === distTop) {
+                    return blocks.elements.Surface.SIDE.TOP;
+                }
+                else if (distMin === distBottom) {
+                    return blocks.elements.Surface.SIDE.BOTTOM;
+                }
+                else if (distMin === distLeft) {
+                    return blocks.elements.Surface.SIDE.LEFT;
+                }
+                else if (distMin === distRight) {
+                    return blocks.elements.Surface.SIDE.RIGHT;
+                }
+                else {
+                    return blocks.elements.Surface.SIDE.NONE;
+                }
             }
         },
         /**
@@ -817,6 +847,34 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             else {
                 return false;
             }
+        },
+        _perpendicularDistance: function (x, y, segStartX, segStartY, segEndX, segEndY)
+        {
+            function sqr(x)
+            {
+                return x * x
+            }
+
+            function dist2(v, w)
+            {
+                return sqr(v.x - w.x) + sqr(v.y - w.y)
+            }
+
+            function distToSegmentSquared(p, v, w)
+            {
+                var l2 = dist2(v, w);
+                if (l2 == 0) {
+                    return dist2(p, v);
+                }
+                var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                return dist2(p, {
+                    x: v.x + t * (w.x - v.x),
+                    y: v.y + t * (w.y - v.y)
+                });
+            }
+
+            return Math.sqrt(distToSegmentSquared({x: x, y: y},{x: segStartX, y: segStartY}, {x: segEndX, y: segEndY}));
         },
         /**
          * Recursively create the dropspots of this surface (and the parents) on the specified side.

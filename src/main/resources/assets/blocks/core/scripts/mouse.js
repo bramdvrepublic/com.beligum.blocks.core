@@ -43,6 +43,9 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     //show dragging direction
     var SHOW_DEBUG_LINES = false;
 
+    //show dragging console messages
+    var SHOW_DEBUG_MSGS = false;
+
     //the size of the history window to keep during dragging
     var WINDOW_SIZE = 20;
 
@@ -186,12 +189,12 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         }
     };
 
-    this.isEnabled = function()
+    this.isEnabled = function ()
     {
         return active;
     };
 
-    this.enableClickEvents = function(enable)
+    this.enableClickEvents = function (enable)
     {
         enableClickEvents = enable;
     };
@@ -364,6 +367,14 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             updateStats(event);
             updateVector(event);
 
+            if (SHOW_DEBUG_MSGS) {
+                Logger.info("Drag vector" +
+                    "\n    (" + dragVector.x1.toFixed(0) + "," + dragVector.y1.toFixed(0) + ") - (" + dragVector.x2.toFixed(0) + "," + dragVector.y2.toFixed(0) + ")" +
+                    "\n    direction=" + stats.direction.toFixed(2) + "" +
+                    "\n    variance=" + stats.variance.toFixed(2) + "" +
+                    "\n    speed=" + stats.speed.toFixed(2) + "");
+            }
+
             if (draggingStatus === Mouse.DRAGGING.NO) {
 
                 //this is something we always do
@@ -422,9 +433,19 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                         hoveredSurface: hoveredSurface,
 
                         //the current dragvector (x1,y1,x2,y2)
-                        dragVector: dragVector,
+                        dragVector: {
+                            x1: dragVector.x1,
+                            y1: dragVector.y1,
+                            x2: dragVector.x2,
+                            y2: dragVector.y2,
+                        },
                         //the statistics of the dragvector (variance, direction, speed)
-                        dragStats: stats,
+                        //note: make sure to copy the values to a new obj
+                        dragStats: {
+                            direction: stats.direction,
+                            variance: stats.variance,
+                            speed: stats.speed,
+                        },
                     });
                 }
             }
@@ -569,7 +590,7 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     /**
      * Blocks all click events on everything
      */
-    var _blockClick = function(event)
+    var _blockClick = function (event)
     {
         event.stopImmediatePropagation();
         event.stopPropagation();
