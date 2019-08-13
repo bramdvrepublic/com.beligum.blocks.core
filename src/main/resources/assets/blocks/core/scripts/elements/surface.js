@@ -346,6 +346,11 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return this.realBottom - this.realTop;
         },
 
+        tagName: function()
+        {
+            return this._getTagName();
+        },
+
         /**
          * Returns the first child we can find where the bounds wrap the supplied coordinate
          * (bounds included) or null if no such child was found.
@@ -851,6 +856,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
                 return false;
             }
         },
+        /**
+         * Calculates the perpendicular distance from a point to a line segment.
+         * See https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+         */
         _perpendicularDistance: function (x, y, segStartX, segStartY, segEndX, segEndY)
         {
             function sqr(x)
@@ -866,11 +875,12 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             function distToSegmentSquared(p, v, w)
             {
                 var l2 = dist2(v, w);
-                if (l2 == 0) {
+                if (l2 === 0) {
                     return dist2(p, v);
                 }
                 var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
                 t = Math.max(0, Math.min(1, t));
+
                 return dist2(p, {
                     x: v.x + t * (w.x - v.x),
                     y: v.y + t * (w.y - v.y)

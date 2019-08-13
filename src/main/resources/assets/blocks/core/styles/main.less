@@ -492,6 +492,19 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     border-right: 1px solid darken(@controlBgColor, 15%);
   }
 
+  .btn {
+    .fa-stack {
+      // see https://fontawesome.com/how-to-use/on-the-web/styling/stacking-icons
+      // Since stacked icons are styled by font awesome to be twice the size of single icons,
+      // you’ll need to size down the stacked icon.
+      font-size: 0.5em;
+      // this also means we need to double the (relative) width of the fixed width fa icons
+      &.fa-fw {
+        width: (18em / 14) * 2;
+      }
+    }
+  }
+
   .nav-tabs {
     height: @sidebarTabHeight;
     overflow: hidden;
