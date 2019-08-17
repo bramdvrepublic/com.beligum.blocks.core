@@ -176,6 +176,22 @@ public class RdfTools
     }
 
     /**
+     * Converts an IRI to an URI
+     */
+    public static URI iriToUri(IRI iri)
+    {
+        return iri == null ? null : URI.create(iri.toString());
+    }
+
+    /**
+     * Converts an URI to an IRI
+     */
+    public static IRI uriToIri(URI uri)
+    {
+        return uri == null ? null : SimpleValueFactory.getInstance().createIRI(uri.toString());
+    }
+
+    /**
      * Make the URI relative to the locally configured domain if it's absolute (or just return it if it's not)
      */
     public static URI relativizeToLocalDomain(URI uri)
@@ -297,22 +313,6 @@ public class RdfTools
         }
 
         return retVal;
-    }
-
-    /**
-     * Converts an IRI to an URI
-     */
-    public static URI iriToUri(IRI iri)
-    {
-        return iri == null ? null : URI.create(iri.toString());
-    }
-
-    /**
-     * Converts an URI to an IRI
-     */
-    public static IRI uriToIri(URI uri)
-    {
-        return uri == null ? null : SimpleValueFactory.getInstance().createIRI(uri.toString());
     }
 
     //-----PROTECTED METHODS-----

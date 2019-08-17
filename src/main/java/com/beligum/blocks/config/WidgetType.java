@@ -124,7 +124,6 @@ public enum WidgetType
      * this will allow us to map to this enum from a constant string value
      */
     private static final Map<String, WidgetType> constantValueMapping = new HashMap<>();
-
     static {
         for (WidgetType widget : WidgetType.values()) {
             constantValueMapping.put(widget.getConstant(), widget);

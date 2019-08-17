@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.utils.importer;
+package com.beligum.blocks.utils;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;

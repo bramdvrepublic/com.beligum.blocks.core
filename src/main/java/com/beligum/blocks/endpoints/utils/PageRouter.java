@@ -15,18 +15,17 @@ import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
-import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.Format;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
-import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
@@ -830,7 +829,11 @@ public class PageRouter
             }
         }
 
-        Collections.sort(retVal, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
+        // sort the list of maps based on the natural order of their "title" value
+        retVal.sort(Comparator.comparing(m -> m.get(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()),
+                                         Comparator.nullsLast(Comparator.naturalOrder())
+                    )
+        );
 
         return retVal;
     }

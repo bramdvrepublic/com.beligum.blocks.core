@@ -23,7 +23,7 @@ import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.utils.importer.ImportTools;
+import com.beligum.blocks.utils.ImportTools;
 import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
