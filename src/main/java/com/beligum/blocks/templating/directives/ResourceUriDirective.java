@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.directives;
+package com.beligum.blocks.templating.directives;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;

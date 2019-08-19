@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;

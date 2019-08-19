@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.directives;
+package com.beligum.blocks.templating.directives;
 
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.templating.blocks.*;
+import com.beligum.blocks.templating.*;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.runtime.directive.Block;
 import org.apache.velocity.runtime.parser.node.ASTStringLiteral;
@@ -29,7 +29,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Map;
 
 /**
  * Created by bram on 5/28/15.

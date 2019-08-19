@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.directives;
+package com.beligum.blocks.templating.directives;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.templating.blocks.HtmlRdfContext;
-import com.beligum.blocks.utils.RdfTools;
-import org.apache.commons.lang3.StringUtils;
+import com.beligum.blocks.templating.HtmlRdfContext;
 
 import java.io.IOException;
 import java.net.URI;

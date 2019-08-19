@@ -105,7 +105,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         throw new UnsupportedOperationException("Unimplemented ; " + property);
     }
     @Override
-    public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException
+    public IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean)
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }

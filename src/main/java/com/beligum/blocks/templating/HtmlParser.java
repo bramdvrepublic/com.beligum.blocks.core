@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ResourceInputStream;
@@ -25,10 +25,10 @@ import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.UriDetector;
-import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
-import com.beligum.blocks.templating.blocks.directives.ResourceUriDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
-import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
+import com.beligum.blocks.templating.directives.PageTemplateWrapperDirective;
+import com.beligum.blocks.templating.directives.ResourceUriDirective;
+import com.beligum.blocks.templating.directives.TagTemplateResourceDirective;
+import com.beligum.blocks.templating.directives.TemplateInstanceStackDirective;
 import com.google.common.collect.Sets;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import net.htmlparser.jericho.*;
@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  * property="http://www.mot.be/ontology/pagetitle" and property="mot:pagetitle" could all reference the same
  * property.
  * <p>
- * Note: the reverse of this class is com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer
+ * Note: the reverse of this class is com.beligum.blocks.templating.analyzer.HtmlAnalyzer
  */
 public class HtmlParser implements ResourceParser, UriDetector.ReplaceCallback
 {

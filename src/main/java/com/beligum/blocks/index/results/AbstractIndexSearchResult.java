@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.index.entries;
+package com.beligum.blocks.index.results;
 
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchResult;

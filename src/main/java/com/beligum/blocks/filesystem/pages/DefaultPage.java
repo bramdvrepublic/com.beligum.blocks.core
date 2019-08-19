@@ -32,7 +32,7 @@ import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.templating.analyzer.HtmlAnalyzer;
 import gen.com.beligum.blocks.core.maven;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.analyzer;
+package com.beligum.blocks.templating.analyzer;
 
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
@@ -32,9 +32,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_PROPERTY_ATTR;
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_RESOURCE_ATTR;
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_TYPEOF_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_PROPERTY_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_RESOURCE_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_TYPEOF_ATTR;
 
 /**
  * Created by bram on 1/26/17.

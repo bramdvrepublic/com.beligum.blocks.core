@@ -1,4 +1,4 @@
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 public class HtmlRdfPropertyRef
 {

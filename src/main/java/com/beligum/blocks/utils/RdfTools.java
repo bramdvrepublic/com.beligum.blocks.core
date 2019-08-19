@@ -276,45 +276,6 @@ public class RdfTools
                         .append("</p>");
     }
 
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied resource info
-     */
-    public static CharSequence serializeResourceHtml(RdfProperty rdfProperty, ResourceProxy resourceProxy)
-    {
-        CharSequence retVal = null;
-
-        StringBuilder labelHtml = new StringBuilder();
-        labelHtml.append(resourceProxy.getLabel());
-        boolean disableImg = false;
-        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG)) {
-            disableImg = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG));
-        }
-        if (resourceProxy.getImage() != null && !disableImg) {
-            //Note: title is for a tooltip
-            labelHtml.append("<img src=\"").append(resourceProxy.getImage()).append("\" alt=\"").append(resourceProxy.getLabel()).append("\" title=\"").append(resourceProxy.getLabel()).append("\">");
-        }
-
-        boolean disableHref = false;
-        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF)) {
-            disableHref = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF));
-        }
-        if (resourceProxy.getUri() != null && !disableHref) {
-            StringBuilder linkHtml = new StringBuilder();
-            linkHtml.append("<a href=\"").append(resourceProxy.getUri()).append("\"");
-            if (resourceProxy.isExternal() || resourceProxy.getUri().isAbsolute()) {
-                linkHtml.append(" target=\"_blank\"");
-            }
-            linkHtml.append(">").append(labelHtml).append("</a>");
-
-            retVal = linkHtml;
-        }
-        else {
-            retVal = labelHtml;
-        }
-
-        return retVal;
-    }
-
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----

@@ -21,7 +21,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.templating.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.*;

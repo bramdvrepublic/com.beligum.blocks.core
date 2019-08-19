@@ -1,7 +1,10 @@
 package com.beligum.blocks.index.entries;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.fields.ResourceTypeField;
@@ -9,9 +12,11 @@ import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.utils.SecurityTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -83,6 +88,56 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     public boolean isExternal()
     {
         return false;
+    }
+    @Override
+    public boolean isPermitted(ResourceAction action)
+    {
+        boolean retVal = false;
+
+        try {
+            // WATCH OUT !!!
+            // Sync this with the PageIndexEntry implementation (to filter search results)
+            switch (action) {
+
+                case READ:
+
+                    if (this.jsonNode != null) {
+                        retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
+                                 || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
+                                 || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
+
+                        // if all is well, and a custom ACL is set, also check the ACL
+                        if (retVal) {
+                            JsonNode metaAclRead = this.autoUnbox(this.jsonNode.get(Meta.aclRead.getCurie().toString()));
+                            if (metaAclRead != null) {
+                                if (metaAclRead.isNumber()) {
+                                    retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), metaAclRead.intValue());
+                                }
+                                else {
+                                    Logger.error("Encountered ACL read value that's not a number, this shouldn't happen; " + metaAclRead);
+                                }
+                            }
+                            else {
+                                // if the page doesn't have a specific ACL, let it pass
+                                retVal = true;
+                            }
+                        }
+                    }
+                    else {
+                        Logger.error("Requesting a security check on a null json object, this shouldn't happen; " + this);
+                    }
+
+                    break;
+
+                default:
+                    Logger.error("Encountered unimplemented index entry resource action, please fix this; " + action);
+            }
+        }
+        catch (Throwable e) {
+            Logger.error("Caught unexpected exception while checking '" + action + "' access permission to this index entry; " + this, e);
+        }
+
+        return retVal;
     }
     @Override
     public String toString()
@@ -292,22 +347,22 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         }
                     }
                     // You can activate this code below to index resources as sub-objects as well, but it seems to overcomplicate things a lot...
-//                    else if (WidgetType.Resource.equals(property.getWidgetType())) {
-//
-//                        ObjectNode valueNode = Json.getObjectMapper().createObjectNode();
-//
-//                        // note that we only know the resource of the target object is this URI,
-//                        // it's uri property might be different, we just don't know: we have no endpoint,
-//                        // so we can't query it. Note that we index all local uris relatively
-//                        // Also note solr can't make documents without identifier, so it'll generate one automatically,
-//                        // based on the ID of the parent!
-//                        valueNode.put(ResourceIndexEntry.resourceField.getName(), ResourceIndexEntry.resourceField.serialize(value, language));
-//
-//                        // let's not call this a proxy, but a stub instead
-//                        valueNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.STUB));
-//
-//                        this.addProperty(this.jsonNode, valueNode, field, language);
-//                    }
+                    //                    else if (WidgetType.Resource.equals(property.getWidgetType())) {
+                    //
+                    //                        ObjectNode valueNode = Json.getObjectMapper().createObjectNode();
+                    //
+                    //                        // note that we only know the resource of the target object is this URI,
+                    //                        // it's uri property might be different, we just don't know: we have no endpoint,
+                    //                        // so we can't query it. Note that we index all local uris relatively
+                    //                        // Also note solr can't make documents without identifier, so it'll generate one automatically,
+                    //                        // based on the ID of the parent!
+                    //                        valueNode.put(ResourceIndexEntry.resourceField.getName(), ResourceIndexEntry.resourceField.serialize(value, language));
+                    //
+                    //                        // let's not call this a proxy, but a stub instead
+                    //                        valueNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.STUB));
+                    //
+                    //                        this.addProperty(this.jsonNode, valueNode, field, language);
+                    //                    }
                     else {
                         // we'll store xsd:anyURI as a literal value
                         this.addProperty(this.jsonNode, value, field, language);
@@ -471,5 +526,19 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     private RdfClass extractModelTypeof(IRI resource, Model model)
     {
         return RdfFactory.lookup(Models.objectIRI(model.filter(resource, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
+    }
+    /**
+     * Since Solr indexes multivalue fields as arrays even if there's only one value present,
+     * we sometimes want to auto-unbox a single-valued array so processing is a bit simpler.
+     */
+    private JsonNode autoUnbox(JsonNode jsonNode)
+    {
+        JsonNode retVal = jsonNode;
+
+        if (retVal != null && retVal.isArray() && retVal.size() == 1) {
+            retVal = retVal.get(0);
+        }
+
+        return retVal;
     }
 }

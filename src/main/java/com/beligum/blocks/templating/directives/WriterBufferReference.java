@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.directives;
+package com.beligum.blocks.templating.directives;
 
 import java.io.StringWriter;
 

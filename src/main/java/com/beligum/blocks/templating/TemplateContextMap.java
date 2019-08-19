@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.beligum.base.cache.CacheFunction;
 import com.beligum.base.cache.CacheKey;
@@ -23,9 +23,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.PropertyMap;
+import com.beligum.blocks.templating.directives.PropertyMap;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -16,6 +16,8 @@
 
 package com.beligum.blocks.index.sparql;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.google.common.collect.Sets;
@@ -49,6 +51,11 @@ public class SparqlSelectIndexEntry extends AbstractIndexEntry
     public boolean isExternal()
     {
         return false;
+    }
+    @Override
+    public boolean isPermitted(ResourceAction action)
+    {
+        throw new UnsupportedOperationException("SPARQL result security filtering is not yet implemented, please look into this; " + action);
     }
     public BindingSet getBindingSet()
     {

@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.index.entries;
+package com.beligum.blocks.index.results;
 
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchResult;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -68,7 +71,7 @@ public class SimpleIndexSearchResult extends AbstractIndexSearchResult
     @Override
     public Iterator<ResourceIndexEntry> iterator()
     {
-        return this.results.iterator();
+        return Iterators.filter(this.results.iterator(), new SearchResultFilter());
     }
 
     //-----PROTECTED METHODS-----

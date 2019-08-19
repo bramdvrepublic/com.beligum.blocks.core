@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.RdfFactory;

@@ -1,9 +1,11 @@
 package com.beligum.blocks.index.sparql;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
+import com.beligum.blocks.index.results.AbstractIndexSearchResult;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
+import com.beligum.blocks.index.results.SearchResultFilter;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.collect.Iterators;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -47,7 +49,7 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult<Sparql
     @Override
     public java.util.Iterator<SparqlConstructIndexEntry> iterator()
     {
-        return new SparqlConstructIterator(this.subjects, this.model);
+        return Iterators.filter(new SparqlConstructIterator(this.subjects, this.model), new SearchResultFilter());
     }
     public Model getModel()
     {

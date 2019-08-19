@@ -22,9 +22,9 @@ import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ontologies.Meta;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.PageTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.PageTemplate;
+import com.beligum.blocks.templating.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
@@ -661,13 +661,16 @@ public class PageRouter
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
-            //make sure we have permission to create a page copy
+            // make sure we have permission to create a page copy
             R.securityManager().checkPermission(PAGE_CREATE_COPY_ALL_PERM);
 
             if (!StringUtils.isEmpty(this.newPageCopyUrl)) {
 
                 //read the page we'll copy from
                 Page copyPage = R.resourceManager().get(URI.create(this.newPageCopyUrl), Page.class);
+
+                // also, the page we copy must be visible to the current user!
+                copyPage.checkPermission(ResourceAction.READ);
 
                 //First, we'll read in the normalized code of the copy page (important: in edit mode because we need the edit imports).
                 //Note that we need to read the normalized version because the templates might have changed in the mean time (between store and copy)

@@ -209,7 +209,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest
         }
 
         // zero based offset of matching documents to retrieve
-        retVal.setStart(this.getPageOffset());
+        retVal.setStart(this.getPageOffset() * this.getPageSize());
 
         // number of documents to return starting at "start"
         retVal.setRows(this.getPageSize());

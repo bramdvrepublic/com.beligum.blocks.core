@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints.utils;
 
 import com.beligum.base.database.models.AbstractJsonObject;
 import com.beligum.base.server.R;
-import com.beligum.blocks.templating.blocks.TagTemplate;
+import com.beligum.blocks.templating.TagTemplate;
 
 public class BlockInfo extends AbstractJsonObject
 {

@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.directives;
+package com.beligum.blocks.templating.directives;
 
 import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.TemplateResources;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlTag;
-import com.google.common.base.Function;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.TemplateResources;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;

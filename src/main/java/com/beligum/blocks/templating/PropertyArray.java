@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.google.common.base.Joiner;
 
@@ -43,7 +43,7 @@ public class PropertyArray<E> extends ArrayList<E>
 
     //-----PUBLIC METHODS-----
     //NOTE sync these two
-    // @see com.beligum.blocks.templating.blocks.HtmlParser for details about this
+    // @see com.beligum.blocks.templating.HtmlParser for details about this
     public static final String WRITE_ONCE_METHOD_NAME = "writeOnce";
     public String writeOnce()
     {

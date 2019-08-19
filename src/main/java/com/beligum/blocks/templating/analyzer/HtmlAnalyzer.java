@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.analyzer;
+package com.beligum.blocks.templating.analyzer;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.filesystem.pages.PageSource;
-import com.beligum.blocks.templating.blocks.HtmlParser;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.PageTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.HtmlParser;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.PageTemplate;
+import com.beligum.blocks.templating.TemplateCache;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
 

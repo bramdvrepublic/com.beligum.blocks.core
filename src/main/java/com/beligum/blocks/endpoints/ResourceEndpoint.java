@@ -22,7 +22,7 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.repositories.AssetsRepository;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.templates.blocks.core.snippets.sidebar;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 

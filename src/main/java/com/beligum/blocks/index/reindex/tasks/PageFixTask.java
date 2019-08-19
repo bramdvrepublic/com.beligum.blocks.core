@@ -18,18 +18,18 @@ package com.beligum.blocks.index.reindex.tasks;
 
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.WidgetType;
+import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.utils.ImportTools;
-import com.beligum.blocks.filesystem.LockFile;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.templating.HtmlTemplate;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
@@ -40,7 +40,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_CONTENT_ATTR;
 import static java.time.ZoneOffset.UTC;
 
 /**
@@ -168,8 +168,11 @@ public class PageFixTask extends ReindexTask
                                     || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(WidgetType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
-                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
-                                    output.replace(factElement, new Source(newHtml));
+                                    //TODO ImportTools has been replaced by the general import system, please update the line below if you need it
+                                    // also see https://github.com/republic-of-reinvention/com.stralo.framework/issues/34
+                                    Logger.warn("ImportTools has been replaced by the general import system, please update the line below if you need it");
+                                    //String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
+                                    //output.replace(factElement, new Source(newHtml));
 
                                     retVal = true;
                                 }

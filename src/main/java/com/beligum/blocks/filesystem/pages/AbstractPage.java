@@ -33,8 +33,7 @@ import com.beligum.blocks.filesystem.hdfs.HdfsUtils;
 import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.templating.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.SecurityTools;
 import org.apache.commons.io.FilenameUtils;
@@ -124,13 +123,15 @@ public abstract class AbstractPage extends AbstractBlocksResource implements Pag
         boolean retVal = false;
 
         try {
+            // WATCH OUT !!!
+            // Sync this with the PageIndexEntry implementation (to filter search results)
             switch (action) {
                 case READ:
                     retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
                              || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
                              || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
 
-                    //if all is well, and a custom ACL is set, also check the ACL
+                    // if all is well, and a custom ACL is set, also check the ACL
                     if (retVal && this.getMetadata().getReadAcl() != null) {
                         retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), this.getMetadata().getReadAcl());
                     }

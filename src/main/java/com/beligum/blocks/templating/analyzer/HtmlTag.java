@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks.analyzer;
+package com.beligum.blocks.templating.analyzer;
 
 import com.beligum.base.resources.MimeTypes;
-import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
-import com.beligum.blocks.templating.blocks.*;
+import com.beligum.blocks.templating.HtmlParser;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.PageTemplate;
+import com.beligum.blocks.templating.TagTemplate;
 import net.htmlparser.jericho.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
+import com.beligum.blocks.templating.directives.TemplateResourcesDirective;
 import com.google.common.collect.Iterators;
 
 import java.io.StringWriter;

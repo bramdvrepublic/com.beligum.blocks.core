@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating;
 
 import com.beligum.base.resources.MimeTypes;
 import com.beligum.base.resources.ifaces.Resource;
@@ -31,8 +31,8 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ontologies.Blocks;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
-import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
+import com.beligum.blocks.templating.directives.TagTemplateResourceDirective;
+import com.beligum.blocks.templating.directives.TemplateResourcesDirective;
 import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Enums;
 import com.google.common.base.Function;
@@ -41,7 +41,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.*;
-import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -59,8 +58,8 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_CONTENT_ATTR;
-import static com.beligum.blocks.templating.blocks.HtmlParser.RDF_PROPERTY_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_CONTENT_ATTR;
+import static com.beligum.blocks.templating.HtmlParser.RDF_PROPERTY_ATTR;
 
 /**
  * Created by bram on 5/13/15.
