@@ -68,7 +68,8 @@ public class PageSourceCopy extends PageSource
         this.language = null;
         this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
 
-        Logger.info("BLAH");
+        // wipe out the meta tags of the source, they don't apply to this page anymore
+        // note: we may choose to optionally withhold security information in the future if we want
         Iterator<Element> iter = this.metaTags.iterator();
         while (iter.hasNext()) {
             Element metaTag = iter.next();
