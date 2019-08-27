@@ -19,7 +19,7 @@ public interface BlockSerializer
     //-----PUBLIC METHODS-----
     /**
      * This is the most general contract an importer class must provide to import data.
-     * This method returns the serialized HTML of a block with the supplied data, property and language, ready to be used in page templates.
+     * This method returns the serialized and normalized (!) HTML of a block with the supplied data, property and language, ready to be used in page templates.
      */
     CharSequence toHtml(TagTemplate blockType, RdfProperty property, Locale language, String value) throws IOException;
 }

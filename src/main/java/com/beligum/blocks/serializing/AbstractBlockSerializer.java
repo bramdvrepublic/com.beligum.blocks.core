@@ -2,15 +2,21 @@ package com.beligum.blocks.serializing;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.index.ifaces.RdfResult;
 import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.TagTemplate;
 import com.beligum.blocks.templating.TemplateCache;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
+import com.sun.org.apache.bcel.internal.generic.ARETURN;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.jsoup.nodes.Element;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -27,51 +33,118 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     //-----PUBLIC METHODS-----
 
     //-----PROTECTED METHODS-----
-    /**
-     * Creates the opening tag for the specified block tag with an optional arguments list (excluding "class") and an optional list of classes
-     */
-    protected StringBuilder createBlockHtml(TagTemplate blockType, Map<String, String> arguments, ConstantsFileEntry[] classes)
+    protected Element createTag(String tagName)
     {
-        StringBuilder retVal = new StringBuilder();
+        return this.createTag(tagName, null);
+    }
+    protected Element createTag(TagTemplate blockType)
+    {
+        return this.createTag(blockType.getTemplateName(), null);
+    }
+    protected Element createTag(TagTemplate blockType, String[][] arguments, String... classes)
+    {
+        return this.createTag(blockType.getTemplateName(), arguments, classes);
+    }
+    protected Element createTag(String tagName, String... classes)
+    {
+        return this.createTag(tagName, null, classes);
+    }
+    protected Element createTag(TagTemplate blockType, String... classes)
+    {
+        return this.createTag(blockType.getTemplateName(), classes);
+    }
+    protected Element createTag(String tagName, String[][] arguments, String... classes)
+    {
+        Element retVal = this.createTag(tagName);
 
-        retVal.append("<").append(blockType.getTemplateName());
-
-        // first add the general arguments
-        if (arguments != null && arguments.size() > 0) {
-            retVal.append(" ");
-            Joiner.on(" ").skipNulls().appendTo(retVal, Iterables.transform(arguments.entrySet(), new Function<Map.Entry<String, String>, StringBuilder>()
-            {
-                @Override
-                public StringBuilder apply(Map.Entry<String, String> input)
-                {
-                    if (input.getKey().equalsIgnoreCase("class")) {
-                        Logger.warn("Found a \"class\" argument in the general arguments list, skipping. Please use the designated classes parameter; " + input);
-                        return null;
-                    }
-                    else {
-                        return new StringBuilder().append(input.getKey()).append("=\"").append(input.getValue()).append("\"");
-                    }
+        if (arguments != null) {
+            for (String[] a : arguments) {
+                if (a.length != 2) {
+                    Logger.error("Encountered tag argument with the wrong structure, skipping. Please fix this; " + a);
                 }
-            }));
+                else {
+                    retVal.attr(a[0], a[1]);
+                }
+            }
         }
 
-        // then the classes
-        if (classes != null && classes.length > 0) {
-            retVal.append(" class=\"");
-            Joiner.on(" ").skipNulls().appendTo(retVal, classes);
-            retVal.append("\"");
-        }
-
-        retVal.append(">");
+        this.addClasses(retVal, classes);
 
         return retVal;
     }
     /**
-     * Appends a closing tag for the specified block type to the string builder
+     * Creates a html tag with the specified name and arguments
      */
-    protected StringBuilder closeBlockHtml(TagTemplate blockType, StringBuilder stringBuilder)
+    protected Element createTag(TagTemplate blockType, Map<String, String> arguments, ConstantsFileEntry[] classes, Map<String, String> styles)
     {
-        return stringBuilder.append("</").append(blockType.getTemplateName()).append(">");
+        Element retVal = new Element(blockType.getTemplateName());
+
+        // first add the general arguments
+        if (arguments != null) {
+            for (Map.Entry<String, String> a : arguments.entrySet()) {
+                if (a.getKey().equalsIgnoreCase("class")) {
+                    Logger.warn("Found a \"class\" argument in the general arguments list, skipping. Please use the designated parameter instead; " + a);
+                }
+                else if (a.getKey().equalsIgnoreCase("style")) {
+                    Logger.warn("Found a \"style\" argument in the general arguments list, skipping. Please use the designated parameter instead; " + a);
+                }
+                else {
+                    retVal.attr(a.getKey(), a.getValue());
+                }
+            }
+        }
+
+        // then the classes
+        this.addClasses(retVal, classes);
+
+        // then the styles
+        this.addStyles(retVal, styles);
+
+        return retVal;
+    }
+    /**
+     * Appends the specified CSS classes to the stringbuilder
+     */
+    protected void addClasses(Element element, ConstantsFileEntry... classes)
+    {
+        if (classes != null) {
+            for (ConstantsFileEntry c : classes) {
+                element.addClass(c.getValue().trim());
+            }
+        }
+    }
+    /**
+     * Appends the specified CSS classes to the stringbuilder
+     */
+    protected void addClasses(Element element, String... classes)
+    {
+        if (classes != null) {
+            for (String c : classes) {
+                element.addClass(c.trim());
+            }
+        }
+    }
+    /**
+     * Appends the specified CSS style pairs to the stringbuilder
+     */
+    protected void addStyles(Element element, Map<String, String> styles)
+    {
+        if (styles != null && styles.size() > 0) {
+            String existingStyles = null;
+            if (element.hasAttr("style")) {
+                existingStyles = element.attr("style");
+            }
+
+            String newStyles = Joiner.on(";").skipNulls().withKeyValueSeparator(": ").join(styles);
+
+            // if the new styles have no extra information, there's nothing to do
+            if (!StringUtils.isBlank(newStyles)) {
+                if (!StringUtils.isBlank(existingStyles)) {
+                    newStyles = existingStyles + ";" + newStyles;
+                }
+                element.attr("style", newStyles.trim());
+            }
+        }
     }
 
     //-----PRIVATE METHODS-----
