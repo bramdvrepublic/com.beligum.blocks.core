@@ -27,8 +27,8 @@ import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.directive.Directive;
-import org.apache.velocity.runtime.log.Log;
 import org.apache.velocity.runtime.parser.node.Node;
+import org.apache.velocity.util.StringUtils;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -165,7 +165,7 @@ public class TemplateResourcesDirective extends Directive
             else {
                 throw new IOException("Encountered a writer while processing #" + NAME + " directive that's not a StringWriter; this shouldn't happen and should be fixed in " +
                                       PageTemplateWrapperDirective.class.getCanonicalName() + "; template file was " +
-                                      Log.formatFileString(this));
+                                      StringUtils.formatFileString(this));
             }
         }
 

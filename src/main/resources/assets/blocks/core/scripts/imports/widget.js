@@ -262,7 +262,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
+                function changeCallback(oldValue, newValue, event, combobox)
                 {
                     var undoAttr = 'class';
                     var oldUndoVal = element.attr(undoAttr);
@@ -283,7 +283,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             element: element,
                             attribute: undoAttr,
                             oldValue: oldUndoVal,
-                            configElement: retVal.find('button.dropdown-toggle'),
+                            configElement: combobox.find('button.dropdown-toggle'),
                             configOldValue: oldValue,
                             configNewValue: newValue,
                         });
@@ -326,7 +326,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     return retVal;
                 },
 
-                function switchStateCallback(oldValue, newValue)
+                function switchStateCallback(oldValue, newValue, event, toggleBtn)
                 {
                     var undoAttr = attribute ? attribute : 'class';
                     var oldUndoVal = element.attr(undoAttr);
@@ -335,14 +335,16 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         if (newValue) {
                             //Note: having a value seems to be necessary
                             element.attr(attribute, 'true')
-                        } else {
+                        }
+                        else {
                             element.removeAttr(attribute)
                         }
                     }
                     else {
                         if (newValue) {
                             element.addClass(value);
-                        } else {
+                        }
+                        else {
                             element.removeClass(value);
                         }
                     }
@@ -353,7 +355,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         element: element,
                         attribute: undoAttr,
                         oldValue: oldUndoVal,
-                        configElement: retVal.find('input[type="checkbox"]'),
+                        configElement: toggleBtn.find('input[type="checkbox"]'),
                         configOldValue: oldValue,
                         configNewValue: newValue,
                     });
@@ -540,7 +542,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     return retVal;
                 },
-                function changeCallback(oldValue, newValue)
+                function changeCallback(oldValue, newValue, event, combobox)
                 {
                     var oldVal = element.attr(attribute);
 
@@ -560,7 +562,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             element: element,
                             attribute: attribute,
                             oldValue: oldVal,
-                            configElement: retVal.find('button.dropdown-toggle'),
+                            configElement: combobox.find('button.dropdown-toggle'),
                         });
                     }
 
@@ -662,7 +664,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             //return true if this element needs to be selected
                             return retVal;
                         },
-                        function changeCallback(oldValue, newValue, event)
+                        function changeCallback(oldValue, newValue, event, combobox)
                         {
                             var oldValueTerm = _this._termMappings[comboId][oldValue];
                             var newValueTerm = _this._termMappings[comboId][newValue];
@@ -690,7 +692,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                                     element: element,
                                     attribute: attribute,
                                     oldValue: oldVal,
-                                    configElement: retVal.find('button.dropdown-toggle'),
+                                    configElement: combobox.find('button.dropdown-toggle'),
                                 });
                             }
                         }
@@ -1638,7 +1640,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     if (changeCallback) {
                         //Note that this will probably also fire when old == new, but that's acceptable since this way, the very first value is propagated up as well
-                        changeCallback(oldValue, newValue, event);
+                        changeCallback(oldValue, newValue, event, combobox);
                     }
 
                     //close the dropdown on click, apparently this didn't work automatically...
@@ -1727,7 +1729,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             {
                 if (switchStateCallback) {
                     var newState = $(this).prop('checked');
-                    switchStateCallback(!newState, newState);
+                    switchStateCallback(!newState, newState, e, formGroup);
                 }
             });
 

@@ -55,7 +55,9 @@ public class SparqlSelectIndexEntry extends AbstractIndexEntry
     @Override
     public boolean isPermitted(ResourceAction action)
     {
-        throw new UnsupportedOperationException("SPARQL result security filtering is not yet implemented, please look into this; " + action);
+        // TODO see https://github.com/republic-of-reinvention/com.stralo.framework/issues/58
+        //throw new UnsupportedOperationException("SPARQL result security filtering is not yet implemented, please look into this; " + action);
+        return true;
     }
     public BindingSet getBindingSet()
     {

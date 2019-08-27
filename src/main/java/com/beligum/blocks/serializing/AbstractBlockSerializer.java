@@ -75,9 +75,9 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     /**
      * Creates a html tag with the specified name and arguments
      */
-    protected Element createTag(TagTemplate blockType, Map<String, String> arguments, ConstantsFileEntry[] classes, Map<String, String> styles)
+    protected Element createTag(String tagName, Map<String, String> arguments, ConstantsFileEntry[] classes, Map<String, String> styles)
     {
-        Element retVal = new Element(blockType.getTemplateName());
+        Element retVal = new Element(tagName);
 
         // first add the general arguments
         if (arguments != null) {
@@ -101,6 +101,10 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
         this.addStyles(retVal, styles);
 
         return retVal;
+    }
+    protected Element createTag(TagTemplate blockType, Map<String, String> arguments, ConstantsFileEntry[] classes, Map<String, String> styles)
+    {
+        return this.createTag(blockType.getTemplateName(), arguments, classes, styles);
     }
     /**
      * Appends the specified CSS classes to the stringbuilder

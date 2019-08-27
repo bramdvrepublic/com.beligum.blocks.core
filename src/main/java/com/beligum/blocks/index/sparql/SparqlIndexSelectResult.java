@@ -20,11 +20,12 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
     private List<BindingSet> selectResult;
 
     //-----CONSTRUCTORS-----
+    // Note that the result is properly closed by the caller, no need to do it here
     public SparqlIndexSelectResult(TupleQueryResult result, long elapsedTime)
     {
         super(IndexSearchRequest.DEFAULT_PAGE_OFFSET, IndexSearchRequest.DEFAULT_PAGE_SIZE, elapsedTime);
 
-        // we "materialize" the query at once, so we have it's size and can close it properly
+        // we "materialize" the query at once, so we have it's size and can close it properly after calling this constructor
         this.selectResult = QueryResults.asList(result);
     }
 
