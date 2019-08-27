@@ -1232,7 +1232,7 @@ public abstract class HtmlTemplate
             //(1) check if the attribute value is a variable
             org.jsoup.nodes.Attributes attributes = e.attributes();
             for (org.jsoup.nodes.Attribute a : attributes) {
-                if (this.isTemplateVariable(a.getValue().trim())) {
+                if (this.isTemplateVariable(a.getValue() == null ? null : a.getValue().trim())) {
                     this.normalizationSubstitutions.add(new ReplaceVariableAttributeValue(this.cssSelector(e), attributes, a));
                 }
             }
@@ -1344,7 +1344,7 @@ public abstract class HtmlTemplate
 
                     Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
                     if (propertyAttr != null) {
-                        String rawPropValue = propertyAttr.getValue().trim();
+                        String rawPropValue = propertyAttr.getValue() == null ? null : propertyAttr.getValue().trim();
                         String renderedPropValue = R.resourceManager().newTemplate(new StringSource(rawPropValue, MimeTypes.HTML, R.i18n().getOptimalLocale())).render();
                         String normalizedPropValue = rdfContext.normalizeProperty(startTag, renderedPropValue);
 
@@ -1397,7 +1397,7 @@ public abstract class HtmlTemplate
         //note that we chose to not search for specific variables (eg; MESSAGES or CONSTANTS) because
         // of the possibility of different prefix syntaxes (eg. for Velocity ${MESSAGES} and $MESSAGES)
         // and because we'll have a safeguard check (comparing the rendered variable)
-        return html.startsWith(R.resourceManager().getTemplateEngine().getVariablePrefix());
+        return html != null && html.startsWith(R.resourceManager().getTemplateEngine().getVariablePrefix());
     }
 
     //-----MANAGEMENT METHODS-----
@@ -1453,15 +1453,18 @@ public abstract class HtmlTemplate
         {
             final boolean USE_JERICHO = false;
 
-            String retVal;
-            if (USE_JERICHO) {
-                retVal = new SourceFormatter(new Source(html)).setCollapseWhiteSpace(true).setIndentString("").setNewLine("").toString();
-            }
-            else {
-                Document doc = Jsoup.parseBodyFragment(html);
-                //we'll standardize everything to a compact xhtml document
-                doc = doc.outputSettings(doc.outputSettings().indentAmount(0).prettyPrint(false).syntax(Document.OutputSettings.Syntax.xml));
-                retVal = doc.body().html();
+            String retVal = null;
+            if (html != null) {
+
+                if (USE_JERICHO) {
+                    retVal = new SourceFormatter(new Source(html)).setCollapseWhiteSpace(true).setIndentString("").setNewLine("").toString();
+                }
+                else {
+                    Document doc = Jsoup.parseBodyFragment(html);
+                    //we'll standardize everything to a compact xhtml document
+                    doc = doc.outputSettings(doc.outputSettings().indentAmount(0).prettyPrint(false).syntax(Document.OutputSettings.Syntax.xml));
+                    retVal = doc.body().html();
+                }
             }
 
             return retVal;
@@ -1502,7 +1505,7 @@ public abstract class HtmlTemplate
         }
         protected String standardize(org.jsoup.nodes.Attribute attribute)
         {
-            return super.standardize(attribute.getValue().trim());
+            return super.standardize(attribute.getValue() == null ? null : attribute.getValue().trim());
         }
     }
 
