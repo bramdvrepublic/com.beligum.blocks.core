@@ -16,8 +16,12 @@
 
 package com.beligum.blocks.templating.directives;
 
+import com.beligum.base.utils.Logger;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.runtime.parser.node.Node;
+
+import java.io.IOException;
+import java.io.StringWriter;
 
 /**
  * Created by bram on 4/25/15.
@@ -44,15 +48,23 @@ public class TagTemplateDirectiveUtils
 
         return retVal;
     }
-    protected static String readValue(InternalContextAdapter context, Node node)
+    protected static String renderValue(InternalContextAdapter context, Node node) throws IOException
     {
+        String retVal = null;
+
         Node contentNode = node.jjtGetChild(node.jjtGetNumChildren() - 1);
         if (contentNode.jjtGetNumChildren() > 0) {
-            return contentNode.literal();
+
+            // When upgrading to Velocity 2.0, this seemed to throw a NPE,
+            // so we replaced it with the code below, I hope it basically does the same...
+            // contentNode.literal();
+
+            StringWriter blockContent = new StringWriter();
+            contentNode.render(context, blockContent);
+            retVal = blockContent.toString();
         }
-        else {
-            return null;
-        }
+
+        return retVal;
     }
 
     //-----PRIVATE METHODS-----

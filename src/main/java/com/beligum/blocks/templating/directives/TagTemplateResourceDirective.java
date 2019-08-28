@@ -24,6 +24,8 @@ import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
+import org.apache.velocity.exception.TemplateInitException;
+import org.apache.velocity.runtime.RuntimeServices;
 import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.Node;
 
@@ -56,6 +58,10 @@ public class TagTemplateResourceDirective extends Directive
     {
         return NAME;
     }
+    public void init(RuntimeServices rs, InternalContextAdapter context, Node node) throws TemplateInitException
+    {
+        super.init(rs, context, node);
+    }
     @Override
     public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException, ResourceNotFoundException, ParseErrorException, MethodInvocationException
     {
@@ -70,7 +76,7 @@ public class TagTemplateResourceDirective extends Directive
         if (HtmlTemplate.testResourcePermissionScope(permissions) && HtmlTemplate.testResourceActionScope(action)) {
             if (writer instanceof StringWriter) {
                 boolean added = false;
-                String element = TagTemplateDirectiveUtils.readValue(context, node);
+                String element = TagTemplateDirectiveUtils.renderValue(context, node);
 
                 TemplateResources contextResources = TemplateResourcesDirective.getContextResources(context);
                 switch (type) {
