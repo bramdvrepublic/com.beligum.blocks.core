@@ -2,21 +2,11 @@ package com.beligum.blocks.serializing;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.index.ifaces.RdfResult;
-import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.TagTemplate;
-import com.beligum.blocks.templating.TemplateCache;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
-import com.sun.org.apache.bcel.internal.generic.ARETURN;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Element;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 
 /**
