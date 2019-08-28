@@ -19,13 +19,10 @@ package com.beligum.blocks.utils;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
-import gen.com.beligum.blocks.core.constants.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -34,14 +31,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.time.temporal.TemporalAccessor;
-import java.util.Locale;
-
-import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG;
-import static gen.com.beligum.blocks.core.constants.blocks.core.WIDGET_TYPE_TIME_TZONE_CLASS;
 
 /**
  * Created by wouter on 27/04/15.
@@ -223,57 +212,6 @@ public class RdfTools
         }
 
         return retval;
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied date
-     */
-    public static CharSequence serializeDateHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" ")
-                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime));
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied time
-     */
-    public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
-                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(")</span>");
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied date and time
-     */
-    public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" ")
-                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" - ")
-                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
-                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(")</span>");
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied enum.
-     */
-    public static CharSequence serializeEnumHtml(ResourceProxy enumValue)
-    {
-        // <p> is consistent with JS
-        return new StringBuilder()
-                        .append("<p>")
-                        .append(enumValue.getLabel())
-                        .append("</p>");
     }
 
     //-----PROTECTED METHODS-----

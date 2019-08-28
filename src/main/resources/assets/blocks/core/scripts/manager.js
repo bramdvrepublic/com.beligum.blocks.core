@@ -358,31 +358,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     else {
                         if (UI.allowCreate) {
 
-                            loadNewBlockList(function callback(newBlockEl, onComplete)
+                            loadNewBlockList(function onCreatedCallback(newBlockEl, onComplete)
                             {
-                                var parentSurface = activeDropspot.anchor;
-
-                                // Create a new block and immediately move it to the final location.
-                                // Note that the block will not be added to the parent until moveTo()
-                                // is called, but the parent is needed for the constructor to create
-                                // the overlay.
-                                var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
-                                newBlock.moveTo(parentSurface, activeDropspot.side);
-
-                                if (onComplete) {
-                                    onComplete();
-                                }
-
-                                postChangeBlock();
-
-                                Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
-                                    surface: newBlock
-                                });
-                                //when the block was added, the entire page changed
-                                Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
-                                    surface: UI.pageSurface,
-                                    oldValue: oldHtml,
-                                });
+                                createdNewBlock(activeDropspot.anchor, newBlockEl, activeDropspot.side, onComplete, event, oldHtml);
                             });
                         }
                     }
@@ -698,7 +676,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             var blockName = eventData.name;
             var oldHtml = UI.pageSurface.element.html();
 
-            createNewBlock(blockName, null, function callback(newBlockEl, onComplete)
+            createNewBlock(blockName, null, function onCreatedCallback(newBlockEl, onComplete)
             {
                 // we need to find a valid block to use as anchor point where we want to append the new block after.
                 // let's see if we can find a block with the same tag name as the one we're creating, and just select the
@@ -740,28 +718,8 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 parentSurface = parentSurface || lastBlockSurface;
 
                 if (parentSurface) {
-                    // Create a new block and immediately move it to the final location.
-                    // Note that the block will not be added to the parent until moveTo()
-                    // is called, but the parent is needed for the constructor to create
-                    // the overlay.
-                    var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
                     // note that this 'BOTTOM' must be synced with the .bottom property of the loop above
-                    newBlock.moveTo(parentSurface, blocks.elements.Surface.SIDE.BOTTOM);
-
-                    if (onComplete) {
-                        onComplete();
-                    }
-
-                    postChangeBlock();
-
-                    Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
-                        surface: newBlock
-                    });
-                    //when the block was added, the entire page changed
-                    Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
-                        surface: UI.pageSurface,
-                        oldValue: oldHtml,
-                    });
+                    createdNewBlock(parentSurface, newBlockEl, blocks.elements.Surface.SIDE.BOTTOM, onComplete, event, oldHtml);
                 }
                 else {
                     Logger.error("Couldn't find a suitable anchor surface to place the new block, please fix this", eventData);
@@ -1043,12 +1001,26 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
         //Once all is done, we need to force a deep refresh of the entire page
         //note that we need to call refresh after the simplify,
-        //because simplify can modify the dom slightly
+        //because simplify can modify the dom
         UI.pageSurface._simplify(true);
+
+        // Some blocks need to load external sources (eg. images) and
+        // will only take their final dimensions after they are loaded.
+        // Our solution is to fire three refreshes and hope for the best:
+        // 1) immediately
+        // 2) a fast async refresh to accommodate for
+        //    fast connections (eg. still during highlighting)
+        // 3) a later async one for slow resources.
         UI.pageSurface._refresh(true);
+        setTimeout(function() {
+            UI.pageSurface._refresh(true);
+        }, 100);
+        setTimeout(function() {
+            UI.pageSurface._refresh(true);
+        }, 1000);
     };
 
-    var loadNewBlockList = function (callback)
+    var loadNewBlockList = function (onCreatedCallback)
     {
         // Note: this variable gets filled by EVENTS.PAGE.CHANGED.TYPE, sent out by blocks-imports-page
         if (pageCachedData && pageCachedData.blocks) {
@@ -1057,7 +1029,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             }
             else if (pageCachedData.blocks.length === 1) {
                 //just take the first one
-                createNewBlock(pageCachedData.blocks[0].name, null, callback);
+                createNewBlock(pageCachedData.blocks[0].name, null, onCreatedCallback);
             }
             else {
                 var boxDialog = BootstrapDialog.show({
@@ -1083,7 +1055,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                         //and create a new block at the active dropspot
                         click: function ()
                         {
-                            createNewBlock($(this).attr("data-value"), boxDialog, callback);
+                            createNewBlock($(this).attr("data-value"), boxDialog, onCreatedCallback);
                         }
                     }).appendTo(listGroup);
 
@@ -1113,7 +1085,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    var createNewBlock = function (name, dialog, callback)
+    var createNewBlock = function (name, dialog, onCreatedCallback)
     {
         if (dialog) {
             // code below is not always very fast, so show the wait dialog
@@ -1139,9 +1111,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     // Note: fixed in JQuery 1.12.0 & 2.2.0 & 3.0 so we should probably get rid of the patched JQuery
                     var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
 
-                    if (callback) {
-                        callback(block, function onComplete()
+                    if (onCreatedCallback) {
+                        onCreatedCallback(block, function onComplete()
                         {
+                            // we only call the accompanying scripts after the block is moved to it's final destination
                             addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
                             addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
                         });
@@ -1161,6 +1134,35 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     dialog.close();
                 }
             });
+    };
+
+    var createdNewBlock = function(parentSurface, newBlockEl, side, onComplete, event, oldHtml)
+    {
+        // Create a new block and immediately move it to the final location.
+        // Note that the block will not be added to the parent until moveTo()
+        // is called, but the parent is needed for the constructor to create
+        // the overlay.
+        var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
+        newBlock.moveTo(parentSurface, side);
+
+        // no need to pass the parent to clean if empty, because we're adding, not (re)moving
+        postChangeBlock();
+
+        // Note that this should be called when the new block is moved to it's final destination
+        // (it launches the accompanying scripts)
+        if (onComplete) {
+            onComplete();
+        }
+
+        // send out an event to signal a new block was created (eg. to highlight it)
+        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
+            surface: newBlock
+        });
+        //when the block was added, the entire page changed
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+            surface: UI.pageSurface,
+            oldValue: oldHtml,
+        });
     };
 
     var addHeadResources = function (resourceArray, className, resourceType, isScript)
