@@ -301,7 +301,13 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
 
                         if (this.rdfResource.widgetType.equals(WidgetType.Immutable)) {
 
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_IMMUTABLE_ENDPOINT)) {
+                            // we block the configuration of manual endpoints because it's a way to circumvent our Endpoint/ResourceProxy API
+                            if (this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_IMMUTABLE_ENDPOINT)) {
+                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                     " with an explicit endpoint set. This is not allowed. " +
+                                                                     "Please use the endpoint() creator method instead (that will auto-init the widget config); " + this);
+                            }
+                            else {
                                 if (this.rdfResource.endpoint == null) {
                                     throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
                                                                          " that has a missing endpoint. This is not allowed; " + this);
@@ -313,6 +319,12 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                             }
 
                         }
+                        else if (this.rdfResource.widgetType.equals(WidgetType.Duration)) {
+                            // default to the full format
+                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_DURATION_FORMAT)) {
+                                this.widgetConfig(core.Entries.WIDGET_CONFIG_DURATION_FORMAT, core.Entries.WIDGET_CONFIG_DURATION_FORMAT_FULL);
+                            }
+                        }
                         else if (this.rdfResource.widgetType.equals(WidgetType.Resource)) {
 
                             if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS)) {
@@ -320,24 +332,26 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                                 this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_MAXRESULTS, "" + IndexSearchRequest.DEFAULT_PAGE_SIZE);
                             }
 
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT) ||
-                                !this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                            // we block the configuration of manual endpoints because it's a way to circumvent our Endpoint/ResourceProxy API
+                            if (this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT) ||
+                                this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
+                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                     " with an explicit endpoint set. This is not allowed. " +
+                                                                     "Please use the endpoint() creator method instead (that will auto-init the widget config); " + this);
+                            }
+                            else {
 
                                 if (this.rdfResource.dataType.endpoint == null) {
                                     throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "' with datatype '" + this.rdfResource.dataType +
                                                                          "' that has a missing endpoint. This is not allowed; " + this);
                                 }
                                 else {
-                                    if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT)) {
-                                        // I guess it makes sense to use the default page size as the default max results
-                                        this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
-                                                          RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_PAGE_SIZE, true, "")
-                                                                           .getAbsoluteUrl());
-                                    }
-                                    if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT)) {
-                                        this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
-                                                          RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
-                                    }
+                                    // I guess it makes sense to use the default page size as the default max results
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_AC_ENDPOINT,
+                                                      RdfEndpointRoutes.getResources(this.rdfResource.dataType.getCurie(), IndexSearchRequest.DEFAULT_PAGE_SIZE, true, "")
+                                                                       .getAbsoluteUrl());
+                                    this.widgetConfig(core.Entries.WIDGET_CONFIG_RESOURCE_VAL_ENDPOINT,
+                                                      RdfEndpointRoutes.getResource(this.rdfResource.dataType.getCurie(), URI.create("")).getAbsoluteUrl());
                                 }
                             }
                         }
@@ -350,7 +364,13 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
                             //                        },
                             //                        }));
 
-                            if (!this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                            // we block the configuration of manual endpoints because it's a way to circumvent our Endpoint/ResourceProxy API
+                            if (this.rdfResource.widgetConfig.containsKey(core.Entries.WIDGET_CONFIG_ENUM_ENDPOINT)) {
+                                throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
+                                                                     " with an explicit endpoint set. This is not allowed. " +
+                                                                     "Please use the endpoint() creator method instead (that will auto-init the widget config); " + this);
+                            }
+                            else {
                                 if (this.rdfResource.endpoint == null) {
                                     throw new RdfInitializationException("Encountered RDF property '" + this.rdfResource.getName() + "'" +
                                                                          " that has a missing endpoint. This is not allowed; " + this);

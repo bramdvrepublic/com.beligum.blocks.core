@@ -1,5 +1,7 @@
 package com.beligum.blocks.utils;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.net.URI;
 
 /**
@@ -15,6 +17,23 @@ public class NamedUri
     private String name;
 
     //-----CONSTRUCTORS-----
+    /**
+     * Create an instance by appending to the URI value: a space and the title
+     */
+    public NamedUri(String spaceDelimitedUri)
+    {
+        // Let's use space delimiters because it's one of the few illegal characters in URIs
+        // see https://www.ietf.org/rfc/rfc2396.txt (2.4.3. Excluded US-ASCII Characters)
+        if (spaceDelimitedUri.contains(" ")) {
+            String[] s = StringUtils.split(spaceDelimitedUri, " ", 2);
+            this.uri = URI.create(s[0]);
+            this.name = s[1];
+        }
+        else {
+            this.uri = URI.create(spaceDelimitedUri);
+            this.name = null;
+        }
+    }
     public NamedUri(URI uri)
     {
         this(uri, null);
@@ -32,6 +51,10 @@ public class NamedUri
     public String getName()
     {
         return name;
+    }
+    public boolean hasName()
+    {
+        return name != null;
     }
 
     //-----PUBLIC METHODS-----

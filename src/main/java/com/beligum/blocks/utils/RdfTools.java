@@ -199,21 +199,6 @@ public class RdfTools
         return retVal;
     }
 
-    /**
-     * Standard boolean parsing is too restrictive
-     */
-    public static boolean parseRdfaBoolean(String value)
-    {
-        Boolean retval = false;
-
-        if ("1".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) ||
-            "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)) {
-            retval = Boolean.TRUE;
-        }
-
-        return retval;
-    }
-
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
