@@ -622,6 +622,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
         // if the clicked element is not 'inside' the surface, some additional work is needed
         if (clickedElement.closest(focusedSurface.element).length === 0) {
+
             // Additional tweaking:
             // when we click in the margin of a block and that block
             // has only one registered child (can be instantiated),
@@ -640,7 +641,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 }
             }
 
-            if (registeredChildren.length === 1) {
+            if (registeredChildren.length > 0) {
                 retVal = registeredChildren[0];
             }
             else {

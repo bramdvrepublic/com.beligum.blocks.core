@@ -117,9 +117,9 @@ public class PageRepository extends AbstractResourceRepository
             //Here, we decide on the normalized html path to see if the page exists or not
             // (note that we actually could check on the original and re-generate the normalized if necessary, but we decided to take the safe road)
             //Also note that our interface demands us to return null if the resourceRequest can't be resolved, so this check is necessary!
-            if (page.getFileContext().util().exists(page.getNormalizedHtmlFile())) {
-                retVal = page;
-            }
+//            if (page.getFileContext().util().exists(page.getNormalizedHtmlFile())) {
+//                retVal = page;
+//            }
         }
         catch (Exception e) {
             Logger.error("Error while resolving html resource for " + resourceRequest.getUri(), e);

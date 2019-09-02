@@ -168,7 +168,7 @@ public class PageFixTask extends ReindexTask
                                     || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(WidgetType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
-                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null);
+                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null,null);
                                     output.replace(factElement, new Source(newHtml));
 
                                     retVal = true;

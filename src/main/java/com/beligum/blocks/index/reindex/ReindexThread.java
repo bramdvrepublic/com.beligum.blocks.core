@@ -801,7 +801,6 @@ public class ReindexThread extends Thread implements LongRunningThread
                                             "  - time running: " + DurationFormatUtils.formatDuration(timeDiffMillis, "H:mm:ss") + "\n" +
                                             "  - est. time left: " + DurationFormatUtils.formatDuration(estimatedMillisLeft, "H:mm:ss") +
                                             "");
-
                                 reindexExecutor.shutdown();
                                 reindexExecutor.awaitTermination(EXECUTOR_FINISH_TIMEOUT, EXECUTOR_FINISH_TIMEOUT_UNIT);
                                 //we need to recreate it or the next submit will complain the executor is terminated.

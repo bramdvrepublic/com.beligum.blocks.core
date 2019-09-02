@@ -21,9 +21,7 @@ import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.config.WidgetTypeConfig;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
 import com.beligum.blocks.exceptions.RdfInitializationException;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfPropertyValidator;
+import com.beligum.blocks.rdf.ifaces.*;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.endpoints.RdfEndpointRoutes;
 
@@ -43,6 +41,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
     protected WidgetTypeConfig widgetConfig;
     protected int multiplicity;
     protected RdfPropertyValidator validator;
+    protected ValueModifier valueModifier;
+    protected InitialValue initialValue;
     protected boolean isMainProperty;
     protected boolean isParentProperty;
     // WARNING: when added fields, check RdfPropertyImpl.initFromToClone()
@@ -59,6 +59,8 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.multiplicity = DEFAULT_MULTIPLICITY;
         // by default a property has no validator
         this.validator = null;
+        //by default, a property has no valueModifier
+        this.valueModifier = null;
         this.clones = new ArrayList<>();
     }
     private RdfPropertyImpl(RdfPropertyImpl toClone, Option[] options)
@@ -108,6 +110,13 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.assertNoProxy();
 
         return validator;
+    }
+    @Override
+    public ValueModifier getValueModifier()
+    {
+        this.assertNoProxy();
+
+        return valueModifier;
     }
 
     // Note: we explicitly don't create a getMainProperty here
@@ -201,6 +210,7 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         this.widgetConfig = toClone.widgetConfig;
         this.multiplicity = toClone.multiplicity;
         this.validator = toClone.validator;
+        this.valueModifier = toClone.valueModifier;
 
         // save a reference to the member we cloned from
         this.clonedFrom = toClone;
@@ -252,6 +262,18 @@ public class RdfPropertyImpl extends AbstractRdfOntologyMember implements RdfPro
         public Builder validator(RdfPropertyValidator validator)
         {
             this.rdfResource.validator = validator;
+
+            return this;
+        }
+        public Builder valueModifier(ValueModifier valueModifier)
+        {
+            this.rdfResource.valueModifier = valueModifier;
+
+            return this;
+        }
+        public Builder initialValue(InitialValue initialValue)
+        {
+            this.rdfResource.initialValue = initialValue;
 
             return this;
         }

@@ -233,6 +233,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //          Note: $.closest() begins with the current element, so the block itself is also included.
                 if (eventData.element.closest(UI.focusedSurface.element).length > 0) {
                     switchToPage = false;
+
+                    // Re-use the focused surface, but with a different element if needed
+                    // this happens if we click on a different property inside the already focused surface
+                    if (!UI.focusedSurface.element.is(eventData.element)) {
+                        // note: this will trigger a refresh, not a reload
+                        switchFocus(UI.focusedSurface, eventData.element, eventData.originalEvent);
+                    }
                 }
                 //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
                 else if (eventData.element.closest(UI.pageContent).length === 0) {
@@ -241,6 +248,11 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //option 5) the mousedown event of this click started in the focused block, but the user dragged outside the block and let go
                 // Eg. this happens when you select text and move outside the block. In this case, don't blur, since we started ON the block.
                 else if ($(eventData.originalEvent.target).closest(UI.focusedSurface.element).length > 0) {
+                    switchToPage = false;
+                }
+                //option 6) we have a block in focus, but we didn't really click on the element, but on it's padding/margin around it
+                // (to the user, it feels like we clicked 'inside'). Don't focus away.
+                else if (UI.focusedSurface.isInside(eventData.originalEvent.pageX, eventData.originalEvent.pageY)) {
                     switchToPage = false;
                 }
             }

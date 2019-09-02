@@ -46,6 +46,20 @@ public interface IndexSearchRequest extends Serializable
         PREFERRED
     }
 
+    /**
+     * General interface to pass multiple options to the methods in this request
+     */
+    interface Option
+    {
+    }
+
+    /**
+     * Interface for all options that define how the passed value to the methods in this class are interpreted
+     */
+    interface ValueOption extends Option
+    {
+    }
+
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
 
@@ -86,15 +100,15 @@ public interface IndexSearchRequest extends Serializable
     Locale getLanguage();
 
     /**
-     * Sets the general search-all query value of this request.
+     * Do a general search for a free-text string.
+     * The options determine how the value will be interpreted while searching.
      */
-    IndexSearchRequest query(String value, FilterBoolean filterBoolean);
-
+    IndexSearchRequest customQuery(String value);
     /**
-     * Sets the general search-all query value of this request.
-     * If fuzzy is true, adjust the value to do a wildcard search.
+     * Do a general search for a free-text string.
+     * The options determine how the value will be interpreted while searching.
      */
-    IndexSearchRequest query(String value, boolean fuzzy, FilterBoolean filterBoolean);
+    IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options);
 
     /**
      * Adds a filter that only selects entries of the specified class.
@@ -103,30 +117,34 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean);
 
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified field.
+     * Adds a filter that only selects entries that have the value for the specified field.
+     * Note that the way this value is interpreted can be tweaked using the options
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified field.
-     * If fuzzy is true, adjust the value to do a wildcard search.
-     * The boolean configures how this filter is linked to previously added filters.
+     * Adds a filter that allows a blockjoin. This means the parent object is  retrieved base on properties  defined on it's children.
+     * @param standalone: if true, the blockjoin will  be added to the query as a filter. If false, the blockjoin will be appended to the query proper.
+     * @param filterValues: one or more filterValues to filter the children of which the parent(s) will be retrieved.
+     * @param filterProperty: the property that will be filtered
+     * @param rdfClass: the parent class that will  be the result  of the  blockjoin
      */
-    IndexSearchRequest filter(IndexEntryField field, String value, boolean fuzzy, FilterBoolean filterBoolean);
+    IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException;
 
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified property.
-     * The boolean configures how this filter is linked to previously added filters.
+     * This will return a 'bubble up' graph from the 'lowest' dependency within the
+     * @param rdfClasses: these classes need  to  have  a child-parent dependency on eachOther. The lowest class comes  first.
+     * @param returnRoot: return the lowest level itself. Should usually be true.
+     * @param leafNodesOnly: only return the outer results of the graph traversal,  ignore the  others. Should  usually be false.
      */
-    IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean);
-
+    IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses);
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified property.
-     * If fuzzy is true, adjust the value to do a wildcard search.
+     * Adds a filter that only selects entries that have the value for the specified property.
+     * Note that the way this value is interpreted can be tweaked using the options
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest filter(RdfProperty property, String value, boolean fuzzy, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options);
 
     /**
      * Adds a sub-request to the chain of filters.
@@ -147,17 +165,10 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException;
 
     /**
-     * Adds a filter that searches all fields for the specified value.
-     * The boolean configures how this filter is linked to previously added filters.
+     *  Sets the field lists to be returned in  the search request.
+     *
      */
-    IndexSearchRequest all(String value, FilterBoolean filterBoolean);
-
-    /**
-     * Adds a filter that searches all fields for the specified value.
-     * If fuzzy is true, adjust the value to do a wildcard search.
-     * The boolean configures how this filter is linked to previously added filters.
-     */
-    IndexSearchRequest all(String value, boolean fuzzy, FilterBoolean filterBoolean);
+    IndexSearchRequest transformers(Option...transformers);
 
     /**
      * Requests the results are sorted on the specified property in the specified order

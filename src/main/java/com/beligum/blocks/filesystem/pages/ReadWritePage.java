@@ -21,6 +21,7 @@ import com.beligum.base.resources.ifaces.MimeType;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
@@ -131,18 +132,23 @@ public class ReadWritePage extends DefaultPage
                                 URI localResourceId = URI.create(value.stringValue());
                                 Model externalRdfModel = endpoint.getExternalRdfModel(dataType, localResourceId, source.getLanguage());
                                 //if we have a valid model, add it to the dependency list, together with a "equals" statement
-                                if (!externalRdfModel.isEmpty()) {
-                                    URI externalResourceId = endpoint.getExternalResourceId(localResourceId, source.getLanguage());
-                                    //this is more or less the glue between the external ontology and the local one
-                                    rdfDepsModel.add(valueFactory.createIRI(localResourceId.toString()),
-                                                     //this approach is discussable (instead of using the OWL ontology directly),
-                                                     // but the general approach is to use the local ontology as much as possible,
-                                                     // so let's be consequent in our decisions...
-                                                     valueFactory.createIRI(Meta.sameAs.getUri().toString()),
-                                                     valueFactory.createIRI(externalResourceId.toString()));
+                                try{
+                                    if (!externalRdfModel.isEmpty()) {
+                                        URI externalResourceId = endpoint.getExternalResourceId(localResourceId, source.getLanguage());
+                                        //this is more or less the glue between the external ontology and the local one
+                                        rdfDepsModel.add(valueFactory.createIRI(localResourceId.toString()),
+                                                //this approach is discussable (instead of using the OWL ontology directly),
+                                                // but the general approach is to use the local ontology as much as possible,
+                                                // so let's be consequent in our decisions...
+                                                valueFactory.createIRI(Meta.sameAs.getUri().toString()),
+                                                valueFactory.createIRI(externalResourceId.toString()));
 
-                                    rdfDepsModel.addAll(externalRdfModel);
+                                        rdfDepsModel.addAll(externalRdfModel);
+                                    }
+                                }catch (Exception e){
+                                    Logger.error(e);
                                 }
+
                             }
                         }
                     }
