@@ -18,6 +18,7 @@ package com.beligum.blocks.serializing.data;
 
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.templating.TagTemplate;
 import com.beligum.blocks.templating.TemplateCache;
 
 import javax.xml.bind.annotation.XmlElement;
@@ -107,19 +108,19 @@ public class ImportConfig implements Serializable
         return RdfFactory.getProperty(videoProperty);
     }
     @XmlTransient
-    public String getFactBlock()
+    public TagTemplate getFactBlock()
     {
-        return factBlock;
+        return (TagTemplate) TemplateCache.instance().getByTagName(factBlock);
     }
     @XmlTransient
-    public String getImageBlock()
+    public TagTemplate getImageBlock()
     {
-        return imageBlock;
+        return (TagTemplate) TemplateCache.instance().getByTagName(imageBlock);
     }
     @XmlTransient
-    public String getVideoBlock()
+    public TagTemplate getVideoBlock()
     {
-        return videoBlock;
+        return (TagTemplate) TemplateCache.instance().getByTagName(videoBlock);
     }
 
     //-----PROTECTED METHODS-----

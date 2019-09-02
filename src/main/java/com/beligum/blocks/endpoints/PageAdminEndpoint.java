@@ -474,8 +474,6 @@ public class PageAdminEndpoint
         template.set(IMPORTER_VAR_ABOUT, importResource.getAbout());
 
         // now iterate the properties in the resource and create their normalized HTML
-        List<StringBuilder> facts = new StringBuilder();
-        List<StringBuilder> media = new StringBuilder();
         if (importResource.getProperties() != null) {
 
             BlockSerializer factEntrySerializer = BlockSerializer.lookup(importConfig.getFactBlock());
@@ -483,38 +481,38 @@ public class PageAdminEndpoint
             BlockSerializer videoSerializer = BlockSerializer.lookup(importConfig.getVideoBlock());
 
             RdfProperty previous = null;
+            List<CharSequence> facts = new ArrayList<>();
+            List<CharSequence> media = new ArrayList<>();
             for (ImportPropertyMapping entry : importResource.getProperties()) {
 
                 RdfProperty property = entry.getRdfProperty();
 
                 if (property.equals(importConfig.getSameasProperty())) {
-                    //Note: we chop off the query parameters to have a uniform approach (mainly to be able to search the index in a uniform way)
                     template.set(IMPORTER_VAR_SAMEAS, entry.getValue());
                 }
                 else if (property.equals(importConfig.getTitleProperty())) {
-                    String html = ImportTools.propertyValueToHtml(property, value, langLocale, previous);
-                    factEntries.append(html);
+                    template.set(IMPORTER_VAR_TITLE, entry.getValue());
                 }
                 else if (property.equals(importConfig.getImageProperty())) {
-                    imageSerializer
+                    media.add(imageSerializer.toHtml(importConfig.getImageBlock(), property, importResource.getLanguage(), entry.getValue()));
                 }
                 else if (property.equals(importConfig.getVideoProperty())) {
-                    videoSerializer
+                    media.add(videoSerializer.toHtml(importConfig.getVideoBlock(), property, importResource.getLanguage(), entry.getValue()));
                 }
                 else {
-                    factEntrySerializer
+                    Logger.warn("TODO this is for testing only: it needs to be expanded with more arguments");
+                    facts.add(factEntrySerializer.toHtml(importConfig.getFactBlock(), property, importResource.getLanguage(), null, null, entry.getValue()));
                 }
 
                 previous = property;
             }
-        }
 
-        if (!facts.isEmpty()) {
-            template.set(IMPORTER_VAR_CONTENT, StringUtils.join(facts, "\n"));
-        }
-
-        if (!media.isEmpty()) {
-            template.set(IMPORTER_VAR_MEDIA, StringUtils.join(media, "\n"));
+            if (!facts.isEmpty()) {
+                template.set(IMPORTER_VAR_CONTENT, StringUtils.join(facts, "\n"));
+            }
+            if (!media.isEmpty()) {
+                template.set(IMPORTER_VAR_MEDIA, StringUtils.join(media, "\n"));
+            }
         }
 
         // do the import and render the final template

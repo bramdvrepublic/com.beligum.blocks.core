@@ -25,6 +25,12 @@ public interface BlockSerializer
     //-----VARIABLES-----
 
     //-----PUBLIC METHODS-----
+
+    /**
+     * Shortcut for the method below without classes or styles
+     */
+    CharSequence toHtml(TagTemplate blockType, RdfProperty property, Locale language, String value) throws IOException;
+
     /**
      * This is the most general contract an importer class must provide to import data.
      * This method returns the serialized and normalized (!) HTML of a block with the supplied data, property and language, ready to be used in page templates.
@@ -39,22 +45,22 @@ public interface BlockSerializer
     /**
      * Lookup the serializer for the specified block type (or null if no serializer was found)
      */
-    static BlockSerializer lookup(String blockType)
+    static BlockSerializer lookup(TagTemplate blockType)
     {
-        Map<String, BlockSerializer> mapping = R.cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.SERIALIZER_MAPPING,
-                                                                         new CacheFunction<CacheKey, Map<String, BlockSerializer>>()
+        Map<TagTemplate, BlockSerializer> mapping = R.cacheManager().getApplicationCache().getAndInitIfAbsent(CacheKeys.SERIALIZER_MAPPING,
+                                                                         new CacheFunction<CacheKey, Map<TagTemplate, BlockSerializer>>()
                                                                          {
                                                                              @Override
-                                                                             public Map<String, BlockSerializer> apply(CacheKey cacheKey) throws IOException
+                                                                             public Map<TagTemplate, BlockSerializer> apply(CacheKey cacheKey) throws IOException
                                                                              {
-                                                                                 Map<String, BlockSerializer> retVal = new HashMap<>();
+                                                                                 Map<TagTemplate, BlockSerializer> retVal = new HashMap<>();
 
                                                                                  Set<Class<? extends BlockSerializer>> allSerializers = ReflectionFunctions.searchAllClassesImplementing(BlockSerializer.class, true);
                                                                                  for (Class<? extends BlockSerializer> serializerClass : allSerializers) {
                                                                                      try {
                                                                                          BlockSerializer serializer = serializerClass.newInstance();
                                                                                          for (TagTemplate tag : serializer.getSupportedBlockTypes()) {
-                                                                                             retVal.put(tag.getTemplateName(), serializer);
+                                                                                             retVal.put(tag, serializer);
                                                                                          }
                                                                                      }
                                                                                      catch (Exception e) {

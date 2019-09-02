@@ -2,6 +2,7 @@ package com.beligum.blocks.serializing;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.TagTemplate;
 import com.beligum.blocks.templating.TemplateCache;
@@ -11,6 +12,7 @@ import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +29,11 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    @Override
+    public CharSequence toHtml(TagTemplate blockType, RdfProperty property, Locale language, String value) throws IOException
+    {
+        return this.toHtml(blockType, property, language, null, null, value);
+    }
     @Override
     public Iterable<TagTemplate> getSupportedBlockTypes()
     {

@@ -108,7 +108,7 @@ public class ImportResource implements Serializable
 
         //lazy solution...
         for (ImportPropertyMapping entry : this.properties) {
-            if (entry.getRdfPropertyCurie().equals(rdfProperty.getCurie())) {
+            if (entry.getRdfProperty().equals(rdfProperty)) {
                 retVal = entry;
                 break;
             }
