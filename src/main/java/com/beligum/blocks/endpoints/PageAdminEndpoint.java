@@ -25,25 +25,32 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
-import com.beligum.blocks.index.reindex.ReindexTask;
-import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
-import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
-import com.beligum.blocks.index.reindex.*;
-import com.beligum.blocks.index.reindex.tasks.PageFixTask;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
+import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.reindex.LongRunningThread;
+import com.beligum.blocks.index.reindex.ReindexTask;
+import com.beligum.blocks.index.reindex.ReindexThread;
+import com.beligum.blocks.index.reindex.tasks.PageFixTask;
+import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
+import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.serializing.BlockSerializer;
+import com.beligum.blocks.serializing.data.DefaultImportConfig;
+import com.beligum.blocks.serializing.data.ImportConfig;
+import com.beligum.blocks.serializing.data.ImportPropertyMapping;
+import com.beligum.blocks.serializing.data.ImportResource;
 import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.PageTemplate;
 import com.beligum.blocks.templating.TagTemplate;
 import com.beligum.blocks.templating.TemplateCache;
+import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -53,7 +60,10 @@ import org.apache.shiro.authz.annotation.Logical;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -428,6 +438,97 @@ public class PageAdminEndpoint
     }
 
     @POST
+    @Path("/import/resource")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(logical = Logical.AND,
+                         value = { PAGE_CREATE_ALL_PERM,
+                                   PAGE_CREATE_TEMPLATE_ALL_PERM })
+    //Note that we need a concrete type as value in the value map because of auto-deserialization
+    public Response importResource(ImportResource importResource, ImportConfig importConfig) throws Exception
+    {
+        // validation...
+        if (importResource.getUri() == null) {
+            throw new IOException("Encountered empty resource URI; " + importResource.getUri());
+        }
+        if (importResource.getTypeof() == null) {
+            throw new IOException("Encountered unknown RDF class; " + importResource.getUri());
+        }
+        if (importResource.getLanguage() == null) {
+            throw new IOException("Encountered unknown resource language; " + importResource.getUri());
+        }
+
+        if (importConfig == null) {
+            importConfig = new DefaultImportConfig();
+        }
+
+        // since we're importing for an unknown context, we set the locale manually so all methods depending on it work as expected
+        R.i18n().setManualLocale(importResource.getLanguage());
+
+        Template template = R.resourceManager().get(importConfig.getTemplate(), Template.class);
+        if (template == null) {
+            throw new IOException("Encountered unknown/unsupported template; " + importConfig.getTemplate());
+        }
+
+        template.set(IMPORTER_VAR_LANG, importResource.getLanguage().getLanguage());
+        template.set(IMPORTER_VAR_TYPEOF, importResource.getTypeof().getCurie());
+        template.set(IMPORTER_VAR_ABOUT, importResource.getAbout());
+
+        // now iterate the properties in the resource and create their normalized HTML
+        List<StringBuilder> facts = new StringBuilder();
+        List<StringBuilder> media = new StringBuilder();
+        if (importResource.getProperties() != null) {
+
+            BlockSerializer factEntrySerializer = BlockSerializer.lookup(importConfig.getFactBlock());
+            BlockSerializer imageSerializer = BlockSerializer.lookup(importConfig.getImageBlock());
+            BlockSerializer videoSerializer = BlockSerializer.lookup(importConfig.getVideoBlock());
+
+            RdfProperty previous = null;
+            for (ImportPropertyMapping entry : importResource.getProperties()) {
+
+                RdfProperty property = entry.getRdfProperty();
+
+                if (property.equals(importConfig.getSameasProperty())) {
+                    //Note: we chop off the query parameters to have a uniform approach (mainly to be able to search the index in a uniform way)
+                    template.set(IMPORTER_VAR_SAMEAS, entry.getValue());
+                }
+                else if (property.equals(importConfig.getTitleProperty())) {
+                    String html = ImportTools.propertyValueToHtml(property, value, langLocale, previous);
+                    factEntries.append(html);
+                }
+                else if (property.equals(importConfig.getImageProperty())) {
+                    imageSerializer
+                }
+                else if (property.equals(importConfig.getVideoProperty())) {
+                    videoSerializer
+                }
+                else {
+                    factEntrySerializer
+                }
+
+                previous = property;
+            }
+        }
+
+        if (!facts.isEmpty()) {
+            template.set(IMPORTER_VAR_CONTENT, StringUtils.join(facts, "\n"));
+        }
+
+        if (!media.isEmpty()) {
+            template.set(IMPORTER_VAR_MEDIA, StringUtils.join(media, "\n"));
+        }
+
+        // do the import and render the final template
+        PageAdminEndpoint pageEndpoint = new PageAdminEndpoint();
+        Response response = pageEndpoint.savePage(importResource.getUri(), template.render());
+        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+            throw new IOException("Error while saving imported resource '" + importResource.getUri() + "'; " + response);
+        }
+        else {
+            return Response.ok().build();
+        }
+    }
+
+    @POST
     @Path("/index")
     @RequiresPermissions(PAGE_REINDEX_ALL_PERM)
     public Response reindex(@QueryParam("url") URI uri) throws Exception
@@ -540,21 +641,21 @@ public class PageAdminEndpoint
                             }
                         });
 
-//                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
-//                        {
-//                            @Override
-//                            public void close(boolean forceRollback) throws Exception
-//                            {
-//                                new Timer().schedule(new TimerTask()
-//                                {
-//                                    @Override
-//                                    public void run()
-//                                    {
-//                                        longRunningThread.start();
-//                                    }
-//                                }, 1000);
-//                            }
-//                        });
+                        //                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
+                        //                        {
+                        //                            @Override
+                        //                            public void close(boolean forceRollback) throws Exception
+                        //                            {
+                        //                                new Timer().schedule(new TimerTask()
+                        //                                {
+                        //                                    @Override
+                        //                                    public void run()
+                        //                                    {
+                        //                                        longRunningThread.start();
+                        //                                    }
+                        //                                }, 1000);
+                        //                            }
+                        //                        });
 
                         longRunningThread.start();
 

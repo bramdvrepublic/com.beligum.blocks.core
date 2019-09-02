@@ -16,6 +16,10 @@
 
 package com.beligum.blocks.serializing.data;
 
+import com.beligum.blocks.rdf.RdfFactory;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+
+import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.net.URI;
 
@@ -41,11 +45,13 @@ public class ImportPropertyMapping implements Serializable
     }
 
     //-----PUBLIC METHODS-----
-    public URI getRdfPropertyCurie()
+    @XmlTransient
+    public RdfProperty getRdfProperty()
     {
-        return rdfPropertyCurie;
+        return RdfFactory.getProperty(rdfPropertyCurie);
     }
-    public String getRdfPropertyValue()
+    @XmlTransient
+    public String getValue()
     {
         return rdfPropertyValue;
     }
@@ -65,16 +71,16 @@ public class ImportPropertyMapping implements Serializable
 
         ImportPropertyMapping that = (ImportPropertyMapping) o;
 
-        if (getRdfPropertyCurie() != null ? !getRdfPropertyCurie().equals(that.getRdfPropertyCurie()) : that.getRdfPropertyCurie() != null)
+        if (rdfPropertyCurie != null ? !rdfPropertyCurie.equals(that.rdfPropertyCurie) : that.rdfPropertyCurie != null)
             return false;
-        return getRdfPropertyValue() != null ? getRdfPropertyValue().equals(that.getRdfPropertyValue()) : that.getRdfPropertyValue() == null;
+        return rdfPropertyValue != null ? rdfPropertyValue.equals(that.rdfPropertyValue) : that.rdfPropertyValue == null;
 
     }
     @Override
     public int hashCode()
     {
-        int result = getRdfPropertyCurie() != null ? getRdfPropertyCurie().hashCode() : 0;
-        result = 31 * result + (getRdfPropertyValue() != null ? getRdfPropertyValue().hashCode() : 0);
+        int result = rdfPropertyCurie != null ? rdfPropertyCurie.hashCode() : 0;
+        result = 31 * result + (rdfPropertyValue != null ? rdfPropertyValue.hashCode() : 0);
         return result;
     }
 

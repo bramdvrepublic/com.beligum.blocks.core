@@ -2,12 +2,17 @@ package com.beligum.blocks.serializing;
 
 import com.beligum.base.filesystem.ConstantsFileEntry;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.TagTemplate;
+import com.beligum.blocks.templating.TemplateCache;
 import com.google.common.base.Joiner;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
+import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on Aug 20, 2019
@@ -17,12 +22,33 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private static Set<TagTemplate> cachedSupportedBlocks;
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    @Override
+    public Iterable<TagTemplate> getSupportedBlockTypes()
+    {
+        if (cachedSupportedBlocks == null) {
+            cachedSupportedBlocks = new LinkedHashSet<>();
+            for (String tagName : this.getSupportedBlockNames()) {
+                HtmlTemplate tag = TemplateCache.instance().getByTagName(tagName);
+                if (tag instanceof TagTemplate) {
+                    cachedSupportedBlocks.add((TagTemplate) tag);
+                }
+                else {
+                    Logger.error("Encountered unsupported tag template. Skipping, but this shouldn't happen and needs to be fixed; " + tagName);
+                }
+            }
+        }
+
+        return cachedSupportedBlocks;
+    }
+
 
     //-----PROTECTED METHODS-----
+    protected abstract String[] getSupportedBlockNames();
     protected Element createTag(String tagName)
     {
         return this.createTag(tagName, null);
