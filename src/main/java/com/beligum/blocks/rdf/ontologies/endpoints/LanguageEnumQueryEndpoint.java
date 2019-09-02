@@ -49,7 +49,7 @@ public class LanguageEnumQueryEndpoint extends EnumQueryEndpoint
 
     //-----PROTECTED METHODS-----
     @Override
-    public Map<String, EnumSuggestion> getSuggestions()
+    protected Map<String, EnumSuggestion> getSuggestions()
     {
         //we can make the languageSuggestions static and save some space because it won't change across instances anyway
         if (languageSuggestions == null) {

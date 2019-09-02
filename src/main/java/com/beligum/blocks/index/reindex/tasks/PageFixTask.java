@@ -19,13 +19,12 @@ package com.beligum.blocks.index.reindex.tasks;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
 import com.beligum.blocks.config.WidgetType;
+import com.beligum.blocks.filesystem.LockFile;
 import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
+import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.index.reindex.ReindexTask;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.utils.importer.ImportTools;
-import com.beligum.blocks.filesystem.LockFile;
-import com.beligum.blocks.filesystem.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
@@ -168,8 +167,8 @@ public class PageFixTask extends ReindexTask
                                     || (rdfProperty.getDataType().equals(XSD.dateTime) && !classes.contains(WidgetType.DateTime.getConstant()))) {
 
                                     Object value = this.parseDateTimeRelatedValue(propertyAttributes.getValue(RDF_CONTENT_ATTR));
-                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null,null);
-                                    output.replace(factElement, new Source(newHtml));
+//                                    String newHtml = ImportTools.propertyValueToHtml(rdfProperty, value, page.getLanguage(), null,null);
+//                                    output.replace(factElement, new Source(newHtml));
 
                                     retVal = true;
                                 }

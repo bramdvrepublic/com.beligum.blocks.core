@@ -29,7 +29,6 @@ public class SparqlIndexConstructResult extends AbstractIndexSearchResult<Sparql
         // we "materialize" the query at once, so we have it's size and can close it properly
         this.model = QueryResults.asModel(result);
 
-
         //we'll assume every distinct subject in the model is a new result
         this.subjects = this.model.subjects();
     }

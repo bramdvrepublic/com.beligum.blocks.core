@@ -149,7 +149,7 @@ public class EnumQueryEndpoint implements RdfEndpoint
 
     //-----PROTECTED METHODS-----
     //allows us to override this in subclasses
-    public Map<String, EnumSuggestion> getSuggestions()
+    protected Map<String, EnumSuggestion> getSuggestions()
     {
         return this.suggestions;
     }
