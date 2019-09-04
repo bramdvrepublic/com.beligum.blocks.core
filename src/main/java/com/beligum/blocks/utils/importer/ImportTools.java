@@ -64,10 +64,7 @@ public abstract class ImportTools
 
         boolean isNumber = NumberUtils.isNumber(value);
         switch (property.getWidgetType()) {
-//            case Immutable:
-//                //this can be both a string and a number.
             case InlineEditor:
-                //FIXME Is there any cleaner way to handle this?
                 retVal = StringEscapeUtils.escapeHtml(value);
                 break;
             case Editor:
@@ -83,6 +80,7 @@ public abstract class ImportTools
                 try{
                     retVal = new Integer(value);
                 }catch (NumberFormatException ex){
+                    //will throw NumberFormatException
                     retVal = new Float(value);
                 }
                 break;
@@ -137,7 +135,6 @@ public abstract class ImportTools
                 retVal = value;
                 break;
             case Object:
-//            case ResourceList:
             case Resource:
 
                 //if the value is a resource string, parse it directly, otherwise, query the endpoint for matches
@@ -202,21 +199,6 @@ public abstract class ImportTools
         String html = "";
         ZoneId localZone = ZoneId.systemDefault();
         switch (property.getWidgetType()) {
-            //            case Immutable:
-            //                //this does  not have real type attributed to it.
-            //                //For now this can be either a number or a string
-            //                if(property.getDataType().equals(XSD.STRING)){
-            //                    //is a string
-            //                    html = value.toString();
-            //                }else if(property.getDataType().equals(XSD.INTEGER) || property.getDataType().equals(XSD.INT)){
-            //                    //is a number
-            //                    content = value.toString();
-            //                    html = value.toString();
-            //                }else{
-            //                    //not supported
-            //                    throw new IOException(property.getWidgetType().name()+ " does not support "+property.getDataType());
-            //                }
-            //                break;
             case Editor:
                 html = value.toString();
                 break;
@@ -331,31 +313,17 @@ public abstract class ImportTools
                 }
 
                 break;
-            //            case ResourceList:
             case Resource:
 
                 URI resourceId = (URI) value;
                 ResourceProxy resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
-                if(resourceInfo == null){
-                    Logger.error("resourceinfo is null. Retrying");
-                    resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
-                }
-//                if(resourceInfo == null){
-//                    Logger.error("Unable to find resource. Ignoring; " + resourceId);
-//                    return "";
-////                    throw new IOException("Unable to find resource; " + resourceId);
-//                }
+
                 addDataType = false;
-                if(resourceInfo != null){
-                    factEntryHtml.append(" resource=\"" + resourceInfo.getResource() + "\"");
-                }else{
-                    factEntryHtml.append(" resource=\"" + resourceId + "\"");
-                }
+                factEntryHtml.append(" resource=\"" + resourceInfo.getResource() + "\"");
                 if (resourceInfo != null) {
                     html = RdfTools.serializeResourceHtml(property, resourceInfo).toString();
                 }
                 else {
-                    resourceInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceId, language);
                     throw new IOException("Unable to find resource; " + resourceId);
                 }
 
@@ -382,7 +350,6 @@ public abstract class ImportTools
         //Some extra filtering, based on the datatype
         if (property.getDataType().equals(RDF.langString)) {
             //see the comments in blocks-fact-entry.js and RDF.LANGSTRING for why we remove the datatype in case of a rdf:langString
-            //for a langstring we have to add a language tag
             addDataType = false;
         }
 
@@ -402,7 +369,9 @@ public abstract class ImportTools
         factEntryHtml.append("</div>");
         factEntryHtml.append("</div>");
         factEntryHtml.append("</blocks-fact-entry>");
-
+        if(property.getWidgetType().equals(WidgetType.InlineEditor)){
+            Logger.info("resource");
+        }
         return factEntryHtml.toString();
     }
     public static String buildResourceImageHtml(NamedUri uri)

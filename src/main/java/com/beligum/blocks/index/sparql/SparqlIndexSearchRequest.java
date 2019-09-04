@@ -94,7 +94,7 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
 
     @Override
     public IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException {
-        throw new UnsupportedOperationException("Block joins are not supported in the SPARQL query builder" );
+        return null;
     }
 
     @Override

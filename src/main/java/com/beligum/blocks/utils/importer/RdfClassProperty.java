@@ -17,7 +17,6 @@
 package com.beligum.blocks.utils.importer;
 
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.utils.importer.interfaces.ComparableProperty;
 
 import java.util.Comparator;
 

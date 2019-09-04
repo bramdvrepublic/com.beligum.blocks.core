@@ -19,6 +19,7 @@ package com.beligum.blocks.utils;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.*;
@@ -455,7 +456,11 @@ public class RdfTools
 
             objectHtml.append(value);
             objectHtml.append(" </div></div>");
+            if(rdfProperty.getWidgetType().equals(WidgetType.InlineEditor)){
+                Logger.info("resource");
+            }
         }
+
         return objectHtml.toString();
     }
 

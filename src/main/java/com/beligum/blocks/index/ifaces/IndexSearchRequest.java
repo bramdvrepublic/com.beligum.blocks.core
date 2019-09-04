@@ -31,14 +31,9 @@ import java.util.Locale;
 /**
  * Created by bram on 6/3/17.
  */
-public interface IndexSearchRequest extends Serializable
+public interface IndexSearchRequest extends FilteredSearchRequest
 {
-    enum FilterBoolean
-    {
-        AND,
-        OR,
-        NOT
-    }
+
 
     enum LanguageFilterType
     {
@@ -46,19 +41,9 @@ public interface IndexSearchRequest extends Serializable
         PREFERRED
     }
 
-    /**
-     * General interface to pass multiple options to the methods in this request
-     */
-    interface Option
-    {
-    }
 
-    /**
-     * Interface for all options that define how the passed value to the methods in this class are interpreted
-     */
-    interface ValueOption extends Option
-    {
-    }
+
+
 
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
