@@ -129,6 +129,8 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
          */
         _simplify: function (deep)
         {
+            var retVal = false;
+
             //this is a lot of iteration, I know, but we need to detect the situation before we can alter it
             var allFullRows = true;
             for (var i = 0; i < this.children.length && allFullRows; i++) {
@@ -152,19 +154,27 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
                         // Stupid, but this seems to solve a lot of issues with the iteration
                         // of the children in the parent loop
                         blocksToAdd.push(childBlock);
+
+                        retVal = true;
                     }
 
                     this._removeChild(childRow);
                     i--;
+
+                    retVal = true;
                 }
 
                 for (var i = 0; i < blocksToAdd.length; i++) {
                     this._addChild(blocksToAdd[i]);
+
+                    retVal = true;
                 }
             }
 
             //now call the superclass function to iterate the children
-            blocks.elements.Row.Super.prototype._simplify.call(this, deep);
+            retVal = blocks.elements.Row.Super.prototype._simplify.call(this, deep) || retVal;
+
+            return retVal;
         },
         /**
          * Extracts the class width number from the element,

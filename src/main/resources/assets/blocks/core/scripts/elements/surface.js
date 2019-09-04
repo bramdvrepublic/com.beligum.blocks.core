@@ -1111,18 +1111,25 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * This gets called when a block was moved and potentially, overly complex rows/cols structures
          * got created. Eg. A row that holds a 12-width columns, that holds a row.
          *
+         * Returns true if something changed, false otherwise.
+         *
          * @private
          */
         _simplify: function (deep)
         {
+            var retVal = false;
+
             //NOOP: by default, we don't do anything specific,
             //except for going deeper if needed
 
             if (deep) {
                 for (var i = 0; i < this.children.length; i++) {
-                    this.children[i]._simplify(deep);
+                    // as soon as one child changed during simplification, we return true
+                    retVal = this.children[i]._simplify(deep) || retVal;
                 }
             }
+
+            return retVal;
         },
 
     });

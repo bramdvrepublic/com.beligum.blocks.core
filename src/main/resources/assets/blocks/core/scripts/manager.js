@@ -999,9 +999,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             toClean = toCleanParent;
         }
 
-        //Once all is done, we need to force a deep refresh of the entire page
-        //note that we need to call refresh after the simplify,
-        //because simplify can modify the dom
+        // Once all is done, we need to force a deep refresh of the entire page
+        // note that we need to call refresh after the simplify,
+        // because simplify can modify the dom.
         UI.pageSurface._simplify(true);
 
         // Some blocks need to load external sources (eg. images) and

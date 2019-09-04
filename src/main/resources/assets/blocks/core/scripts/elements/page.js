@@ -67,5 +67,24 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         {
             return blocks.elements.Surface.isContainer(element);
         },
+        /**
+         * Overloads the parent surface function to keep simplifying until nothing is changing anymore
+         *
+         * @param deep
+         * @private
+         */
+        _simplify: function (deep)
+        {
+            var retVal = false;
+
+            var keepSimplifying = true;
+            while (keepSimplifying) {
+                // as long as the super method returns true (something changed), we continue simplifying
+                keepSimplifying = blocks.elements.Page.Super.prototype._simplify.call(this, deep);
+                retVal = retVal || keepSimplifying;
+            }
+
+            return retVal;
+        },
     });
 }]);

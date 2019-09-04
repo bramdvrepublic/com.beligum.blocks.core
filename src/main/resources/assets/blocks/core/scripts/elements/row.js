@@ -149,6 +149,8 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.co
          */
         _simplify: function (deep)
         {
+            var retVal = false;
+
             //this row has one child and it's a column of maximum width
             if (this.children.length === 1 && this.children[0].isColumn() && this.children[0].columnWidth === blocks.elements.Row.MAX_COLS) {
 
@@ -171,11 +173,15 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.co
                     rowToEliminate._updateResizers();
                     //and introduce them in the new column
                     this._updateResizers();
+
+                    retVal = true;
                 }
             }
 
             //now call the superclass function to iterate the children
-            blocks.elements.Row.Super.prototype._simplify.call(this, deep);
+            retVal = blocks.elements.Row.Super.prototype._simplify.call(this, deep) || retVal;
+
+            return retVal;
         }
     });
 

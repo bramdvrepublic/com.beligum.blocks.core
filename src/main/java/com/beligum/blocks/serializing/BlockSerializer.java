@@ -21,6 +21,9 @@ import java.util.Set;
 public interface BlockSerializer
 {
     //-----CONSTANTS-----
+    interface Option
+    {
+    }
 
     //-----VARIABLES-----
 

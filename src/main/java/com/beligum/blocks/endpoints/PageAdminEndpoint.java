@@ -41,16 +41,10 @@ import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.serializing.BlockSerializer;
-import com.beligum.blocks.serializing.data.DefaultImportConfig;
-import com.beligum.blocks.serializing.data.ImportConfig;
-import com.beligum.blocks.serializing.data.ImportPropertyMapping;
-import com.beligum.blocks.serializing.data.ImportResource;
 import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.templating.PageTemplate;
 import com.beligum.blocks.templating.TagTemplate;
 import com.beligum.blocks.templating.TemplateCache;
-import com.beligum.blocks.utils.RdfTools;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -78,7 +72,7 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 /**
  * Created by bram on 2/10/16.
  */
-@Path("/blocks/admin/page")
+@Path(PAGE_ADMIN_ENDPOINT)
 public class PageAdminEndpoint
 {
     //-----CONSTANTS-----
@@ -435,95 +429,6 @@ public class PageAdminEndpoint
         R.resourceManager().delete(page, R.securityManager().getCurrentPerson(), Page.class, PageRepository.PageDeleteOption.DELETE_ALL_TRANSLATIONS);
 
         return Response.ok().build();
-    }
-
-    @POST
-    @Path("/import/resource")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @RequiresPermissions(logical = Logical.AND,
-                         value = { PAGE_CREATE_ALL_PERM,
-                                   PAGE_CREATE_TEMPLATE_ALL_PERM })
-    //Note that we need a concrete type as value in the value map because of auto-deserialization
-    public Response importResource(ImportResource importResource, ImportConfig importConfig) throws Exception
-    {
-        // validation...
-        if (importResource.getUri() == null) {
-            throw new IOException("Encountered empty resource URI; " + importResource.getUri());
-        }
-        if (importResource.getTypeof() == null) {
-            throw new IOException("Encountered unknown RDF class; " + importResource.getUri());
-        }
-        if (importResource.getLanguage() == null) {
-            throw new IOException("Encountered unknown resource language; " + importResource.getUri());
-        }
-
-        if (importConfig == null) {
-            importConfig = new DefaultImportConfig();
-        }
-
-        // since we're importing for an unknown context, we set the locale manually so all methods depending on it work as expected
-        R.i18n().setManualLocale(importResource.getLanguage());
-
-        Template template = R.resourceManager().get(importConfig.getTemplate(), Template.class);
-        if (template == null) {
-            throw new IOException("Encountered unknown/unsupported template; " + importConfig.getTemplate());
-        }
-
-        template.set(IMPORTER_VAR_LANG, importResource.getLanguage().getLanguage());
-        template.set(IMPORTER_VAR_TYPEOF, importResource.getTypeof().getCurie());
-        template.set(IMPORTER_VAR_ABOUT, importResource.getAbout());
-
-        // now iterate the properties in the resource and create their normalized HTML
-        if (importResource.getProperties() != null) {
-
-            BlockSerializer factEntrySerializer = BlockSerializer.lookup(importConfig.getFactBlock());
-            BlockSerializer imageSerializer = BlockSerializer.lookup(importConfig.getImageBlock());
-            BlockSerializer videoSerializer = BlockSerializer.lookup(importConfig.getVideoBlock());
-
-            RdfProperty previous = null;
-            List<CharSequence> facts = new ArrayList<>();
-            List<CharSequence> media = new ArrayList<>();
-            for (ImportPropertyMapping entry : importResource.getProperties()) {
-
-                RdfProperty property = entry.getRdfProperty();
-
-                if (property.equals(importConfig.getSameasProperty())) {
-                    template.set(IMPORTER_VAR_SAMEAS, entry.getValue());
-                }
-                else if (property.equals(importConfig.getTitleProperty())) {
-                    template.set(IMPORTER_VAR_TITLE, entry.getValue());
-                }
-                else if (property.equals(importConfig.getImageProperty())) {
-                    media.add(imageSerializer.toHtml(importConfig.getImageBlock(), property, importResource.getLanguage(), entry.getValue()));
-                }
-                else if (property.equals(importConfig.getVideoProperty())) {
-                    media.add(videoSerializer.toHtml(importConfig.getVideoBlock(), property, importResource.getLanguage(), entry.getValue()));
-                }
-                else {
-                    Logger.warn("TODO this is for testing only: it needs to be expanded with more arguments");
-                    facts.add(factEntrySerializer.toHtml(importConfig.getFactBlock(), property, importResource.getLanguage(), null, null, entry.getValue()));
-                }
-
-                previous = property;
-            }
-
-            if (!facts.isEmpty()) {
-                template.set(IMPORTER_VAR_CONTENT, StringUtils.join(facts, "\n"));
-            }
-            if (!media.isEmpty()) {
-                template.set(IMPORTER_VAR_MEDIA, StringUtils.join(media, "\n"));
-            }
-        }
-
-        // do the import and render the final template
-        PageAdminEndpoint pageEndpoint = new PageAdminEndpoint();
-        Response response = pageEndpoint.savePage(importResource.getUri(), template.render());
-        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-            throw new IOException("Error while saving imported resource '" + importResource.getUri() + "'; " + response);
-        }
-        else {
-            return Response.ok().build();
-        }
     }
 
     @POST
