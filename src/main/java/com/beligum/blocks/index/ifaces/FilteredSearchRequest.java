@@ -56,4 +56,5 @@ public interface FilteredSearchRequest extends Serializable
      */
     FilteredSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
+
 }

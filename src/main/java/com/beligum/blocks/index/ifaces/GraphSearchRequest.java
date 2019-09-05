@@ -28,10 +28,9 @@ public interface GraphSearchRequest extends FilteredSearchRequest
      * Perform a Graph search on the results of the FilteredSearchRequest.
      * @param from: the starting point of the the graph traversal. This property must, of course, exist in the FilteredSearchRequest result.
      * @param to: the end of  the graph traversal. This property must, of course, exist in the FilteredSearchRequest result.
-     * @param filteredSearchRequest:  the filteredsearchrequest containing the results on which to perform the graph traversal.
      * @return
      */
-    GraphSearchRequest buildGraph(IndexEntryField from, IndexEntryField to,  FilteredSearchRequest filteredSearchRequest, Option... options);
-    GraphSearchRequest addSubQuery(FilteredSearchRequest filteredSearchRequest, FilterBoolean filterBoolean);
+    GraphSearchRequest constructGraph(IndexEntryField from, IndexEntryField to, Option... options);
+    FilteredSearchRequest appendQuery(IndexSearchRequest indexSearchRequest);
 
 }

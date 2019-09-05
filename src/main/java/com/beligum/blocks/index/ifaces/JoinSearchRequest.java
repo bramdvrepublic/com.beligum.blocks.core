@@ -46,5 +46,5 @@ public interface JoinSearchRequest extends FilteredSearchRequest
      * @return
      */
     JoinSearchRequest join(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, List<AbstractIndexSearchRequest.FilteredSearchRequestWithBoolean> filteredSearchRequests, Option... options);
-    JoinSearchRequest addSubQuery(IndexSearchRequest indexSearchRequest, FilterBoolean filterBoolean);
+//    JoinSearchRequest addSubQuery(IndexSearchRequest indexSearchRequest, FilterBoolean filterBoolean);
 }

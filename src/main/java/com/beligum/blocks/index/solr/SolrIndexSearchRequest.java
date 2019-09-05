@@ -17,6 +17,7 @@ import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Filter;
 import java.util.stream.Stream;
 
 public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implements JoinSearchRequest, GraphSearchRequest {
@@ -76,7 +77,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
 
     }
 
-    public enum GraphSearchValueOption implements FilteredSearchRequest.ValueOption {
+    public enum GraphSearchOption implements FilteredSearchRequest.ValueOption {
         returnRoot,
         leafNodesOnly
     }
@@ -153,11 +154,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
 //    }
 
     @Override
-    public GraphSearchRequest buildGraph(IndexEntryField from, IndexEntryField to, Option... options) {
+    public GraphSearchRequest constructGraph(IndexEntryField from, IndexEntryField to, Option... options) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("{!graph from=").append(from.getName()).append(" ");
         stringBuilder.append("to=").append(to.getName());
-        for (Option graphSearchValueOption : GraphSearchValueOption.values()) {
+        for (Option graphSearchValueOption : GraphSearchOption.values()) {
             if (Arrays.stream(options).anyMatch(s -> s.equals(graphSearchValueOption))) {
                 stringBuilder.append(" " + graphSearchValueOption.toString() + "=true");
             }
@@ -166,19 +167,30 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         if (this.queryBuilder.length() > 0) {
             throw new UnsupportedOperationException("Can not combine a GraphSearchRequest with a second query. Existing query " + this.queryBuilder.toString());
         }
+        this.queryBuilder.append(stringBuilder);
         return this;
     }
 
+    /**
+     * No need to be able to filter this; just append it with the  relevant subqueries
+     *
+     * @param subQuery
+     * @return
+     */
     @Override
-    public GraphSearchRequest addSubQuery(FilteredSearchRequest filteredSearchRequest, FilterBoolean filterBoolean) {
-        this.²
-        return null;
+    public FilteredSearchRequest appendQuery(IndexSearchRequest subQuery) {
+        if (!(this instanceof GraphSearchRequest) || !(this instanceof JoinSearchRequest)) {
+            throw new UnsupportedOperationException("this quert can not be appended");
+        }
+        //add to queryBuilder
+       if (subQuery instanceof SolrIndexSearchRequest) {
+           this.queryBuilder.append(((SolrIndexSearchRequest) subQuery).queryBuilder);
+           //also add the custom parameters to the current query.
+           this.customParams.putAll(((SolrIndexSearchRequest) subQuery).customParams);
+       }
+        return this;
     }
 
-    @Override
-    public JoinSearchRequest addSubQuery(IndexSearchRequest indexSearchRequest, FilterBoolean filterBoolean) {
-        return null;
-    }
 
     @Override
     public JoinSearchRequest join(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, List<FilteredSearchRequestWithBoolean> filteredSearchRequests, Option... options) {
@@ -192,21 +204,25 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
                 stringBuilder.append("{!join from=").append(from.getName()).append(" ");
                 stringBuilder.append("to=").append(to.getName()).append("}");
             }
-            stringBuilder.append("!filters param=$").append(rdfClass.getName()).append("}");
-            //add the filters as custom parameters
-            for (FilteredSearchRequestWithBoolean filteredSearchRequest : filteredSearchRequests) {
-                if (filteredSearchRequest.getFilteredSearchRequest() instanceof SolrIndexSearchRequest) {
-                    SolrIndexSearchRequest solrFilteredSearchRequest = (SolrIndexSearchRequest) filteredSearchRequest.getFilteredSearchRequest();
-                    if (solrFilteredSearchRequest.filterQueryBuilder.length() > 0) {
-                        StringBuilder sb = this.appendBoolean(this.filterQueryBuilder, filteredSearchRequest.getFilterBoolean()).append("(").append(solrFilteredSearchRequest.filterQueryBuilder).append(")");
-                        List params = this.customParams.get(rdfClass.getName());
-                        if (params == null) {
-                            params = new ArrayList();
+            stringBuilder.append("{!filters param=$").append(rdfClass.getName()).append("}");
+            //add the filters as custom parameters. These can be null
+            if(filteredSearchRequests != null){
+                for (FilteredSearchRequestWithBoolean filteredSearchRequest : filteredSearchRequests) {
+                    if (filteredSearchRequest.getFilteredSearchRequest() instanceof SolrIndexSearchRequest) {
+                        SolrIndexSearchRequest solrFilteredSearchRequest = (SolrIndexSearchRequest) filteredSearchRequest.getFilteredSearchRequest();
+                        if (solrFilteredSearchRequest.filterQueryBuilder.length() > 0) {
+                            StringBuilder sb = this.appendBoolean(this.filterQueryBuilder, filteredSearchRequest.getFilterBoolean()).append("(").append(solrFilteredSearchRequest.filterQueryBuilder).append(")");
+                            List params = this.customParams.get(rdfClass.getName());
+                            if (params == null) {
+                                params = new ArrayList();
+                            }
+                            params.add(sb.toString());
+                            this.customParams.put(rdfClass.getName(), params);
                         }
-                        params.add(sb.toString());
                     }
                 }
             }
+
         } else if (optionList.contains(JoinOption.blockjoin)) {
             // {!parent which=typeOf:crb\:Manifestation}(+resource:\/resource\/Aperture\/3d -resourceType:DEFAULT)
             stringBuilder.append("{!");
@@ -233,7 +249,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         if (this.queryBuilder.length() > 0) {
             throw new UnsupportedOperationException("Can not combine a JoinSearchRequest with a second query. Existing query " + this.queryBuilder.toString());
         }
+        //append the queryBuilder
+        //if the
         this.queryBuilder.append(stringBuilder);
+
+
         return this;
     }
 
