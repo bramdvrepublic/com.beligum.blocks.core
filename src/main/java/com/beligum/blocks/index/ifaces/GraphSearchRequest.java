@@ -23,7 +23,10 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
  */
 public interface GraphSearchRequest extends FilteredSearchRequest
 {
-
+    enum GraphSearchOption implements FilteredSearchRequest.Option {
+        returnRoot,
+        leafNodesOnly
+    }
     /**
      * Perform a Graph search on the results of the FilteredSearchRequest.
      * @param from: the starting point of the the graph traversal. This property must, of course, exist in the FilteredSearchRequest result.
@@ -31,6 +34,6 @@ public interface GraphSearchRequest extends FilteredSearchRequest
      * @return
      */
     GraphSearchRequest constructGraph(IndexEntryField from, IndexEntryField to, Option... options);
-    FilteredSearchRequest appendQuery(IndexSearchRequest indexSearchRequest);
+    FilteredSearchRequest appendQuery(FilteredSearchRequest indexSearchRequest);
 
 }

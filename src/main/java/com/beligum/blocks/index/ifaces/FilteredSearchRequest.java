@@ -16,27 +16,18 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
-import com.beligum.blocks.index.solr.SolrPageIndexConnection;
-import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
-import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.Locale;
 
 /**
  * Created by bram on 6/3/17.
  */
 public interface FilteredSearchRequest extends Serializable
 {
-    enum FilterBoolean
+    /**
+     * General interface to pass multiple options to the methods in this request
+     */
+    interface Option
     {
-        AND,
-        OR,
-        NOT
     }
     /**
      * Interface for all options that define how the passed value to the methods in this class are interpreted
@@ -44,12 +35,21 @@ public interface FilteredSearchRequest extends Serializable
     interface ValueOption extends Option
     {
     }
-    /**
-     * General interface to pass multiple options to the methods in this request
-     */
-    interface Option
+
+    enum FilterBoolean implements FilteredSearchRequest.Option
     {
+        AND,
+        OR,
+        NOT,
+        NONE
     }
+    enum QueryType  implements FilteredSearchRequest.Option
+    {
+        MAIN,
+        FILTER
+    }
+
+
     /**
      * Adds a filter that only selects entries of the specified class.
      * The boolean configures how this filter is linked to previously added filters.

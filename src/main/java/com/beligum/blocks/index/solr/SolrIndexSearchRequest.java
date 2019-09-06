@@ -9,13 +9,16 @@ import com.beligum.blocks.index.request.AbstractIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.google.common.collect.Iterables;
+import jdk.nashorn.internal.ir.Block;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.cxf.jaxrs.impl.UriInfoImpl;
 import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.parser.QueryParser;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 import java.util.logging.Filter;
 import java.util.stream.Stream;
@@ -49,6 +52,10 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
          * Interprets the value as a phrase and surrounds it with double quotes, escaping where necessary.
          */
         phraseSearch,
+        /**
+         * Interprets the value as a range. This query will be formed like [int - int] or {string - string} and should not be escaped
+         */
+        rangeSearch,
 
     }
 
@@ -59,7 +66,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         noEscape,
     }
 
-    public enum TransformerValueOption implements FilteredSearchRequest.ValueOption {
+    public enum TransformerValueOption implements FilteredSearchRequest.Option {
 
         childDocTransformer("[child]"),
         shardAugmenter("[shard]"),
@@ -74,18 +81,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         public String getValue() {
             return value;
         }
-
-    }
-
-    public enum GraphSearchOption implements FilteredSearchRequest.ValueOption {
-        returnRoot,
-        leafNodesOnly
-    }
-
-    public enum JoinValueOption implements IndexSearchRequest.ValueOption {
-
-        blokjoin,
-        regular
 
     }
 
@@ -125,8 +120,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
 
     @Override
     public IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean) {
-//        this.currentFilterTYpe = type;
-
         this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(JsonPageIndexEntry.TYPEOF_PROPERTY), ResourceIndexEntry.typeOfField.serialize(type));
 
         return this;
@@ -141,26 +134,16 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
     }
 
 
-//    public JoinSearchRequest join(RdfProperty property, Option... options)
-//    {
-//        if (this.currentFilterType == null) {
-//            throw new Exeption()
-//        }
-//
-//        ...
-//
-//
-//        return new JoinSearchRequest()
-//    }
-
     @Override
     public GraphSearchRequest constructGraph(IndexEntryField from, IndexEntryField to, Option... options) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("{!graph from=").append(from.getName()).append(" ");
         stringBuilder.append("to=").append(to.getName());
         for (Option graphSearchValueOption : GraphSearchOption.values()) {
-            if (Arrays.stream(options).anyMatch(s -> s.equals(graphSearchValueOption))) {
+            if(Arrays.asList(options).contains(graphSearchValueOption)){
                 stringBuilder.append(" " + graphSearchValueOption.toString() + "=true");
+            }else{
+                stringBuilder.append(" " + graphSearchValueOption.toString() + "=false");
             }
         }
         stringBuilder.append("}");
@@ -178,26 +161,26 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
      * @return
      */
     @Override
-    public FilteredSearchRequest appendQuery(IndexSearchRequest subQuery) {
+    public FilteredSearchRequest appendQuery(FilteredSearchRequest subQuery) {
         if (!(this instanceof GraphSearchRequest) || !(this instanceof JoinSearchRequest)) {
-            throw new UnsupportedOperationException("this quert can not be appended");
+            throw new UnsupportedOperationException("this query can not be appended");
         }
         //add to queryBuilder
-       if (subQuery instanceof SolrIndexSearchRequest) {
-           this.queryBuilder.append(((SolrIndexSearchRequest) subQuery).queryBuilder);
-           //also add the custom parameters to the current query.
-           this.customParams.putAll(((SolrIndexSearchRequest) subQuery).customParams);
-       }
+        if (subQuery instanceof SolrIndexSearchRequest) {
+            this.queryBuilder.append(((SolrIndexSearchRequest) subQuery).queryBuilder);
+            //also add the custom parameters to the current query.
+            this.customParams.putAll(((SolrIndexSearchRequest) subQuery).customParams);
+        }
         return this;
     }
 
 
     @Override
-    public JoinSearchRequest join(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, List<FilteredSearchRequestWithBoolean> filteredSearchRequests, Option... options) {
+    public JoinSearchRequest addJoin(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, FilteredSearchRequest filteredSearchRequest, Option... options) {
         List optionList = Arrays.asList(options);
         StringBuilder stringBuilder = new StringBuilder();
-        if (optionList.contains(JoinOption.regular)) {
-            if (optionList.contains(BlockJoinOption.child) || optionList.contains(BlockJoinOption.parent)) {
+        if (optionList.contains(JoinOption.REGULAR)) {
+            if (optionList.contains(BlockJoinOption.CHILD) || optionList.contains(BlockJoinOption.PARENT)) {
                 throw new UnsupportedOperationException(BlockJoinOption.class.getName() + " should only be used by blockjoins.");
             }
             if (from != null && to != null) {
@@ -205,58 +188,105 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
                 stringBuilder.append("to=").append(to.getName()).append("}");
             }
             stringBuilder.append("{!filters param=$").append(rdfClass.getName()).append("}");
-            //add the filters as custom parameters. These can be null
-            if(filteredSearchRequests != null){
-                for (FilteredSearchRequestWithBoolean filteredSearchRequest : filteredSearchRequests) {
-                    if (filteredSearchRequest.getFilteredSearchRequest() instanceof SolrIndexSearchRequest) {
-                        SolrIndexSearchRequest solrFilteredSearchRequest = (SolrIndexSearchRequest) filteredSearchRequest.getFilteredSearchRequest();
-                        if (solrFilteredSearchRequest.filterQueryBuilder.length() > 0) {
-                            StringBuilder sb = this.appendBoolean(this.filterQueryBuilder, filteredSearchRequest.getFilterBoolean()).append("(").append(solrFilteredSearchRequest.filterQueryBuilder).append(")");
-                            List params = this.customParams.get(rdfClass.getName());
-                            if (params == null) {
-                                params = new ArrayList();
-                            }
-                            params.add(sb.toString());
-                            this.customParams.put(rdfClass.getName(), params);
+            if(filteredSearchRequest != null){
+                //add a custom param where we'll  put the filteredSearchRequest.
+                if(filteredSearchRequest instanceof SolrIndexSearchRequest){
+                    SolrIndexSearchRequest currentSubRequest = (SolrIndexSearchRequest)filteredSearchRequest;
+                    if(currentSubRequest.queryBuilder.length() > 0 && currentSubRequest.filterQueryBuilder.length() > 0){
+                        throw new UnsupportedOperationException("Both a query and a filterquery are defined. I don't know how to join both of them.");
+                    }
+                    List<String> filters = this.customParams.get(rdfClass.getName());
+
+                    if(currentSubRequest.queryBuilder.length() > 0){
+                        //add to params
+                        if(filters == null){
+                            filters = new ArrayList<>();
                         }
+                        filters.add(currentSubRequest.queryBuilder.toString());
+                    }else if(currentSubRequest.filterQueryBuilder.length()>0){
+                        //add to params
+                        if(filters == null){
+                            filters = new ArrayList<>();
+                        }
+                        stringBuilder.append(currentSubRequest.queryBuilder);
+                    }
+                    if(filters != null){
+                        this.customParams.put(rdfClass.getName(), filters);
                     }
                 }
             }
-
-        } else if (optionList.contains(JoinOption.blockjoin)) {
-            // {!parent which=typeOf:crb\:Manifestation}(+resource:\/resource\/Aperture\/3d -resourceType:DEFAULT)
-            stringBuilder.append("{!");
-            if (optionList.contains(BlockJoinOption.parent)) {
-                stringBuilder.append("parent");
-
-            } else if (optionList.contains(BlockJoinOption.child)) {
-                throw new UnsupportedOperationException("child blockjoin is not supported yet");
-            } else {
-                throw new UnsupportedOperationException(BlockJoinOption.class.getSimpleName() + "should be included in options");
-            }
-            stringBuilder.append("which=typeOf" + this.appendQueryModifiers(rdfClass.getCurie().toString())).append("}");
-            for (FilteredSearchRequestWithBoolean filteredSearchRequest : filteredSearchRequests) {
-                if (filteredSearchRequest.getFilteredSearchRequest() instanceof SolrIndexSearchRequest) {
-                    SolrIndexSearchRequest solrFilteredSearchRequest = (SolrIndexSearchRequest) filteredSearchRequest.getFilteredSearchRequest();
-                    if (solrFilteredSearchRequest.filterQueryBuilder.length() > 0) {
-                        this.appendBoolean(stringBuilder, filteredSearchRequest.getFilterBoolean()).append("(").append(solrFilteredSearchRequest.filterQueryBuilder).append(")");
-                    }
-                }
-            }
-        } else {
-            throw new UnsupportedOperationException("Type of Join was not defined. Should be a " + JoinOption.class.getName());
         }
-        if (this.queryBuilder.length() > 0) {
-            throw new UnsupportedOperationException("Can not combine a JoinSearchRequest with a second query. Existing query " + this.queryBuilder.toString());
+        else {
+            throw new UnsupportedOperationException("Type of Join was not supported.");
         }
-        //append the queryBuilder
-        //if the
+//        if (this.queryBuilder.length() > 0) {
+//            throw new UnsupportedOperationException("Can not combine a JoinSearchRequest with a second query. Existing query " + this.queryBuilder.toString());
+//        }
         this.queryBuilder.append(stringBuilder);
-
 
         return this;
     }
 
+    @Override
+    public JoinSearchRequest addJoinFilter(RdfClass rdfClass, RdfProperty rdfProperty, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options) {
+        return this.buildJoinFilter(rdfClass, rdfProperty, from, to, value, filterBoolean, options);
+    }
+
+    @Override
+    public JoinSearchRequest addJoinFilter(RdfClass rdfClass, IndexEntryField indexEntryField, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options) {
+        return this.buildJoinFilter(rdfClass, indexEntryField, from, to, value, filterBoolean, options);
+    }
+    private JoinSearchRequest buildJoinFilter(RdfClass rdfClass, Object keyProperty, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options){
+        List optionList = Arrays.asList(options);
+        StringBuilder sb = new StringBuilder();
+        if (optionList.contains(JoinOption.BLOCKJOIN)) {
+            if(queryBuilder.length()>0){
+                //add a space in  front
+                sb.append(" ");
+            }
+            if(filterBoolean.equals(FilterBoolean.AND)){
+                sb.append("+");
+            }else if(filterBoolean.equals(FilterBoolean.NOT)){
+                sb.append("+");
+            }else if(filterBoolean.equals(FilterBoolean.OR) || filterBoolean.equals(FilterBoolean.NONE)){
+                //append  nothing
+            }
+//            sb.append("(");
+            sb.append("{!");
+            //  +({!parent which=typeOf:crb\:Work}+resource:\/resource\/1168849334650127434)
+            if(optionList.contains(BlockJoinOption.PARENT)){
+                sb.append("parent which=typeOf:");
+            }else{
+                throw new UnsupportedOperationException("child blockjoins are not supported yet");
+            }
+            String rdfClassCurieString = (rdfClass.getCurie()).toString();
+            //always escape
+            sb.append(escapeField(rdfClassCurieString));
+            sb.append("}");
+            sb.append("+");
+            //value: modifie value
+            value = this.appendQueryModifiers(value, optionList);
+            if(keyProperty instanceof  IndexEntryField){
+                sb.append(((IndexEntryField)keyProperty).getName()).append(":").append(value);
+//                        .append(")");
+            }else if(keyProperty instanceof RdfProperty){
+                URI curie = ((RdfProperty)keyProperty).getCurie();
+                String escapedCurieField = escapeField(curie.toString());
+                sb.append(escapedCurieField).append(":").append(value);
+//                        .append(")");
+            }else{
+                throw new UnsupportedOperationException("encountered an invalid key");
+            }
+            if(optionList.contains(FilteredSearchRequest.QueryType.FILTER)){
+                this.appendBoolean(this.filterQueryBuilder, filterBoolean).append("(").append(sb).append(")");
+            }else if(optionList.contains(FilteredSearchRequest.QueryType.MAIN)){
+                queryBuilder.append(sb);
+            }else{
+                throw new UnsupportedOperationException("please define the QueryType");
+            }
+        }
+        return this;
+    }
     @Override
     public IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException {
         if (filterValues != null && filterValues.length > 0) {
@@ -283,17 +313,6 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         }
         return this;
     }
-//
-//    @Override
-//    public IndexSearchRequest join(IndexEntryField from, IndexEntryField to, IndexEntryField field, String value, Option... options) throws IOException {
-//        //{!join from=id fromIndex=movie_directors to=director_id}has_oscar:true
-//        StringBuilder stringBuilder = new StringBuilder();
-//        stringBuilder.append("{!join from=").append(from.getName());
-//        stringBuilder.append(" to=").append(to.getName()).append("}");
-//        value = this.appendQueryModifiers(value, Arrays.asList(options));
-//        stringBuilder.append("(").append(this.escapeField(field.getName())).append(":").append(value).append(")");
-//        return null;
-//    }
 
     @Override
     public IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses) {
@@ -321,7 +340,18 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options) {
         // I think it makes sense to force phrase search for field filters, right?
-        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, Arrays.asList(options), Collections.singleton(ValueOption.phraseSearch));
+        //not really, if we want to query things like ranges, these should not be escaped. Using it as default makes sense though.
+        Option customValueOption = null;
+        if (options != null) {
+            for (Option option : options) {
+                if (option instanceof ValueOption) {
+                    customValueOption = option;
+                }
+            }
+        }
+        Set valueOptions = customValueOption == null ? Collections.singleton(ValueOption.phraseSearch) : Collections.singleton(customValueOption);
+
+        this.appendFilter(this.filterQueryBuilder, filterBoolean, this.nameOf(property), value, Arrays.asList(options), valueOptions);
 
         return this;
     }
@@ -507,9 +537,12 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
                 }
 
                 escaped = true;
+            } else if (option.equals(ValueOption.rangeSearch)) {
+                doEscape = false;
             } else if (option.equals(InternalValueOption.noEscape)) {
                 doEscape = false;
             }
+
             // wildcards for numbers don't really make sense, because it expands the search results way too much
             // if the user added their own wildcard in the query, it kind of makes sense to skip it as well
             else if (option.equals(ValueOption.wildcardSuffix) && !isNumber && !hasAsterisk) {
@@ -529,6 +562,8 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         return prefix + value + suffix;
     }
 
+
+
     private StringBuilder appendBoolean(StringBuilder stringBuilder, FilterBoolean filterBoolean) {
         if (stringBuilder.length() > 0) {
             //see https://lucene.apache.org/solr/guide/7_7/the-standard-query-parser.html#boolean-operators-supported-by-the-standard-query-parser
@@ -542,6 +577,9 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
                 case NOT:
                     stringBuilder.append("!");
                     break;
+                case NONE:
+                    //do not append a filterBoolean
+                    break;
                 default:
                     Logger.error("Encountered unimplemented filter boolean, ignoring silently; " + filterBoolean);
                     break;
@@ -550,6 +588,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
             switch (filterBoolean) {
                 case AND:
                 case OR:
+                case NONE:
                     //NOOP
                     break;
                 case NOT:
@@ -634,7 +673,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         }
         return true;
     }
+
     private List<String> buildBlockjoins(RdfClass rdfClass, RdfProperty filterProperty, String... filterValues) throws IOException {
+        //rdfClass = crb:Work
+        //filterProperty = crb:yearCode
+        //filterValues = "1900-2000"
         String defaultFilterVariable = ResourceIndexEntry.Type.DEFAULT.toString();
         String resourceTypeFilterKey = ResourceIndexEntry.resourceTypeField.getName();
         String defaultFilterQuery = resourceTypeFilterKey + ":" + defaultFilterVariable;

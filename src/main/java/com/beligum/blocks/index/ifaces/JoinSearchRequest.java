@@ -18,6 +18,7 @@ package com.beligum.blocks.index.ifaces;
 
 import com.beligum.blocks.index.request.AbstractIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.util.List;
 import java.util.Map;
@@ -29,22 +30,24 @@ public interface JoinSearchRequest extends FilteredSearchRequest
 {
      enum JoinOption implements Option
     {
-        regular,
-        blockjoin
+        REGULAR,
+        BLOCKJOIN
     }
     enum BlockJoinOption implements Option
     {
-        parent,
-        child
+        PARENT,
+        CHILD
     }
     /**
      *
      * @param from the first leg of the 'join on' query
      * @param to the last leg of the 'join on' query
      * @param rdfClass the rdfClass to want to query
-     * @param filteredSearchRequests the search request that will give us the starting point for the join.
      * @return
      */
-    JoinSearchRequest join(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, List<AbstractIndexSearchRequest.FilteredSearchRequestWithBoolean> filteredSearchRequests, Option... options);
-//    JoinSearchRequest addSubQuery(IndexSearchRequest indexSearchRequest, FilterBoolean filterBoolean);
+
+    JoinSearchRequest addJoin(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, FilteredSearchRequest filteredSearchRequest, Option... options);
+    JoinSearchRequest addJoinFilter(RdfClass rdfClass, RdfProperty rdfProperty, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options);
+    JoinSearchRequest addJoinFilter(RdfClass rdfClass, IndexEntryField indexEntryField, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options);
+
 }
