@@ -22,34 +22,38 @@ import java.net.URI;
 /**
  * Created by bram on 4/5/16.
  */
-public class ImportPropertyMapping implements Serializable
+public class ImportPropertyMapping extends AbstractComparableProperty implements Serializable
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private URI rdfPropertyCurie;
+    private URI rdfPropertyCurieName;
     private String rdfPropertyValue;
 
     //-----CONSTRUCTORS-----
     public ImportPropertyMapping()
     {
     }
-    public ImportPropertyMapping(URI rdfPropertyCurie, String rdfPropertyValue)
+    public ImportPropertyMapping(URI rdfPropertyCurieName, String rdfPropertyValue, Integer index)
     {
-        this.rdfPropertyCurie = rdfPropertyCurie;
+        this.rdfPropertyCurieName = rdfPropertyCurieName;
         this.rdfPropertyValue = rdfPropertyValue;
+        super.index = index;
     }
 
     //-----PUBLIC METHODS-----
-    public URI getRdfPropertyCurie()
+    public URI getRdfPropertyCurieName()
     {
-        return rdfPropertyCurie;
+        return rdfPropertyCurieName;
     }
     public String getRdfPropertyValue()
     {
         return rdfPropertyValue;
     }
-
+    public Integer getIndex()
+    {
+        return index;
+    }
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
@@ -65,7 +69,7 @@ public class ImportPropertyMapping implements Serializable
 
         ImportPropertyMapping that = (ImportPropertyMapping) o;
 
-        if (getRdfPropertyCurie() != null ? !getRdfPropertyCurie().equals(that.getRdfPropertyCurie()) : that.getRdfPropertyCurie() != null)
+        if (getRdfPropertyCurieName() != null ? !getRdfPropertyCurieName().equals(that.getRdfPropertyCurieName()) : that.getRdfPropertyCurieName() != null)
             return false;
         return getRdfPropertyValue() != null ? getRdfPropertyValue().equals(that.getRdfPropertyValue()) : that.getRdfPropertyValue() == null;
 
@@ -73,7 +77,7 @@ public class ImportPropertyMapping implements Serializable
     @Override
     public int hashCode()
     {
-        int result = getRdfPropertyCurie() != null ? getRdfPropertyCurie().hashCode() : 0;
+        int result = getRdfPropertyCurieName() != null ? getRdfPropertyCurieName().hashCode() : 0;
         result = 31 * result + (getRdfPropertyValue() != null ? getRdfPropertyValue().hashCode() : 0);
         return result;
     }
@@ -81,6 +85,6 @@ public class ImportPropertyMapping implements Serializable
     @Override
     public String toString()
     {
-        return "" + rdfPropertyCurie + " -> '" + rdfPropertyValue + "'";
+        return "" + rdfPropertyCurieName + " -> '" + rdfPropertyValue + "'";
     }
 }

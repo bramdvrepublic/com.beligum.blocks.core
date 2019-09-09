@@ -85,6 +85,9 @@ public interface RdfProperty extends RdfOntologyMember
     @JsonIgnore
     RdfPropertyValidator getValidator();
 
+//    @JsonIgnore
+    ValueModifier getValueModifier();
+
     /**
      * This allows us to pass certain options to specific properties of specific classes instead
      * of adding them globally.

@@ -20,10 +20,7 @@ import com.beligum.blocks.exceptions.RdfInitializationException;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.RdfNamespaceImpl;
 import com.beligum.blocks.rdf.RdfOntologyImpl;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfDatatype;
-import com.beligum.blocks.rdf.ifaces.RdfNamespace;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.*;
 import gen.com.beligum.blocks.core.messages.blocks.ontology.Entries;
 
 /**

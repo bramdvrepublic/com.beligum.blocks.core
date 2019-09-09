@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -276,6 +277,30 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         else {
             throw new IOException("Encountered unsupported query format; " + format);
         }
+
+        return retVal;
+    }
+
+    /**
+     * FIXME, this method should be removed again as soon as  possible!
+     *
+     * @param params
+     * @return
+     * @throws IOException
+     */
+    public IndexSearchResult search(SolrParams params) throws IOException
+    {
+        this.assertActive();
+
+        IndexSearchResult retVal = null;
+        try {
+            retVal = new SolrIndexSearchResult(this.solrClient.query(params));
+        }
+        catch (SolrServerException e) {
+            throw new IOException("Error while executing a Solr search; " + params, e);
+        }
+
+
 
         return retVal;
     }

@@ -39,6 +39,10 @@ public interface IndexSearchRequest extends FilteredSearchRequest
         PREFERRED
     }
 
+
+
+
+
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
 
@@ -78,6 +82,11 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      */
     Locale getLanguage();
 
+//    /**
+//     * Do a general search for a free-text string.
+//     * The options determine how the value will be interpreted while searching.
+//     */
+//    IndexSearchRequest customQuery(String value);
     /**
      * Do a general search for a free-text string.
      * The options determine how the value will be interpreted while searching.
@@ -97,6 +106,23 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      */
     IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
+
+//    /**
+//     * Adds a filter that allows a blockjoin. This means the parent object is  retrieved base on properties  defined on it's children.
+//     * @param standalone: if true, the blockjoin will  be added to the query as a filter. If false, the blockjoin will be appended to the query proper.
+//     * @param filterValues: one or more filterValues to filter the children of which the parent(s) will be retrieved.
+//     * @param filterProperty: the property that will be filtered
+//     * @param rdfClass: the parent class that will  be the result  of the  blockjoin
+//     */
+//    IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException;
+//
+//    /**
+//     * This will return a 'bubble up' graph from the 'lowest' dependency within the
+//     * @param rdfClasses: these classes need  to  have  a child-parent dependency on eachOther. The lowest class comes  first.
+//     * @param returnRoot: return the lowest level itself. Should usually be true.
+//     * @param leafNodesOnly: only return the outer results of the graph traversal,  ignore the  others. Should  usually be false.
+//     */
+//    IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses);
     /**
      * Adds a filter that only selects entries that have the value for the specified property.
      * Note that the way this value is interpreted can be tweaked using the options
@@ -152,6 +178,14 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      * A special filter that only selects entries with the specified language
      */
     IndexSearchRequest language(Locale language);
+
+//    /**
+//     * Allows selecting an indexEntryField to collapse results on, returning distinct values for the indexEntryField in question.
+//     *
+//     * @param distinctField
+//     * @return
+//     */
+//    IndexSearchRequest distinct(IndexEntryField distinctField);
 
     /**
      * A special filter that will select the best language, when grouping all results on the specified grouping field.

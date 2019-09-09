@@ -34,13 +34,6 @@ public interface GraphSearchRequest extends FilteredSearchRequest
      * @return
      */
     GraphSearchRequest constructGraph(IndexEntryField from, IndexEntryField to, Option... options);
-
-    /**
-     * Define the search to use as a source for the graph search
-     *
-     * @param indexSearchRequest
-     * @return
-     */
     GraphSearchRequest appendGraphSource(FilteredSearchRequest indexSearchRequest);
 
 }

@@ -17,18 +17,22 @@
 package com.beligum.blocks.utils.importer;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.utils.RdfTools;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +40,7 @@ import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 
 import static java.time.ZoneOffset.UTC;
 
@@ -53,23 +58,31 @@ public abstract class ImportTools
     //-----PUBLIC METHODS-----
 
     //-----PROTECTED METHODS-----
-    public static Object importRawPropertyValue(RdfProperty property, String value, Locale language) throws IOException, ParseException
+    public static Object importRawPropertyValue(RdfProperty property, String value, Locale language) throws IOException
     {
         Object retVal = null;
 
         boolean isNumber = NumberUtils.isNumber(value);
         switch (property.getWidgetType()) {
-            case Editor:
             case InlineEditor:
-                retVal = value;
+                retVal = StringEscapeUtils.escapeHtml(value);
                 break;
-
+            case Editor:
+                value = StringEscapeUtils.escapeHtml(value);
+                retVal = value.replaceAll("(\r\n|\r|\n|\n\r)", "<br>");
+                break;
             case Boolean:
                 retVal = RdfTools.parseRdfaBoolean(value);
                 break;
 
             case Number:
-                retVal = new Integer(value);
+                //FIXME handles numbers that are Integers and Floats. Throws an exception otherwise
+                try{
+                    retVal = new Integer(value);
+                }catch (NumberFormatException ex){
+                    //will throw NumberFormatException
+                    retVal = new Float(value);
+                }
                 break;
 
             case Date:
@@ -121,7 +134,7 @@ public abstract class ImportTools
             case Enum:
                 retVal = value;
                 break;
-
+            case Object:
             case Resource:
 
                 //if the value is a resource string, parse it directly, otherwise, query the endpoint for matches
@@ -163,7 +176,8 @@ public abstract class ImportTools
 
         return retVal;
     }
-    public static String propertyValueToHtml(RdfProperty property, Object value, Locale language, RdfProperty previous) throws IOException, ParseException
+    public static String propertyValueToHtml(RdfProperty property, Object value, Locale language, RdfProperty previous, Map<URI, ImportResourceObject> importResourceObjectMap)
+                    throws IOException, URISyntaxException, ParseException
     {
         StringBuilder factEntryHtml = new StringBuilder();
 
@@ -202,12 +216,13 @@ public abstract class ImportTools
                 break;
             case Date:
                 TemporalAccessor utcDate;
-                if (value instanceof LocalDate) {
-                    utcDate = ZonedDateTime.ofInstant(((LocalDate) value).atStartOfDay(localZone).toInstant(), UTC);
-                }
-                else {
-                    utcDate = (TemporalAccessor) value;
-                }
+                utcDate = (TemporalAccessor) value;
+//                if (value instanceof LocalDate) {
+//                    utcDate = ZonedDateTime.ofInstant(((LocalDate) value).atStartOfDay(localZone).toInstant(), UTC);
+//                }
+//                else {
+//                    utcDate = (TemporalAccessor) value;
+//                }
 
                 //Note: local because we only support timezones in dateTime
                 content = DateTimeFormatter.ISO_LOCAL_DATE.format(utcDate);
@@ -298,7 +313,6 @@ public abstract class ImportTools
                 }
 
                 break;
-
             case Resource:
 
                 URI resourceId = (URI) value;
@@ -313,6 +327,21 @@ public abstract class ImportTools
                     throw new IOException("Unable to find resource; " + resourceId);
                 }
 
+            break;
+            case Object:
+
+                URI objectId = (URI) value;
+                //                ResourceInfo objectInfo = property.getDataType().getEndpoint().getResource(property.getDataType(), objectId, language);
+                ImportResourceObject importResourceObject = importResourceObjectMap.get(objectId);
+                addDataType = false;
+                factEntryHtml.append(" typeof=\"" + importResourceObject.getResourceType().toString() + "\"");
+                factEntryHtml.append(" resource=\"" + objectId.toString() + "\"");
+                try{
+                    html = RdfTools.serializeObjectHtml(importResourceObject, language).toString();
+                }catch (Exception ex){
+                    RdfTools.serializeObjectHtml(importResourceObject, language).toString();
+                    throw ex;
+                }
                 break;
             default:
                 throw new IOException("Encountered unimplemented widget type parser, please fix; " + property.getWidgetType());
@@ -340,7 +369,9 @@ public abstract class ImportTools
         factEntryHtml.append("</div>");
         factEntryHtml.append("</div>");
         factEntryHtml.append("</blocks-fact-entry>");
-
+        if(property.getWidgetType().equals(WidgetType.InlineEditor)){
+            Logger.info("resource");
+        }
         return factEntryHtml.toString();
     }
     public static String buildResourceImageHtml(NamedUri uri)

@@ -319,8 +319,9 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                 }
             }
             else {
-                Logger.error("Encountered an unknown or invalid RDF predicate '" + triple.getPredicate() + "' while mapping to JSON." +
-                             " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
+                //FIXME check with Bram
+//                Logger.error("Encountered an unknown or invalid RDF predicate '" + triple.getPredicate() + "' while mapping to JSON." +
+//                             " This property will be ignored and excluded from the JSON object (this is probably a stale property and you may want to resolve this); " + triple);
             }
         }
 

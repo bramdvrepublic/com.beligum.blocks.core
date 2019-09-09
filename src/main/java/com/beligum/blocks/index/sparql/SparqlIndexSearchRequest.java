@@ -64,6 +64,13 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
         sparqlQuery.append("\n");
     }
 
+//    @Override
+//    public IndexSearchRequest customQuery(String value) {
+//        this.filters.add(new QueryFilter(value,FilterBoolean.AND));
+//
+//        return this;
+//    }
+
     //-----PUBLIC METHODS-----
     @Override
     public IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options)
@@ -84,6 +91,17 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
+
+//    @Override
+//    public IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException {
+//        return null;
+//    }
+//
+//    @Override
+//    public IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses) {
+//        throw new UnsupportedOperationException("Joined Graph traversals are not supported in the SPARQL query builder" );
+//    }
+
     @Override
     public IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options)
     {
