@@ -134,7 +134,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap container
+             * Returns true if the element is a bootstrap container
              */
             isContainer: function (element)
             {
@@ -142,7 +142,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap row
+             * Returns true if the element is a blocks layout wrapper
+             */
+            isLayout: function (element)
+            {
+                return element.length > 0 && element.prop('tagName').toLowerCase() === BlocksConstants.TAG_NAME_BLOCKS_LAYOUT;
+            },
+
+            /**
+             * Returns true if the element is a bootstrap row
              */
             isRow: function (element)
             {
@@ -150,7 +158,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap column
+             * Returns true if the element is a bootstrap column
              */
             isColumn: function (element)
             {
@@ -158,7 +166,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a template block
+             * Returns true if the element is a template block
              */
             isBlock: function (element)
             {
@@ -177,9 +185,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             /**
              * Combination of all the previous method into one with optional filters to specify what you're looking for
              */
-            isSurface: function (element, disableContainers, disableRows, disableColumns, disableBlocks, disableProperties)
+            isSurface: function (element, disableContainers, disableLayouts, disableRows, disableColumns, disableBlocks, disableProperties)
             {
                 return (!disableContainers && blocks.elements.Surface.isContainer(element))
+                    || (!disableLayouts && blocks.elements.Surface.isLayout(element))
                     || (!disableRows && blocks.elements.Surface.isRow(element))
                     || (!disableColumns && blocks.elements.Surface.isColumn(element))
                     || (!disableBlocks && blocks.elements.Surface.isBlock(element))
@@ -303,6 +312,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         isContainer: function ()
         {
             return this instanceof blocks.elements.Container;
+        },
+        isLayout: function ()
+        {
+            return this instanceof blocks.elements.Layout;
         },
         isRow: function ()
         {
@@ -429,6 +442,34 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         isNew: function ()
         {
             return false;
+        },
+
+        /**
+         * Overload this to return true if this surface is a layout boundary.
+         * Boundaries act as a limiter that separates different layout trees on a page.
+         * Eg. when dragging a block, you can't drag outside (higher than) a boundary surface.
+         *
+         * Note that a page is not a layout boundary because a layout boundary
+         * "enables all its children to be layouted". If a page would be a boundary,
+         * all elements of the page would be allowed to be layouted by default.
+         *
+         * Also note a container is no boundary as well, we want to be able to limit layouting
+         * "more deeply" inside a container.
+         */
+        isBoundary: function ()
+        {
+            return false;
+        },
+
+        getBoundary: function ()
+        {
+            var retVal = this;
+
+            while (retVal && !retVal.isBoundary()) {
+                retVal = retVal.parent;
+            }
+
+            return retVal;
         },
 
         /**
@@ -612,7 +653,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //start out with a fresh structure
             this.layoutParents = {};
 
-            //we can't have layout parents of we don't have a parent
+            // we can't have layout parents if we don't have a parent
             if (this.parent) {
                 switch (this.parent._getChildOrientation()) {
                     case blocks.elements.Surface.ORIENTATION.VERTICAL:
@@ -660,6 +701,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             if (this.index === this.parent.children.length - 1) {
                 this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
             }
+        },
+        /**
+         * Decides if the child dropspot is allowed inside this parent surface
+         * @param dropspot
+         * @private
+         */
+        _isAllowedDropspot: function (childDropspot)
+        {
+            return true;
         },
         /**
          * Uniform superclass implementation for all overlay elements.
@@ -913,7 +963,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //show &= surface !== this;
 
             if (show) {
-                retval.push(new blocks.elements.Dropspot(this, side));
+                var dropspot = new blocks.elements.Dropspot(this, side);
+                // before we can add the dropspot to the retVal, we need to
+                // check if it's allowed inside the layout of the parent.
+                // This is important if we would cross a boundary by creating
+                // the containing structure for the new dropped location
+                if (this.parent._isAllowedDropspot(dropspot)) {
+                    retval.push(dropspot);
+                }
             }
 
             var layoutParent = this.layoutParents[side.id];

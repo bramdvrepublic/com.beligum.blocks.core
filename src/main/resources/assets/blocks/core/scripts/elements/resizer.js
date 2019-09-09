@@ -74,7 +74,7 @@ base.plugin("blocks.core.elements.Resizer", ["base.core.Class", "constants.block
 
             //Logger.info(offsetPx+', '+vector.x1+', '+this.center);
 
-            var row = this.leftColumn.parent;
+            var row = this.leftColumn._getParent(blocks.elements.Row);
             //the width of one column in pixels in the parent row
             var oneColPx = row.realWidth() / blocks.elements.Row.MAX_COLS;
 

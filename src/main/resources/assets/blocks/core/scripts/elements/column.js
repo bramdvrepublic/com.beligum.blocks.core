@@ -108,7 +108,16 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
         },
         _newChildInstance: function (element)
         {
-            return blocks.elements.Surface.isRow(element) ? new blocks.elements.Row(this, element) : new blocks.elements.Block(this, element);
+            if (blocks.elements.Surface.isLayout(element)) {
+                return new blocks.elements.Layout(this, element);
+            }
+            // this will allow for nested row-col structures
+            else if (blocks.elements.Surface.isRow(element)) {
+                return new blocks.elements.Row(this, element);
+            }
+            else {
+                return new blocks.elements.Block(this, element);
+            }
         },
         _isAcceptableChild: function (element)
         {

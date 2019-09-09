@@ -34,7 +34,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     // Because we set a container width on the <blocks-layout> element in some styles
     // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
-    var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout';
+    var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ',' + BlocksConstants.TAG_NAME_BLOCKS_LAYOUT;
 
     // The minimum width we need to enable the blocks editor
     // Note: this value is the bootstrap threshold for large devices (normal desktops and up)
@@ -296,9 +296,14 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     {
         if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
 
-            //offer the user a preview of what would happen when the active surface would be moved
-            //to the surface we're currently hovering over (in the direction indicated by the vector)
-            eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector, eventData.dragStats);
+            // this limits the dragging of a block to it's boundary surface
+            // note that resizers can't escape their boundary
+            if (eventData.surface.isResizer() || eventData.surface.getBoundary() === eventData.hoveredSurface.getBoundary()) {
+
+                //offer the user a preview of what would happen when the active surface would be moved
+                //to the surface we're currently hovering over (in the direction indicated by the vector)
+                eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector, eventData.dragStats);
+            }
         }
     });
 

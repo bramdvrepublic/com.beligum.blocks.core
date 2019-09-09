@@ -58,11 +58,11 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     protected abstract String[] getSupportedBlockNames();
     protected Element createTag(String tagName)
     {
-        return this.createTag(tagName, null);
+        return this.createTag(tagName, (String[]) null);
     }
     protected Element createTag(TagTemplate blockType)
     {
-        return this.createTag(blockType.getTemplateName(), null);
+        return this.createTag(blockType.getTemplateName(), (String[]) null);
     }
     protected Element createTag(TagTemplate blockType, String[][] arguments, String... classes)
     {
@@ -78,8 +78,9 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
     }
     protected Element createTag(String tagName, String[][] arguments, String... classes)
     {
-        Element retVal = this.createTag(tagName);
+        Element retVal = new Element(tagName);
 
+        // first add the general arguments
         if (arguments != null) {
             for (String[] a : arguments) {
                 if (a.length != 2) {
@@ -91,6 +92,7 @@ public abstract class AbstractBlockSerializer implements BlockSerializer
             }
         }
 
+        // then the classes
         this.addClasses(retVal, classes);
 
         return retVal;

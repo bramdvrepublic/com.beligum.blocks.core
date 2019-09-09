@@ -65,14 +65,20 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.co
         },
         _newChildInstance: function (element)
         {
-            var retVal = new blocks.elements.Column(this, element);
-
-            //if the new child has a previous column, put a resize handle between them
-            if (retVal.index > 0) {
-                this.resizers.push(new blocks.elements.Resizer(this.children[retVal.index - 1], retVal));
+            if (blocks.elements.Surface.isLayout(element)) {
+                return new blocks.elements.Layout(this, element);
             }
+            else {
+                var retVal = new blocks.elements.Column(this, element);
 
-            return retVal;
+                // if the new child has a previous column, put a resize handle between them
+                // Note that we can only layout the width of a column when we're inside a boundary
+                if (retVal.index > 0 && this.getBoundary()) {
+                    this.resizers.push(new blocks.elements.Resizer(this.children[retVal.index - 1], retVal));
+                }
+
+                return retVal;
+            }
         },
         _isAcceptableChild: function (element)
         {
@@ -108,11 +114,15 @@ base.plugin("blocks.core.elements.Row", ["base.core.Class", "constants.blocks.co
             }
 
             this.resizers = [];
-            //note: we start at index 1
-            for (var i = 1; i < this.children.length; i++) {
-                var newResizer = new blocks.elements.Resizer(this.children[i - 1], this.children[i]);
-                newResizer._refresh();
-                this.resizers.push(newResizer);
+
+            // we can only layout the width of a column when we're inside a boundary
+            if (this.getBoundary()) {
+                //note: we start at index 1
+                for (var i = 1; i < this.children.length; i++) {
+                    var newResizer = new blocks.elements.Resizer(this.children[i - 1], this.children[i]);
+                    newResizer._refresh();
+                    this.resizers.push(newResizer);
+                }
             }
         },
         /**
