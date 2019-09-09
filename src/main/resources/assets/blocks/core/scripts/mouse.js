@@ -357,10 +357,10 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     {
         if (ENABLE_AUTOSCROLL) {
 
-            if (event.originalEvent.clientY < SCROLL_MARGIN) {
+            if (event.originalEvent.clientY < SCROLL_MARGIN && UI.window.scrollTop() > 0) {
                 _scroll(-1, true);
             }
-            else if (event.originalEvent.clientY > (UI.window.height() - SCROLL_MARGIN)) {
+            else if (event.originalEvent.clientY > (UI.window.height() - SCROLL_MARGIN) && UI.window.scrollTop() + UI.window.outerHeight() < $(document).outerHeight()) {
                 _scroll(1, true);
             }
             else {
@@ -574,22 +574,26 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseCancel = function (event)
     {
-        if (draggingStatus === Mouse.DRAGGING.YES) {
-            // Note that the eventData object is basically the same as the drag.stop one
-            // because they'll end up in the same handler in the manager
-            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, event, {
-                //this is the surface we dragged around (possibly undefined)
-                surface: mousedownSurface,
-                //the low-level DOM element we ended our drag on
-                element: clickedElement,
-                //the original mouse down event
-                originalEvent: mousedownEvent,
-                //the last surface we were hovering on
-                hoveredSurface: hoveredSurface,
-            });
-        }
+        // the mouse can get a little wild during autoscrolling,
+        // don't cancel while we're in an autoscroll session
+        if (!autoScrolling) {
+            if (draggingStatus === Mouse.DRAGGING.YES) {
+                // Note that the eventData object is basically the same as the drag.stop one
+                // because they'll end up in the same handler in the manager
+                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, event, {
+                    //this is the surface we dragged around (possibly undefined)
+                    surface: mousedownSurface,
+                    //the low-level DOM element we ended our drag on
+                    element: clickedElement,
+                    //the original mouse down event
+                    originalEvent: mousedownEvent,
+                    //the last surface we were hovering on
+                    hoveredSurface: hoveredSurface,
+                });
+            }
 
-        _resetMouse();
+            _resetMouse();
+        }
     };
 
     /**
