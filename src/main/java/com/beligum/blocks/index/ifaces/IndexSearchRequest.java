@@ -16,16 +16,14 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
-import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
 import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.index.solr.SolrPageIndexConnection;
+import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
+import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -40,10 +38,6 @@ public interface IndexSearchRequest extends FilteredSearchRequest
         STRICT,
         PREFERRED
     }
-
-
-
-
 
     int DEFAULT_PAGE_SIZE = 50;
     int DEFAULT_PAGE_OFFSET = 0;
@@ -88,11 +82,6 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      * Do a general search for a free-text string.
      * The options determine how the value will be interpreted while searching.
      */
-    IndexSearchRequest customQuery(String value);
-    /**
-     * Do a general search for a free-text string.
-     * The options determine how the value will be interpreted while searching.
-     */
     IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options);
 
     /**
@@ -108,22 +97,6 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      */
     IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
-    /**
-     * Adds a filter that allows a blockjoin. This means the parent object is  retrieved base on properties  defined on it's children.
-     * @param standalone: if true, the blockjoin will  be added to the query as a filter. If false, the blockjoin will be appended to the query proper.
-     * @param filterValues: one or more filterValues to filter the children of which the parent(s) will be retrieved.
-     * @param filterProperty: the property that will be filtered
-     * @param rdfClass: the parent class that will  be the result  of the  blockjoin
-     */
-    IndexSearchRequest blockjoinToParent(RdfClass rdfClass, RdfProperty filterProperty, boolean standalone, String... filterValues) throws IOException;
-
-    /**
-     * This will return a 'bubble up' graph from the 'lowest' dependency within the
-     * @param rdfClasses: these classes need  to  have  a child-parent dependency on eachOther. The lowest class comes  first.
-     * @param returnRoot: return the lowest level itself. Should usually be true.
-     * @param leafNodesOnly: only return the outer results of the graph traversal,  ignore the  others. Should  usually be false.
-     */
-    IndexSearchRequest joinedGraphTraversalQuery(boolean returnRoot, boolean leafNodesOnly, RdfClass... rdfClasses);
     /**
      * Adds a filter that only selects entries that have the value for the specified property.
      * Note that the way this value is interpreted can be tweaked using the options
@@ -185,5 +158,6 @@ public interface IndexSearchRequest extends FilteredSearchRequest
      * The selection first searches for the specified language, then the default language, then all other languages.
      */
     IndexSearchRequest language(Locale language, IndexEntryField groupingField);
+
 
 }

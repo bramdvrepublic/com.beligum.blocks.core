@@ -1,7 +1,6 @@
 package com.beligum.blocks.index.request;
 
 import com.beligum.blocks.index.fields.JsonField;
-import com.beligum.blocks.index.ifaces.FilteredSearchRequest;
 import com.beligum.blocks.index.ifaces.IndexConnection;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
@@ -115,22 +114,5 @@ public abstract class AbstractIndexSearchRequest implements IndexSearchRequest
     //-----PRIVATE METHODS-----
 
     //-----INNER CLASSES-----
-    public static class FilteredSearchRequestWithBoolean {
-        private FilteredSearchRequest filteredSearchRequest;
-        private FilteredSearchRequest.FilterBoolean filterBoolean;
-
-        public FilteredSearchRequestWithBoolean(FilteredSearchRequest filteredSearchRequest, FilteredSearchRequest.FilterBoolean filterBoolean) {
-            this.filteredSearchRequest = filteredSearchRequest;
-            this.filterBoolean = filterBoolean;
-        }
-
-        public FilteredSearchRequest getFilteredSearchRequest() {
-            return filteredSearchRequest;
-        }
-
-        public FilteredSearchRequest.FilterBoolean getFilterBoolean() {
-            return filterBoolean;
-        }
-    }
 
 }

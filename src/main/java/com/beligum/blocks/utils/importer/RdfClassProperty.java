@@ -23,12 +23,13 @@ import java.util.Comparator;
 /**
  * Created by bram on 3/22/16.
  */
-public class RdfClassProperty extends AbstractComparableProperty
+public class RdfClassProperty
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
     private RdfProperty rdfProperty;
+    private int index;
     private ValueFilter filter;
 
     //-----CONSTRUCTORS-----
@@ -39,7 +40,7 @@ public class RdfClassProperty extends AbstractComparableProperty
     public RdfClassProperty(RdfProperty rdfProperty, int index, ValueFilter filter)
     {
         this.rdfProperty = rdfProperty;
-        super.index = index;
+        this.index = index;
         this.filter = filter;
     }
     /**
@@ -49,7 +50,7 @@ public class RdfClassProperty extends AbstractComparableProperty
     public RdfClassProperty(RdfProperty rdfProperty, ValueFilter filter)
     {
         this.rdfProperty = rdfProperty;
-        super.index = -1;
+        this.index = -1;
         this.filter = filter;
     }
 
@@ -57,6 +58,10 @@ public class RdfClassProperty extends AbstractComparableProperty
     public RdfProperty getRdfProperty()
     {
         return rdfProperty;
+    }
+    public int getIndex()
+    {
+        return index;
     }
     public ValueFilter getFilter()
     {
@@ -80,5 +85,17 @@ public class RdfClassProperty extends AbstractComparableProperty
         String filterValue(String value);
     }
 
-
+    public static class MapComparator implements Comparator<RdfClassProperty>
+    {
+        @Override
+        public int compare(RdfClassProperty o1, RdfClassProperty o2)
+        {
+            if (o1.getIndex() >= o2.getIndex()) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        }
+    }
 }

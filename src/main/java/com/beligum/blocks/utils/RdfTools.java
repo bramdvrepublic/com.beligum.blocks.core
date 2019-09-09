@@ -19,37 +19,28 @@ package com.beligum.blocks.utils;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.rdf.ifaces.*;
-import com.beligum.blocks.rdf.ontologies.RDF;
-import com.beligum.blocks.utils.importer.ImportPropertyMapping;
-import com.beligum.blocks.utils.importer.ImportResourceObject;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfOntology;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
 import gen.com.beligum.blocks.core.constants.blocks.core;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.temporal.TemporalAccessor;
-import java.util.Iterator;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
+import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG;
 import static gen.com.beligum.blocks.core.constants.blocks.core.WIDGET_TYPE_TIME_TZONE_CLASS;
 
 /**
@@ -240,229 +231,6 @@ public class RdfTools
                         .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
                         .append(")</span>");
     }
-    public static CharSequence serializeObjectHtml(ImportResourceObject importResourceObject, Locale language) throws IOException, URISyntaxException
-    {
-        //get main property of the ResourceObject
-        RdfProperty mainProperty = RdfFactory.getClass(importResourceObject.getResourceType()).getMainProperty();
-        StringBuilder objectHtml = new StringBuilder();
-        Iterator<ImportPropertyMapping> it = importResourceObject.getRdfProperties().iterator();
-
-        while (it.hasNext()) {
-            String contentString = null;
-            String value = null;
-            String resourceString = null;
-            ImportPropertyMapping importPropertyMapping = it.next();
-            RdfProperty rdfProperty = RdfFactory.getProperty(importPropertyMapping.getRdfPropertyCurieName());
-            if (mainProperty != null && rdfProperty.equals(mainProperty)) {
-                //this is the mainproperty, add css "main" class to div
-                objectHtml.append("<div class=\"main\"><label>");
-            }
-            else {
-                //div without css "main class
-                objectHtml.append("<div><label>");
-            }
-
-            objectHtml.append(rdfProperty.getLabelMessage().toString(language));
-            objectHtml.append("</label>");
-            boolean addDataType = true;
-            switch (rdfProperty.getWidgetType()) {
-                case Editor:
-                case InlineEditor:
-                    value = StringEscapeUtils.escapeHtml(importPropertyMapping.getRdfPropertyValue());
-                    break;
-                case Enum:
-                    Iterable<ResourceProxy> enumSuggestion = rdfProperty.getEndpoint().search(rdfProperty, importPropertyMapping.getRdfPropertyValue(), RdfEndpoint.QueryType.NAME, language, 1);
-                    Iterator<ResourceProxy> iter = enumSuggestion.iterator();
-                    if (iter.hasNext()) {
-                        ResourceProxy enumValue = iter.next();
-                        addDataType = true;
-                        contentString = "\" content=\"" + enumValue.getResource();
-                        //                        content = enumValue.getResource();
-                        value = RdfTools.serializeEnumHtml(enumValue).toString();
-                        if (value.equalsIgnoreCase("null")) {
-                            throw new IOException("null value found for enum. This shouldn't happen");
-                        }
-                    }
-                    else {
-                        throw new IOException("Unable to find enum value; ");
-                    }
-                    break;
-                case Date:
-                    ZoneId localZone = ZoneId.systemDefault();
-                    Object retVal = null;
-                    if (NumberUtils.isNumber(importPropertyMapping.getRdfPropertyValue())) {
-                        retVal = epochToLocalDateTime(Long.parseLong(importPropertyMapping.getRdfPropertyValue())).toLocalDate();
-                    }
-                    else {
-                        retVal = LocalDate.parse(importPropertyMapping.getRdfPropertyValue());
-                    }
-                    TemporalAccessor utcDate;
-//                    if (retVal instanceof LocalDate) {
-//                        utcDate = ZonedDateTime.ofInstant(((LocalDate) retVal).atStartOfDay(localZone).toInstant(), UTC);
-//                    }
-//                    else {
-//                        utcDate = (TemporalAccessor) retVal;
-//                    }
-                    utcDate = (TemporalAccessor) retVal;
-                    value = RdfTools.serializeDateHtml(localZone, language, utcDate).toString();
-                    contentString = "\" content=\"" + DateTimeFormatter.ISO_LOCAL_DATE.format(utcDate);
-                    break;
-                //                case ResourceList:
-                case Resource:
-                    try{
-                        addDataType = false;
-                        URI resourceId = new URI(importPropertyMapping.getRdfPropertyValue());
-                        ResourceProxy resourceInfo = rdfProperty.getDataType().getEndpoint().getResource(rdfProperty.getDataType(), resourceId, language);
-                        resourceString = "\" resource=\"" + resourceInfo.getResource();
-                        value = "<a href=\""+resourceInfo.getResource().toString()+"\">"+resourceInfo.getLabel()+"</a> ";
-                    }catch (NullPointerException ex){
-                        throw ex;
-                    }
-
-
-
-//                    value = "<a href=\"" + resourceId + "\">" + resourceIndexEntry == null || resourceIndexEntry.getLabel() == null ? resourceId.toString() : resourceIndexEntry.getLabel() + "</a> ";
-                    break;
-                case Uri:
-                    addDataType = false;
-                    // We need to also add the hyperlink href as a property-value, because when we wrap the <a> tag with a <div property=""> tag,
-                    // the content of the property tag (eg. the entire <a> tag) gets serialized by the RDFa parser as a I18N-string, using the human readable
-                    // text of the hyperlink as a value (instead of using the href value and serializing it as a URI). This is because the property attribute is set on the
-                    // wrapping <div> instead of on the <a> tag.
-                    //Note: from the RDFa docs: "@content is used to indicate the value of a plain literal", and since it's a URI, we add it as a resource value
-                    value = "<a href=\"" + importPropertyMapping.getRdfPropertyValue() + "\"";
-
-                    value += ">" + importPropertyMapping.getRdfPropertyValue() + "</a>";
-
-                    break;
-                case Number:
-                    value = importPropertyMapping.getRdfPropertyValue();
-                    contentString = "\" content=\"" + importPropertyMapping.getRdfPropertyValue().toString();
-                    break;
-                //duration
-                /**
-                 *   <div data-property="name">duration</div>
-                 *     <div data-property="value">
-                 *         <div class="property object" typeof="crb:Duration" property="crb:duration">
-                 *         <div><label>manual duration</label>
-                 *         <div class="property duration" property="crb:manualDuration" datatype="xsd:long" content="90061001">1 day, 1 hour, 1 minute, 1 second, 1 undefined</div></div>
-                 *         </div>
-                 *     </div>
-                 */
-                //TODO: check if this works
-                case Duration:
-                    long millitime = 0;
-                    try{
-                        millitime = Long.valueOf(importPropertyMapping.getRdfPropertyValue());
-                    }catch (NumberFormatException ex){
-
-                    }
-                    addDataType = true;
-                    long dayz = TimeUnit.MILLISECONDS.toDays(millitime);
-                    millitime -= TimeUnit.DAYS.toMillis(dayz);
-                    long hourz = TimeUnit.MILLISECONDS.toHours(millitime);
-                    millitime -= TimeUnit.HOURS.toMillis(hourz);
-                    long minutez = TimeUnit.MILLISECONDS.toMinutes(millitime);
-                    millitime -= TimeUnit.MINUTES.toMillis(minutez);
-                    long secondz = TimeUnit.MILLISECONDS.toSeconds(millitime);
-                    millitime -= TimeUnit.SECONDS.toMillis(secondz);
-
-                    StringBuilder stringb = new StringBuilder();
-                    //FIXME. do not hard code this
-                    //problem: these are in the fact module
-                    if(dayz > 0){
-                        stringb.append(dayz);
-                        stringb.append(" days ");
-                    }
-                    if(hourz > 0){
-                        stringb.append(hourz);
-                        stringb.append(" hours ");
-                    }
-                    if(minutez > 0){
-                        stringb.append(minutez);
-                        stringb.append(" minutes ");
-                    }
-                   if(secondz > 0){
-                       stringb.append(secondz);
-                       stringb.append(" seconds ");
-                   }
-//                    stringb.append(millitime);
-//                    stringb.append(" milliseconds");
-                    contentString = "\" content=\"" + importPropertyMapping.getRdfPropertyValue();
-                    value = stringb.toString();
-                    break;
-
-                    /**
-                     *     <blocks-fact-entry>
-                     *
-                     *     <div data-property="name"> duration </div>
-                     *     <div data-property="value">
-                     *      <div class="property object" typeof="crb:Duration" resource="/resource/1134456079732598221" property="crb:duration"><div>
-                     *         <label>manual duration</label>
-                     *         <div class="property duration" property="crb:manualDuration" datatype="xsd:long" content="32201.003">08:56:41:03</div>
-                     *         </div></div>
-                     *      </div></blocks-fact-entry>
-                     */
-                    //TODO: check if this works
-                case Timecode:
-                    String valString =  importPropertyMapping.getRdfPropertyValue().replaceAll(",",".");
-                    String[] strValues = String.valueOf(importPropertyMapping.getRdfPropertyValue()).split("\\.");
-                    long timeInSeconds = 0;
-                    try{
-                        timeInSeconds = Long.valueOf(strValues[0]);
-                    }catch (NumberFormatException ex){
-
-                    }
-                    addDataType = true;
-                    long hours = TimeUnit.SECONDS.toHours(timeInSeconds);
-                    timeInSeconds -= TimeUnit.HOURS.toSeconds(hours);
-                    long minutes = TimeUnit.SECONDS.toMinutes(timeInSeconds);
-                    timeInSeconds -= TimeUnit.MINUTES.toSeconds(minutes);
-
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(hours);
-                    sb.append(":");
-                    sb.append(minutes);
-                    sb.append(":");
-                    sb.append(timeInSeconds);
-                    sb.append(":");
-                    sb.append(strValues[1]);
-                    contentString = "\" content=\"" + importPropertyMapping.getRdfPropertyValue();
-                    value = sb.toString();
-                    break;
-                default:
-                    addDataType = false;
-                    value = importPropertyMapping.getRdfPropertyValue();
-            }
-            objectHtml.append("<div class=\"property ");
-            objectHtml.append((RdfFactory.getProperty(importPropertyMapping.getRdfPropertyCurieName())).getWidgetType().getConstant());
-            objectHtml.append("\" property=\"");
-            objectHtml.append((RdfFactory.getProperty(importPropertyMapping.getRdfPropertyCurieName())).toString());
-            if (rdfProperty.getDataType().equals(RDF.langString)) {
-                //see the comments in blocks-fact-entry.js and RDF.LANGSTRING for why we remove the datatype in case of a rdf:langString
-                addDataType = false;
-            }
-            if (addDataType) {
-                objectHtml.append("\" datatype=\"").append(rdfProperty.getDataType().getCurie());
-            }
-            if (!StringUtils.isEmpty(contentString)) {
-                objectHtml.append(contentString);
-            }
-
-            if (!StringUtils.isEmpty(resourceString)) {
-                objectHtml.append(resourceString);
-            }
-            objectHtml.append("\">");
-
-            objectHtml.append(value);
-            objectHtml.append(" </div></div>");
-            if(rdfProperty.getWidgetType().equals(WidgetType.InlineEditor)){
-                Logger.info("resource");
-            }
-        }
-
-        return objectHtml.toString();
-    }
 
     /**
      * Generate a RDFa-compatible HTML string from the supplied date and time
@@ -550,16 +318,6 @@ public class RdfTools
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    /**
-     * turn Epoch to LocalDateTime
-     *
-     * @param value
-     * @return
-     */
-    private static LocalDateTime epochToLocalDateTime(long value)
-    {
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(value), ZoneId.systemDefault());
-    }
     /**
      * Small wrapper to make all absolute call pass through here
      */

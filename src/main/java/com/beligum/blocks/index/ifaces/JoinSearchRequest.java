@@ -38,6 +38,11 @@ public interface JoinSearchRequest extends FilteredSearchRequest
         PARENT,
         CHILD
     }
+    enum AddJoinOption implements Option
+    {
+        STANDALONE,
+        PIGGYBACK
+    }
     /**
      *
      * @param from the first leg of the 'join on' query
@@ -45,9 +50,34 @@ public interface JoinSearchRequest extends FilteredSearchRequest
      * @param rdfClass the rdfClass to want to query
      * @return
      */
-
     JoinSearchRequest addJoin(IndexEntryField from, IndexEntryField to, RdfClass rdfClass, FilteredSearchRequest filteredSearchRequest, Option... options);
+
+    /**
+     * Add a specific join filter. This will filter the join on rdfClass and rdfProperty and corresponding value
+     *
+     * @param rdfClass
+     * @param rdfProperty
+     * @param from
+     * @param to
+     * @param value
+     * @param filterBoolean
+     * @param options
+     * @return
+     */
     JoinSearchRequest addJoinFilter(RdfClass rdfClass, RdfProperty rdfProperty, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options);
+
+    /**
+     * Add a specific join filter. This will filter the join on rRdfClass, indexEntryField and corresponding value
+     *
+     * @param rdfClass
+     * @param indexEntryField
+     * @param from
+     * @param to
+     * @param value
+     * @param filterBoolean
+     * @param options
+     * @return
+     */
     JoinSearchRequest addJoinFilter(RdfClass rdfClass, IndexEntryField indexEntryField, IndexEntryField from, IndexEntryField to, String value, FilterBoolean filterBoolean, Option... options);
 
 }

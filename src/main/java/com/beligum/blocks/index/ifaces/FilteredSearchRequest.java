@@ -41,6 +41,7 @@ public interface FilteredSearchRequest extends Serializable
         AND,
         OR,
         NOT,
+        //do not add a filterBoolean
         NONE
     }
     enum QueryType  implements FilteredSearchRequest.Option
@@ -49,12 +50,6 @@ public interface FilteredSearchRequest extends Serializable
         FILTER
     }
 
-
-    /**
-     * Adds a filter that only selects entries of the specified class.
-     * The boolean configures how this filter is linked to previously added filters.
-     */
-    FilteredSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
 
 }

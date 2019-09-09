@@ -16,8 +16,6 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
 
     //-----VARIABLES-----
     private List<BindingSet> selectResult;
-    private List<String> bindingNames;
-
 
     //-----CONSTRUCTORS-----
     public SparqlIndexSelectResult(TupleQueryResult result, long elapsedTime)
@@ -26,9 +24,6 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
 
         // we "materialize" the query at once, so we have it's size and can close it properly
         this.selectResult = QueryResults.asList(result);
-        if(result != null){
-            this.bindingNames = result.getBindingNames();
-        }
     }
 
     //-----PUBLIC METHODS-----
@@ -46,10 +41,6 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
     public java.util.Iterator<SparqlSelectIndexEntry> iterator()
     {
         return new SparqlSelectIterator(this.selectResult);
-    }
-
-    public List<String>getBindingNames(){
-        return this.bindingNames;
     }
 
     //-----PROTECTED METHODS-----

@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Created by bram on 4/5/16.
  */
-public class ImportResource extends AbstractComparableProperty implements Serializable
+public class ImportResource implements Serializable
 {
     //-----CONSTANTS-----
 
@@ -34,33 +34,25 @@ public class ImportResource extends AbstractComparableProperty implements Serial
     //a list instead of a map allows us to add double mappings...
     @XmlElement
     private List<ImportPropertyMapping> properties;
-    @XmlElement
-    private List <ImportResourceObject> resourceObjects;
 
     //-----CONSTRUCTORS-----
     public ImportResource()
     {
         this.properties = new ArrayList<>();
-        this.resourceObjects = new ArrayList<>();
     }
 
     //-----PUBLIC METHODS-----
-    //-----PUBLIC METHODS----
-    public void addRdfProperty(RdfProperty rdfProperty, String rdfPropertyValue, Integer index)
+    public void addRdfProperty(RdfProperty rdfProperty, String rdfPropertyValue)
     {
-        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurie(), rdfPropertyValue, index));
+        this.properties.add(new ImportPropertyMapping(rdfProperty.getCurie(), rdfPropertyValue));
     }
-    public void addResourceObject(ImportResourceObject resourceObject)
-    {
-        this.resourceObjects.add(resourceObject);
-    }
-    public ImportPropertyMapping getMapping(String rdfPropertyCurieName)
+    public ImportPropertyMapping getMapping(String rdfPropertyCurie)
     {
         ImportPropertyMapping retVal = null;
 
         //lazy solution...
         for (ImportPropertyMapping entry : this.properties) {
-            if (entry.getRdfPropertyCurieName().equals(rdfPropertyCurieName)) {
+            if (entry.getRdfPropertyCurie().equals(rdfPropertyCurie)) {
                 retVal = entry;
                 break;
             }
@@ -68,15 +60,9 @@ public class ImportResource extends AbstractComparableProperty implements Serial
 
         return retVal;
     }
-
     public List<ImportPropertyMapping> getRdfProperties()
     {
         return properties;
-    }
-
-    public List<ImportResourceObject> getResourceObjects()
-    {
-        return resourceObjects;
     }
 
     //-----PROTECTED METHODS-----
