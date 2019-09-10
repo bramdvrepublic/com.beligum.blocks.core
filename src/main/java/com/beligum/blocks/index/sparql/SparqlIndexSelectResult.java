@@ -18,6 +18,8 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
 
     //-----VARIABLES-----
     private List<BindingSet> selectResult;
+    private List<String> bindingNames;
+
 
     //-----CONSTRUCTORS-----
     // Note that the result is properly closed by the caller, no need to do it here
@@ -27,6 +29,9 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
 
         // we "materialize" the query at once, so we have it's size and can close it properly after calling this constructor
         this.selectResult = QueryResults.asList(result);
+        if(result != null){
+            this.bindingNames = result.getBindingNames();
+        }
     }
 
     //-----PUBLIC METHODS-----
@@ -44,6 +49,13 @@ public class SparqlIndexSelectResult extends AbstractIndexSearchResult<SparqlSel
     public java.util.Iterator<SparqlSelectIndexEntry> iterator()
     {
         return Iterators.filter(new SparqlSelectIterator(this.selectResult), new SearchResultFilter());
+    }
+    /**
+     * @return the binding names of the result in order of projection
+     * https://www.w3.org/TR/sparql11-query/#selectproject
+     */
+    public List<String>getBindingNames(){
+        return this.bindingNames;
     }
 
     //-----PROTECTED METHODS-----
