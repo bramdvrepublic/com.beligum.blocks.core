@@ -16,48 +16,26 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
-import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
 import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.index.solr.SolrPageIndexConnection;
+import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
+import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
 import java.util.Locale;
 
 /**
  * Created by bram on 6/3/17.
  */
-public interface IndexSearchRequest extends Serializable
+public interface IndexSearchRequest extends FilteredSearchRequest
 {
-    enum FilterBoolean
-    {
-        AND,
-        OR,
-        NOT
-    }
 
     enum LanguageFilterType
     {
         STRICT,
         PREFERRED
-    }
-
-    /**
-     * General interface to pass multiple options to the methods in this request
-     */
-    interface Option
-    {
-    }
-
-    /**
-     * Interface for all options that define how the passed value to the methods in this class are interpreted
-     */
-    interface ValueOption extends Option
-    {
     }
 
     int DEFAULT_PAGE_SIZE = 50;
@@ -142,6 +120,11 @@ public interface IndexSearchRequest extends Serializable
      * The boolean configures how this filter is linked to previously added filters.
      */
     IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException;
+
+    /**
+     * Sets the field lists to be returned in  the search request.
+     */
+    IndexSearchRequest transformers(Option... transformers);
 
     /**
      * Requests the results are sorted on the specified property in the specified order
