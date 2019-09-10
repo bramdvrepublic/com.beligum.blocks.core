@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
 import static gen.com.beligum.blocks.core.constants.blocks.core.*;
@@ -71,7 +70,7 @@ public class RdfEndpoint
     public Response getClasses()
     {
         //TODO maybe we should think about specifying the ontology to get the classes of?
-        return Response.ok(RdfFactory.getLocalOntology().getPublicClasses()).build();
+        return Response.ok(RdfFactory.getMainOntology().getPublicClasses()).build();
     }
 
     @GET

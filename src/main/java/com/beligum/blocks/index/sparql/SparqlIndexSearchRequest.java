@@ -109,6 +109,12 @@ public class SparqlIndexSearchRequest extends AbstractIndexSearchRequest
     {
         throw new UnsupportedOperationException("Internal index fields are not supported in the SPARQL query builder; " + field);
     }
+
+    @Override
+    public IndexSearchRequest transformers(Option... transformers) {
+        throw new UnsupportedOperationException("Specifying field lists isn't supporeted in the SPARQL query builder");
+    }
+
     @Override
     public IndexSearchRequest sort(IndexEntryField field, boolean sortAscending)
     {

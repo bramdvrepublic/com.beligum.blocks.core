@@ -37,7 +37,7 @@ import static gen.com.beligum.base.core.constants.base.core.*;
  * Created by bas on 21.10.14.
  */
 @Path("/")
-public class ResourceEndpoint
+public class AssetsEndpoint
 {
     /**
      * Returns a css reset code of all known blocks in the system (resetting padding, margin and display)

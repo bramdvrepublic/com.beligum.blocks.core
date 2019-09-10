@@ -108,7 +108,16 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
         },
         _newChildInstance: function (element)
         {
-            return blocks.elements.Surface.isRow(element) ? new blocks.elements.Row(this, element) : new blocks.elements.Block(this, element);
+            if (blocks.elements.Surface.isLayout(element)) {
+                return new blocks.elements.Layout(this, element);
+            }
+            // this will allow for nested row-col structures
+            else if (blocks.elements.Surface.isRow(element)) {
+                return new blocks.elements.Row(this, element);
+            }
+            else {
+                return new blocks.elements.Block(this, element);
+            }
         },
         _isAcceptableChild: function (element)
         {
@@ -129,6 +138,8 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
          */
         _simplify: function (deep)
         {
+            var retVal = false;
+
             //this is a lot of iteration, I know, but we need to detect the situation before we can alter it
             var allFullRows = true;
             for (var i = 0; i < this.children.length && allFullRows; i++) {
@@ -152,19 +163,27 @@ base.plugin("blocks.core.elements.Column", ["base.core.Class", "messages.blocks.
                         // Stupid, but this seems to solve a lot of issues with the iteration
                         // of the children in the parent loop
                         blocksToAdd.push(childBlock);
+
+                        retVal = true;
                     }
 
                     this._removeChild(childRow);
                     i--;
+
+                    retVal = true;
                 }
 
                 for (var i = 0; i < blocksToAdd.length; i++) {
                     this._addChild(blocksToAdd[i]);
+
+                    retVal = true;
                 }
             }
 
             //now call the superclass function to iterate the children
-            blocks.elements.Row.Super.prototype._simplify.call(this, deep);
+            retVal = blocks.elements.Row.Super.prototype._simplify.call(this, deep) || retVal;
+
+            return retVal;
         },
         /**
          * Extracts the class width number from the element,

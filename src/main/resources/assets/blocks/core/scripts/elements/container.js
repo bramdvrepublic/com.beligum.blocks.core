@@ -51,7 +51,12 @@ base.plugin("blocks.core.elements.Container", ["base.core.Class", "messages.bloc
         },
         _newChildInstance: function(element)
         {
-            return new blocks.elements.Row(this, element);
+            if (blocks.elements.Surface.isLayout(element)) {
+                return new blocks.elements.Layout(this, element);
+            }
+            else {
+                return new blocks.elements.Row(this, element);
+            }
         },
         _isAcceptableChild: function(element)
         {

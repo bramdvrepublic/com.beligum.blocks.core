@@ -61,11 +61,38 @@ base.plugin("blocks.core.elements.Page", ["base.core.Class", "constants.blocks.c
         },
         _newChildInstance: function(element)
         {
-            return new blocks.elements.Container(this, element);
+            // this (together with _isAcceptableChild()) decides the root element
+            // of the page to build our hierarchy from. Everything outside of this type
+            // will be ignored.
+            if (blocks.elements.Surface.isLayout(element)) {
+                return new blocks.elements.Layout(this, element);
+            }
+            else {
+                return new blocks.elements.Container(this, element);
+            }
         },
         _isAcceptableChild: function(element)
         {
-            return blocks.elements.Surface.isContainer(element);
+            return blocks.elements.Surface.isLayout(element) || blocks.elements.Surface.isContainer(element);
+        },
+        /**
+         * Overloads the parent surface function to keep simplifying until nothing is changing anymore
+         *
+         * @param deep
+         * @private
+         */
+        _simplify: function (deep)
+        {
+            var retVal = false;
+
+            var keepSimplifying = true;
+            while (keepSimplifying) {
+                // as long as the super method returns true (something changed), we continue simplifying
+                keepSimplifying = blocks.elements.Page.Super.prototype._simplify.call(this, deep);
+                retVal = retVal || keepSimplifying;
+            }
+
+            return retVal;
         },
     });
 }]);

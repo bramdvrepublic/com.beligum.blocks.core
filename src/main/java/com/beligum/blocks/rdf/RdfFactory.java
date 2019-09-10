@@ -193,7 +193,7 @@ public class RdfFactory
             }
             //if the value is no CURIE or URI, look it up as a member of the default ontology
             else {
-                retVal = RdfFactory.getLocalOntology().getMember(value);
+                retVal = RdfFactory.getMainOntology().getMember(value);
             }
         }
 
@@ -335,7 +335,7 @@ public class RdfFactory
     /**
      * Returns a reference to the local main ontology
      */
-    public static RdfOntology getLocalOntology()
+    public static RdfOntology getMainOntology()
     {
         return RdfFactory.getOntology(Settings.instance().getRdfMainOntologyNamespace().getPrefix());
     }

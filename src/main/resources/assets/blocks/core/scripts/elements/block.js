@@ -43,26 +43,33 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.blocks.
             blocks.elements.Block.Super.call(this, parentSurface, element);
 
             if (parentSurface && element) {
-                this.overlay = this._createOverlay(UI.surfaceWrapper);
 
-                //these two classes will remove the borders left and top so we don't
-                //have double borders when two blocks are next to each other
-                if (this.parent.index > 0) {
-                    //if we're not in the leftmost column, we remove the left border
-                    //and use the right border of the blocks in the previous column
-                    this.overlay.addClass(blocks.elements.Surface.LEFT_CLASS);
-                }
-                if (this.index > 0 || this.parent.parent.index > 0) {
-                    //- If we're not the first block in the column, we remove the top border
-                    //  and use the bottom border of the previous block in this column instead
-                    //- Or if we are the first block, but we're not in the first row of the page,
-                    //  we also remove it, because we use the bottom border of the last block in the
-                    //  previous row instead.
-                    this.overlay.addClass(blocks.elements.Surface.TOP_CLASS);
-                }
+                // we only 'activate' this block if it's in a layout block
+                if (this._getParent(blocks.elements.Layout)) {
 
-                //draw the newly created overlay
-                this._redrawOverlay();
+                    this.overlay = this._createOverlay(UI.surfaceWrapper);
+                    if (this.overlay) {
+
+                        //these two classes will remove the borders left and top so we don't
+                        //have double borders when two blocks are next to each other
+                        if (this._getParent(blocks.elements.Column).index > 0) {
+                            //if we're not in the leftmost column, we remove the left border
+                            //and use the right border of the blocks in the previous column
+                            this.overlay.addClass(blocks.elements.Surface.LEFT_CLASS);
+                        }
+                        if (this.index > 0 || this._getParent(blocks.elements.Row).index > 0) {
+                            //- If we're not the first block in the column, we remove the top border
+                            //  and use the bottom border of the previous block in this column instead
+                            //- Or if we are the first block, but we're not in the first row of the page,
+                            //  we also remove it, because we use the bottom border of the last block in the
+                            //  previous row instead.
+                            this.overlay.addClass(blocks.elements.Surface.TOP_CLASS);
+                        }
+
+                        //draw the newly created overlay
+                        this._redrawOverlay();
+                    }
+                }
             }
             //if we call the constructor without arguments, we're creating a new block
             else {
@@ -312,7 +319,7 @@ base.plugin("blocks.core.elements.Block", ["base.core.Class", "constants.blocks.
             // - left/right
             //   Here, we need to create a new row/col structure and wrap the existing container content in it's own, new column
             //   and put the dragged block in it's own column next to it.
-            else if (surface.isContainer()) {
+            else if (surface.isLayout()) {
 
                 switch (side.id) {
                     case blocks.elements.Surface.SIDE.TOP.id:

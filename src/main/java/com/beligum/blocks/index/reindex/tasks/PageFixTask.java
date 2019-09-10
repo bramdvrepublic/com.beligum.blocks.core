@@ -109,6 +109,7 @@ public class PageFixTask extends ReindexTask
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /// TODO ugly implementation: we don't have access to the blocks-fact-entry here, needs to move to that project
     private boolean fixBlocksFacts(Page page, Source source, OutputDocument output) throws IOException
     {
         final String DATATYPE_ATTR = "datatype";
