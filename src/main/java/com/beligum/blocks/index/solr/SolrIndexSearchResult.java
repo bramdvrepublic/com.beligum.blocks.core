@@ -1,9 +1,11 @@
 package com.beligum.blocks.index.solr;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.index.entries.AbstractIndexSearchResult;
+import com.beligum.blocks.index.results.AbstractIndexSearchResult;
 import com.beligum.blocks.index.ifaces.ResourceIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexSearchRequest;
+import com.beligum.blocks.index.results.SearchResultFilter;
+import com.google.common.collect.Iterators;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -45,7 +47,7 @@ public class SolrIndexSearchResult extends AbstractIndexSearchResult
     @Override
     public java.util.Iterator iterator()
     {
-        return new Iterator(this.response.getResults());
+        return Iterators.filter(new Iterator(this.response.getResults()), new SearchResultFilter());
     }
 
     //-----PROTECTED METHODS-----

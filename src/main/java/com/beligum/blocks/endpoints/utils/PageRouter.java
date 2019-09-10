@@ -15,18 +15,17 @@ import com.beligum.blocks.config.Permissions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
-import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
-import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.PageSourceCopy;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.ifaces.Format;
+import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ontologies.Meta;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.PageTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.PageTemplate;
+import com.beligum.blocks.templating.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
-import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.constants.blocks.core;
@@ -378,9 +377,13 @@ public class PageRouter
                                                                             //and also for 'raw' resource url (eg. the backoffice uri that's used to link all translations together)
                                                                             .filter(PageIndexEntry.resourceField, searchUri, IndexSearchRequest.FilterBoolean.OR);
 
-                IndexSearchResult results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
+                IndexSearchResult<ResourceIndexEntry> results = searchRequestBuilder.getIndexConnection().search(searchRequestBuilder);
 
-                ResourceIndexEntry selectedEntry = results.getTotalHits() > 0 ? results.iterator().next() : null;
+                ResourceIndexEntry selectedEntry = null;
+                Iterator<ResourceIndexEntry> resultIter = results.iterator();
+                if (resultIter.hasNext()) {
+                    selectedEntry = resultIter.next();
+                }
 
                 //by default, we'll redirect to the id of the found resource (eg. the public URI of the page)
                 URI selectedEntryAddress = selectedEntry == null ? null : selectedEntry.getUri();
@@ -460,7 +463,7 @@ public class PageRouter
 
                     searchRequest.pageSize(allLanguages.size());
 
-                    IndexSearchResult results = queryConnection.search(searchRequest);
+                    IndexSearchResult<ResourceIndexEntry> results = queryConnection.search(searchRequest);
                     //part b: if it exist, extract it's resource uri and search for a page pointing to it using the right language
                     if (!results.isEmpty()) {
                         //since all resources should be the same, we take the first match
@@ -658,13 +661,16 @@ public class PageRouter
     {
         if (this.assertUnfinished() && this.assertAllowCreateNew() && !this.assertCreatedNew()) {
 
-            //make sure we have permission to create a page copy
+            // make sure we have permission to create a page copy
             R.securityManager().checkPermission(PAGE_CREATE_COPY_ALL_PERM);
 
             if (!StringUtils.isEmpty(this.newPageCopyUrl)) {
 
                 //read the page we'll copy from
                 Page copyPage = R.resourceManager().get(URI.create(this.newPageCopyUrl), Page.class);
+
+                // also, the page we copy must be visible to the current user!
+                copyPage.checkPermission(ResourceAction.READ);
 
                 //First, we'll read in the normalized code of the copy page (important: in edit mode because we need the edit imports).
                 //Note that we need to read the normalized version because the templates might have changed in the mean time (between store and copy)
@@ -826,7 +832,11 @@ public class PageRouter
             }
         }
 
-        Collections.sort(retVal, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
+        // sort the list of maps based on the natural order of their "title" value
+        retVal.sort(Comparator.comparing(m -> m.get(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()),
+                                         Comparator.nullsLast(Comparator.naturalOrder())
+                    )
+        );
 
         return retVal;
     }

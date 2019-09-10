@@ -34,7 +34,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     // Because we set a container width on the <blocks-layout> element in some styles
     // (eg. sticky footers and full background-colors), we need to scale it along with the container inside it
-    var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ', blocks-layout';
+    var CONTAINERS_SELECTOR = '.' + BlocksConstants.CONTAINER_CLASS + ',' + BlocksConstants.TAG_NAME_BLOCKS_LAYOUT;
 
     // The minimum width we need to enable the blocks editor
     // Note: this value is the bootstrap threshold for large devices (normal desktops and up)
@@ -52,6 +52,13 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
 
     //temp variable to store page html during DnD
     var pageContentHtml = undefined;
+
+    // container variable that holds cached metadata about the (current state of the) page
+    var pageCachedData = {
+
+        // available blocks in the current page type
+        blocks: undefined
+    };
 
     //-----MAIN ENTRY POINT: LOAD THE SIDEBAR HTML AND BOOTSTRAP THE BLOCKS SYSTEM-----
     Sidebar.load();
@@ -233,9 +240,26 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 //          Note: $.closest() begins with the current element, so the block itself is also included.
                 if (eventData.element.closest(UI.focusedSurface.element).length > 0) {
                     switchToPage = false;
+
+                    // Re-use the focused surface, but with a different element if needed
+                    // this happens if we click on a different property inside the already focused surface
+                    if (!UI.focusedSurface.element.is(eventData.element)) {
+                        // note: this will trigger a refresh, not a reload
+                        switchFocus(UI.focusedSurface, eventData.element, eventData.originalEvent);
+                    }
                 }
                 //option 4) if the click was not on a real surface-overlay, but also not in the page (but eg. in the sidebar, a dialog, etc), ignore it
                 else if (eventData.element.closest(UI.pageContent).length === 0) {
+                    switchToPage = false;
+                }
+                //option 5) the mousedown event of this click started in the focused block, but the user dragged outside the block and let go
+                // Eg. this happens when you select text and move outside the block. In this case, don't blur, since we started ON the block.
+                else if ($(eventData.originalEvent.target).closest(UI.focusedSurface.element).length > 0) {
+                    switchToPage = false;
+                }
+                //option 6) we have a block in focus, but we didn't really click on the element, but on it's padding/margin around it
+                // (to the user, it feels like we clicked 'inside'). Don't focus away.
+                else if (UI.focusedSurface.isInside(eventData.originalEvent.pageX, eventData.originalEvent.pageY)) {
                     switchToPage = false;
                 }
             }
@@ -272,17 +296,21 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     {
         if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
 
-            //offer the user a preview of what would happen when the active surface would be moved
-            //to the surface we're currently hovering over (in the direction indicated by the vector)
-            eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector);
+            // this limits the dragging of a block to it's boundary surface
+            // note that resizers can't escape their boundary
+            if (eventData.surface.isResizer() || eventData.surface.getBoundary() === eventData.hoveredSurface.getBoundary()) {
+
+                //offer the user a preview of what would happen when the active surface would be moved
+                //to the surface we're currently hovering over (in the direction indicated by the vector)
+                eventData.surface.previewMoveTo(eventData.hoveredSurface, eventData.dragVector, eventData.dragStats);
+            }
         }
     });
 
     $(document).on(Broadcaster.EVENTS.MOUSE.DRAG.STOP, function (event, eventData)
     {
+        // depending on the surface, check if we're allowed to continue
         if (eventData.surface.isNew() ? UI.allowCreate : UI.allowLayout) {
-
-            //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
             //Remove the classes that were set during DRAG_START
             //removeClass() with function allows for a prefix-remove;
@@ -335,30 +363,9 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     else {
                         if (UI.allowCreate) {
 
-                            loadNewBlockList(function callback(newBlockEl, onComplete)
+                            loadNewBlockList(function onCreatedCallback(newBlockEl, onComplete)
                             {
-                                var parentSurface = activeDropspot.anchor;
-                                // Create a new block and immediately move it to the final location.
-                                // Note that the block will not be added to the parent until moveTo()
-                                // is called, but the parent is needed for the constructor to create
-                                // the overlay.
-                                var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
-                                newBlock.moveTo(parentSurface, activeDropspot.side);
-
-                                if (onComplete) {
-                                    onComplete();
-                                }
-
-                                postChangeBlock(oldParent);
-
-                                Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
-                                    surface: newBlock
-                                });
-                                //when the block was added, the entire page changed
-                                Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
-                                    surface: UI.pageSurface,
-                                    oldValue: oldHtml,
-                                });
+                                createdNewBlock(activeDropspot.anchor, newBlockEl, activeDropspot.side, onComplete, event, oldHtml);
                             });
                         }
                     }
@@ -449,8 +456,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     $(document).on(Broadcaster.EVENTS.PAGE.SAVE, function (event, eventData)
     {
-        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
-
         //note: get the page html before we open the modal dialog
         // or it will end up in there
         var pageHtml = getBodyHtml();
@@ -485,7 +490,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             .always(function ()
             {
                 dialog.close();
-                //TODO Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
             });
     });
 
@@ -494,8 +498,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
      */
     $(document).on(Broadcaster.EVENTS.PAGE.DELETE, function (event, eventData)
     {
-        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
-
         var dialog = undefined;
 
         var onConfirm = function (deleteAllTranslations)
@@ -578,11 +580,7 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                         dialog.close();
                     }
                 }
-            ],
-            onhide: function ()
-            {
-                //TODO Broadcaster.send(Broadcaster.EVENTS.RESUME_BLOCKS);
-            }
+            ]
         });
 
         dialog.open();
@@ -597,16 +595,19 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                 dialog.setTitle(BlocksMessages.deletePageDialogTitle);
 
                 // un-hide the single and cancel button, and selectively un-hide the delete all if we have translations
-                dialog.getModalFooter().find('#'+btnIdSingle).removeClass('hidden');
-                dialog.getModalFooter().find('#'+btnIdCancel).removeClass('hidden');
+                dialog.getModalFooter().find('#' + btnIdSingle).removeClass('hidden');
+                dialog.getModalFooter().find('#' + btnIdCancel).removeClass('hidden');
 
                 // the 'translations' property will hold a map with language->URI pairs of translations of this page
                 if (data && data.translations && !$.isEmptyObject(data.translations)) {
                     var num = 0;
-                    $.each(data.translations, function(key, value) { num++ });
+                    $.each(data.translations, function (key, value)
+                    {
+                        num++
+                    });
                     dialog.setMessage(Commons.format(BlocksMessages.deletePageAllDialogMessage, num));
 
-                    dialog.getModalFooter().find('#'+btnIdAll).removeClass('hidden');
+                    dialog.getModalFooter().find('#' + btnIdAll).removeClass('hidden');
                 }
                 else {
                     dialog.setMessage(BlocksMessages.deletePageSingleDialogMessage);
@@ -641,6 +642,97 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         Broadcaster.send(Broadcaster.EVENTS.PAGE.REFRESH);
     });
 
+    $(document).on(Broadcaster.EVENTS.PAGE.CHANGED.TYPE, function (event, eventData)
+    {
+        if (eventData && eventData.newValue && eventData.newValue.curie) {
+
+            var data = {};
+            var newType = eventData.newValue.curie;
+            if (newType) {
+                data[BlocksConstants.GET_BLOCKS_TYPEOF_PARAM] = newType;
+            }
+            var pageTemplate = UI.html.attr(BlocksConstants.HTML_ROOT_TEMPLATE_ATTR);
+            if (pageTemplate) {
+                data[BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM] = pageTemplate;
+            }
+
+            // Load the blocks metadata from the endpoint and cache it
+            $.getJSON(BlocksConstants.GET_BLOCKS_ENDPOINT, data)
+                .done(function (data)
+                {
+                    pageCachedData.blocks = data;
+
+                    Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.CACHED_DATA, null, pageCachedData);
+                })
+                .fail(function (xhr, textStatus, exception)
+                {
+                    Notification.jsonError(BlocksMessages.newBlockError, xhr, textStatus, exception);
+                });
+        }
+        else {
+            Logger.error("Ignoring page typeof update callback because there doesn't seem to be a new value, please fix this", eventData);
+        }
+    });
+
+    $(document).on(Broadcaster.EVENTS.BLOCK.CREATE, function (event, eventData)
+    {
+        if (UI.allowCreate) {
+
+            var blockName = eventData.name;
+            var oldHtml = UI.pageSurface.element.html();
+
+            createNewBlock(blockName, null, function onCreatedCallback(newBlockEl, onComplete)
+            {
+                // we need to find a valid block to use as anchor point where we want to append the new block after.
+                // let's see if we can find a block with the same tag name as the one we're creating, and just select the
+                // most bottom one on the page and put the new block just after that. If not, we just take the last block-surface
+                // we encounter and use that one instead.
+                var parentSurface = undefined;
+                var lastBlockSurface = undefined;
+                UI.surfaceWrapper.children().each(function () {
+                    var childSurface = blocks.elements.Surface.lookup($(this));
+                    if (childSurface) {
+                        if (childSurface.isBlock()) {
+                            if (childSurface.tagName().toLowerCase() === blockName.toLowerCase()) {
+                                if (parentSurface) {
+                                    // the surfaces of UI.surfaceWrapper are not necessarily in top-to-bottom order
+                                    if (childSurface.bottom > parentSurface.bottom) {
+                                        parentSurface = childSurface;
+                                    }
+                                }
+                                else {
+                                    parentSurface = childSurface;
+                                }
+                            }
+
+                            if (lastBlockSurface) {
+                                // the surfaces of UI.surfaceWrapper are not necessarily in top-to-bottom order
+                                if (childSurface.bottom > lastBlockSurface.bottom) {
+                                    lastBlockSurface = childSurface;
+                                }
+                            }
+                            else {
+                                lastBlockSurface = childSurface;
+                            }
+                        }
+                    }
+                });
+
+                // if we didn't find a surface with the same block name,
+                // just (try to) use the last block we encountered
+                parentSurface = parentSurface || lastBlockSurface;
+
+                if (parentSurface) {
+                    // note that this 'BOTTOM' must be synced with the .bottom property of the loop above
+                    createdNewBlock(parentSurface, newBlockEl, blocks.elements.Surface.SIDE.BOTTOM, onComplete, event, oldHtml);
+                }
+                else {
+                    Logger.error("Couldn't find a suitable anchor surface to place the new block, please fix this", eventData);
+                }
+            });
+        }
+    });
+
     $(document).on(Broadcaster.EVENTS.BLOCK.CREATED, function (event, eventData)
     {
         //note: this is fired in the middle of block creation (as soon as it exists),
@@ -648,7 +740,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
         // it looks cleaner and is more noticeable
         setTimeout(function ()
         {
-
             eventData.surface.overlay.addClass(BlocksConstants.BLOCK_HIGHLIGHT_CLASS);
 
             //note: the css animation will fadeout the color of the hightlight background,
@@ -676,7 +767,6 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
     $(document).on(Broadcaster.EVENTS.BLOCK.DELETE, function (event, eventData)
     {
         if (UI.allowDelete) {
-            //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
 
             var oldHtml = UI.pageSurface.element.html();
 
@@ -914,100 +1004,96 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
             toClean = toCleanParent;
         }
 
-        //Once all is done, we need to force a deep refresh of the entire page
-        //note that we need to call refresh after the simplify,
-        //because simplify can modify the dom slightly
+        // Once all is done, we need to force a deep refresh of the entire page
+        // note that we need to call refresh after the simplify,
+        // because simplify can modify the dom.
         UI.pageSurface._simplify(true);
+
+        // Some blocks need to load external sources (eg. images) and
+        // will only take their final dimensions after they are loaded.
+        // Our solution is to fire three refreshes and hope for the best:
+        // 1) immediately
+        // 2) a fast async refresh to accommodate for
+        //    fast connections (eg. still during highlighting)
+        // 3) a later async one for slow resources.
         UI.pageSurface._refresh(true);
+        setTimeout(function() {
+            UI.pageSurface._refresh(true);
+        }, 100);
+        setTimeout(function() {
+            UI.pageSurface._refresh(true);
+        }, 1000);
     };
 
-    var loadNewBlockList = function (callback)
+    var loadNewBlockList = function (onCreatedCallback)
     {
-        //TODO Broadcaster.send(Broadcaster.EVENTS.PAUSE_BLOCKS, event);
+        // Note: this variable gets filled by EVENTS.PAGE.CHANGED.TYPE, sent out by blocks-imports-page
+        if (pageCachedData && pageCachedData.blocks) {
+            if (pageCachedData.blocks.length === 0) {
+                Notification.error(BlocksMessages.newBlockEmptyError);
+            }
+            else if (pageCachedData.blocks.length === 1) {
+                //just take the first one
+                createNewBlock(pageCachedData.blocks[0].name, null, onCreatedCallback);
+            }
+            else {
+                var boxDialog = BootstrapDialog.show({
+                    type: BootstrapDialog.TYPE_DEFAULT,
+                    title: BlocksMessages.selectFromTheListBelow,
+                    cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
+                    message: BlocksMessages.newBlockLoading,
+                    buttons: [],
+                });
 
-        var boxDialog = BootstrapDialog.show({
-            type: BootstrapDialog.TYPE_DEFAULT,
-            title: BlocksMessages.selectFromTheListBelow,
-            cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
-            message: BlocksMessages.newBlockLoading,
-            buttons: [],
-        });
+                var formGroup = $('<div class="form-group" ' + BlocksConstants.FORCE_CLICK_ATTR + ' />');
+                var listGroup = $('<div class="list-group"/>').appendTo(formGroup);
+                for (var i = 0; i < pageCachedData.blocks.length; i++) {
 
-        var data = {};
-        var currentTypeof = UI.html.attr('typeof');
-        if (currentTypeof) {
-            data[BlocksConstants.GET_BLOCKS_TYPEOF_PARAM] = currentTypeof;
+                    var block = pageCachedData.blocks[i];
+
+                    var link = $("<a/>", {
+                        "href": "javascript:void(0)",
+                        "class": "list-group-item",
+                        "data-value": block.name,
+
+                        //when we click on the block, we need to load it's resources
+                        //and create a new block at the active dropspot
+                        click: function ()
+                        {
+                            createNewBlock($(this).attr("data-value"), boxDialog, onCreatedCallback);
+                        }
+                    }).appendTo(listGroup);
+
+                    var preview = $('<div class="preview">' +
+                        '<i class="fa ' + (block.icon ? block.icon : 'fa-square-o') + '"></i>' +
+                        '</div>').appendTo(link);
+                    var caption = $('<div class="caption">' +
+                        '<span class="title">' + block.title + '</span>' +
+                        '<span class="description">' + block.description + '</span>' +
+                        '</div>').appendTo(link);
+                }
+
+                if (jQuery().perfectScrollbar) {
+                    boxDialog.getModalBody().perfectScrollbar();
+                }
+
+                boxDialog.setMessage(formGroup);
+            }
         }
-        var pageTemplate = UI.html.attr(BlocksConstants.HTML_ROOT_TEMPLATE_ATTR);
-        if (pageTemplate) {
-            data[BlocksConstants.GET_BLOCKS_TEMPLATE_PARAM] = pageTemplate;
+        else {
+            Logger.error("About to create a new block, but there doesn't seem to be block metadata available, please fix this", pageCachedData);
+            Notification.error(BlocksMessages.newBlockError);
+
+            if (boxDialog) {
+                boxDialog.close();
+            }
         }
-
-        // show select box with all blocks
-        $.getJSON(BlocksConstants.GET_BLOCKS_ENDPOINT, data)
-            .done(function (data)
-            {
-                if (data.length === 0) {
-                    Notification.error(BlocksMessages.newBlockEmptyError);
-
-                    if (boxDialog) {
-                        boxDialog.close();
-                    }
-                }
-                else if (data.length === 1) {
-                    //just take the first one
-                    createNewBlock(data[0].name, boxDialog, callback);
-                }
-                else {
-                    var formGroup = $('<div class="form-group" ' + BlocksConstants.FORCE_CLICK_ATTR + ' />');
-                    var listGroup = $('<div class="list-group"/>').appendTo(formGroup);
-                    for (var i = 0; i < data.length; i++) {
-
-                        var block = data[i];
-
-                        var link = $("<a/>", {
-                            "href": "javascript:void(0)",
-                            "class": "list-group-item",
-                            "data-value": block.name,
-
-                            //when we click on the block, we need to load it's resources
-                            //and create a new block at the active dropspot
-                            click: function ()
-                            {
-                                createNewBlock($(this).attr("data-value"), boxDialog, callback);
-                            }
-                        }).appendTo(listGroup);
-
-                        var preview = $('<div class="preview">' +
-                            '<i class="fa ' + (block.icon ? block.icon : 'fa-square-o') + '"></i>' +
-                            '</div>').appendTo(link);
-                        var caption = $('<div class="caption">' +
-                            '<span class="title">' + block.title + '</span>' +
-                            '<span class="description">' + block.description + '</span>' +
-                            '</div>').appendTo(link);
-                    }
-
-                    if (jQuery().perfectScrollbar) {
-                        boxDialog.getModalBody().perfectScrollbar();
-                    }
-
-                    boxDialog.setMessage(formGroup);
-                }
-            })
-            .fail(function (xhr, textStatus, exception)
-            {
-                Notification.jsonError(BlocksMessages.newBlockError, xhr, textStatus, exception);
-
-                if (boxDialog) {
-                    boxDialog.close();
-                }
-            })
     };
 
-    var createNewBlock = function (name, dialog, callback)
+    var createNewBlock = function (name, dialog, onCreatedCallback)
     {
         if (dialog) {
-            //not always very fast, so show the wait dialog
+            // code below is not always very fast, so show the wait dialog
             dialog.setMessage(BlocksMessages.newBlockLoadingResources);
         }
 
@@ -1030,17 +1116,10 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     // Note: fixed in JQuery 1.12.0 & 2.2.0 & 3.0 so we should probably get rid of the patched JQuery
                     var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
 
-                    //resetDragDrop();
-                    //cancelled = false;
-                    // Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
-                    // {
-                    //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
-                    //     addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
-                    // });
-
-                    if (callback) {
-                        callback(block, function onComplete()
+                    if (onCreatedCallback) {
+                        onCreatedCallback(block, function onComplete()
                         {
+                            // we only call the accompanying scripts after the block is moved to it's final destination
                             addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS, true);
                             addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS, true);
                         });
@@ -1060,6 +1139,35 @@ base.plugin("blocks.core.Manager", ["base.core.Commons", "constants.blocks.core"
                     dialog.close();
                 }
             });
+    };
+
+    var createdNewBlock = function(parentSurface, newBlockEl, side, onComplete, event, oldHtml)
+    {
+        // Create a new block and immediately move it to the final location.
+        // Note that the block will not be added to the parent until moveTo()
+        // is called, but the parent is needed for the constructor to create
+        // the overlay.
+        var newBlock = new blocks.elements.Block(parentSurface, newBlockEl);
+        newBlock.moveTo(parentSurface, side);
+
+        // no need to pass the parent to clean if empty, because we're adding, not (re)moving
+        postChangeBlock();
+
+        // Note that this should be called when the new block is moved to it's final destination
+        // (it launches the accompanying scripts)
+        if (onComplete) {
+            onComplete();
+        }
+
+        // send out an event to signal a new block was created (eg. to highlight it)
+        Broadcaster.send(Broadcaster.EVENTS.BLOCK.CREATED, event, {
+            surface: newBlock
+        });
+        //when the block was added, the entire page changed
+        Broadcaster.send(Broadcaster.EVENTS.PAGE.CHANGED.HTML, event, {
+            surface: UI.pageSurface,
+            oldValue: oldHtml,
+        });
     };
 
     var addHeadResources = function (resourceArray, className, resourceType, isScript)

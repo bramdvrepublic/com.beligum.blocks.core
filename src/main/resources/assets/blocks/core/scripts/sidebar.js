@@ -168,10 +168,11 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 element: element
             };
 
-            //save it for blur()
+            // save it for later, but note that the iteration is done inside-out,
+            // so this array will also hold the widgets inside-out (deepest first)
             activePanels.push(panelInfo);
 
-            initWidget(widget, surface, element, focusedSurface, clickedElement, mousedownEvent, panelInfo);
+            initWidget(widget, surface, element, focusedSurface, clickedElement, mousedownEvent, panelInfo, 0);
 
         });
     };
@@ -202,11 +203,13 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                     element: element
                 };
 
-                //insert the widget at the current position, shifting all existing entries
-                //one position, hoping we're now "in sync" with the iteration
+                // insert the widget at the current position, shifting all existing entries
+                // one position, hoping we're now "in sync" with the iteration
+                // Note this callback is called inside-out, so the indices will be 'reversed'
+                var insertionIdx = activePanels.length - activePanelsIdx;
                 activePanels.splice(activePanelsIdx, 0, panelInfo);
 
-                initWidget(widget, surface, element, focusedSurface, clickedElement, event, panelInfo);
+                initWidget(widget, surface, element, focusedSurface, clickedElement, event, panelInfo, insertionIdx);
             }
 
             activePanelsIdx++;
@@ -271,7 +274,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
         //now create and add a new frame
         var panelId = createConfigPanel(BlocksMessages.finderTabTitle);
-        appendConfigPanelToSidebar(panelId, BlocksConstants.SIDEBAR_FILES_ID);
+        appendConfigPanelToSidebar(panelId, BlocksConstants.SIDEBAR_FILES_ID, 0);
         //let's us do perform some css tweaks
         var frame = getConfigPanelForId(panelId);
         if (frame) {
@@ -510,9 +513,10 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
     /**
      * Looks up the config panel with the supplied ID and adds it to the sidebar
-     * in the tab with the right ID.
+     * in the tab with the right ID. Note that the atIndex is meant to be the new index
+     * of the panel (eg. its index after adding it to the tab)
      */
-    var appendConfigPanelToSidebar = function (id, tabId, prepend)
+    var appendConfigPanelToSidebar = function (id, tabId, atIndex)
     {
         var configPanel = getConfigPanelForId(id);
 
@@ -526,11 +530,11 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
             }
 
             if (tab) {
-                if (prepend) {
+                if (atIndex === 0) {
                     tab.prepend(configPanel);
                 }
                 else {
-                    tab.append(configPanel);
+                    tab.children().eq(atIndex - 1).after(configPanel);
                 }
             }
         }
@@ -622,6 +626,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
         // if the clicked element is not 'inside' the surface, some additional work is needed
         if (clickedElement.closest(focusedSurface.element).length === 0) {
+
             // Additional tweaking:
             // when we click in the margin of a block and that block
             // has only one registered child (can be instantiated),
@@ -640,7 +645,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 }
             }
 
-            if (registeredChildren.length === 1) {
+            if (registeredChildren.length > 0) {
                 retVal = registeredChildren[0];
             }
             else {
@@ -674,7 +679,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
             //note that we don't let properties be surfaces for config widgets; we start at block-level
             var validSurface = currSurface.isPage()
-                || (currSurface.isRow() && currSurface.parent.isContainer())
+                // we only want to select the top-level row
+                || (currSurface.isRow() && (currSurface.parent.isLayout() || currSurface.parent.isContainer()))
                 || (currSurface.isColumn() && !firstColumn && (firstColumn = currSurface))
                 || (currSurface.isBlock());
 
@@ -708,7 +714,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
         }
     };
 
-    var initWidget = function (widget, surface, element, rootSurface, rootElement, event, panelInfo)
+    var initWidget = function (widget, surface, element, rootSurface, rootElement, event, panelInfo, insertAtIndex)
     {
         //we'll iterate the array in reverse order, but when focusing a block,
         //we don't want users to be able to save the page (it causes all kinds of problems),
@@ -723,7 +729,7 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
 
         var panelID = createConfigPanel(panelTitle, collapsed, disabled);
 
-        // store the id of the panel in the data structure
+        // store the id and index of the panel in the data structure
         panelInfo.id = panelID;
 
         widget.focus(surface, element, rootElement, event);
@@ -738,8 +744,8 @@ base.plugin("blocks.core.Sidebar", ["base.core.Commons", "constants.blocks.core"
                 appendToConfigPanel(panelID, optionsToAdd[w]);
             }
 
-            //we use prepend because we're reversing the order
-            appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID, true);
+            // we use prepend because we're reversing the order
+            appendConfigPanelToSidebar(panelID, BlocksConstants.SIDEBAR_CONTEXT_ID, insertAtIndex);
         }
 
         return panelID;

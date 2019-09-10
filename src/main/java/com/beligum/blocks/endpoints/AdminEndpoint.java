@@ -3,7 +3,7 @@
 //import com.beligum.base.server.R;
 //import com.beligum.base.validation.messages.DefaultFeedbackMessage;
 //import com.beligum.base.validation.messages.FeedbackMessage;
-//import com.beligum.blocks.templating.blocks.TemplateCache;
+//import com.beligum.blocks.templating.TemplateCache;
 //import org.apache.shiro.authz.annotation.RequiresRoles;
 //
 //import javax.servlet.http.HttpServletRequest;

@@ -70,7 +70,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
         templates: {
             empty: '<div class="tt-suggestion "' + BlocksConstants.WIDGET_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.emptySearchResultsTitle + '</p></div>',
             //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-            suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{description}}</p></div>')
+            suggestion: Handlebars.compile('<div title="{{label}} - {{description}}"><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_TITLE_CLASS + '">{{label}}</p><p class="' + BlocksConstants.WIDGET_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{uri}}</p></div>')
         }
     };
     input.typeahead(options, dataSet);

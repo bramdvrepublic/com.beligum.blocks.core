@@ -477,7 +477,7 @@ public class ReindexThread extends Thread implements LongRunningThread
                 //this is bad. It means we'll encounter a NPE later on because we don't have dependency information,
                 //so let's quit now with some additional debug information
                 if (rdfClass == null) {
-                    throw new IOException("Can't seem to find the RDF class for URI "+rdfClassUri);
+                    throw new IOException("Can't seem to find the RDF class for URI " + rdfClassUri);
                 }
 
                 //see if we need to process this class; if the list is empty (no specific class to reindex selected) or it's in there.

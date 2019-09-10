@@ -20,6 +20,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.index.ifaces.*;
+import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
@@ -66,11 +67,14 @@ public class LocalQueryEndpoint implements RdfEndpoint
             mainQuery.filter((RdfClass) resourceType, IndexSearchRequest.FilterBoolean.AND);
         }
 
-        // This will group of the resource URI, selecting the best matching language
-        mainQuery.filter(IndexSearchRequest.createFor(mainQuery.getIndexConnection())
-                                           .wildcard(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR)
-                                           .wildcard(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR),
-                         IndexSearchRequest.FilterBoolean.AND);
+        //only perform a 'wildcardSuffix' search,  meaning query[wildcard]
+        IndexSearchRequest termQuery = IndexSearchRequest.createFor(mainQuery.getIndexConnection())
+                                                         .filter(ResourceIndexEntry.tokenisedUriField, query, IndexSearchRequest.FilterBoolean.OR, SolrIndexSearchRequest.ValueOption.wildcardSuffix)
+                                                         .filter(ResourceIndexEntry.labelField, query, IndexSearchRequest.FilterBoolean.OR, SolrIndexSearchRequest.ValueOption.wildcardSuffix);
+        mainQuery.filter(termQuery, IndexSearchRequest.FilterBoolean.AND);
+
+        // This will group on the resource URI, selecting the best matching language
+        mainQuery.language(language, ResourceIndexEntry.resourceField);
 
         mainQuery.pageSize(maxResults);
 
@@ -83,20 +87,15 @@ public class LocalQueryEndpoint implements RdfEndpoint
         String relResourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
         IndexConnection indexConn = StorageFactory.getJsonIndexer().connect();
-        IndexSearchResult matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
-                                                                             // This will group of the resource URI, selecting the best matching language
-                                                                             .language(language, ResourceIndexEntry.resourceField)
-                                                                             //at least one of the id or resource should match (or both)
-                                                                             .filter(ResourceIndexEntry.uriField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                             .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
-                                                                             .pageSize(1));
+        IndexSearchResult<ResourceIndexEntry> matchingPages = indexConn.search(IndexSearchRequest.createFor(indexConn)
+                                                                                                 // This will group on the resource URI, selecting the best matching language
+                                                                                                 .language(language, ResourceIndexEntry.resourceField)
+                                                                                                 //at least one of the id or resource should match (or both)
+                                                                                                 .filter(ResourceIndexEntry.uriField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                 .filter(PageIndexEntry.resourceField, relResourceIdStr, IndexSearchRequest.FilterBoolean.OR)
+                                                                                                 .pageSize(1));
 
         return matchingPages.getTotalHits() > 0 ? matchingPages.iterator().next() : null;
-
-//        if (selectedEntry != null) {
-//            //we just wrap the index extry in a resource info wrapper
-//            retVal = new WrappedPageResourceInfo(selectedEntry);
-//        }
     }
     @Override
     public RdfProperty[] getLabelCandidates(RdfClass localResourceType)

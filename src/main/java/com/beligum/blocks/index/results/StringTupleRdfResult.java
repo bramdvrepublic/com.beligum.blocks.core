@@ -17,11 +17,12 @@
 package com.beligum.blocks.index.results;
 
 import com.beligum.blocks.index.ifaces.RdfTupleResult;
+import com.beligum.blocks.index.sparql.SparqlIndexSelectResult;
+import com.beligum.blocks.index.sparql.SparqlSelectIndexEntry;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQueryResult;
-import org.glassfish.jersey.server.monitoring.RequestEvent;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -34,14 +35,14 @@ public class StringTupleRdfResult implements RdfTupleResult<String, String>
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private TupleQueryResult tupleQueryResult;
+    private Iterator<SparqlSelectIndexEntry> resultIterator;
     private String labelBinding;
     private String valueBinding;
 
     //-----CONSTRUCTORS-----
-    public StringTupleRdfResult(TupleQueryResult tupleQueryResult, String labelBinding, String valueBinding)
+    public StringTupleRdfResult(SparqlIndexSelectResult searchResult, String labelBinding, String valueBinding)
     {
-        this.tupleQueryResult = tupleQueryResult;
+        this.resultIterator = searchResult.iterator();
         this.labelBinding = labelBinding;
         this.valueBinding = valueBinding;
     }
@@ -50,17 +51,20 @@ public class StringTupleRdfResult implements RdfTupleResult<String, String>
     @Override
     public boolean hasNext()
     {
-        return this.tupleQueryResult.hasNext();
+        return this.resultIterator.hasNext();
     }
     @Override
     public Tuple<String, String> next()
     {
         Tuple<String, String> retVal = null;
 
-        if (this.tupleQueryResult != null && this.tupleQueryResult.hasNext()) {
-            BindingSet bindings = this.tupleQueryResult.next();
-            Value key = bindings.getValue(this.labelBinding);
-            Value value = bindings.getValue(this.valueBinding);
+        if (this.resultIterator != null && this.resultIterator.hasNext()) {
+
+            SparqlSelectIndexEntry result = this.resultIterator.next();
+
+            Value key = result.getBindingSet().getValue(this.labelBinding);
+            Value value = result.getBindingSet().getValue(this.valueBinding);
+
             retVal = new StringTuple(key == null ? null : key.stringValue(), value == null ? null : value.stringValue());
         }
         else {
@@ -68,19 +72,6 @@ public class StringTupleRdfResult implements RdfTupleResult<String, String>
         }
 
         return retVal;
-    }
-    @Override
-    public void close(boolean forceRollback) throws Exception
-    {
-        this.close();
-    }
-    @Override
-    public void close() throws Exception
-    {
-        if (this.tupleQueryResult != null) {
-            this.tupleQueryResult.close();
-            this.tupleQueryResult = null;
-        }
     }
 
     //-----PROTECTED METHODS-----

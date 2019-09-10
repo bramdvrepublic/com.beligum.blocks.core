@@ -27,8 +27,8 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.index.ifaces.Indexer;
 import com.beligum.blocks.rdf.RdfFactory;
-import com.beligum.blocks.templating.blocks.HtmlParser;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.HtmlParser;
+import com.beligum.blocks.templating.TemplateCache;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
 import org.apache.hadoop.fs.FileContext;
@@ -38,7 +38,6 @@ import org.glassfish.jersey.server.spi.Container;
 import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * Created by bram on 11/10/14.

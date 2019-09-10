@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.index.ifaces;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.blocks.index.fields.*;
 import com.google.common.collect.Sets;
 
@@ -75,7 +76,7 @@ public interface ResourceIndexEntry extends ResourceProxy
         /**
          * Used when the resource is an indexed proxy of another resource
          */
-        PROXY;
+        PROXY
     }
 
     //-----VARIABLES-----
@@ -89,4 +90,8 @@ public interface ResourceIndexEntry extends ResourceProxy
      */
     Type getResourceType();
 
+    /**
+     * Tests if the specified security action is permitted on this entry.
+     */
+    boolean isPermitted(ResourceAction action);
 }

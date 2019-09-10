@@ -22,29 +22,29 @@ import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.base.resources.ifaces.Source;
 import com.beligum.base.resources.sources.StringSource;
 import com.beligum.base.server.R;
-import com.beligum.base.server.ifaces.RequestCloseable;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
-import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
-import com.beligum.blocks.index.reindex.ReindexTask;
-import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
-import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.utils.BlockInfo;
 import com.beligum.blocks.endpoints.utils.PageUrlValidator;
-import com.beligum.blocks.index.reindex.*;
-import com.beligum.blocks.index.reindex.tasks.PageFixTask;
+import com.beligum.blocks.filesystem.ifaces.ResourceMetadata;
+import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.PageRepository;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
+import com.beligum.blocks.index.reindex.LongRunningThread;
+import com.beligum.blocks.index.reindex.ReindexTask;
+import com.beligum.blocks.index.reindex.ReindexThread;
+import com.beligum.blocks.index.reindex.tasks.PageFixTask;
+import com.beligum.blocks.index.reindex.tasks.PageReindexTask;
+import com.beligum.blocks.index.reindex.tasks.PageUpgradeTask;
+import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.PageTemplate;
-import com.beligum.blocks.templating.blocks.TagTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.templating.HtmlTemplate;
+import com.beligum.blocks.templating.PageTemplate;
+import com.beligum.blocks.templating.TagTemplate;
+import com.beligum.blocks.templating.TemplateCache;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -54,7 +54,10 @@ import org.apache.shiro.authz.annotation.Logical;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -69,7 +72,7 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 /**
  * Created by bram on 2/10/16.
  */
-@Path("/blocks/admin/page")
+@Path(PAGE_ADMIN_ENDPOINT)
 public class PageAdminEndpoint
 {
     //-----CONSTANTS-----
@@ -541,21 +544,21 @@ public class PageAdminEndpoint
                             }
                         });
 
-//                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
-//                        {
-//                            @Override
-//                            public void close(boolean forceRollback) throws Exception
-//                            {
-//                                new Timer().schedule(new TimerTask()
-//                                {
-//                                    @Override
-//                                    public void run()
-//                                    {
-//                                        longRunningThread.start();
-//                                    }
-//                                }, 1000);
-//                            }
-//                        });
+                        //                        R.requestManager().getCurrentRequest().registerClosable(new RequestCloseable()
+                        //                        {
+                        //                            @Override
+                        //                            public void close(boolean forceRollback) throws Exception
+                        //                            {
+                        //                                new Timer().schedule(new TimerTask()
+                        //                                {
+                        //                                    @Override
+                        //                                    public void run()
+                        //                                    {
+                        //                                        longRunningThread.start();
+                        //                                    }
+                        //                                }, 1000);
+                        //                            }
+                        //                        });
 
                         longRunningThread.start();
 

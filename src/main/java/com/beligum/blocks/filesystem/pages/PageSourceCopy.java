@@ -17,15 +17,21 @@
 package com.beligum.blocks.filesystem.pages;
 
 import com.beligum.base.resources.ifaces.Source;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ontologies.Meta;
+import com.beligum.blocks.templating.HtmlParser;
+import com.beligum.blocks.templating.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang.StringUtils;
+import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Iterator;
 
 /**
  * Created by bram on 1/8/17.
@@ -61,6 +67,20 @@ public class PageSourceCopy extends PageSource
         //note that it will be added again on save
         this.language = null;
         this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
+
+        // wipe out the meta tags of the source, they don't apply to this page anymore
+        // note: we may choose to optionally withhold security information in the future if we want
+        Iterator<Element> iter = this.metaTags.iterator();
+        while (iter.hasNext()) {
+            Element metaTag = iter.next();
+
+            // we'll only delete meta properties (eg. not "<meta charset="UTF-8" />" or "<meta name="viewport" content="width=device-width, initial-scale=1" />")
+            String propertyValue = HtmlTemplate.getPropertyAttribute(metaTag);
+            if (propertyValue != null && (propertyValue.startsWith(Meta.NAMESPACE.getPrefix()) || propertyValue.startsWith(Meta.NAMESPACE.getUri().toString()))) {
+                metaTag.remove();
+                iter.remove();
+            }
+        }
 
         //if we need to break the link with the source (this means, it won't have the "about" attribute in common),
         //we need to replace the about attribute with a newly generated URI. If we need to keep the link,

@@ -16,6 +16,7 @@
 
 package com.beligum.blocks.index.sparql;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
 import com.beligum.blocks.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.index.ifaces.IndexEntryField;
 import com.beligum.blocks.index.ifaces.PageIndexEntry;
@@ -53,6 +54,13 @@ public class SparqlConstructIndexEntry extends AbstractIndexEntry
     public boolean isExternal()
     {
         return false;
+    }
+    @Override
+    public boolean isPermitted(ResourceAction action)
+    {
+        // TODO see https://github.com/republic-of-reinvention/com.stralo.framework/issues/58
+        //throw new UnsupportedOperationException("SPARQL result security filtering is not yet implemented, please look into this; " + action);
+        return true;
     }
     public String getObject(RdfProperty predicate)
     {

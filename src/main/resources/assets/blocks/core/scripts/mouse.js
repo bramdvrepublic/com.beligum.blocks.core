@@ -43,6 +43,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     //show dragging direction
     var SHOW_DEBUG_LINES = false;
 
+    //show dragging console messages
+    var SHOW_DEBUG_MSGS = false;
+
+    var ENABLE_AUTOSCROLL = true;
+
     //the size of the history window to keep during dragging
     var WINDOW_SIZE = 20;
 
@@ -63,6 +68,10 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     //during mouse vector updates. All updates with larger variances
     //won't result in a vector recalculation
     var VARIANCE_THRESHOLD = 0.75;
+
+    //this is the amount of pixels reserved on the top and bottom of the page,
+    //that are used to auto-scroll up/down when dragging around.
+    var SCROLL_MARGIN = 150;
 
     //-----VARIABLES-----
     // flag to enable/disable this entire module (both clicking and dragging)
@@ -88,6 +97,9 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
 
     // the original mousedown event that started the drag
     var mousedownEvent = null;
+
+    // filled with scrolling stats when the mouse is close to the edge of the page and autoscrolling is activated
+    var autoScrolling = null;
 
     //this keeps aggregated values and an array of history entries of maximum size WINDOW_SIZE
     //that will keep track of the last mousemove event statistics
@@ -186,12 +198,12 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         }
     };
 
-    this.isEnabled = function()
+    this.isEnabled = function ()
     {
         return active;
     };
 
-    this.enableClickEvents = function(enable)
+    this.enableClickEvents = function (enable)
     {
         enableClickEvents = enable;
     };
@@ -343,6 +355,25 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseMove = function (event)
     {
+        if (ENABLE_AUTOSCROLL) {
+
+            if (event.originalEvent.clientY < SCROLL_MARGIN && UI.window.scrollTop() > 0) {
+                _scroll(-1, true);
+            }
+            else if (event.originalEvent.clientY > (UI.window.height() - SCROLL_MARGIN) && UI.window.scrollTop() + UI.window.outerHeight() < $(document).outerHeight()) {
+                _scroll(1, true);
+            }
+            else {
+                // this stops the autoscrolling
+                autoScrolling = null;
+            }
+
+            // no need to process any more if we need to scroll
+            if (autoScrolling) {
+                return;
+            }
+        }
+
         var targetElement = $(event.target);
 
         // Save the first element we encounter after mousedown,
@@ -363,6 +394,14 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
             //first, update the statistics and vectors
             updateStats(event);
             updateVector(event);
+
+            if (SHOW_DEBUG_MSGS) {
+                Logger.info("Drag vector" +
+                    "\n    (" + dragVector.x1.toFixed(0) + "," + dragVector.y1.toFixed(0) + ") - (" + dragVector.x2.toFixed(0) + "," + dragVector.y2.toFixed(0) + ")" +
+                    "\n    direction=" + stats.direction.toFixed(2) + "" +
+                    "\n    variance=" + stats.variance.toFixed(2) + "" +
+                    "\n    speed=" + stats.speed.toFixed(2) + "");
+            }
 
             if (draggingStatus === Mouse.DRAGGING.NO) {
 
@@ -422,9 +461,19 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
                         hoveredSurface: hoveredSurface,
 
                         //the current dragvector (x1,y1,x2,y2)
-                        dragVector: dragVector,
+                        dragVector: {
+                            x1: dragVector.x1,
+                            y1: dragVector.y1,
+                            x2: dragVector.x2,
+                            y2: dragVector.y2,
+                        },
                         //the statistics of the dragvector (variance, direction, speed)
-                        dragStats: stats,
+                        //note: make sure to copy the values to a new obj
+                        dragStats: {
+                            direction: stats.direction,
+                            variance: stats.variance,
+                            speed: stats.speed,
+                        },
                     });
                 }
             }
@@ -446,6 +495,11 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
         if (SHOW_DEBUG_LINES && debugCanvas) {
             debugCanvas.remove();
             debugCanvas = null;
+        }
+
+        if (ENABLE_AUTOSCROLL) {
+            // this stops the autoscrolling
+            autoScrolling = null;
         }
 
         // if the clicked element wasn't set by now,
@@ -520,22 +574,26 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
      */
     var _mouseCancel = function (event)
     {
-        if (draggingStatus === Mouse.DRAGGING.YES) {
-            // Note that the eventData object is basically the same as the drag.stop one
-            // because they'll end up in the same handler in the manager
-            Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, event, {
-                //this is the surface we dragged around (possibly undefined)
-                surface: mousedownSurface,
-                //the low-level DOM element we ended our drag on
-                element: clickedElement,
-                //the original mouse down event
-                originalEvent: mousedownEvent,
-                //the last surface we were hovering on
-                hoveredSurface: hoveredSurface,
-            });
-        }
+        // the mouse can get a little wild during autoscrolling,
+        // don't cancel while we're in an autoscroll session
+        if (!autoScrolling) {
+            if (draggingStatus === Mouse.DRAGGING.YES) {
+                // Note that the eventData object is basically the same as the drag.stop one
+                // because they'll end up in the same handler in the manager
+                Broadcaster.send(Broadcaster.EVENTS.MOUSE.DRAG.ABORT, event, {
+                    //this is the surface we dragged around (possibly undefined)
+                    surface: mousedownSurface,
+                    //the low-level DOM element we ended our drag on
+                    element: clickedElement,
+                    //the original mouse down event
+                    originalEvent: mousedownEvent,
+                    //the last surface we were hovering on
+                    hoveredSurface: hoveredSurface,
+                });
+            }
 
-        _resetMouse();
+            _resetMouse();
+        }
     };
 
     /**
@@ -569,10 +627,51 @@ base.plugin("blocks.core.Mouse", ["base.core.Commons", "blocks.core.Broadcaster"
     /**
      * Blocks all click events on everything
      */
-    var _blockClick = function(event)
+    var _blockClick = function (event)
     {
         event.stopImmediatePropagation();
         event.stopPropagation();
+    };
+
+    var _scroll = function (step, launchNew)
+    {
+        //Note: these are milliseconds
+        var now = new Date().getTime();
+
+        // initialize the stats if this is the first call
+        // but only if we don't have an object (or the stats will be gone)
+        if (!autoScrolling && launchNew) {
+            autoScrolling = {
+                startStamp: now,
+                updateStamp: now,
+                distance: 0
+            };
+        }
+
+        // note that the stats can be wiped from another method to stop autoscrolling
+        if (autoScrolling) {
+
+            autoScrolling.updateStamp = now;
+            autoScrolling.distance += step;
+
+            UI.window.scrollTop(UI.window.scrollTop() + step);
+
+            // start slow, speed up -> exponential function
+            // see https://mathinsight.org/exponential_function
+            var secsDiff = (now - autoScrolling.startStamp) / 1000;
+
+            // the Math.pow() part will return a [1-0] range value,
+            // (the higher the fractional base number, the faster it will come down)
+            // that will be multiplied by our largest millis step (100, otherwise it stutters)
+            // and capped downwards to nothing less than a timeout of 20ms
+            var timeout = Math.max(100 * Math.pow(0.5, secsDiff), 20);
+
+            setTimeout(function ()
+            {
+                _scroll(step, false);
+            }, timeout);
+
+        }
     };
 
     /*

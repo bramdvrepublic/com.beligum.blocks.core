@@ -35,7 +35,7 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.*;
 public enum WidgetType
 {
     //-----CONSTANTS-----
-    //this mapping makes sure we can use them in JS/CSS/...
+    // this mapping makes sure we can use them in JS/CSS/...
     Undefined(core.Entries.WIDGET_TYPE_UNDEFINED),
 
     // Note: for now, we assume this will only be used to add primitive types, but adding extra compatible classes
@@ -124,7 +124,6 @@ public enum WidgetType
      * this will allow us to map to this enum from a constant string value
      */
     private static final Map<String, WidgetType> constantValueMapping = new HashMap<>();
-
     static {
         for (WidgetType widget : WidgetType.values()) {
             constantValueMapping.put(widget.getConstant(), widget);
@@ -167,7 +166,7 @@ public enum WidgetType
     //-----PUBLIC METHODS-----
     /**
      * Note: this value will be used instead of the name of the enum during serialization;
-     * Eg. see the @XmlJavaTypeAdapter on com.beligum.blocks.rdf.ifaces.RdfProperty.getWidgetType()
+     * Eg. see com.beligum.blocks.config.InputTypeAdapter and the @XmlJavaTypeAdapter on com.beligum.blocks.rdf.ifaces.RdfProperty.getWidgetType()
      */
     public String getConstant()
     {

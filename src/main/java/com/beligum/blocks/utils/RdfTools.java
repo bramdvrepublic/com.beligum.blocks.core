@@ -19,13 +19,10 @@ package com.beligum.blocks.utils;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.index.ifaces.ResourceProxy;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
-import gen.com.beligum.blocks.core.constants.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -34,14 +31,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.time.temporal.TemporalAccessor;
-import java.util.Locale;
-
-import static gen.com.beligum.blocks.core.constants.blocks.core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG;
-import static gen.com.beligum.blocks.core.constants.blocks.core.WIDGET_TYPE_TIME_TZONE_CLASS;
 
 /**
  * Created by wouter on 27/04/15.
@@ -176,6 +165,22 @@ public class RdfTools
     }
 
     /**
+     * Converts an IRI to an URI
+     */
+    public static URI iriToUri(IRI iri)
+    {
+        return iri == null ? null : URI.create(iri.toString());
+    }
+
+    /**
+     * Converts an URI to an IRI
+     */
+    public static IRI uriToIri(URI uri)
+    {
+        return uri == null ? null : SimpleValueFactory.getInstance().createIRI(uri.toString());
+    }
+
+    /**
      * Make the URI relative to the locally configured domain if it's absolute (or just return it if it's not)
      */
     public static URI relativizeToLocalDomain(URI uri)
@@ -192,127 +197,6 @@ public class RdfTools
         }
 
         return retVal;
-    }
-
-    /**
-     * Standard boolean parsing is too restrictive
-     */
-    public static boolean parseRdfaBoolean(String value)
-    {
-        Boolean retval = false;
-
-        if ("1".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) ||
-            "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value)) {
-            retval = Boolean.TRUE;
-        }
-
-        return retval;
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied date
-     */
-    public static CharSequence serializeDateHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" ")
-                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime));
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied time
-     */
-    public static CharSequence serializeTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
-                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(")</span>");
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied date and time
-     */
-    public static CharSequence serializeDateTimeHtml(ZoneId zone, Locale language, TemporalAccessor utcDateTime)
-    {
-        return new StringBuilder()
-                        .append(DateTimeFormatter.ofPattern("cccc").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" ")
-                        .append(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(" - ")
-                        .append(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(zone).withLocale(language).format(utcDateTime))
-                        .append("<span class=\"").append(WIDGET_TYPE_TIME_TZONE_CLASS).append("\">(UTC")
-                        .append(DateTimeFormatter.ofPattern("xxxxx").withZone(zone).withLocale(language).format(utcDateTime))
-                        .append(")</span>");
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied enum.
-     */
-    public static CharSequence serializeEnumHtml(ResourceProxy enumValue)
-    {
-        // <p> is consistent with JS
-        return new StringBuilder()
-                        .append("<p>")
-                        .append(enumValue.getLabel())
-                        .append("</p>");
-    }
-
-    /**
-     * Generate a RDFa-compatible HTML string from the supplied resource info
-     */
-    public static CharSequence serializeResourceHtml(RdfProperty rdfProperty, ResourceProxy resourceProxy)
-    {
-        CharSequence retVal = null;
-
-        StringBuilder labelHtml = new StringBuilder();
-        labelHtml.append(resourceProxy.getLabel());
-        boolean disableImg = false;
-        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG)) {
-            disableImg = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_IMG));
-        }
-        if (resourceProxy.getImage() != null && !disableImg) {
-            //Note: title is for a tooltip
-            labelHtml.append("<img src=\"").append(resourceProxy.getImage()).append("\" alt=\"").append(resourceProxy.getLabel()).append("\" title=\"").append(resourceProxy.getLabel()).append("\">");
-        }
-
-        boolean disableHref = false;
-        if (rdfProperty.getWidgetConfig() != null && rdfProperty.getWidgetConfig().containsKey(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF)) {
-            disableHref = !Boolean.valueOf(rdfProperty.getWidgetConfig().get(core.Entries.WIDGET_CONFIG_RESOURCE_ENABLE_HREF));
-        }
-        if (resourceProxy.getUri() != null && !disableHref) {
-            StringBuilder linkHtml = new StringBuilder();
-            linkHtml.append("<a href=\"").append(resourceProxy.getUri()).append("\"");
-            if (resourceProxy.isExternal() || resourceProxy.getUri().isAbsolute()) {
-                linkHtml.append(" target=\"_blank\"");
-            }
-            linkHtml.append(">").append(labelHtml).append("</a>");
-
-            retVal = linkHtml;
-        }
-        else {
-            retVal = labelHtml;
-        }
-
-        return retVal;
-    }
-
-    /**
-     * Converts an IRI to an URI
-     */
-    public static URI iriToUri(IRI iri)
-    {
-        return iri == null ? null : URI.create(iri.toString());
-    }
-
-    /**
-     * Converts an URI to an IRI
-     */
-    public static IRI uriToIri(URI uri)
-    {
-        return uri == null ? null : SimpleValueFactory.getInstance().createIRI(uri.toString());
     }
 
     //-----PROTECTED METHODS-----

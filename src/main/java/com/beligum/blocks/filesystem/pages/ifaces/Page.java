@@ -23,7 +23,7 @@ import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.templating.analyzer.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
 import org.eclipse.rdf4j.model.Model;
 

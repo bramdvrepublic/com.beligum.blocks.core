@@ -232,7 +232,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
     }
     @Override
-    public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
+    public IndexSearchResult<ResourceIndexEntry> search(IndexSearchRequest indexSearchRequest) throws IOException
     {
         this.assertActive();
 
@@ -241,7 +241,7 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
         else {
             try {
-                SolrQuery solrQuery = ((SolrIndexSearchRequest) indexSearchRequest).getSolrQuery();
+                SolrQuery solrQuery = ((SolrIndexSearchRequest) indexSearchRequest).buildSolrQuery();
 
                 QueryResponse solrResponse = this.solrClient.query(solrQuery);
 
@@ -253,17 +253,17 @@ public class SolrPageIndexConnection extends AbstractIndexConnection implements 
         }
     }
     @Override
-    public IndexSearchResult search(String query, IndexConnection.QueryFormat format) throws IOException
+    public <T extends IndexSearchResult> T search(String query, IndexConnection.QueryFormat format) throws IOException
     {
         this.assertActive();
 
-        IndexSearchResult retVal = null;
+        T retVal = null;
 
         if (format instanceof QueryFormat) {
             switch ((QueryFormat) format) {
                 case URI_PARAMS:
                     try {
-                        retVal = new SolrIndexSearchResult(this.solrClient.query(SolrRequestParsers.parseQueryString(query)));
+                        retVal = (T) new SolrIndexSearchResult(this.solrClient.query(SolrRequestParsers.parseQueryString(query)));
                     }
                     catch (SolrServerException e) {
                         throw new IOException("Error while executing a Solr search; " + query, e);

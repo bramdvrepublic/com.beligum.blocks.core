@@ -16,50 +16,26 @@
 
 package com.beligum.blocks.index.ifaces;
 
-import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
-import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
 import com.beligum.blocks.index.solr.SolrIndexSearchRequest;
 import com.beligum.blocks.index.solr.SolrPageIndexConnection;
+import com.beligum.blocks.index.sparql.SesamePageIndexConnection;
+import com.beligum.blocks.index.sparql.SparqlIndexSearchRequest;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
 import java.util.Locale;
 
 /**
  * Created by bram on 6/3/17.
  */
-public interface IndexSearchRequest extends Serializable
+public interface IndexSearchRequest extends FilteredSearchRequest
 {
-    enum FilterBoolean
-    {
-        AND,
-        OR,
-        NOT
-    }
-
-    enum FilterType
-    {
-        CLASS,
-        FIELD,
-        PROPERTY,
-        QUERY,
-        SUB,
-        LANGUAGE
-    }
 
     enum LanguageFilterType
     {
         STRICT,
         PREFERRED
-    }
-
-    interface Filter
-    {
-        FilterType getFilterType();
-        FilterBoolean getFilterBoolean();
     }
 
     int DEFAULT_PAGE_SIZE = 50;
@@ -87,11 +63,6 @@ public interface IndexSearchRequest extends Serializable
     IndexConnection getIndexConnection();
 
     /**
-     * Returns an overview of all configured filters in this instance
-     */
-    List<Filter> getFilters();
-
-    /**
      * Returns the requested page size
      */
     int getPageSize();
@@ -107,9 +78,10 @@ public interface IndexSearchRequest extends Serializable
     Locale getLanguage();
 
     /**
-     * Sets the general search-all query value of this request.
+     * Do a general search for a free-text string.
+     * The options determine how the value will be interpreted while searching.
      */
-    IndexSearchRequest query(String value, FilterBoolean filterBoolean);
+    IndexSearchRequest search(String value, FilterBoolean filterBoolean, Option... options);
 
     /**
      * Adds a filter that only selects entries of the specified class.
@@ -118,16 +90,18 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(RdfClass type, FilterBoolean filterBoolean);
 
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified field.
+     * Adds a filter that only selects entries that have the value for the specified field.
+     * Note that the way this value is interpreted can be tweaked using the options
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(IndexEntryField field, String value, FilterBoolean filterBoolean, Option... options);
 
     /**
-     * Adds a filter that only selects entries that have the exact specified value for the specified property.
+     * Adds a filter that only selects entries that have the value for the specified property.
+     * Note that the way this value is interpreted can be tweaked using the options
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest filter(RdfProperty property, String value, FilterBoolean filterBoolean, Option... options);
 
     /**
      * Adds a sub-request to the chain of filters.
@@ -136,16 +110,21 @@ public interface IndexSearchRequest extends Serializable
     IndexSearchRequest filter(IndexSearchRequest subRequest, FilterBoolean filterBoolean) throws IOException;
 
     /**
-     * Adds a filter that only selects entries that have the specified value as a wildcard for the specified field.
+     * Adds a filter that finds all documents without a value for this property.
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest wildcard(IndexEntryField field, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest missing(RdfProperty property, FilterBoolean filterBoolean);
 
     /**
-     * Adds a filter that only selects entries that have the specified value as a wildcard for the specified property.
+     * Adds a filter that finds all documents without a value for this field.
      * The boolean configures how this filter is linked to previously added filters.
      */
-    IndexSearchRequest wildcard(RdfProperty property, String value, FilterBoolean filterBoolean);
+    IndexSearchRequest missing(IndexEntryField field, FilterBoolean filterBoolean) throws IOException;
+
+    /**
+     * Sets the field lists to be returned in  the search request.
+     */
+    IndexSearchRequest transformers(Option... transformers);
 
     /**
      * Requests the results are sorted on the specified property in the specified order

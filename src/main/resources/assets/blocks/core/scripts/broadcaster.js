@@ -212,6 +212,23 @@ base.plugin("blocks.core.Broadcaster", [function ()
                  * }
                  */
                 HTML: "PAGE_CHANGED_HTML",
+
+                /**
+                 * sent out by blocks-imports-page when the type of the page changed or was initialized.
+                 *
+                 * data: {
+                 *     oldValue: a data structure containing the old metadata about the page type (see server side RdfClass interface for a list of properties, notably 'curie')
+                 *     newValue: a data structure containing the new metadata about the page type (see server side RdfClass interface for a list of properties, notably 'curie')
+                 * }
+                 */
+                TYPE: "PAGE_CHANGED_TYPE",
+
+                /**
+                 * sent out by the manager when the cached data about the state of the page changed.
+                 *
+                 * the accompanying data object is the "pageCachedData" variable of the manager
+                 */
+                CACHED_DATA: "PAGE_CHANGED_CACHED_DATA",
             },
 
         },
@@ -233,6 +250,14 @@ base.plugin("blocks.core.Broadcaster", [function ()
              * }
              */
             DELETE: "BLOCK_DELETE",
+
+            /**
+             * a new block needs to be auto-added to the page
+             * data: {
+             *     name: the name of the block type that needs to be created
+             * }
+             */
+            CREATE: "BLOCK_CREATE",
 
             /**
              * a new block was added to the page

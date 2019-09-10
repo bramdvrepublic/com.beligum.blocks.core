@@ -21,7 +21,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.index.AbstractIndexConnection;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
-import com.beligum.blocks.templating.blocks.analyzer.HtmlAnalyzer;
+import com.beligum.blocks.templating.analyzer.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.*;
@@ -272,7 +272,7 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
     }
     @Override
-    public IndexSearchResult search(IndexSearchRequest indexSearchRequest) throws IOException
+    public IndexSearchResult<ResourceIndexEntry> search(IndexSearchRequest indexSearchRequest) throws IOException
     {
         this.assertActive();
 
@@ -289,15 +289,13 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
         }
     }
     @Override
-    public IndexSearchResult search(String query, IndexConnection.QueryFormat format) throws IOException
+    public <T extends IndexSearchResult> T search(String query, IndexConnection.QueryFormat format) throws IOException
     {
         this.assertActive();
 
-        IndexSearchResult retVal = null;
+        T retVal = null;
 
         if (format instanceof QueryFormat) {
-
-            long startStamp = System.currentTimeMillis();
 
             // From the RDF4j docs:
             // Three types of SPARQL queries are distinguished:
@@ -315,12 +313,12 @@ public class SesamePageIndexConnection extends AbstractIndexConnection implement
             switch ((QueryFormat) format) {
                 case SPARQL11_SELECT:
 
-                    retVal = this.selectSearch(query);
+                    retVal = (T) this.selectSearch(query);
 
                     break;
                 case SPARQL11_CONSTRUCT:
 
-                    retVal = this.constructSearch(query);
+                    retVal = (T) this.constructSearch(query);
 
                     break;
                 default:

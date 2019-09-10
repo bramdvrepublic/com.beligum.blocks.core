@@ -12,6 +12,9 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 public class ResourceTypeField extends InternalField
 {
     //-----CONSTANTS-----
+    public final String DEFAULT_VALUE;
+    public final String SUB_VALUE;
+    public final String PROXY_VALUE;
 
     //-----VARIABLES-----
 
@@ -19,6 +22,10 @@ public class ResourceTypeField extends InternalField
     public ResourceTypeField()
     {
         super("resourceType");
+
+        DEFAULT_VALUE = this.serialize(ResourceIndexEntry.Type.DEFAULT);
+        SUB_VALUE = this.serialize(ResourceIndexEntry.Type.SUB);
+        PROXY_VALUE = this.serialize(ResourceIndexEntry.Type.PROXY);
     }
 
     //-----PUBLIC METHODS-----

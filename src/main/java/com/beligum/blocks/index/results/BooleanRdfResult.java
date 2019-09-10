@@ -64,15 +64,6 @@ public class BooleanRdfResult implements RdfTupleResult<String, String>
 
         return retVal;
     }
-    @Override
-    public void close(boolean forceRollback) throws Exception
-    {
-        this.close();
-    }
-    @Override
-    public void close() throws Exception
-    {
-    }
 
     //-----PROTECTED METHODS-----
 

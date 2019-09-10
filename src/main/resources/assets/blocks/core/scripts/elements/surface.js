@@ -134,7 +134,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap container
+             * Returns true if the element is a bootstrap container
              */
             isContainer: function (element)
             {
@@ -142,7 +142,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap row
+             * Returns true if the element is a blocks layout wrapper
+             */
+            isLayout: function (element)
+            {
+                return element.length > 0 && element.prop('tagName').toLowerCase() === BlocksConstants.TAG_NAME_BLOCKS_LAYOUT;
+            },
+
+            /**
+             * Returns true if the element is a bootstrap row
              */
             isRow: function (element)
             {
@@ -150,7 +158,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a bootstrap column
+             * Returns true if the element is a bootstrap column
              */
             isColumn: function (element)
             {
@@ -158,7 +166,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             },
 
             /**
-             * Returns true of the element is a template block
+             * Returns true if the element is a template block
              */
             isBlock: function (element)
             {
@@ -177,9 +185,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             /**
              * Combination of all the previous method into one with optional filters to specify what you're looking for
              */
-            isSurface: function (element, disableContainers, disableRows, disableColumns, disableBlocks, disableProperties)
+            isSurface: function (element, disableContainers, disableLayouts, disableRows, disableColumns, disableBlocks, disableProperties)
             {
                 return (!disableContainers && blocks.elements.Surface.isContainer(element))
+                    || (!disableLayouts && blocks.elements.Surface.isLayout(element))
                     || (!disableRows && blocks.elements.Surface.isRow(element))
                     || (!disableColumns && blocks.elements.Surface.isColumn(element))
                     || (!disableBlocks && blocks.elements.Surface.isBlock(element))
@@ -304,6 +313,10 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         {
             return this instanceof blocks.elements.Container;
         },
+        isLayout: function ()
+        {
+            return this instanceof blocks.elements.Layout;
+        },
         isRow: function ()
         {
             return this instanceof blocks.elements.Row;
@@ -346,6 +359,11 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             return this.realBottom - this.realTop;
         },
 
+        tagName: function()
+        {
+            return this._getTagName();
+        },
+
         /**
          * Returns the first child we can find where the bounds wrap the supplied coordinate
          * (bounds included) or null if no such child was found.
@@ -378,14 +396,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          *
          * @param surface The surface we're currently hovering on
          * @param vector The dragging vector
+         * @param stats The dragging vector statistics
          */
-        previewMoveTo: function (surface, vector)
+        previewMoveTo: function (surface, vector, stats)
         {
             //this clears all previous dropspot indicators (for all surfaces)
             blocks.elements.Surface.clearDropspots();
 
             //find out on which side the vector intersects with the hovered surface
-            var side = surface._findIntersectingSide(vector);
+            var side = surface._findIntersectingSide(vector, stats);
 
             if (side !== blocks.elements.Surface.SIDE.NONE) {
                 //create a list of possible dropspots on the given side
@@ -423,6 +442,34 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
         isNew: function ()
         {
             return false;
+        },
+
+        /**
+         * Overload this to return true if this surface is a layout boundary.
+         * Boundaries act as a limiter that separates different layout trees on a page.
+         * Eg. when dragging a block, you can't drag outside (higher than) a boundary surface.
+         *
+         * Note that a page is not a layout boundary because a layout boundary
+         * "enables all its children to be layouted". If a page would be a boundary,
+         * all elements of the page would be allowed to be layouted by default.
+         *
+         * Also note a container is no boundary as well, we want to be able to limit layouting
+         * "more deeply" inside a container.
+         */
+        isBoundary: function ()
+        {
+            return false;
+        },
+
+        getBoundary: function ()
+        {
+            var retVal = this;
+
+            while (retVal && !retVal.isBoundary()) {
+                retVal = retVal.parent;
+            }
+
+            return retVal;
         },
 
         /**
@@ -606,7 +653,7 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //start out with a fresh structure
             this.layoutParents = {};
 
-            //we can't have layout parents of we don't have a parent
+            // we can't have layout parents if we don't have a parent
             if (this.parent) {
                 switch (this.parent._getChildOrientation()) {
                     case blocks.elements.Surface.ORIENTATION.VERTICAL:
@@ -654,6 +701,15 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             if (this.index === this.parent.children.length - 1) {
                 this.layoutParents[blocks.elements.Surface.SIDE.RIGHT.id] = this.parent;
             }
+        },
+        /**
+         * Decides if the child dropspot is allowed inside this parent surface
+         * @param dropspot
+         * @private
+         */
+        _isAllowedDropspot: function (childDropspot)
+        {
+            return true;
         },
         /**
          * Uniform superclass implementation for all overlay elements.
@@ -774,23 +830,55 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * The order that is checked is top, bottom, left, right.
          *
          * @param vector The vector (having x1, y1, x2, y2 properties)
+         * @param stats The vector statistics (having direction, variance, speed properties)
          */
-        _findIntersectingSide: function (vector)
+        _findIntersectingSide: function (vector, stats)
         {
-            if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
-                return blocks.elements.Surface.SIDE.TOP;
+            // if we have a reliable direction (low variance or high speed),
+            // use it to calc the intersection this means the user is steadily moving towards an edge
+            // and can shortcut instead of moving the block all the way to the dropzone
+            if (stats && (stats.variance < 0.50 || stats.speed > 50)) {
+
+                if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.right, this.top)) {
+                    return blocks.elements.Surface.SIDE.TOP;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.BOTTOM;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.LEFT;
+                }
+                else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
+                    return blocks.elements.Surface.SIDE.RIGHT;
+                }
+                else {
+                    return blocks.elements.Surface.SIDE.NONE;
+                }
             }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.bottom, this.right, this.bottom)) {
-                return blocks.elements.Surface.SIDE.BOTTOM;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.left, this.top, this.left, this.bottom)) {
-                return blocks.elements.Surface.SIDE.LEFT;
-            }
-            else if (this._intersects(vector.x1, vector.y1, vector.x2, vector.y2, this.right, this.top, this.right, this.bottom)) {
-                return blocks.elements.Surface.SIDE.RIGHT;
-            }
+            // if the direction is not that reliable, calculate the intersecting side by simply using the closest edge
             else {
-                return blocks.elements.Surface.SIDE.NONE;
+
+                var distTop = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.right, this.top);
+                var distBottom = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.bottom, this.right, this.bottom);
+                var distLeft = this._perpendicularDistance(vector.x1, vector.y1, this.left, this.top, this.left, this.bottom);
+                var distRight = this._perpendicularDistance(vector.x1, vector.y1, this.right, this.top, this.right, this.bottom);
+
+                var distMin = Math.min(distTop, distBottom, distLeft, distRight);
+                if (distMin === distTop) {
+                    return blocks.elements.Surface.SIDE.TOP;
+                }
+                else if (distMin === distBottom) {
+                    return blocks.elements.Surface.SIDE.BOTTOM;
+                }
+                else if (distMin === distLeft) {
+                    return blocks.elements.Surface.SIDE.LEFT;
+                }
+                else if (distMin === distRight) {
+                    return blocks.elements.Surface.SIDE.RIGHT;
+                }
+                else {
+                    return blocks.elements.Surface.SIDE.NONE;
+                }
             }
         },
         /**
@@ -819,6 +907,39 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             }
         },
         /**
+         * Calculates the perpendicular distance from a point to a line segment.
+         * See https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+         */
+        _perpendicularDistance: function (x, y, segStartX, segStartY, segEndX, segEndY)
+        {
+            function sqr(x)
+            {
+                return x * x
+            }
+
+            function dist2(v, w)
+            {
+                return sqr(v.x - w.x) + sqr(v.y - w.y)
+            }
+
+            function distToSegmentSquared(p, v, w)
+            {
+                var l2 = dist2(v, w);
+                if (l2 === 0) {
+                    return dist2(p, v);
+                }
+                var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+
+                return dist2(p, {
+                    x: v.x + t * (w.x - v.x),
+                    y: v.y + t * (w.y - v.y)
+                });
+            }
+
+            return Math.sqrt(distToSegmentSquared({x: x, y: y},{x: segStartX, y: segStartY}, {x: segEndX, y: segEndY}));
+        },
+        /**
          * Recursively create the dropspots of this surface (and the parents) on the specified side.
          *
          * @param surface The surface that's being dragged around
@@ -842,7 +963,14 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
             //show &= surface !== this;
 
             if (show) {
-                retval.push(new blocks.elements.Dropspot(this, side));
+                var dropspot = new blocks.elements.Dropspot(this, side);
+                // before we can add the dropspot to the retVal, we need to
+                // check if it's allowed inside the layout of the parent.
+                // This is important if we would cross a boundary by creating
+                // the containing structure for the new dropped location
+                if (this.parent._isAllowedDropspot(dropspot)) {
+                    retval.push(dropspot);
+                }
             }
 
             var layoutParent = this.layoutParents[side.id];
@@ -1040,18 +1168,25 @@ base.plugin("blocks.core.elements.Surface", ["base.core.Class", "base.core.Commo
          * This gets called when a block was moved and potentially, overly complex rows/cols structures
          * got created. Eg. A row that holds a 12-width columns, that holds a row.
          *
+         * Returns true if something changed, false otherwise.
+         *
          * @private
          */
         _simplify: function (deep)
         {
+            var retVal = false;
+
             //NOOP: by default, we don't do anything specific,
             //except for going deeper if needed
 
             if (deep) {
                 for (var i = 0; i < this.children.length; i++) {
-                    this.children[i]._simplify(deep);
+                    // as soon as one child changed during simplification, we return true
+                    retVal = this.children[i]._simplify(deep) || retVal;
                 }
             }
+
+            return retVal;
         },
 
     });

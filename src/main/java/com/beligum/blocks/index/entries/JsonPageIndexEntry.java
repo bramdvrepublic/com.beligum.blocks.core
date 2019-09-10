@@ -1,16 +1,22 @@
 package com.beligum.blocks.index.entries;
 
+import com.beligum.base.resources.ifaces.ResourceAction;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.blocks.config.Permissions;
+import com.beligum.blocks.config.WidgetType;
 import com.beligum.blocks.index.fields.JsonField;
 import com.beligum.blocks.index.fields.ResourceTypeField;
 import com.beligum.blocks.index.ifaces.*;
 import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontologies.Meta;
 import com.beligum.blocks.rdf.ontologies.RDF;
 import com.beligum.blocks.rdf.ontologies.XSD;
 import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.utils.SecurityTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -82,6 +88,56 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     public boolean isExternal()
     {
         return false;
+    }
+    @Override
+    public boolean isPermitted(ResourceAction action)
+    {
+        boolean retVal = false;
+
+        try {
+            // WATCH OUT !!!
+            // Sync this with the PageIndexEntry implementation (to filter search results)
+            switch (action) {
+
+                case READ:
+
+                    if (this.jsonNode != null) {
+                        retVal = R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_PERM)
+                                 || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_HTML_PERM)
+                                 || R.securityManager().isPermitted(Permissions.PAGE_READ_ALL_RDF_PERM);
+
+                        // if all is well, and a custom ACL is set, also check the ACL
+                        if (retVal) {
+                            JsonNode metaAclRead = this.autoUnbox(this.jsonNode.get(Meta.aclRead.getCurie().toString()));
+                            if (metaAclRead != null) {
+                                if (metaAclRead.isNumber()) {
+                                    retVal = SecurityTools.isPermitted(R.securityManager().getCurrentRole(), metaAclRead.intValue());
+                                }
+                                else {
+                                    Logger.error("Encountered ACL read value that's not a number, this shouldn't happen; " + metaAclRead);
+                                }
+                            }
+                            else {
+                                // if the page doesn't have a specific ACL, let it pass
+                                retVal = true;
+                            }
+                        }
+                    }
+                    else {
+                        Logger.error("Requesting a security check on a null json object, this shouldn't happen; " + this);
+                    }
+
+                    break;
+
+                default:
+                    Logger.error("Encountered unimplemented index entry resource action, please fix this; " + action);
+            }
+        }
+        catch (Throwable e) {
+            Logger.error("Caught unexpected exception while checking '" + action + "' access permission to this index entry; " + this, e);
+        }
+
+        return retVal;
     }
     @Override
     public String toString()
@@ -164,6 +220,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Encountered an RDF model without a type; this shouldn't happen; " + rootModel);
         }
 
+        // Old code, kept around as reference for future adaptations
         //        if (type.getParentProperty() != null) {
         //            if (parentObj != null) {
         //                throw new IOException("Encountered an RDF class with a configured parent property, but it's parent object is not empty. Don't know which one to choose, please fix this; " + type);
@@ -238,15 +295,12 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                 // If the value is a resource, we'll store its reference:
                 // - if its a sub-resource, the data of it will be in the RDF model and we need to 'instantiate' these in the JSON tree
                 //   by saving the reference to the right property now and create + attach the sub-object later on (see below)
-                // - if it's a reference to a (local or external) resource that has an endpoint, we'll store some metadata about
-                //   that resource in this JSON object (eg. for sorting/filtering on the human readable label of the resource instead of its URI)
-                // - if it's a reference to a resource without an endpoint,
+                // - if it's a reference to a (local or external) resource that has an endpoint, we'll store some metadata (pulled from the ResourceProxy)
+                //   about that resource in this JSON object (eg. for sorting/filtering on the human readable label of the resource instead of its URI)
+                // - in all other cases, store it as a literal
                 if (value instanceof IRI || property.getDataType().equals(XSD.anyURI)) {
 
                     URI resourceUri = URI.create(value.stringValue());
-
-                    // we start out by adding the resource URI as the "real" value of this property
-                    this.addProperty(this.jsonNode, value, field, language);
 
                     // check if it's a subresource that was present in the RDF model and already parsed into an object
                     // if so, we'll use that as the "proxy" of this object (which is in fact the entire sub-object, not a proxy)
@@ -255,19 +309,19 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                         ObjectNode subObject = subObjects.get(resourceUri).getJsonNode();
 
                         // Note: don't set this as a proxy because it's not; it holds the true values of this sub-object
-                        subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.SUB));
+                        subObject.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.SUB_VALUE);
 
-                        this.addProperty(this.jsonNode, subObject, field.getProxyField(), language);
+                        this.addProperty(this.jsonNode, subObject, field, language);
                     }
                     // If we have an endpoint, we'll contact it to get a resource proxy and attach that into the JSON node
                     // using a separate "_proxy" suffixed field
                     else if (property.getDataType().getEndpoint() != null) {
 
-                        ResourceProxy resourceValue = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
-                        if (resourceValue != null) {
+                        ResourceProxy resourceProxy = property.getDataType().getEndpoint().getResource(property.getDataType(), resourceUri, language);
+                        if (resourceProxy != null) {
 
                             // convert the ResourceProxy object to a Json node
-                            ObjectNode resourceNode = this.copyInternalFields(resourceValue, Json.getObjectMapper().createObjectNode(), true);
+                            ObjectNode resourceNode = this.copyInternalFields(resourceProxy, Json.getObjectMapper().createObjectNode(), true);
 
                             if (type.getParentProperty() != null && type.getParentProperty().equals(property)) {
                                 if (this.getParentUri() != null) {
@@ -276,21 +330,42 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
                                                     type);
                                 }
                                 else {
-                                    this.setParentUri(resourceValue.getUri());
+                                    this.setParentUri(resourceProxy.getUri());
                                     this.addProperty(this.jsonNode, resourceNode, new JsonField("parent"), language);
                                 }
                             }
 
                             // make sure we flag the node as a proxy
-                            resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.PROXY));
+                            resourceNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.PROXY_VALUE);
 
                             // lastly, hook the sub-node in the main node using the "_proxy" suffix
-                            this.addProperty(this.jsonNode, resourceNode, field.getProxyField(), language);
+                            this.addProperty(this.jsonNode, resourceNode, field, language);
                         }
                         //we didn't get a resource value from the endpoint; this shouldn't really happen because how did we get our hands on the URI in the first place anyway?
                         else {
                             throw new IOException("Unable to serialize resource value because it's resource endpoint returned null; " + triple);
                         }
+                    }
+                    // You can activate this code below to index resources as sub-objects as well, but it seems to overcomplicate things a lot...
+                    //                    else if (WidgetType.Resource.equals(property.getWidgetType())) {
+                    //
+                    //                        ObjectNode valueNode = Json.getObjectMapper().createObjectNode();
+                    //
+                    //                        // note that we only know the resource of the target object is this URI,
+                    //                        // it's uri property might be different, we just don't know: we have no endpoint,
+                    //                        // so we can't query it. Note that we index all local uris relatively
+                    //                        // Also note solr can't make documents without identifier, so it'll generate one automatically,
+                    //                        // based on the ID of the parent!
+                    //                        valueNode.put(ResourceIndexEntry.resourceField.getName(), ResourceIndexEntry.resourceField.serialize(value, language));
+                    //
+                    //                        // let's not call this a proxy, but a stub instead
+                    //                        valueNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(Type.STUB));
+                    //
+                    //                        this.addProperty(this.jsonNode, valueNode, field, language);
+                    //                    }
+                    else {
+                        // we'll store xsd:anyURI as a literal value
+                        this.addProperty(this.jsonNode, value, field, language);
                     }
                 }
                 else {
@@ -306,7 +381,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
 
         // flag the node as default when no specific resource type is set
         if (!this.jsonNode.has(ResourceIndexEntry.resourceTypeField.getName())) {
-            this.jsonNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.serialize(ResourceIndexEntry.Type.DEFAULT));
+            this.jsonNode.put(ResourceIndexEntry.resourceTypeField.getName(), ResourceIndexEntry.resourceTypeField.DEFAULT_VALUE);
         }
 
         // See https://github.com/republic-of-reinvention/com.stralo.framework/issues/60
@@ -362,6 +437,7 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
             throw new IOException("Overwriting parentUri during initialization, this probably means something is wrong; " + this);
         }
         else {
+            // Note: this handles null-valued parents okay
             this.setParentUri(PageIndexEntry.parentUriField.create(parent));
         }
 
@@ -450,5 +526,19 @@ public class JsonPageIndexEntry extends AbstractIndexEntry implements PageIndexE
     private RdfClass extractModelTypeof(IRI resource, Model model)
     {
         return RdfFactory.lookup(Models.objectIRI(model.filter(resource, TYPEOF_PROPERTY_IRI, null)).orElse(null), RdfClass.class);
+    }
+    /**
+     * Since Solr indexes multivalue fields as arrays even if there's only one value present,
+     * we sometimes want to auto-unbox a single-valued array so processing is a bit simpler.
+     */
+    private JsonNode autoUnbox(JsonNode jsonNode)
+    {
+        JsonNode retVal = jsonNode;
+
+        if (retVal != null && retVal.isArray() && retVal.size() == 1) {
+            retVal = retVal.get(0);
+        }
+
+        return retVal;
     }
 }

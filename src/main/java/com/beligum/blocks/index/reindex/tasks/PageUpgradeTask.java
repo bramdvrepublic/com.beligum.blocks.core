@@ -16,15 +16,12 @@
 
 package com.beligum.blocks.index.reindex.tasks;
 
-import com.beligum.base.config.CoreConfiguration;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.ResourceRepository;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.PageAdminEndpoint;
 import com.beligum.blocks.filesystem.LockFile;
-import com.beligum.blocks.filesystem.pages.NewPageSource;
 import com.beligum.blocks.filesystem.pages.PageSource;
 import com.beligum.blocks.filesystem.pages.ReadWritePage;
 import com.beligum.blocks.filesystem.pages.ifaces.Page;
@@ -33,13 +30,9 @@ import com.beligum.blocks.rdf.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.RdfOntology;
 import com.beligum.blocks.rdf.ifaces.RdfOntologyMember;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ontologies.Meta;
-import com.beligum.blocks.templating.blocks.HtmlParser;
-import com.beligum.blocks.templating.blocks.HtmlRdfContext;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import net.htmlparser.jericho.OutputDocument;
-import net.htmlparser.jericho.Source;
+import com.beligum.blocks.templating.HtmlParser;
+import com.beligum.blocks.templating.HtmlRdfContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.maven.artifact.versioning.ComparableVersion;

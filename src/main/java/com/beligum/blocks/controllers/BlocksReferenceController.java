@@ -17,8 +17,8 @@
 package com.beligum.blocks.controllers;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.templating.blocks.DefaultTemplateController;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.templating.DefaultTemplateController;
+import com.beligum.blocks.templating.HtmlTemplate;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
 
