@@ -64,6 +64,11 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         noEscape,
     }
 
+    /**
+     * Adds transformers to the query
+     * https://lucene.apache.org/solr/guide/8_0/transforming-result-documents.html#TransformingResultDocuments-_elevated_and_excluded_
+     *
+     */
     public enum TransformerValueOption implements FilteredSearchRequest.Option
     {
 
@@ -99,17 +104,7 @@ public class SolrIndexSearchRequest extends AbstractIndexSearchRequest implement
         this.queryBuilder = new StringBuilder();
         this.filterQueryBuilder = new StringBuilder();
         this.customParams = new HashMap<>();
-
     }
-
-    //    @Override
-    //    public IndexSearchRequest customQuery(String value) {
-    //        if (this.queryBuilder.length() > 0) {
-    //            throw new UnsupportedOperationException("Can not combine a custom query with a second query. Existing query " + this.queryBuilder.toString());
-    //        }
-    //        this.queryBuilder.append(value);
-    //        return this;
-    //    }
 
     //-----PUBLIC METHODS-----
     @Override
